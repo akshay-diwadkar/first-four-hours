@@ -7,7 +7,7 @@
 - [Versioning and validation](../../REPO_VERSIONING.md): authoritative branch, release, test-cap, timing, and verification policy, including known planning traps.
 - [Ownership manifest](../../tools/validation/test-ownership.json): resolve changed paths to their test profiles before modifying or selecting tests.
 - [Supervised runner](../../tools/validation/test_ownership.py): trace selection, collection, and required verification behavior.
-- [Repository validator](../../tools/validation/validate_repository.py): locate cross-package metadata, synchronization, and Atlas hierarchy checks.
+- [Repository validator](../../tools/validation/validate_repository.py): locate cross-package metadata, synchronization, documentation link, and Atlas hierarchy checks.
 - [Context load measurement](../../tools/validation/measure_context_load.py): measure each skill's guidance tokens against [its recorded budget](../../tools/validation/context-load-budgets.json); before editing skill guidance, estimate a Blueprint draft's Exact guidance edits with its `--blueprint` mode (Planning traps in versioning policy).
 - [Pinned instruction rules](../../tests/repository/mandatory_skill_rules.json): exact clauses in skill guidance that [the rule checker](../../tools/validation/instruction_rules.py) requires; rewording a pinned clause fails validation.
 

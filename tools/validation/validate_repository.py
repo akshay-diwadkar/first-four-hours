@@ -1180,6 +1180,24 @@ def validate_script_references(skill_dir: Path) -> list[str]:
     return errors
 
 
+def _local_link_targets(document: Path) -> list[tuple[str, Path]]:
+    """Return each local Markdown link target in a document with its resolved path."""
+    targets: list[tuple[str, Path]] = []
+    text = document.read_text(encoding="utf-8")
+    for match in MARKDOWN_LINK_RE.finditer(text):
+        raw_target = match.group("bracketed") or match.group("plain")
+        if raw_target.startswith("#"):
+            continue
+        parsed = urlsplit(raw_target)
+        if parsed.scheme or parsed.netloc:
+            continue
+        relative = unquote(parsed.path).replace("\\", "/")
+        if not relative:
+            continue
+        targets.append((raw_target, (document.parent / relative).resolve()))
+    return targets
+
+
 def validate_markdown_references(skill_dir: Path) -> list[str]:
     """Validate local Markdown targets and direct progressive-disclosure links."""
     errors: list[str] = []
@@ -1191,18 +1209,7 @@ def validate_markdown_references(skill_dir: Path) -> list[str]:
     for document in sorted(skill_dir.rglob("*.md")):
         if "__pycache__" in document.parts:
             continue
-        text = document.read_text(encoding="utf-8")
-        for match in MARKDOWN_LINK_RE.finditer(text):
-            raw_target = match.group("bracketed") or match.group("plain")
-            if raw_target.startswith("#"):
-                continue
-            parsed = urlsplit(raw_target)
-            if parsed.scheme or parsed.netloc:
-                continue
-            relative = unquote(parsed.path).replace("\\", "/")
-            if not relative:
-                continue
-            target = (document.parent / relative).resolve()
+        for raw_target, target in _local_link_targets(document):
             label = document.relative_to(ROOT)
             if not target.is_relative_to(repository_root):
                 errors.append(f"{label}: local Markdown link escapes the repository: {raw_target}")
@@ -1224,6 +1231,25 @@ def validate_markdown_references(skill_dir: Path) -> list[str]:
                     f"{skill_md.relative_to(ROOT)}: reference is not linked directly: "
                     f"{reference.relative_to(skill_dir).as_posix()}"
                 )
+    return errors
+
+
+def validate_documentation_links() -> list[str]:
+    """Validate local Markdown links in the repository README and user documentation."""
+    errors: list[str] = []
+    repository_root = ROOT.resolve()
+    documents: list[Path] = []
+    if (ROOT / "README.md").is_file():
+        documents.append(ROOT / "README.md")
+    if (ROOT / "docs").is_dir():
+        documents.extend(sorted((ROOT / "docs").rglob("*.md")))
+    for document in documents:
+        label = document.relative_to(ROOT).as_posix()
+        for raw_target, target in _local_link_targets(document):
+            if not target.is_relative_to(repository_root):
+                errors.append(f"{label}: local Markdown link escapes the repository: {raw_target}")
+            elif not target.exists():
+                errors.append(f"{label}: local Markdown link target does not exist: {raw_target}")
     return errors
 
 
@@ -1453,6 +1479,7 @@ def main() -> int:
     errors.extend(validate_version())
     errors.extend(validate_changelog())
     errors.extend(validate_readme_release_link())
+    errors.extend(validate_documentation_links())
     errors.extend(validate_marketplace())
     errors.extend(validate_invocation_policy(skill_dirs=skills))
     errors.extend(validate_certified_platform_coverage())

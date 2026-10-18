@@ -1,8 +1,8 @@
 # Distribution and catalog
 
 - [Repository overview](../../README.md): start with installation, supported agent surfaces, domain intent, and the public capability catalog.
-- [User documentation](../../docs/README.md): find the human documentation entrypoint, its getting-started guides, concept pages, one page per skill, and recipes for recurring problems; skill contracts stay authoritative, and catalog synchronization checks the skill index against the skill tree.
-- [Catalog synchronization](../../tools/validation/sync_skill_catalog.py): trace filesystem-owned domain membership into marketplace metadata, README validation, and the docs skill index and pages.
+- [User documentation](../../docs/README.md): find the human documentation entrypoint, its getting-started guides, concept pages, one page per skill, recipes for recurring problems, a reference with the generated skill facts table, and symptom-indexed troubleshooting; skill contracts stay authoritative, and catalog synchronization checks the skill index, the facts table, documented handoff folders, and skill paths against source.
+- [Catalog synchronization](../../tools/validation/sync_skill_catalog.py): trace filesystem-owned domain membership into marketplace metadata, README validation, the docs skill index and pages, and the generated reference facts table; it also checks documented `.first-four-hours/` folders against the folders skill scripts declare.
 - [Router manifest synchronization](../../tools/validation/sync_router_manifest.py): project skill frontmatter into Router's capability manifest; a changed skill description changes Router's distributed assets too.
 - [Invocation policy](../../invocation-policy.json): inspect suite invocation policy alongside the affected package's metadata.
 - [Installation validation](../../tools/validation/validate_skills_cli_install.py): investigate collection installation and agent-specific distribution checks.

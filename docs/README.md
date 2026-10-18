@@ -22,6 +22,14 @@ These pages are for people who use First Four Hours. The skills themselves are i
 
 - [Recipes](recipes/README.md): start from a problem you keep losing time to, such as a fix that only patches the symptom or a plan reopened halfway through editing, and see which skills deal with it.
 
+## Look something up
+
+- [Reference](reference/README.md): exact facts about each skill, such as its domain, source folder, how it starts, and the Python it needs, and where every other fact is kept.
+
+## Fix a problem
+
+- [Troubleshooting](troubleshooting/README.md): find the symptom you see, its likely cause, a check that changes nothing, and the next step.
+
 ## Other sources
 
 - The [repository README](../README.md) lists every skill by domain and shows how to install them.

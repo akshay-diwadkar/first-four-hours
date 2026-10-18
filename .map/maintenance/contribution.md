@@ -1,7 +1,8 @@
 # Contribution and validation
 
 - [Root agent instructions](../../AGENTS.md): start with repository-specific obligations before changing skills or their supporting machinery.
-- [Contributor entry point](../../CONTRIBUTING.md): set up the validation environment and find the policy that owns each contribution step.
+- [Contributor entry point](../../CONTRIBUTING.md): set up the validation environment and start a policy-directed contribution.
+- [Contributor workflow](../../docs/contributing/README.md): locate change ownership, focused and required validation, guidance budgets, package projections, and release maintenance.
 - [Documentation rules](../../docs/contributing/documentation.md): read before adding or changing a `docs/` page; it sets the sections, conventions, voice, and where validation policy may be explained.
 - [Skill philosophy](../../SKILL_PHILOSOPHY.md): apply the Change Gate and distinguish agent-owned judgment from mechanical guarantees.
 - [Versioning and validation](../../REPO_VERSIONING.md): authoritative branch, release, test-cap, timing, and verification policy, including known planning traps.

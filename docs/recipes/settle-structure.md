@@ -36,7 +36,7 @@ For example (illustrative):
 
 ## You are done when
 
-`architecture.md` is sealed with a selected structure or a no-change outcome. When you go on, Construct's report shows the plan built on it was applied and verified.
+`architecture.md` is sealed with a selected structure or a no-change outcome. When you go on, Construct's report for the plan built on it shows every instruction applied, the plan's verification passed, and the diff matching the plan, and you have settled its owner gates.
 
 ## If it goes wrong
 

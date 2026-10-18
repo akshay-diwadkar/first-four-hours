@@ -39,5 +39,5 @@ The file names are placeholders for your own.
 
 ## If it goes wrong
 
-- Scribe reports a reader job the sources cannot support: close the gap it names in the sources, then write again ([Scribe](../skills/scribe.md)).
+- Scribe reports a reader job the sources cannot support: take the gap to the next owner it names, and write again once that owner has closed it ([Scribe](../skills/scribe.md)).
 - An audit reports findings: revising the document is a separate write that needs your authority ([Scribe](../skills/scribe.md)).

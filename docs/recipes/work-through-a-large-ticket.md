@@ -40,7 +40,7 @@ For example (illustrative):
 
 ## You are done when
 
-For a session: its one ticket is implemented, Construct's verification passed, and the change is reviewed. For the whole request: no ticket in it is still open. When `select` finds no ready ticket while some are still open, none of them is ready yet (for example, blocked, waiting on your decision, or in progress), and the request is not done. Closing tickets is your decision.
+For a session: Construct's report for its one ticket shows every instruction applied, the plan's verification passed, and the diff matching the plan; you have settled its owner gates; and Assess returns `clear` for the change, after any rework its findings needed. For the whole request: no ticket in it is still open. When `select` finds no ready ticket while some are still open, none of them is ready yet (for example, blocked, waiting on your decision, or in progress), and the request is not done. Closing tickets is your decision.
 
 ## If it goes wrong
 

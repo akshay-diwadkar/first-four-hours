@@ -17,7 +17,7 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 
 1. Start Diagnose yourself and name the symptom. Only you can start it.
 2. Read the sealed `diagnosis.md`. Each finding says how well its cause is established. Advisory directions are leads, not a chosen fix.
-3. Pick one finding and ask Blueprint to plan its fix, naming the finding. When the fix has several viable directions, Blueprint asks [Ideate](../skills/ideate.md) inside its run, and you choose.
+3. Pick one finding and ask Blueprint to plan its fix, naming the finding. If no viable fix is apparent, or the evidence cannot rank the possible fixes, Blueprint asks [Ideate](../skills/ideate.md) inside its run, and you choose unless you already chose or delegated the choice.
 4. Carry out the sealed plan with Construct, as in [Plan a change before your agent starts editing](plan-a-change.md).
 
 ## Example
@@ -36,7 +36,7 @@ For example (illustrative):
 
 ## You are done when
 
-Construct's report shows the plan's verification passed, and the symptom no longer appears when you check it the way you first saw it.
+Construct's report shows every instruction applied, the plan's verification passed, and the diff matching the plan; you have settled its owner gates; and the symptom no longer appears when you check it the way you first saw it.
 
 ## If it goes wrong
 

@@ -16,8 +16,10 @@ Documentation that reads well but cannot be followed is the costly kind: a wrong
 
 1. Start Scribe naming the document and its sources. Writing needs your authority to create or revise it.
 2. Answer only the publication or content-policy questions it asks.
-3. Read `document.md` and the gaps it recorded. Each gap names its next owner, so close it in the sources, not by hand in the document.
-4. After the sources change, ask Scribe to audit the document. An audit never modifies it.
+3. Read `document.md` and the gaps it recorded. Take each gap to the next owner it names; do not fill it by hand in the document.
+4. Once that owner has closed the gap, ask Scribe to write again.
+
+To check an existing document against its sources later, ask Scribe to audit it. An audit never modifies the document; revising it is a separate write.
 
 ## Example
 

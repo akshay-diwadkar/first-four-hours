@@ -42,6 +42,14 @@ A sealed `blueprint.md` next to a frozen copy of your request, `request.md`, in 
 
 A sealed plan never changes. A changed request needs a new plan in a fresh task folder.
 
+## Choosing models
+
+Blueprint is also meant to raise the planning floor: when only an executor-level model is available, it should help that model plan better than it would unaided. Like comparable quality at lower cost, this is an aim, not a measured guarantee.
+
+When plan quality matters most, use your strongest affordable model for planning. The executor can be cheaper because the plan already settles every decision, and the challenger does not need to be stronger than the planner.
+
+The repository's tests prove the planning and execution mechanics with deterministic fakes and no live models; they say nothing about model quality or cost. To compare for yourself, run the same request through different planner and executor pairings by hand, each from the same base commit with a fresh task folder, and compare the outcomes and token use. That comparison is optional and outside repository validation.
+
 ## Related skills
 
 Blueprint can plan from a [Diagnose](diagnose.md) finding, an [Architect](architect.md) decision, or a [Ticket](ticket.md) scope. Construct carries out the result. See [How skills hand work to each other](../concepts/handoffs.md).

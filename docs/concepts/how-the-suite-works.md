@@ -35,7 +35,7 @@ Every skill belongs to one of three domains. The domains help you understand the
 | Sensemaking | Getting ready to decide: reasoning, exploring options, writing technical documents, and coordinating which skill comes next. |
 | Learning | Building a person's own knowledge and ability in any subject, technical or not. |
 
-Domains are not a pipeline, and they do not decide routing: `router` works with the individual skills. A skill's folder, `skills/<domain>/<skill>/`, records its domain. The [repository README](../../README.md) lists current membership, and repository validation fails when a skill folder is missing from that list.
+Domains are not a pipeline, and they do not decide routing: `router` works with the individual skills. A skill's folder, `skills/<domain>/<skill>/`, records its domain. The [repository README](../../README.md) lists current membership.
 
 ## Where the truth lives
 

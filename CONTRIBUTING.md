@@ -15,6 +15,7 @@ Each skill under `skills/<domain>/<skill>/` installs on its own. A skill that ne
 ## Find your way
 
 - [README.md](README.md) describes the skills and how to install them.
+- [docs/README.md](docs/README.md) is the user documentation; [docs/contributing/documentation.md](docs/contributing/documentation.md) holds the rules for changing it.
 - [MAP.md](MAP.md) points to the files that matter for a task. The files themselves are the authority.
 - [AGENTS.md](AGENTS.md) holds the working rules for coding agents; `CLAUDE.md` carries the same rules for Claude Code.
 

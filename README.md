@@ -12,6 +12,8 @@ AI coding agents are powerful, but unbounded agents frequently hallucinate fixes
 
 These skills provide a modular collection of specialized, self-contained packages designed to **raise the floor and preserve the ceiling**: giving your agent the structure to discover, reason, plan, and verify before editing a single line of code.
 
+Read the [documentation](docs/README.md) to learn why the suite exists and how its skills fit together.
+
 ---
 
 ## ⚡ Why Use These Skills?

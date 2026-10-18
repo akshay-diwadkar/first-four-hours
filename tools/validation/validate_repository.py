@@ -178,7 +178,6 @@ ALLOWED_DOMAIN_FILES = {"README.md"}
 EXPECTED_DOMAINS = {"workbench", "sensemaking", "learning"}
 RETIRED_PATHS = (
     "catalog",
-    "docs",
     "skills-lock.json",
     "SECURITY.md",
     "tools/catalog",
@@ -1477,6 +1476,7 @@ def main() -> int:
     for module_name in (
         "sync_diagnostic_runtime", "sync_classification_runtime", "sync_skill_protocol_runtime",
         "sync_architecture_handoff", "sync_delegation_projection", "sync_router_manifest",
+        "sync_skill_catalog",
     ):
         import importlib
         errors.extend(importlib.import_module(module_name).check())

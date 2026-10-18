@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Project the filesystem-owned skill domains into distribution metadata."""
+"""Project the filesystem-owned skill domains into distribution metadata and check the README and docs skill catalogs against them."""
 
 from __future__ import annotations
 
@@ -71,8 +71,43 @@ def validate(readme: Path, marketplace: Path) -> list[str]:
     return errors
 
 
+def validate_skill_pages(index_text: str, page_stems: set[str], domains: dict[str, list[str]]) -> list[str]:
+    errors: list[str] = []
+    text = "\n" + index_text.replace("\r\n", "\n")
+    for domain, names in domains.items():
+        heading = f"\n## {domain}\n"
+        start = text.find(heading)
+        if start < 0:
+            errors.append(f"docs/skills/README.md must have a '## {domain}' section")
+        else:
+            body_start = start + len(heading)
+            end = text.find("\n## ", body_start - 1)
+            section = text[body_start:end] if end >= 0 else text[body_start:]
+            for name in names:
+                if f"]({name}.md)" not in section:
+                    errors.append(f"docs/skills/README.md is missing the {domain} skill page link {name}.md")
+        for name in names:
+            if name not in page_stems:
+                errors.append(f"docs/skills/{name}.md is missing for the active skill {name}")
+    active = {name for names in domains.values() for name in names}
+    for stem in sorted(page_stems - active):
+        errors.append(f"docs/skills/{stem}.md documents no active skill")
+    return errors
+
+
 def check() -> list[str]:
-    return validate(ROOT / "README.md", ROOT / ".claude-plugin" / "marketplace.json")
+    errors = validate(ROOT / "README.md", ROOT / ".claude-plugin" / "marketplace.json")
+    pages_dir = ROOT / "docs" / "skills"
+    try:
+        index_text = (pages_dir / "README.md").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return errors + [f"docs/skills/README.md unreadable: {exc}"]
+    page_stems = {page.stem for page in pages_dir.glob("*.md") if page.name != "README.md"}
+    domains = {
+        key.removesuffix("-skills").title(): [path.rsplit("/", 1)[1] for path in paths]
+        for key, paths in groups().items()
+    }
+    return errors + validate_skill_pages(index_text, page_stems, domains)
 
 
 def main() -> int:
@@ -83,11 +118,10 @@ def main() -> int:
     if not args.write and not args.check:
         parser.error("choose --write or --check")
     marketplace = ROOT / ".claude-plugin" / "marketplace.json"
-    readme = ROOT / "README.md"
     if args.write:
         payload = json.loads(marketplace.read_text(encoding="utf-8"))
         marketplace.write_text(json.dumps(_projected_marketplace(payload), indent=2) + "\n", encoding="utf-8")
-    errors = validate(readme, marketplace)
+    errors = check()
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1

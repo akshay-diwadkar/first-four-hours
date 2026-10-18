@@ -27,6 +27,8 @@ npx skills add akshay-diwadkar/first-four-hours --skill blueprint
 
 Replace `blueprint` with the name of the skill you want. For planning, install `blueprint` and `construct` together with `ideate`, which Blueprint uses while it plans, and `reason`, which Ideate consults. Construct needs no other skill.
 
+Many skills, including Diagnose and Tutor, consult `reason` at their judgment points. When you install one of them on its own, install `reason` too. [How skills hand work to each other](../concepts/handoffs.md) lists the skills that consult it.
+
 ## Choose the agent and where skills go
 
 To install for one named agent, add `--agent` with `claude-code`, `codex`, or `github-copilot`:

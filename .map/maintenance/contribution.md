@@ -2,6 +2,7 @@
 
 - [Root agent instructions](../../AGENTS.md): start with repository-specific obligations before changing skills or their supporting machinery.
 - [Contributor entry point](../../CONTRIBUTING.md): set up the validation environment and find the policy that owns each contribution step.
+- [Documentation rules](../../docs/contributing/documentation.md): read before adding or changing a `docs/` page; it sets the sections, conventions, voice, and where validation policy may be explained.
 - [Skill philosophy](../../SKILL_PHILOSOPHY.md): apply the Change Gate and distinguish agent-owned judgment from mechanical guarantees.
 - [Versioning and validation](../../REPO_VERSIONING.md): authoritative branch, release, test-cap, timing, and verification policy, including known planning traps.
 - [Ownership manifest](../../tools/validation/test-ownership.json): resolve changed paths to their test profiles before modifying or selecting tests.

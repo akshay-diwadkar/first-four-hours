@@ -178,7 +178,6 @@ ALLOWED_DOMAIN_FILES = {"README.md"}
 EXPECTED_DOMAINS = {"workbench", "sensemaking", "learning"}
 RETIRED_PATHS = (
     "catalog",
-    "docs",
     "skills-lock.json",
     "SECURITY.md",
     "tools/catalog",

@@ -1,6 +1,7 @@
 # Distribution and catalog
 
 - [Repository overview](../../README.md): start with installation, supported agent surfaces, domain intent, and the public capability catalog.
+- [User documentation](../../docs/README.md): find the human documentation entrypoint and its concept pages; skill contracts and the README catalog stay authoritative.
 - [Catalog synchronization](../../tools/validation/sync_skill_catalog.py): trace filesystem-owned domain membership into marketplace metadata and README validation.
 - [Router manifest synchronization](../../tools/validation/sync_router_manifest.py): project skill frontmatter into Router's capability manifest; a changed skill description changes Router's distributed assets too.
 - [Invocation policy](../../invocation-policy.json): inspect suite invocation policy alongside the affected package's metadata.

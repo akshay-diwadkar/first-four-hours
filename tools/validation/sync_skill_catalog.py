@@ -71,6 +71,10 @@ def validate(readme: Path, marketplace: Path) -> list[str]:
     return errors
 
 
+def check() -> list[str]:
+    return validate(ROOT / "README.md", ROOT / ".claude-plugin" / "marketplace.json")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--write", action="store_true")

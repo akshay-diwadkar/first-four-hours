@@ -25,7 +25,7 @@ Take names, commands, artifacts, file paths, invocation modes, and behavior from
 - a skill's `SKILL.md` and `references/` own its behavior;
 - [the skill design philosophy](../../SKILL_PHILOSOPHY.md) owns the design doctrine;
 - [the versioning and validation policy](../../REPO_VERSIONING.md) owns versions, tests, and validation;
-- the [repository README](../../README.md) catalog owns the list of skills by domain, and repository validation checks it against the skill folders. Do not keep a second list here.
+- the [repository README](../../README.md) catalog owns the list of skills by domain, and repository validation fails when a skill folder is missing from it. Do not keep a second list here.
 
 Do not copy whole contracts, reasoning protocols, schemas, branch rules, or test-runner internals into these pages. Do not document retired skills, old names, or removed behavior; Git history keeps them.
 

@@ -37,6 +37,8 @@ SKILLS_ROOT = ROOT / "skills"
 ATLAS_STRUCTURE_SCRIPT = SKILLS_ROOT / "workbench" / "atlas" / "scripts" / "structure_state.py"
 VERSION_PATH = ROOT / "VERSION"
 README_PATH = ROOT / "README.md"
+INSTALLATION_GUIDE_LABEL = "docs/getting-started/installation.md"
+INSTALLATION_GUIDE_PATH = ROOT / INSTALLATION_GUIDE_LABEL
 CHANGELOG_PATH = ROOT / "CHANGELOG.md"
 MARKETPLACE_PATH = ROOT / ".claude-plugin" / "marketplace.json"
 INVOCATION_POLICY_PATH = ROOT / "invocation-policy.json"
@@ -926,20 +928,22 @@ def validate_invocation_policy(
     return errors
 
 
-def validate_certified_platform_coverage(readme_path: Path | None = None) -> list[str]:
-    """Keep documented invocation support aligned with certified platforms."""
-    readme_path = readme_path or README_PATH
+def validate_certified_platform_coverage(guide_path: Path | None = None) -> list[str]:
+    """Keep the installation guide's agent names aligned with certified platforms."""
+    guide_path = guide_path or INSTALLATION_GUIDE_PATH
     errors: list[str] = []
     expected = set(CERTIFIED_PLATFORMS)
 
-    if not readme_path.is_file():
-        errors.append("Missing README.md")
+    if not guide_path.is_file():
+        errors.append(f"Missing {INSTALLATION_GUIDE_LABEL}")
     else:
-        text = readme_path.read_text(encoding="utf-8")
-        match = re.search(r"^Certified agent names are (?P<names>.+?)\. For example:$", text, re.MULTILINE)
+        text = guide_path.read_text(encoding="utf-8")
+        match = re.search(
+            r"The repository's own install check covers the agent names (?P<names>.+?)\.$", text, re.MULTILINE
+        )
         names = set(re.findall(r"`([^`]+)`", match.group("names"))) if match else set()
         if names != expected:
-            errors.append(f"README.md: certified agent names must be exactly {sorted(expected)}")
+            errors.append(f"{INSTALLATION_GUIDE_LABEL}: install-check agent names must be exactly {sorted(expected)}")
     return errors
 
 

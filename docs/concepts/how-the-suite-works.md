@@ -4,7 +4,7 @@
 
 A prompt snippet is text you paste into a conversation and hope the agent follows. A skill is a package the agent loads when a task calls for it. Its `SKILL.md` states the outcome and the rules. Its references hold detail the agent reads only when that part of the work comes up. Many skills also ship scripts that check mechanical facts, such as whether a handoff has the required shape and still matches the files it was based on. The scripts check; the agent still does the thinking.
 
-A skill is not a mandatory workflow either. Each skill can be used on its own. A skill that consumes another skill's output says so: for example, `construct` carries out a sealed plan that `blueprint` produced. Some skills start automatically when the agent recognizes a matching task, and others start only when you invoke them by name. The [repository README](../../README.md) lists each skill's invocation mode.
+A skill is not a mandatory workflow either. Each skill can be used on its own. A skill that consumes another skill's output says so: for example, `construct` carries out a sealed plan that `blueprint` produced. Some skills start automatically when the agent recognizes a matching task, and others start only when you invoke them by name. [The reference](../reference/README.md) lists each skill's invocation mode.
 
 ## Use the smallest skill that helps
 

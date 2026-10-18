@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/akshay-diwadkar/first-four-hours/tools/skill_protocol/manifest.schema.json",
+  "title": "Common Skill CLI Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "skill",
+    "minimum_python",
+    "run_dir_policy",
+    "requirements",
+    "inputs",
+    "artifacts",
+    "phases",
+    "commands"
+  ],
+  "properties": {
+    "protocol_version": {"type": "string", "pattern": "^1\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "mode": {"enum": ["stateful", "stateless"], "default": "stateful"},
+    "skill": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "minimum_python": {"type": "string", "pattern": "^\\d+\\.\\d+$"},
+    "run_dir_policy": {"enum": ["outside_skill", "outside_skill_and_repo"]},
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "artifact", "required_inputs", "controlled_inputs", "override_input", "argv", "repeat"],
+      "properties": {
+        "phase": {"type": "string"},
+        "artifact": {"type": "string"},
+        "required_inputs": {"type": "array", "items": {"type": "string"}},
+        "controlled_inputs": {"type": "array", "items": {"type": "string"}},
+        "override_input": {"type": "string"},
+        "argv": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "repeat": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["input", "flag"],
+            "properties": {
+              "input": {"type": "string"},
+              "flag": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["distribution", "specifier"],
+        "properties": {
+          "distribution": {"type": "string"},
+          "specifier": {"type": "string"}
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kind", "required", "repeatable", "description", "choices"],
+        "properties": {
+          "name": {"type": "string"},
+          "kind": {"enum": ["string", "path", "choice"]},
+          "required": {"type": "boolean"},
+          "repeatable": {"type": "boolean"},
+          "description": {"type": "string"},
+          "choices": {"type": "array", "items": {"type": "string"}},
+          "required_for": {
+            "type": "array",
+            "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+          },
+          "accepted_for": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+          },
+          "path_policy": {"enum": ["existing", "future"]}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "media_type"],
+        "properties": {
+          "name": {"type": "string"},
+          "path": {"type": "string"},
+          "media_type": {"type": "string"},
+          "external": {"type": "boolean"}
+        }
+      }
+    },
+    "phases": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "next_action",
+          "next_command",
+          "required_reads",
+          "allowed_writes",
+          "forbidden_actions"
+        ],
+        "properties": {
+          "status": {"enum": ["ready", "in_progress", "blocked", "complete"]},
+          "next_action": {"type": ["string", "null"]},
+          "next_command": {
+            "oneOf": [
+              {"type": "null"},
+              {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"}
+            ]
+          },
+          "required_reads": {"type": "array", "items": {"type": "string"}},
+          "conditional_reads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["input", "values", "paths"],
+              "properties": {
+                "input": {"type": "string"},
+                "values": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+                "paths": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+              }
+            }
+          },
+          "result_artifact": {"type": "string"},
+          "allowed_writes": {"type": "array", "items": {"type": "string"}},
+          "forbidden_actions": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {"$ref": "#/$defs/command"},
+          {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/command"}}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_phases", "success_phase", "steps"],
+      "properties": {
+        "allowed_phases": {"type": "array", "items": {"type": "string"}},
+        "allowed_writes": {"type": "array", "items": {"type": "string"}},
+        "success_phase": {"type": ["string", "null"]},
+        "when": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"}
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["argv", "repeat", "capture_stdout", "diagnostics_json", "failure"],
+            "properties": {
+              "argv": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+              "repeat": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["input", "flag"],
+                  "properties": {
+                    "input": {"type": "string"},
+                    "flag": {"type": "string"}
+                  }
+                }
+              },
+              "capture_stdout": {"type": ["string", "null"]},
+              "diagnostics_json": {"type": "boolean"},
+              "failure": {"enum": ["blocked", "operational"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}

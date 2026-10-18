@@ -1,0 +1,11 @@
+# Planning and execution
+
+- [Blueprint](../../skills/workbench/blueprint/SKILL.md): enter the planning workflow and its intent, evidence, challenge, and sealing boundaries.
+- [Blueprint artifact and commands](../../skills/workbench/blueprint/README.md): locate the prepared scaffold, the mechanical check/seal interface, and which branch reference owns each seal diagnostic.
+- [Planning contract](../../skills/workbench/blueprint/references/planning-contract.md): the rules a plan must meet: decision completeness, code expression, step proof, and verification, with pointers to its declared-text and Incomplete-gate branch references.
+- [Adversarial challenge](../../skills/workbench/blueprint/references/challenge-and-rehearsal.md): the fresh challenger's attack dimensions, repair, requirement trace, and seal gate.
+- [Construct](../../skills/workbench/construct/SKILL.md): enter execution with an existing sealed Blueprint, including resume and verification commands.
+- [Execution contract](../../skills/workbench/construct/references/execution-contract.md): Construct's literal-execution and local-repair boundary, step proof, Atlas upkeep, and stop classifications.
+- [Repository planning traps](../../REPO_VERSIONING.md): read the Planning traps section when changing the paired Blueprint/Construct machinery or authoring verification in this repository.
+
+Blueprint owns implementation decisions; Construct applies the sealed result and reports contradictions to planning. A successful seal and a successful execution establish different things. For model-quality and mechanical-proof limits, follow the planner/executor discussion in the [repository overview](../../README.md). Editing these skills' guidance also couples to budgets and pinned rules; see [contribution and validation](../maintenance/contribution.md).

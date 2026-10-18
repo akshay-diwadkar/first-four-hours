@@ -1,0 +1,3 @@
+interface:
+  display_name: "Blueprint"
+  short_description: "Plan a change into a sealed, implementation-ready blueprint"

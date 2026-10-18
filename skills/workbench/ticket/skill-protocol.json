@@ -1,0 +1,353 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateful",
+  "skill": "ticket",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {
+      "name": "backend",
+      "kind": "choice",
+      "required": true,
+      "repeatable": false,
+      "description": "Explicit backend for this persist operation.",
+      "choices": [
+        "github",
+        "local"
+      ]
+    },
+    {
+      "name": "github_repo_url",
+      "kind": "string",
+      "required": false,
+      "repeatable": false,
+      "description": "Explicit GitHub destination when backend=github.",
+      "choices": []
+    },
+    {
+      "name": "label",
+      "kind": "string",
+      "required": false,
+      "repeatable": true,
+      "description": "Additional label applied to every issue.",
+      "choices": []
+    },
+    {
+      "name": "persist_input",
+      "kind": "path",
+      "required": true,
+      "repeatable": false,
+      "description": "Agent-authored backend-neutral persist meaning JSON.",
+      "choices": [],
+      "required_for": [
+        "start"
+      ]
+    },
+    {
+      "name": "publish_confirmation",
+      "kind": "choice",
+      "required": false,
+      "required_for": [
+        "publish"
+      ],
+      "repeatable": false,
+      "description": "Separate confirmation after preview review.",
+      "choices": [
+        "yes"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "preview",
+      "path": "preview.json",
+      "media_type": "application/json"
+    },
+    {
+      "name": "publication_result",
+      "path": "publication-result.json",
+      "media_type": "application/json"
+    },
+    {
+      "name": "reconciliation_input",
+      "path": "reconciliation-input.json",
+      "media_type": "application/json"
+    },
+    {
+      "name": "reconciliation",
+      "path": "reconciliation.json",
+      "media_type": "application/json"
+    }
+  ],
+  "phases": {
+    "approval-required": {
+      "status": "ready",
+      "next_action": "Review preview.json; with backend=github first author reconciliation-input.json per references/persist-github.md; then run next to reconcile; do not supply publish_confirmation until publication-ready.",
+      "next_command": "reconcile",
+      "required_reads": [
+        "{run_dir}/preview.json"
+      ],
+      "result_artifact": "preview",
+      "allowed_writes": [
+        "{run_dir}/reconciliation-input.json"
+      ],
+      "forbidden_actions": [
+        "publish_issues",
+        "edit_repository",
+        "infer_github_target"
+      ]
+    },
+    "publication-ready": {
+      "status": "ready",
+      "next_action": "If publication-result.json exists, publication was already attempted: present its recorded state; running next again resumes the same reviewed plan, which rereads GitHub before any write and never repeats a write that applied. Otherwise review preview.json and the plan in reconciliation.json, which lists every write publication performs, then explicitly confirm publication.",
+      "next_command": "publish",
+      "required_reads": [
+        "{run_dir}/preview.json",
+        "{run_dir}/reconciliation.json"
+      ],
+      "result_artifact": "reconciliation",
+      "allowed_writes": [],
+      "forbidden_actions": [
+        "publish_issues",
+        "edit_repository",
+        "infer_github_target"
+      ]
+    },
+    "complete": {
+      "status": "complete",
+      "next_action": null,
+      "next_command": null,
+      "required_reads": [
+        "{run_dir}/publication-result.json"
+      ],
+      "result_artifact": "publication_result",
+      "allowed_writes": [],
+      "forbidden_actions": [
+        "edit_repository",
+        "infer_github_target"
+      ]
+    }
+  },
+  "commands": {
+    "start": {
+      "allowed_phases": [
+        "approval-required"
+      ],
+      "success_phase": "approval-required",
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/compile_persist.py",
+            "--persist-input",
+            "{input.persist_input}",
+            "--output-dir",
+            "{run_dir}"
+          ],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "reconcile": [
+      {
+        "when": {
+          "backend": [
+            "github"
+          ]
+        },
+        "allowed_phases": [
+          "approval-required"
+        ],
+        "success_phase": "publication-ready",
+        "steps": [
+          {
+            "argv": [
+              "{python}",
+              "{skill_dir}/scripts/reconcile_github.py",
+              "build",
+              "--backend",
+              "{input.backend}",
+              "--persist-input",
+              "{input.persist_input}",
+              "--preview",
+              "{run_dir}/preview.json",
+              "--reconciliation-input",
+              "{run_dir}/reconciliation-input.json",
+              "--output",
+              "{run_dir}/reconciliation.json"
+            ],
+            "repeat": [
+              {
+                "input": "github_repo_url",
+                "flag": "--github-repo"
+              },
+              {
+                "input": "label",
+                "flag": "--label"
+              },
+              {
+                "input": "publish_confirmation",
+                "flag": "--publish-confirmation"
+              }
+            ],
+            "capture_stdout": null,
+            "diagnostics_json": true,
+            "failure": "blocked"
+          }
+        ]
+      },
+      {
+        "when": {
+          "backend": [
+            "local"
+          ]
+        },
+        "allowed_phases": [
+          "approval-required"
+        ],
+        "success_phase": "publication-ready",
+        "steps": [
+          {
+            "argv": [
+              "{python}",
+              "{skill_dir}/scripts/persist_local.py",
+              "plan",
+              "--repo-root",
+              "{repo_root}",
+              "--persist-input",
+              "{input.persist_input}",
+              "--preview",
+              "{run_dir}/preview.json",
+              "--output",
+              "{run_dir}/reconciliation.json"
+            ],
+            "repeat": [
+              {
+                "input": "github_repo_url",
+                "flag": "--github-repo"
+              },
+              {
+                "input": "label",
+                "flag": "--label"
+              },
+              {
+                "input": "publish_confirmation",
+                "flag": "--publish-confirmation"
+              }
+            ],
+            "capture_stdout": null,
+            "diagnostics_json": true,
+            "failure": "blocked"
+          }
+        ]
+      }
+    ],
+    "publish": [
+      {
+        "when": {
+          "publish_confirmation": [
+            "yes"
+          ],
+          "backend": [
+            "github"
+          ]
+        },
+        "allowed_phases": [
+          "publication-ready"
+        ],
+        "success_phase": "complete",
+        "steps": [
+          {
+            "argv": [
+              "{python}",
+              "{skill_dir}/scripts/publish_github.py",
+              "--backend",
+              "{input.backend}",
+              "--persist-input",
+              "{input.persist_input}",
+              "--preview",
+              "{run_dir}/preview.json",
+              "--reconciliation-input",
+              "{run_dir}/reconciliation-input.json",
+              "--reconciliation",
+              "{run_dir}/reconciliation.json",
+              "--output",
+              "{run_dir}/publication-result.json"
+            ],
+            "repeat": [
+              {
+                "input": "github_repo_url",
+                "flag": "--github-repo"
+              },
+              {
+                "input": "label",
+                "flag": "--label"
+              },
+              {
+                "input": "publish_confirmation",
+                "flag": "--publish-confirmation"
+              }
+            ],
+            "capture_stdout": null,
+            "diagnostics_json": true,
+            "failure": "blocked"
+          }
+        ]
+      },
+      {
+        "when": {
+          "publish_confirmation": [
+            "yes"
+          ],
+          "backend": [
+            "local"
+          ]
+        },
+        "allowed_phases": [
+          "publication-ready"
+        ],
+        "success_phase": "complete",
+        "steps": [
+          {
+            "argv": [
+              "{python}",
+              "{skill_dir}/scripts/persist_local.py",
+              "publish",
+              "--repo-root",
+              "{repo_root}",
+              "--persist-input",
+              "{input.persist_input}",
+              "--preview",
+              "{run_dir}/preview.json",
+              "--reconciliation",
+              "{run_dir}/reconciliation.json",
+              "--output",
+              "{run_dir}/publication-result.json"
+            ],
+            "repeat": [
+              {
+                "input": "github_repo_url",
+                "flag": "--github-repo"
+              },
+              {
+                "input": "label",
+                "flag": "--label"
+              },
+              {
+                "input": "publish_confirmation",
+                "flag": "--publish-confirmation"
+              }
+            ],
+            "capture_stdout": null,
+            "diagnostics_json": true,
+            "failure": "blocked"
+          }
+        ]
+      }
+    ]
+  }
+}

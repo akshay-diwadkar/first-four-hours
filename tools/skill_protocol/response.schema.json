@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/akshay-diwadkar/first-four-hours/tools/skill_protocol/response.schema.json",
+  "title": "Common Stateful Skill CLI Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "skill",
+    "status",
+    "phase",
+    "next_action",
+    "next_command",
+    "required_reads",
+    "required_inputs",
+    "allowed_writes",
+    "forbidden_actions",
+    "blocking_reasons",
+    "diagnostics",
+    "artifacts"
+  ],
+  "properties": {
+    "protocol_version": {"type": "string", "pattern": "^1\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "skill": {"type": "string", "minLength": 1},
+    "status": {"enum": ["ready", "in_progress", "blocked", "complete", "error"]},
+    "phase": {"type": ["string", "null"]},
+    "next_action": {"type": ["string", "null"]},
+    "next_command": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["argv", "cwd"],
+          "properties": {
+            "argv": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "cwd": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "required_reads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "reason"],
+        "properties": {
+          "path": {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "required_inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "kind", "required", "repeatable", "description"],
+        "properties": {
+          "name": {"type": "string"},
+          "kind": {"enum": ["string", "path", "choice"]},
+          "required": {"type": "boolean"},
+          "repeatable": {"type": "boolean"},
+          "description": {"type": "string"}
+        }
+      }
+    },
+    "allowed_writes": {"type": "array", "items": {"type": "string"}},
+    "forbidden_actions": {"type": "array", "items": {"type": "string"}},
+    "blocking_reasons": {"type": "array", "items": {"type": "string"}},
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "code",
+          "category",
+          "severity",
+          "skill",
+          "phase",
+          "artifact",
+          "record",
+          "field",
+          "path",
+          "message",
+          "why_it_matters",
+          "required_action",
+          "valid_repairs",
+          "supporting_evidence",
+          "next_command",
+          "hint",
+          "details"
+        ],
+        "properties": {
+          "code": {"type": "string"},
+          "category": {
+            "enum": [
+              "malformed_input",
+              "stale_evidence",
+              "missing_evidence",
+              "contract_contradiction",
+              "unsafe_state",
+              "unavailable_prerequisite"
+            ]
+          },
+          "severity": {"enum": ["info", "warning", "error", "critical"]},
+          "skill": {"type": "string", "minLength": 1},
+          "phase": {"type": "string", "minLength": 1},
+          "artifact": {"type": "string", "minLength": 1},
+          "record": {"type": ["string", "null"]},
+          "field": {"type": ["string", "null"]},
+          "path": {"type": "string", "minLength": 1},
+          "message": {"type": "string"},
+          "why_it_matters": {"type": "string", "minLength": 1},
+          "required_action": {"type": "string", "minLength": 1},
+          "valid_repairs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "supporting_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "next_command": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["argv", "cwd"],
+                "properties": {
+                  "argv": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+                  "cwd": {"type": "string", "minLength": 1}
+                }
+              }
+            ]
+          },
+          "hint": {"type": "string"},
+          "details": {"type": "object"}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "media_type", "exists"],
+        "properties": {
+          "name": {"type": "string"},
+          "path": {"type": "string"},
+          "media_type": {"type": "string"},
+          "exists": {"type": "boolean"}
+        }
+      }
+    },
+    "result": {}
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "task": {
+    "text": "Select and narrow the next implementation ticket for epic #207.",
+    "constraints": []
+  },
+  "backend": "github",
+  "repository": "acme/widget",
+  "mode": "index",
+  "epic": {
+    "number": 207,
+    "url": "https://github.com/acme/widget/issues/207"
+  },
+  "override": null,
+  "exclusions": []
+}

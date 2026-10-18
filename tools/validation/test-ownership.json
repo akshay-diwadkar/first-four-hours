@@ -1,0 +1,905 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Change-scoped profiles with complete whole-module coverage; the full retained suite is capped by collected items.",
+  "owners": {
+    "blueprint-instruction-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "architect-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "atlas-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "atlas-wiki-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "construct-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_skill_repository.py"
+      ]
+    },
+    "diagnose-guidance-contract": {
+      "test_targets": [
+        "tests/skills/diagnose/test_diagnosis.py"
+      ]
+    },
+    "reason-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "tutor-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "examiner-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "assess-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "scribe-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "ticket-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "router-guidance-contract": {
+      "test_targets": [
+        "tests/skills/router/test_router.py"
+      ]
+    },
+    "agent-metadata-contract": {
+      "test_targets": [
+        "tests/repository/test_skill_repository.py"
+      ]
+    },
+    "packaged-docs-contract": {
+      "test_targets": [
+        "tests/repository/test_skill_repository.py"
+      ]
+    },
+    "delegation-projection-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "atlas-runtime-contract": {
+      "test_targets": [
+        "tests/skills/atlas/test_freshness_state.py",
+        "tests/skills/atlas/test_repository_guidance.py",
+        "tests/skills/atlas/test_structure_state.py"
+      ]
+    },
+    "architect-runtime-contract": {
+      "test_targets": [
+        "tests/skills/architect/test_architecture_contract.py",
+        "tests/skills/architect/test_sealing_and_integration.py"
+      ]
+    },
+    "blueprint-runtime-contract": {
+      "test_targets": [
+        "tests/skills/blueprint/test_blueprint_contract.py"
+      ]
+    },
+    "construct-runtime-contract": {
+      "test_targets": [
+        "tests/skills/construct/test_intake.py",
+        "tests/skills/construct/test_verification_lifecycle.py"
+      ]
+    },
+    "diagnose-runtime-contract": {
+      "test_targets": [
+        "tests/skills/diagnose/test_diagnosis.py",
+        "tests/skills/diagnose/test_diagnosis_bundle.py",
+        "tests/skills/diagnose/test_evidence_binding.py"
+      ]
+    },
+    "ideate-runtime-contract": {
+      "test_targets": [
+        "tests/skills/ideate/test_ideation_contract.py",
+        "tests/skills/ideate/test_ideation_sealer.py"
+      ]
+    },
+    "assess-runtime-contract": {
+      "test_targets": [
+        "tests/skills/assess/test_assess_contract.py"
+      ]
+    },
+    "pr-runtime-contract": {
+      "test_targets": [
+        "tests/skills/pr/test_pr.py"
+      ]
+    },
+    "router-runtime-contract": {
+      "test_targets": [
+        "tests/skills/router/test_router.py"
+      ]
+    },
+    "scribe-runtime-contract": {
+      "test_targets": [
+        "tests/skills/scribe/test_operations.py",
+        "tests/skills/scribe/test_semantic_validator.py"
+      ]
+    },
+    "ticket-runtime-contract": {
+      "test_targets": [
+        "tests/skills/ticket/test_github_publish.py",
+        "tests/skills/ticket/test_local_persist.py",
+        "tests/skills/ticket/test_select_freshness.py"
+      ]
+    },
+    "atlas-test-contract": {
+      "test_targets": [
+        "tests/skills/atlas/test_freshness_state.py",
+        "tests/skills/atlas/test_repository_guidance.py",
+        "tests/skills/atlas/test_structure_state.py"
+      ]
+    },
+    "ticket-select-runtime-contract": {
+      "test_targets": [
+        "tests/skills/ticket/test_select_freshness.py"
+      ]
+    },
+    "route-contract": {
+      "test_targets": [
+        "tests/skills/router/test_router.py"
+      ]
+    },
+    "documentation-contract": {
+      "test_targets": [
+        "tests/repository/test_progressive_disclosure.py"
+      ]
+    },
+    "versioning-authority-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py"
+      ]
+    },
+    "validator-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py",
+        "tests/repository/test_test_ownership.py",
+        "tests/repository/test_validation_budget.py"
+      ]
+    },
+    "repository-contract": {
+      "test_targets": [
+        "tests/repository/test_progressive_disclosure.py",
+        "tests/repository/test_routine_validation.py",
+        "tests/repository/test_skill_repository.py",
+        "tests/repository/test_test_ownership.py",
+        "tests/repository/test_validation_budget.py"
+      ]
+    },
+    "release-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py"
+      ]
+    },
+    "release-inputs": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py"
+      ]
+    },
+    "package-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py"
+      ]
+    },
+    "installed-integration": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py"
+      ]
+    },
+    "protocol-runtime": {
+      "test_targets": [
+        "tests/skill_protocol/test_runtime.py"
+      ]
+    },
+    "protocol-integration": {
+      "test_targets": [
+        "tests/skill_protocol/test_runtime.py"
+      ]
+    },
+    "classification": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "diagnostics": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "shared-runtime": {
+      "test_targets": [
+        "tests/skills/construct/test_intake.py",
+        "tests/skills/construct/test_verification_lifecycle.py"
+      ]
+    },
+    "skill-contracts": {
+      "skill_scoped": true
+    }
+  },
+  "rules": [
+    {
+      "id": "architect-guidance-source",
+      "path_prefixes": [
+        "skills/workbench/architect/SKILL.md",
+        "skills/workbench/architect/references"
+      ],
+      "owner": "architect-guidance-contract",
+      "exclude_prefixes": [
+        "skills/workbench/architect/references/delegation-protocol.md",
+        "skills/workbench/architect/references/worked-examples.md"
+      ]
+    },
+    {
+      "id": "architect-worked-examples",
+      "path_prefixes": [
+        "skills/workbench/architect/references/worked-examples.md"
+      ],
+      "owner": "architect-runtime-contract"
+    },
+    {
+      "id": "architect-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/architect/scripts",
+        "skills/workbench/architect/skill-protocol.json"
+      ],
+      "owner": "architect-runtime-contract"
+    },
+    {
+      "id": "atlas-guidance-source",
+      "path_prefixes": [
+        "skills/workbench/atlas/SKILL.md",
+        "skills/workbench/atlas/references"
+      ],
+      "owner": "atlas-guidance-contract"
+    },
+    {
+      "id": "atlas-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/atlas/scripts",
+        "skills/workbench/atlas/skill-protocol.json"
+      ],
+      "owner": "atlas-runtime-contract"
+    },
+    {
+      "id": "blueprint-instruction-source",
+      "path_prefixes": [
+        "skills/workbench/blueprint/SKILL.md",
+        "skills/workbench/blueprint/references"
+      ],
+      "owner": "blueprint-instruction-contract",
+      "exclude_prefixes": [
+        "skills/workbench/blueprint/references/delegation-protocol.md"
+      ]
+    },
+    {
+      "id": "blueprint-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/blueprint/scripts/blueprint_runtime.py"
+      ],
+      "owner": "blueprint-runtime-contract"
+    },
+    {
+      "id": "construct-guidance-source",
+      "path_prefixes": [
+        "skills/workbench/construct/SKILL.md",
+        "skills/workbench/construct/references"
+      ],
+      "owner": "construct-guidance-contract",
+      "exclude_prefixes": [
+        "skills/workbench/construct/references/delegation-protocol.md"
+      ]
+    },
+    {
+      "id": "construct-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/construct/scripts",
+        "skills/workbench/construct/skill-protocol.json"
+      ],
+      "owner": "construct-runtime-contract"
+    },
+    {
+      "id": "diagnose-guidance-source",
+      "path_prefixes": [
+        "skills/workbench/diagnose/SKILL.md",
+        "skills/workbench/diagnose/references"
+      ],
+      "owner": "diagnose-guidance-contract",
+      "exclude_prefixes": [
+        "skills/workbench/diagnose/references/delegation-protocol.md"
+      ]
+    },
+    {
+      "id": "diagnose-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/diagnose/scripts",
+        "skills/workbench/diagnose/templates",
+        "skills/workbench/diagnose/.env.example",
+        "skills/workbench/diagnose/skill-protocol.json"
+      ],
+      "owner": "diagnose-runtime-contract"
+    },
+    {
+      "id": "ideate-guidance-source",
+      "path_prefixes": [
+        "skills/sensemaking/ideate/SKILL.md",
+        "skills/sensemaking/ideate/references"
+      ],
+      "owner": "ideate-runtime-contract",
+      "exclude_prefixes": [
+        "skills/sensemaking/ideate/references/delegation-protocol.md"
+      ]
+    },
+    {
+      "id": "ideate-runtime-source",
+      "path_prefixes": [
+        "skills/sensemaking/ideate/scripts",
+        "skills/sensemaking/ideate/templates",
+        "skills/sensemaking/ideate/skill-protocol.json"
+      ],
+      "owner": "ideate-runtime-contract"
+    },
+    {
+      "id": "reason-guidance-source",
+      "path_prefixes": [
+        "skills/sensemaking/reason/SKILL.md",
+        "skills/sensemaking/reason/references"
+      ],
+      "owner": "reason-guidance-contract"
+    },
+    {
+      "id": "tutor-guidance-source",
+      "path_prefixes": [
+        "skills/learning/tutor/SKILL.md",
+        "skills/learning/tutor/references"
+      ],
+      "owner": "tutor-guidance-contract"
+    },
+    {
+      "id": "examiner-guidance-source",
+      "path_prefixes": [
+        "skills/learning/examiner/SKILL.md",
+        "skills/learning/examiner/references"
+      ],
+      "owner": "examiner-guidance-contract"
+    },
+    {
+      "id": "skill-source",
+      "path_prefixes": [
+        "skills"
+      ],
+      "exclude_prefixes": [
+        "skills/workbench/architect",
+        "skills/workbench/assess",
+        "skills/workbench/atlas",
+        "skills/workbench/blueprint/SKILL.md",
+        "skills/workbench/blueprint/README.md",
+        "skills/workbench/blueprint/references",
+        "skills/workbench/blueprint/scripts/blueprint_runtime.py",
+        "skills/workbench/blueprint/agents/openai.yaml",
+        "skills/workbench/construct",
+        "skills/workbench/diagnose",
+        "skills/workbench/review",
+        "skills/workbench/ticket",
+        "skills/sensemaking/ideate",
+        "skills/sensemaking/reason",
+        "skills/sensemaking/router",
+        "skills/sensemaking/scribe",
+        "skills/learning/tutor",
+        "skills/learning/examiner"
+      ],
+      "owner": "skill-contracts"
+    },
+    {
+      "id": "skill-tests",
+      "path_prefixes": [
+        "tests/skills"
+      ],
+      "exclude_prefixes": [
+        "tests/skills/atlas",
+        "tests/skills/router",
+        "tests/skills/delegation",
+        "tests/skills/review",
+        "tests/skills/ticket/fixtures/fake-gh/sitecustomize.py"
+      ],
+      "owner": "skill-contracts"
+    },
+    {
+      "id": "ticket-fake-github-helper",
+      "path_prefixes": [
+        "tests/skills/ticket/fixtures/fake-gh/sitecustomize.py"
+      ],
+      "owner": "ticket-guidance-contract"
+    },
+    {
+      "id": "delegation-tests",
+      "path_prefixes": [
+        "tests/skills/delegation"
+      ],
+      "owner": "delegation-projection-contract"
+    },
+    {
+      "id": "atlas-tests",
+      "path_prefixes": [
+        "tests/skills/atlas"
+      ],
+      "owner": "atlas-test-contract"
+    },
+    {
+      "id": "atlas-wiki",
+      "path_prefixes": [
+        "MAP.md",
+        ".mapignore",
+        ".map"
+      ],
+      "owner": "atlas-wiki-contract"
+    },
+    {
+      "id": "assess-guidance-source",
+      "path_prefixes": [
+        "skills/workbench/assess/SKILL.md",
+        "skills/workbench/assess/references"
+      ],
+      "owner": "assess-guidance-contract",
+      "exclude_prefixes": [
+        "skills/workbench/assess/references/delegation-protocol.md"
+      ]
+    },
+    {
+      "id": "assess-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/assess/scripts",
+        "skills/workbench/assess/templates",
+        "skills/workbench/assess/skill-protocol.json"
+      ],
+      "owner": "assess-runtime-contract"
+    },
+    {
+      "id": "retired-review-paths",
+      "path_prefixes": [
+        "skills/workbench/review",
+        "tests/skills/review"
+      ],
+      "owner": "assess-runtime-contract"
+    },
+    {
+      "id": "scribe-guidance-source",
+      "path_prefixes": [
+        "skills/sensemaking/scribe/SKILL.md",
+        "skills/sensemaking/scribe/references"
+      ],
+      "owner": "scribe-guidance-contract"
+    },
+    {
+      "id": "scribe-runtime-source",
+      "path_prefixes": [
+        "skills/sensemaking/scribe/scripts",
+        "skills/sensemaking/scribe/schemas",
+        "skills/sensemaking/scribe/templates",
+        "skills/sensemaking/scribe/skill-protocol.json"
+      ],
+      "owner": "scribe-runtime-contract"
+    },
+    {
+      "id": "ticket-guidance-source",
+      "path_prefixes": [
+        "skills/workbench/ticket/SKILL.md",
+        "skills/workbench/ticket/references"
+      ],
+      "exclude_prefixes": [
+        "skills/workbench/ticket/references/select-protocol.json",
+        "skills/workbench/ticket/references/issue-plan-contract.json"
+      ],
+      "owner": "ticket-guidance-contract"
+    },
+    {
+      "id": "ticket-reference-protocols",
+      "path_prefixes": [
+        "skills/workbench/ticket/references/select-protocol.json",
+        "skills/workbench/ticket/references/issue-plan-contract.json"
+      ],
+      "owner": "ticket-select-runtime-contract"
+    },
+    {
+      "id": "ticket-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/ticket/scripts",
+        "skills/workbench/ticket/skill-protocol.json"
+      ],
+      "exclude_prefixes": [
+        "skills/workbench/ticket/scripts/select_cli.py"
+      ],
+      "owner": "ticket-runtime-contract"
+    },
+    {
+      "id": "ticket-select-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/ticket/scripts/select_cli.py"
+      ],
+      "owner": "ticket-select-runtime-contract"
+    },
+    {
+      "id": "route-source",
+      "path_prefixes": [
+        "skills/sensemaking/router/scripts",
+        "skills/sensemaking/router/schemas",
+        "skills/sensemaking/router/assets",
+        "skills/sensemaking/router/skill-protocol.json"
+      ],
+      "owner": "router-runtime-contract"
+    },
+    {
+      "id": "route-guidance-source",
+      "path_prefixes": [
+        "skills/sensemaking/router/SKILL.md",
+        "skills/sensemaking/router/references"
+      ],
+      "owner": "router-guidance-contract"
+    },
+    {
+      "id": "route-tests",
+      "path_prefixes": [
+        "tests/skills/router"
+      ],
+      "owner": "route-contract"
+    },
+    {
+      "id": "documentation-surfaces",
+      "path_prefixes": [
+        "assets",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "LICENSE",
+        "README.md",
+        "CONTRIBUTING.md",
+        "REPO_VERSIONING.md",
+        "SKILL_PHILOSOPHY.md"
+      ],
+      "exclude_prefixes": [
+        "REPO_VERSIONING.md"
+      ],
+      "owner": "documentation-contract"
+    },
+    {
+      "id": "versioning-authority",
+      "path_prefixes": [
+        "REPO_VERSIONING.md"
+      ],
+      "owner": "versioning-authority-contract"
+    },
+    {
+      "id": "package-surfaces",
+      "path_prefixes": [
+        "pyproject.toml",
+        "invocation-policy.json",
+        ".claude-plugin/marketplace.json",
+        "skills/workbench/ticket/requirements.txt",
+        "skills/sensemaking/scribe/requirements.txt"
+      ],
+      "owner": "package-contract"
+    },
+    {
+      "id": "validator-surfaces",
+      "path_prefixes": [
+        "tools/validation/test_ownership.py",
+        "tools/validation/run_mypy.py",
+        "tools/validation/context_tokenizer.py",
+        "tools/validation/cl100k_base.tiktoken",
+        "tools/validation/test-ownership.json",
+        "tools/validation/validate_repository.py",
+        "tools/validation/validate_npx_output.py",
+        "tools/validation/sync_skill_catalog.py",
+        "tools/validation/validate_skills_cli_install.py",
+        "tools/validation/validate_runtime_discovery_policy.py"
+      ],
+      "owner": "validator-contract"
+    },
+    {
+      "id": "release-validation-inputs",
+      "path_prefixes": [
+        "tools/validation/release-requirements.txt"
+      ],
+      "owner": "release-inputs"
+    },
+    {
+      "id": "release-surfaces",
+      "path_prefixes": [
+        "VERSION",
+        "CHANGELOG.md"
+      ],
+      "owner": "release-contract"
+    },
+    {
+      "id": "repository-surfaces",
+      "path_prefixes": [
+        "tests/repository",
+        "tools/validation",
+        "pyproject.toml",
+        "VERSION",
+        "CHANGELOG.md",
+        "invocation-policy.json",
+        ".claude-plugin/marketplace.json"
+      ],
+      "exclude_prefixes": [
+        "tests/repository/test_diagnostics.py",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "LICENSE",
+        "README.md",
+        "REPO_VERSIONING.md",
+        "SKILL_PHILOSOPHY.md",
+        "pyproject.toml",
+        "invocation-policy.json",
+        ".claude-plugin/marketplace.json",
+        "skills/workbench/ticket/requirements.txt",
+        "skills/sensemaking/scribe/requirements.txt",
+        "tools/validation/validate_repository.py",
+        "tools/validation/context_tokenizer.py",
+        "tools/validation/cl100k_base.tiktoken",
+        "tools/validation/test_ownership.py",
+        "tools/validation/run_mypy.py",
+        "tools/validation/test-ownership.json",
+        "tools/validation/release-requirements.txt",
+        "tools/validation/validate_npx_output.py",
+        "tools/validation/sync_skill_catalog.py",
+        "tools/validation/validate_skills_cli_install.py",
+        "tools/validation/validate_runtime_discovery_policy.py",
+        "VERSION",
+        "CHANGELOG.md"
+      ],
+      "owner": "repository-contract"
+    },
+    {
+      "id": "diagnostic-surfaces",
+      "path_prefixes": [
+        "tests/repository/test_diagnostics.py",
+        "tools/diagnostics"
+      ],
+      "owner": "diagnostics"
+    },
+    {
+      "id": "shared-surfaces",
+      "path_prefixes": [
+        "tests/shared"
+      ],
+      "owner": "shared-runtime"
+    },
+    {
+      "id": "classification-surfaces",
+      "path_prefixes": [
+        "tests/classification",
+        "tools/classification"
+      ],
+      "owner": "classification"
+    },
+    {
+      "id": "integration-protocol",
+      "path_prefixes": [
+        "tests/integration/test_common_skill_protocol.py"
+      ],
+      "owner": "protocol-integration"
+    },
+    {
+      "id": "integration-installed",
+      "path_prefixes": [
+        "tests/integration/test_installed_skill_execution.py",
+        "tests/integration/test_ticket_installed_both_adapters.py"
+      ],
+      "owner": "installed-integration"
+    },
+    {
+      "id": "protocol-surfaces",
+      "path_prefixes": [
+        "tests/skill_protocol",
+        "tools/skill_protocol"
+      ],
+      "owner": "protocol-runtime"
+    },
+    {
+      "id": "tools-default",
+      "path_prefixes": [
+        "tools"
+      ],
+      "exclude_prefixes": [
+        "tools/validation",
+        "tools/diagnostics",
+        "tools/classification",
+        "tools/skill_protocol"
+      ],
+      "owner": "repository-contract"
+    },
+    {
+      "id": "skill-packaged-metadata",
+      "path_prefixes": [
+        "skills/workbench/architect/agents/openai.yaml",
+        "skills/workbench/assess/agents/openai.yaml",
+        "skills/workbench/atlas/agents/openai.yaml",
+        "skills/workbench/blueprint/agents/openai.yaml",
+        "skills/workbench/construct/agents/openai.yaml",
+        "skills/workbench/diagnose/agents/openai.yaml",
+        "skills/workbench/ticket/agents/openai.yaml",
+        "skills/sensemaking/ideate/agents/openai.yaml",
+        "skills/sensemaking/reason/agents/openai.yaml",
+        "skills/sensemaking/router/agents/openai.yaml",
+        "skills/sensemaking/scribe/agents/openai.yaml",
+        "skills/learning/tutor/agents/openai.yaml",
+        "skills/learning/examiner/agents/openai.yaml"
+      ],
+      "owner": "agent-metadata-contract"
+    },
+    {
+      "id": "skill-packaged-docs",
+      "path_prefixes": [
+        "skills/workbench/architect/README.md",
+        "skills/workbench/blueprint/README.md",
+        "skills/workbench/ticket/README.md"
+      ],
+      "owner": "packaged-docs-contract"
+    },
+    {
+      "id": "projected-delegation-protocols",
+      "path_prefixes": [
+        "skills/sensemaking/ideate/references/delegation-protocol.md",
+        "skills/workbench/architect/references/delegation-protocol.md",
+        "skills/workbench/blueprint/references/delegation-protocol.md",
+        "skills/workbench/construct/references/delegation-protocol.md",
+        "skills/workbench/diagnose/references/delegation-protocol.md",
+        "skills/workbench/assess/references/delegation-protocol.md"
+      ],
+      "owner": "delegation-projection-contract"
+    },
+    {
+      "id": "test-root-guard",
+      "path_prefixes": [
+        "tests/conftest.py"
+      ],
+      "owner": "validator-contract"
+    }
+  ],
+  "scope_prefixes": [
+    "assets",
+    "tests",
+    "skills",
+    "tools",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "LICENSE",
+    "README.md",
+    "REPO_VERSIONING.md",
+    "SKILL_PHILOSOPHY.md",
+    "VERSION",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "invocation-policy.json",
+    ".claude-plugin",
+    "MAP.md",
+    ".mapignore",
+    ".map"
+  ],
+  "inventory": {
+    "restricted_roots": [],
+    "forbidden_prefixes": [
+      "benchmarks",
+      "tests/benchmarks"
+    ],
+    "forbidden_file_prefixes": [],
+    "forbidden_paths": [],
+    "policy_drift_patterns": [
+      {
+        "roots": [
+          ".",
+          "skills",
+          "tests",
+          "tools",
+          ".claude-plugin"
+        ],
+        "prefixes": [
+          "benchmark"
+        ],
+        "reason": "benchmark-specific tests/configuration/reports are outside bounded repository validation"
+      },
+      {
+        "roots": [
+          ".",
+          "skills",
+          "tests",
+          "tools",
+          ".claude-plugin"
+        ],
+        "prefixes": [
+          "stress"
+        ],
+        "reason": "stress-specific tests/configuration/reports are outside bounded repository validation"
+      },
+      {
+        "roots": [
+          ".",
+          "skills",
+          "tests",
+          "tools",
+          ".claude-plugin"
+        ],
+        "prefixes": [
+          "performance"
+        ],
+        "reason": "performance-specific tests/configuration/reports are outside bounded repository validation"
+      },
+      {
+        "roots": [
+          ".",
+          "skills",
+          "tests",
+          "tools",
+          ".claude-plugin"
+        ],
+        "prefixes": [
+          "comparative"
+        ],
+        "reason": "comparative-performance machinery is outside bounded repository validation"
+      },
+      {
+        "roots": [
+          ".",
+          "skills",
+          "tests",
+          "tools"
+        ],
+        "prefixes": [
+          "compare_baseline",
+          "compare_benchmark",
+          "compare_config",
+          "compare_performance",
+          "compare_report",
+          "compare_results",
+          "compare_runner",
+          "compare_runners",
+          "compare_suite"
+        ],
+        "reason": "comparative-performance machinery is outside bounded repository validation"
+      }
+    ]
+  },
+  "skill_owners": {
+    "architect": "architect-runtime-contract",
+    "assess": "assess-runtime-contract",
+    "atlas": "atlas-runtime-contract",
+    "blueprint": "blueprint-runtime-contract",
+    "construct": "construct-runtime-contract",
+    "diagnose": "diagnose-runtime-contract",
+    "ideate": "ideate-runtime-contract",
+    "pr": "pr-runtime-contract",
+    "reason": "reason-guidance-contract",
+    "router": "router-runtime-contract",
+    "scribe": "scribe-runtime-contract",
+    "ticket": "ticket-runtime-contract"
+  },
+  "universal_targets": [
+    "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+  ],
+  "limits": {
+    "max_gated_items": 48
+  }
+}

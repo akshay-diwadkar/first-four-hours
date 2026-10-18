@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "target": "repository-local exact base/head change",
+  "base_ref": "refs/remotes/origin/main",
+  "head_ref": "HEAD",
+  "assessed_sources": [],
+  "result": null,
+  "examined": [],
+  "findings": [],
+  "limitations": null
+}

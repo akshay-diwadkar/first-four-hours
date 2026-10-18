@@ -1,0 +1,5 @@
+-r ../../skills/workbench/ticket/requirements.txt
+-r ../../skills/sensemaking/scribe/requirements.txt
+tiktoken>=0.7,<1
+pytest==9.1.1
+mypy==2.1.0

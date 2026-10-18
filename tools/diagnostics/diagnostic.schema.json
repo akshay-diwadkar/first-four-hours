@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/akshay-diwadkar/first-four-hours/tools/diagnostics/diagnostic.schema.json",
+  "title": "Repair-ready diagnostic v1",
+  "type": "object",
+  "required": [
+    "code",
+    "category",
+    "severity",
+    "skill",
+    "phase",
+    "artifact",
+    "record",
+    "field",
+    "path",
+    "message",
+    "why_it_matters",
+    "required_action",
+    "valid_repairs",
+    "supporting_evidence",
+    "next_command"
+  ],
+  "properties": {
+    "code": {"type": "string", "minLength": 1},
+    "category": {
+      "enum": [
+        "malformed_input",
+        "stale_evidence",
+        "missing_evidence",
+        "contract_contradiction",
+        "unsafe_state",
+        "unavailable_prerequisite"
+      ]
+    },
+    "severity": {"enum": ["info", "warning", "error", "critical"]},
+    "skill": {"type": "string", "minLength": 1},
+    "phase": {"type": "string", "minLength": 1},
+    "artifact": {"type": "string", "minLength": 1},
+    "record": {"type": ["string", "null"]},
+    "field": {"type": ["string", "null"]},
+    "path": {"type": "string", "minLength": 1},
+    "message": {"type": "string", "minLength": 1},
+    "why_it_matters": {"type": "string", "minLength": 1},
+    "required_action": {"type": "string", "minLength": 1},
+    "valid_repairs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "supporting_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "next_command": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["argv", "cwd"],
+          "properties": {
+            "argv": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "cwd": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": true
+}

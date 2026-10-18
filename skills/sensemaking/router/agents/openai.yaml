@@ -1,0 +1,3 @@
+interface:
+  display_name: "Router"
+  short_description: "Route work across skills when the next step is unclear"

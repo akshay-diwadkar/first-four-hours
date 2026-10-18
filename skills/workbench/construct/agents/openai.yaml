@@ -1,0 +1,3 @@
+interface:
+  display_name: "Construct"
+  short_description: "Implement a sealed blueprint and run its verification"

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "limits": {
+    "architect": {"top_level": 750, "references": 10000},
+    "assess": {"top_level": 750, "references": 10000},
+    "atlas": {"top_level": 650, "references": 3500},
+    "blueprint": {"top_level": 915, "references": 11750},
+    "construct": {"top_level": 750, "references": 10000},
+    "diagnose": {"top_level": 750, "references": 10000},
+    "examiner": {"top_level": 900, "references": 2530},
+    "ideate": {"top_level": 758, "references": 10000},
+    "pr": {"top_level": 700, "references": 1000},
+    "reason": {"top_level": 650, "references": 3500},
+    "router": {"top_level": 500, "references": 1000},
+    "scribe": {"top_level": 750, "references": 10000},
+    "ticket": {"top_level": 750, "references": 10000},
+    "tutor": {"top_level": 800, "references": 2500}
+  }
+}

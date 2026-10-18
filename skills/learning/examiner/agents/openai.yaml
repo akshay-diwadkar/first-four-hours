@@ -1,0 +1,3 @@
+interface:
+  display_name: "Examiner"
+  short_description: "Write and mark practice papers for a written examination"

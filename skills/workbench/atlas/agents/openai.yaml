@@ -1,0 +1,3 @@
+interface:
+  display_name: "Atlas"
+  short_description: "Navigate and maintain a project's orientation wiki"

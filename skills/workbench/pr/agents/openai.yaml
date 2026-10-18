@@ -1,0 +1,5 @@
+interface:
+  display_name: "PR"
+  short_description: "Write a grounded PR description; open it after confirmation"
+policy:
+  allow_implicit_invocation: false

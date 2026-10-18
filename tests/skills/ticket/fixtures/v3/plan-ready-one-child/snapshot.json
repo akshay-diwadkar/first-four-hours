@@ -1,0 +1,158 @@
+{
+  "graph_snapshot_version": "1.0.0",
+  "repo": "acme/widget",
+  "root": {
+    "issue_number": 207,
+    "url": "https://github.com/acme/widget/issues/207"
+  },
+  "fetched_at": "2026-08-03T00:00:00Z",
+  "count": 3,
+  "metadata": {
+    "repo": "acme/widget",
+    "mode": "index",
+    "content_trust": "untrusted-github-data",
+    "comment_policy": "none"
+  },
+  "membership": {
+    "candidate_completeness": "verified",
+    "children_of": {
+      "207": [
+        209,
+        210
+      ]
+    },
+    "provenance": {
+      "mechanism": "test",
+      "derived_at": "2026-08-03T00:00:00Z"
+    }
+  },
+  "candidate_tickets": [
+    209,
+    210
+  ],
+  "issues": [
+    {
+      "number": 207,
+      "node_id": "I_207",
+      "title": "Issue 207",
+      "body": "Child: #209\nChild: #210",
+      "state": "open",
+      "state_reason": null,
+      "labels": [],
+      "assignees": [],
+      "author": "a",
+      "created_at": "2026-08-01T00:00:00Z",
+      "updated_at": "2026-08-02T00:00:00Z",
+      "closed_at": null,
+      "url": "https://github.com/acme/widget/issues/207",
+      "comments": []
+    },
+    {
+      "number": 209,
+      "node_id": "I_209",
+      "title": "Issue 209",
+      "body": "body",
+      "state": "open",
+      "state_reason": null,
+      "labels": [],
+      "assignees": [],
+      "author": "a",
+      "created_at": "2026-08-01T00:00:00Z",
+      "updated_at": "2026-08-02T00:00:00Z",
+      "closed_at": null,
+      "url": "https://github.com/acme/widget/issues/209",
+      "comments": []
+    },
+    {
+      "number": 210,
+      "node_id": "I_210",
+      "title": "Issue 210",
+      "body": "Depends on: #209",
+      "state": "open",
+      "state_reason": null,
+      "labels": [],
+      "assignees": [],
+      "author": "a",
+      "created_at": "2026-08-01T00:00:00Z",
+      "updated_at": "2026-08-02T00:00:00Z",
+      "closed_at": null,
+      "url": "https://github.com/acme/widget/issues/210",
+      "comments": []
+    }
+  ],
+  "pull_requests": [],
+  "edges": [
+    {
+      "source": 207,
+      "type": "child",
+      "target_kind": "issue",
+      "target": 209,
+      "selection_relevant": true,
+      "provenance": [
+        {
+          "evidence": "issue-body",
+          "source_issue": 207,
+          "locator": "line:1",
+          "observed_updated_at": "2026-08-02T00:00:00Z",
+          "confidence": "explicit"
+        }
+      ]
+    },
+    {
+      "source": 207,
+      "type": "child",
+      "target_kind": "issue",
+      "target": 210,
+      "selection_relevant": true,
+      "provenance": [
+        {
+          "evidence": "issue-body",
+          "source_issue": 207,
+          "locator": "line:1",
+          "observed_updated_at": "2026-08-02T00:00:00Z",
+          "confidence": "explicit"
+        }
+      ]
+    },
+    {
+      "source": 210,
+      "type": "depends_on",
+      "target_kind": "issue",
+      "target": 209,
+      "selection_relevant": true,
+      "provenance": [
+        {
+          "evidence": "issue-body",
+          "source_issue": 210,
+          "locator": "line:1",
+          "observed_updated_at": "2026-08-02T00:00:00Z",
+          "confidence": "explicit"
+        }
+      ]
+    }
+  ],
+  "unresolved": [],
+  "coverage": {
+    "complete": true,
+    "state": "complete"
+  },
+  "budgets": {
+    "limits": {
+      "nodes": 100,
+      "edges": 400,
+      "depth": 6,
+      "comments": 100,
+      "comments_per_issue": 20,
+      "response_bytes": 8388608
+    },
+    "usage": {
+      "nodes": 3,
+      "edges": 3,
+      "comments": 0,
+      "response_bytes": 0
+    },
+    "exhausted": []
+  },
+  "graph_receipt": "075e1688f909b663fe9d3967be1921d5663e039e5529afca76fad3d3caa89d92",
+  "digest": "7910b16836373c23b311291ca3bc228f8b9daabf66ad9320b706ee1f78260ce7"
+}

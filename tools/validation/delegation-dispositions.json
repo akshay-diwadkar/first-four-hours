@@ -1,0 +1,153 @@
+{
+  "source_issue": 408,
+  "implementation_issue": 408,
+  "closure_issue": 408,
+  "dispositions": [
+    {
+      "skill": "architect",
+      "mode": "projected",
+      "protocol": "skills/workbench/architect/references/delegation-protocol.md",
+      "owner": "Architect owns design decisions and the sealed architecture handoff.",
+      "lifecycle": "When an orchestrated handoff invokes Architect, Architect owns the architecture stage and its single handoff.",
+      "workers": "Bounded read-only evidence gathering is earned when it improves coverage or context isolation.",
+      "specialists": "Independent design challenge is earned for consequential ambiguity.",
+      "writes": "The Architect owner is the only writer.",
+      "rationale": "Evidence labor and independent design challenge are separable from final design authority."
+    },
+    {
+      "skill": "atlas",
+      "mode": "direct",
+      "owner": "Atlas owns orientation meaning, hierarchy decisions, and any authorized wiki edits.",
+      "lifecycle": "Atlas remains the orientation-stage owner when another workflow invokes it.",
+      "workers": "No bounded worker seam is earned; repository exploration and map interpretation are the semantic task.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Atlas alone authors or rebalances its wiki after authority is established.",
+      "rationale": "Delegation would split tightly coupled exploration and orientation judgment without cheap verification."
+    },
+    {
+      "skill": "blueprint",
+      "mode": "projected",
+      "protocol": "skills/workbench/blueprint/references/delegation-protocol.md",
+      "owner": "Blueprint owns planning scope, decisions, and the sealed blueprint.md.",
+      "lifecycle": "When another orchestrated handoff invokes Blueprint, it owns the planning stage and blueprint.md.",
+      "workers": "Bounded read-only repository exploration is earned when it avoids owner context pollution.",
+      "specialists": "Material planning review remains owner-consumed judgment rather than cheapest-worker labor.",
+      "writes": "Blueprint alone writes blueprint.md; exploration is read-only.",
+      "rationale": "Repository evidence gathering can be cheap to verify while planning authority cannot be delegated."
+    },
+    {
+      "skill": "construct",
+      "mode": "projected",
+      "protocol": "skills/workbench/construct/references/delegation-protocol.md",
+      "owner": "Construct owns implementation, conformance, and the completion report.",
+      "lifecycle": "When an orchestrated handoff invokes Construct, it owns the execution stage and the completion report.",
+      "workers": "No implementation worker is earned.",
+      "specialists": "One fresh read-only conformance reviewer is earned only for non-trivial, materially risky changes.",
+      "writes": "All implementation writes remain with the Construct owner.",
+      "rationale": "Implementation semantics and writes stay direct; only earned independent conformance review is separable."
+    },
+    {
+      "skill": "ticket",
+      "mode": "direct",
+      "owner": "Ticket owns both fixed effects: preview reconciliation and confirmed publication for persist, plus read-only selection and narrowing for select.",
+      "lifecycle": "An invocation remains the Ticket stage owner; persist and select keep separate effect authority and only plan-ready select output passes to Blueprint.",
+      "workers": "No worker seam is earned around the bounded publication transition or coupled read-only graph selection.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Persist publishes only after separate user confirmation; select remains read-only and seals ticket-scope.md.",
+      "rationale": "One public identity is required, while fixed adapters preserve the existing publication and selection authority boundaries."
+    },
+    {
+      "skill": "assess",
+      "mode": "projected",
+      "protocol": "skills/workbench/assess/references/delegation-protocol.md",
+      "owner": "Assess owns assessment depth, accepted findings, and the sealed assessment.md decision result.",
+      "lifecycle": "When another orchestrated handoff invokes Assess, it owns the independent assessment stage and assessment.md; the upstream owner retains merge and implementation authority.",
+      "workers": "Bounded read-only subagents may perform earned semantic falsification slices and return compact candidate findings or bounded-clear scope.",
+      "specialists": "A fresh-context reviewer is earned when the Assess owner wrote or planned the change in its current context; a consequential clear challenge is optional, earned, and limited to at most one fresh bounded adversarial pass; all Assess delegates together never exceed two per invocation.",
+      "writes": "Delegates are read-only; only Assess writes its ignored repository-local .first-four-hours/assessments/<slug>/assessment.md result.",
+      "rationale": "Assess can improve coverage and context economy through bounded candidate discovery, while final finding acceptance and result authority stay owner-owned."
+    },
+    {
+      "skill": "diagnose",
+      "mode": "projected",
+      "protocol": "skills/workbench/diagnose/references/delegation-protocol.md",
+      "owner": "Diagnose owns investigation scope, accepted findings, improvement evidence judgment, and the sealed diagnosis.md.",
+      "lifecycle": "When another orchestrated handoff invokes Diagnose, it owns the diagnosis stage and diagnosis.md.",
+      "workers": "Read-only evidence workers may inspect disjoint bounded surfaces or gather bounded measurement evidence.",
+      "specialists": "An earned Reason challenge may test one consequential provisional finding.",
+      "writes": "Workers receive no repository execution, write, publication, or persistence authority.",
+      "rationale": "Evidence collection is separable and cheaply re-verifiable; diagnosis decisions are not."
+    },
+    {
+      "skill": "ideate",
+      "mode": "projected",
+      "protocol": "skills/sensemaking/ideate/references/delegation-protocol.md",
+      "owner": "Ideate owns framing, synthesis, conclusions, and the sealed ideation.md.",
+      "lifecycle": "When Blueprint planning or another orchestrated handoff consults Ideate, Ideate owns ideation.md and the caller keeps its own decisions.",
+      "workers": "Bounded research may be delegated when it materially improves evidence breadth or context quality.",
+      "specialists": "An earned Reason challenge may test a consequential claim.",
+      "writes": "Research workers are read-only; Ideate alone writes ideation.md and its receipt.",
+      "rationale": "Research labor can be bounded independently while ideation judgments and synthesis remain owner-owned."
+    },
+    {
+      "skill": "reason",
+      "mode": "direct",
+      "owner": "Reason owns one temporary reasoning intervention and returns a defensible next move, bounded challenge result, or one question to the invoking owner.",
+      "lifecycle": "Reason restores decision readiness, challenges one consequential claim, or asks one irreducible user-owned question without taking the domain owner's task or artifact authority.",
+      "workers": "Reason may recommend delegation as an owner next move; it does not create a nested worker tree.",
+      "specialists": "Fresh isolated challenge may be used when proportionate, but no panel, voting, persona, or mandatory delegation framework is earned.",
+      "writes": "Reason is read-only, temporary, stateless, and artifact-free.",
+      "rationale": "Its bounded reasoning is the semantic task; splitting it into worker or public helper identities would blur blocker, challenge, question, and domain ownership."
+    },
+    {
+      "skill": "router",
+      "mode": "direct",
+      "owner": "Router owns the semantic choice of the smallest sufficient route of public capabilities and its sealed route.md.",
+      "lifecycle": "Router seals one route.md and returns control; it never invokes routed capabilities.",
+      "workers": "No worker seam is earned for one bounded route decision.",
+      "specialists": "No specialist branch is currently earned.",
+      "writes": "Router writes only the ignored .first-four-hours/routes/<slug>/route.md handoff and its local Git exclude rule.",
+      "rationale": "Delegation would add overhead to one short route decision."
+    },
+    {
+      "skill": "scribe",
+      "mode": "direct",
+      "owner": "Scribe owns source-grounded authoring or audit judgment and the final controlled document or audit.",
+      "lifecycle": "An invocation remains the documentation-stage owner under its operation and profile authority.",
+      "workers": "No worker seam is earned; source grounding and language decisions are tightly coupled.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Only an authorized write operation may modify documentation; audits remain read-only.",
+      "rationale": "Deterministic validators already own cheap mechanical checks, leaving no useful agent-worker seam."
+    },
+    {
+      "skill": "pr",
+      "mode": "direct",
+      "owner": "PR owns the description content, its mechanical check, and the confirmed publication.",
+      "lifecycle": "PR remains the description-and-publication owner when another workflow invokes it.",
+      "workers": "No worker seam is earned; reading the diff and its authority is the semantic task.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "PR writes only its draft and run log outside the repository and, after explicit confirmation, the GitHub pull request.",
+      "rationale": "The description depends on one coherent reading of the change; splitting it adds coordination without cheap verification."
+    },
+    {
+      "skill": "tutor",
+      "mode": "direct",
+      "owner": "Tutor owns the teaching, its judgment of the learner's demonstrated understanding, and its lesson records and learning sequence.",
+      "lifecycle": "Tutor remains the teaching owner when another skill or the learner hands it conceptual gaps.",
+      "workers": "No worker seam is earned; teaching adapts turn by turn to one learner's responses.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Tutor writes only under .learning/<subject>/ in the invocation folder, and only for continuing learning or an explicit request to keep something.",
+      "rationale": "Adaptive teaching depends on one continuous reading of the learner; splitting it adds coordination without cheap verification."
+    },
+    {
+      "skill": "examiner",
+      "mode": "direct",
+      "owner": "Examiner owns examination research, paper design and audit, marking and diagnosis, its practice sets, and the examination coverage section of the study plan.",
+      "lifecycle": "Examiner remains the examination-practice owner when a student brings an attempt or another skill names an examination goal.",
+      "workers": "No worker seam is earned; paper design, solving, and audit depend on one coherent reading of the examination's requirements.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Examiner writes only under .learning/<subject>/ in the invocation folder: practice sets under exams/<exam>/ and only its own sections of study-plan.html.",
+      "rationale": "Fidelity and audit depend on the same requirement reading that wrote the paper; splitting it adds coordination without cheap verification."
+    }
+  ]
+}

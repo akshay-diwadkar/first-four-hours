@@ -1,0 +1,115 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateless",
+  "skill": "assess",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {
+      "name": "output",
+      "kind": "path",
+      "path_policy": "future",
+      "required": true,
+      "repeatable": false,
+      "description": "Prepared .first-four-hours/assessments/<slug>/assessment.md inside the assessed repository; any other path is refused.",
+      "choices": [],
+      "accepted_for": ["run", "check"]
+    },
+    {
+      "name": "bundle",
+      "kind": "path",
+      "required": false,
+      "repeatable": false,
+      "description": "Temporary agent-authored Assess JSON bundle outside the installed skill and assessed repository.",
+      "choices": [],
+      "required_for": ["run"],
+      "accepted_for": ["run"]
+    },
+    {
+      "name": "slug",
+      "kind": "string",
+      "required": false,
+      "repeatable": false,
+      "description": "Human-readable assessment workspace slug for .first-four-hours/assessments/<slug>/assessment.md.",
+      "choices": [],
+      "required_for": ["prepare"],
+      "accepted_for": ["prepare"]
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "assessment_result",
+      "path": "{input.output}",
+      "media_type": "text/markdown",
+      "external": true
+    }
+  ],
+  "phases": {},
+  "commands": {
+    "prepare": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{repo_root}/.first-four-hours/assessments", "{repo_root}/.git/info/exclude"],
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/prepare_assessment_workspace.py",
+            "--repo-root",
+            "{repo_root}",
+            "--slug",
+            "{input.slug}"
+          ],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "run": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{input.output}"],
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/seal_assessment.py",
+            "--repo-root",
+            "{repo_root}",
+            "--bundle",
+            "{input.bundle}",
+            "--output",
+            "{input.output}"
+          ],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "check": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/check_assessment.py",
+            "--repo-root",
+            "{repo_root}",
+            "--output",
+            "{input.output}"
+          ],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    }
+  }
+}

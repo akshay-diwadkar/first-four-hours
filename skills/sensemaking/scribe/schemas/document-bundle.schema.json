@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Scribe document bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "profile", "glossary", "sources"],
+  "properties": {
+    "contract_version": {"type": "string"},
+    "profile": {"enum": ["strict", "standard"]},
+    "glossary": {"$ref": "glossary.schema.json"},
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "sha256", "authority"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^SRC-[1-9][0-9]*$"},
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "authority": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "required_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "claim", "source_ids"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^FACT-[1-9][0-9]*$"},
+          "claim": {"type": "string", "minLength": 1},
+          "source_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "section": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "integrity_literals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "literal", "source_ids"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^LIT-[1-9][0-9]*$"},
+          "kind": {"enum": ["command", "path", "value"]},
+          "literal": {"type": "string", "minLength": 1},
+          "source_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "section": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "procedures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "ordered_markers"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^PROC-[1-9][0-9]*$"},
+          "ordered_markers": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}},
+          "section": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "warning", "dangerous_action"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^WARN-[1-9][0-9]*$"},
+          "warning": {"type": "string", "minLength": 1},
+          "dangerous_action": {"type": "string", "minLength": 1},
+          "section": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "recovery_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "trigger", "step"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^REC-[1-9][0-9]*$"},
+          "trigger": {"type": "string", "minLength": 1},
+          "step": {"type": "string", "minLength": 1},
+          "section": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "marker"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^PRE-[1-9][0-9]*$"},
+          "marker": {"type": "string", "minLength": 1},
+          "section": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "condition", "required_markers"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^BR-[1-9][0-9]*$"},
+          "condition": {"type": "string", "minLength": 1},
+          "required_markers": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "section": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

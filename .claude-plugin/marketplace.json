@@ -1,0 +1,45 @@
+{
+  "name": "akshay-diwadkar-skills",
+  "owner": {
+    "name": "Akshay Diwadkar",
+    "url": "https://github.com/akshay-diwadkar"
+  },
+  "description": "Skills for repository-grounded project work and decision readiness, and for learning any subject.",
+  "plugins": [
+    {
+      "name": "workbench-skills",
+      "source": "./",
+      "description": "Skills for understanding, designing, planning, implementing, and auditing codebases.",
+      "skills": [
+        "./skills/workbench/architect",
+        "./skills/workbench/assess",
+        "./skills/workbench/atlas",
+        "./skills/workbench/blueprint",
+        "./skills/workbench/construct",
+        "./skills/workbench/diagnose",
+        "./skills/workbench/pr",
+        "./skills/workbench/ticket"
+      ]
+    },
+    {
+      "name": "sensemaking-skills",
+      "source": "./",
+      "description": "Skills for reasoning, exploration, communication, and coordination.",
+      "skills": [
+        "./skills/sensemaking/ideate",
+        "./skills/sensemaking/reason",
+        "./skills/sensemaking/router",
+        "./skills/sensemaking/scribe"
+      ]
+    },
+    {
+      "name": "learning-skills",
+      "source": "./",
+      "description": "Skills for building a person's own knowledge and ability in any subject.",
+      "skills": [
+        "./skills/learning/examiner",
+        "./skills/learning/tutor"
+      ]
+    }
+  ]
+}

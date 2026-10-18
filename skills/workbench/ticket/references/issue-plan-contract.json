@@ -1,0 +1,20 @@
+{
+  "wire": {"artifact": "ticket-scope.md", "kind": "issue"},
+  "statuses": ["plan-ready", "needs-info", "blocked", "close-candidate", "needs-decomposition"],
+  "readiness_states": ["ready", "blocked", "in-progress", "completed", "superseded", "unknown", "needs-decomposition"],
+  "question_reason_codes": ["selection-tie", "clarification"],
+  "allowed_sections": ["Observable outcome", "Current evidence", "Settled decisions", "Protected constraints", "Issue Claims (Untrusted)"],
+  "section_order": ["Observable outcome", "Current evidence", "Settled decisions", "Protected constraints", "Issue Claims (Untrusted)"],
+  "untrusted_section": "Issue Claims (Untrusted)",
+  "untrusted_fence": {
+    "begin": "<!-- ticket: untrusted-begin -->",
+    "end": "<!-- ticket: untrusted-end -->"
+  },
+  "placeholder_tokens": ["FILL_ME", "REPLACE_ME", "TBD", "TODO"],
+  "reserved_metadata": ["inputs", "source", "checkout"],
+  "snapshot_requirements": {
+    "content_trust": "untrusted-github-data",
+    "local_content_trust": "untrusted-local-data",
+    "mode": {"field": "metadata.mode", "values": ["single", "index"]}
+  }
+}

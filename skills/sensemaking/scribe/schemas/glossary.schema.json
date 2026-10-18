@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MTE-1 glossary",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["preferred", "forbidden"],
+        "properties": {
+          "preferred": {"type": "string", "minLength": 1},
+          "meaning": {"type": "string"},
+          "forbidden": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+        }
+      }
+    },
+    "abbreviations": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[A-Z][A-Z0-9-]{1,7}$"},
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "action_verbs": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]+$"}, "uniqueItems": true},
+    "phrasal_verbs": {"type": "array", "items": {"type": "string", "minLength": 3}, "uniqueItems": true},
+    "hazardous_actions": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]+$"}, "uniqueItems": true}
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateless",
+  "skill": "construct",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {"name": "blueprint_file", "kind": "path", "required": true, "repeatable": false, "description": "Exact sealed Blueprint .first-four-hours/blueprints/<task>/blueprint.md authority; its canonical request.md sibling is derived.", "choices": [], "required_for": ["apply", "prove", "reverify", "status", "verify"], "accepted_for": ["apply", "prove", "reverify", "status", "verify"]},
+    {"name": "phase", "kind": "choice", "required": true, "repeatable": false, "description": "Authored verification phase to execute: baseline entries before implementation, or after-implementation entries once every authored instruction is applied.", "choices": ["before", "after"], "required_for": ["verify"], "accepted_for": ["verify"]},
+    {"name": "from_line", "kind": "string", "required": false, "repeatable": false, "description": "Repair-only reverify selection: the exact source line of one authored After implementation Run; that Run and every later authored entry rerun in order.", "choices": [], "required_for": ["reverify"], "accepted_for": ["reverify"]},
+    {"name": "instruction", "kind": "string", "required": false, "repeatable": false, "description": "The authored ### N. instruction to apply or prove; on status, pair with its caller-held next unused attempt for the first pending or diverged instruction.", "choices": [], "required_for": ["apply", "prove"], "accepted_for": ["apply", "prove", "status"]},
+    {"name": "blocks", "kind": "choice", "required": false, "repeatable": false, "description": "Apply only this instruction's frozen or exact blocks; omitted applies Frozen then Exact, which a Red: instruction with Exact text refuses.", "choices": ["frozen", "exact"], "required_for": [], "accepted_for": ["apply"]},
+    {"name": "check", "kind": "choice", "required": false, "repeatable": false, "description": "red observes a declared regression failing before implementation; green proves the instruction's Exact/Frozen text and Proof run after it.", "choices": ["red", "green"], "required_for": ["prove"], "accepted_for": ["prove"]},
+    {"name": "attempt", "kind": "string", "required": false, "repeatable": false, "description": "Caller-held next unused green attempt, 1 to 3; red carries it without consuming it. Status accepts it only paired with instruction and never reconstructs history.", "choices": [], "required_for": ["prove"], "accepted_for": ["prove", "status"]}
+  ],
+  "artifacts": [],
+  "phases": {},
+  "commands": {
+    "verify": {"allowed_phases": [], "success_phase": null, "allowed_writes": [], "steps": [{"argv": ["{python}", "{skill_dir}/scripts/run_verification.py", "--repo-root", "{repo_root}", "--blueprint", "{input.blueprint_file}", "--phase", "{input.phase}"], "repeat": [], "capture_stdout": null, "diagnostics_json": true, "failure": "blocked"}]},
+    "reverify": {"allowed_phases": [], "success_phase": null, "allowed_writes": [], "steps": [{"argv": ["{python}", "{skill_dir}/scripts/run_verification.py", "--repo-root", "{repo_root}", "--blueprint", "{input.blueprint_file}", "--phase", "after", "--from-line", "{input.from_line}"], "repeat": [], "capture_stdout": null, "diagnostics_json": true, "failure": "blocked"}]},
+    "prove": {"allowed_phases": [], "success_phase": null, "allowed_writes": [], "steps": [{"argv": ["{python}", "{skill_dir}/scripts/run_verification.py", "--repo-root", "{repo_root}", "--blueprint", "{input.blueprint_file}", "--phase", "prove", "--instruction", "{input.instruction}", "--check", "{input.check}", "--attempt", "{input.attempt}"], "repeat": [], "capture_stdout": null, "diagnostics_json": true, "failure": "blocked"}]},
+    "status": {"allowed_phases": [], "success_phase": null, "allowed_writes": [], "steps": [{"argv": ["{python}", "{skill_dir}/scripts/run_verification.py", "--repo-root", "{repo_root}", "--blueprint", "{input.blueprint_file}", "--phase", "status"], "repeat": [{"input": "instruction", "flag": "--instruction"}, {"input": "attempt", "flag": "--attempt"}], "capture_stdout": null, "diagnostics_json": true, "failure": "blocked"}]},
+    "apply": {"allowed_phases": [], "success_phase": null, "allowed_writes": ["{repo_root}"], "steps": [{"argv": ["{python}", "{skill_dir}/scripts/run_verification.py", "--repo-root", "{repo_root}", "--blueprint", "{input.blueprint_file}", "--phase", "apply", "--instruction", "{input.instruction}"], "repeat": [{"input": "blocks", "flag": "--blocks"}], "capture_stdout": null, "diagnostics_json": true, "failure": "blocked"}]}
+  }
+}

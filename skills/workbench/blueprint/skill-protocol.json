@@ -1,0 +1,92 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateless",
+  "skill": "blueprint",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {
+      "name": "request_file",
+      "kind": "path",
+      "required": true,
+      "repeatable": false,
+      "description": "Existing absolute path to the frozen canonical .first-four-hours/blueprints/<task-slug>/request.md snapshot returned by workspace preparation.",
+      "choices": [],
+      "path_policy": "existing",
+      "required_for": ["check"],
+      "accepted_for": ["run", "check"]
+    },
+    {
+      "name": "draft_file",
+      "kind": "path",
+      "required": true,
+      "repeatable": false,
+      "description": "Existing absolute path to canonical plain blueprint.md for the run and check commands, sibling to request.md.",
+      "choices": [],
+      "path_policy": "existing",
+      "required_for": ["check"],
+      "accepted_for": ["run", "check"]
+    },
+    {
+      "name": "handoff_item",
+      "kind": "string",
+      "required": false,
+      "repeatable": true,
+      "description": "Selected diagnosis finding ID; rejected for every other request kind.",
+      "choices": [],
+      "accepted_for": ["run", "check"]
+    }
+  ],
+  "artifacts": [],
+  "phases": {},
+  "commands": {
+    "check": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/seal_blueprint.py",
+            "--repo-root",
+            "{repo_root}",
+            "--request-file",
+            "{input.request_file}",
+            "--draft",
+            "{input.draft_file}",
+            "--check"
+          ],
+          "repeat": [{"input":"handoff_item","flag":"--handoff-item"}],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "run": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{input.draft_file}"],
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/seal_blueprint.py",
+            "--repo-root",
+            "{repo_root}",
+            "--request-file",
+            "{input.request_file}",
+            "--draft",
+            "{input.draft_file}",
+            "--report-json"
+          ],
+          "repeat": [{"input":"handoff_item","flag":"--handoff-item"}],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Diagnose"
+  short_description: "Diagnose defects, risks, and causes from evidence"
+policy:
+  allow_implicit_invocation: false

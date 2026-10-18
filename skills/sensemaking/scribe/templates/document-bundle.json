@@ -1,0 +1,26 @@
+{
+  "contract_version": "1.0.0",
+  "profile": "standard",
+  "glossary": {
+    "terms": [],
+    "abbreviations": {},
+    "action_verbs": [],
+    "phrasal_verbs": [],
+    "hazardous_actions": []
+  },
+  "sources": [
+    {
+      "id": "SRC-1",
+      "path": "docs/source.md",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "authority": "Name the source owner or contract."
+    }
+  ],
+  "required_facts": [],
+  "integrity_literals": [],
+  "procedures": [],
+  "warnings": [],
+  "recovery_steps": [],
+  "prerequisites": [],
+  "branches": []
+}

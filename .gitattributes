@@ -1,0 +1,4 @@
+tests/skills/blueprint/fixtures/**/*.ts text eol=lf
+tests/skills/blueprint/fixtures/**/*.kt text eol=lf
+tests/skills/blueprint/fixtures/**/*.py text eol=lf
+tools/validation/cl100k_base.tiktoken binary

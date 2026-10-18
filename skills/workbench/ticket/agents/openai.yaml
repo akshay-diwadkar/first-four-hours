@@ -1,0 +1,5 @@
+interface:
+  display_name: "Ticket"
+  short_description: "Persist work items or select one for Blueprint planning"
+policy:
+  allow_implicit_invocation: false

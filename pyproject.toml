@@ -1,0 +1,36 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]
+"skills/*/*/scripts/*" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+explicit_package_bases = true
+mypy_path = ["tools/validation"]
+warn_unused_ignores = true
+strict_optional = true
+no_implicit_optional = true
+exclude = [
+  "tests/skills/blueprint/fixtures/",
+  "tests/skills/atlas/fixtures/",
+  "tests/skills/blueprint/evals/fixtures/",
+  "tests/skills/construct/evals/fixtures/",
+]
+
+[[tool.mypy.overrides]]
+module = ["playwright.*", "yaml", "yaml.*", "jsonschema", "jsonschema.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+pythonpath = ["."]
+testpaths = [
+  "tests",
+]

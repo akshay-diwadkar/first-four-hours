@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools" / "validation"))
+
+import validate_repository as validator  # noqa: E402
+from context_tokenizer import count_tokens  # noqa: E402
+from instruction_rules import INVENTORY, inventory_errors  # noqa: E402
+
+SKILL = "skills/workbench/blueprint"
+
+
+def _draft(*blocks: tuple[str, str, tuple[str, ...]]) -> str:
+    # One instruction whose Locations each carry an Exact block: a new file's
+    # whole text, or the replaced text then its replacement.
+    lines = ["# Budget probe", "", "## Implementation", "", "### 1. Edit guidance"]
+    for path, state, texts in blocks:
+        lines += ["", f"**Location:** `{path}`", f"**State:** {state}", "", f"**Exact:** `{path}`"]
+        for position, text in enumerate(texts):
+            lines += ["", "**With:**"] if position else []
+            lines += ["", "```text", text, "```"]
+    return "\n".join(lines) + "\n"
+
+
+def test_live_repository_metadata() -> None:
+    # Call the validator directly: one contained pytest process, with package,
+    # reference, protocol, projection, and guidance checks on every routine run.
+    assert validator.main() == 0
+    assert inventory_errors(json.loads(INVENTORY.read_text(encoding="utf-8"))) == []
+    # A draft's Exact blocks on agent-loaded guidance estimate measured minus
+    # replaced plus drafted tokens; a new reference adds its whole text, and an
+    # Exact block on any other path is not counted.
+    from measure_context_load import estimate_draft, measure
+
+    old, new, added = "Old guidance line.", "New guidance line with several more words.", "Probe reference text."
+    rows = estimate_draft(_draft(
+        (f"{SKILL}/SKILL.md", "existing", (old, new)),
+        (f"{SKILL}/references/budget-probe.md", "new", (added,)),
+        (f"{SKILL}/README.md", "existing", ("Unbudgeted line.", "Unbudgeted replacement that is not counted.")),
+    ))["skills"]
+    measured = measure(ROOT)["blueprint"]
+    assert set(rows) == {"blueprint"}
+    top, references = rows["blueprint"]["top_level"], rows["blueprint"]["references"]
+    assert top["delta"] == count_tokens(new + "\n") - count_tokens(old + "\n")
+    assert references["delta"] == count_tokens(added + "\n")
+    assert (top["spans"], references["spans"]) == (1, 1)
+    for metric, row in (("top_level", top), ("references", references)):
+        assert row["estimated"] == measured[metric] + row["delta"]
+        assert row["headroom"] == row["limit"] - row["estimated"]
+        assert row["fits"] is (row["headroom"] >= 4)
+    # An estimate over the limit does not fit, and a skill without a recorded
+    # budget is refused rather than skipped.
+    oversized = estimate_draft(_draft((f"{SKILL}/references/budget-probe.md", "new", ("budget " * 12000,))))
+    assert oversized["skills"]["blueprint"]["references"]["fits"] is False
+    with pytest.raises(ValueError):
+        estimate_draft(_draft(("skills/workbench/unbudgeted-probe/SKILL.md", "new", ("Probe.",))))

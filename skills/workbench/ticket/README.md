@@ -1,0 +1,5 @@
+# Ticket
+
+`ticket` is the sole public package for two effects on one explicit `github` or `local` backend: persisting one implementation ticket or one coordination epic from the current request or a supplied authoritative decision after explicit confirmation, and selecting and narrowing one explicitly supplied ticket or one eligible epic child through a bounded read-only graph. They compose, persist first, only when a request asks for both. The common guidance dispatches to [persist](references/persist.md) or [select](references/select.md), which each name one backend reference, without combining their protocol state or authority.
+
+A plan-ready `ticket-scope.md`, sealed in the locally ignored `.first-four-hours/ticket-scopes/<slug>/` namespace, is ticket-level authority for `blueprint`, which owns implementation planning; repository architecture context remains owned by `architect`. Terminal select results carry no artifact file. The local work-item store is committable backlog truth outside that namespace.

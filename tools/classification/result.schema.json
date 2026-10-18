@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/akshay-diwadkar/first-four-hours/tools/classification/result.schema.json",
+  "title": "Deterministic workflow classification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "recommendation",
+    "evidence",
+    "confidence",
+    "alternatives",
+    "override_requirements"
+  ],
+  "properties": {
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "values"],
+      "properties": {
+        "status": {
+          "enum": ["ready", "needs-product-input", "insufficient-evidence"]
+        },
+        "values": {"type": "object"}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source_kind", "path", "sha256", "observation", "supports"],
+        "properties": {
+          "id": {"type": "string"},
+          "source_kind": {"enum": ["request", "repository-source", "workflow-artifact"]},
+          "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "observation": {"type": "string"},
+          "supports": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "confidence": {"enum": ["high", "medium", "low"]},
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "value", "reason"],
+        "properties": {
+          "field": {"type": "string"},
+          "value": {},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "override_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "requirement"],
+        "properties": {
+          "field": {"type": "string"},
+          "requirement": {"type": "string"}
+        }
+      }
+    }
+  }
+}

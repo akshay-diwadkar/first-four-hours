@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "diagnosis_context": {
+    "target": "https://github.com/example/job-runner",
+    "snapshot": {
+      "kind": "filesystem",
+      "project_root": "/absolute/project"
+    },
+    "evidence_root": null,
+    "material_surfaces": [],
+    "limitations": [],
+    "ruled_out": [],
+    "open_probes": []
+  },
+  "findings": [
+    {
+      "id": "zero-retry-replaced",
+      "title": "Preserve an explicit zero retry count",
+      "summary": "The job runner replaces a caller's zero retry count with the configured default.",
+      "impact": "Jobs explicitly configured for no retries run additional attempts, delaying final failure and repeating side effects.",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "app/jobs.py",
+          "start_line": 18,
+          "end_line": 18,
+          "observation": "The truthiness fallback replaces an explicit zero retry count."
+        }
+      ],
+      "cause_or_boundary": "The runner uses truthiness instead of a null-only fallback for the retry count.",
+      "cause_status": "inferred"
+    }
+  ]
+}

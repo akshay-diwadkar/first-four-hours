@@ -1,0 +1,3 @@
+interface:
+  display_name: "Assess"
+  short_description: "Review a PR or code change against its requirements"

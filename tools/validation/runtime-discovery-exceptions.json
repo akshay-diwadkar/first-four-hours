@@ -1,0 +1,18 @@
+{
+  "approved": [
+    "skills/workbench/architect/scripts/architecture_handoff.py:git-ls-files",
+    "skills/workbench/architect/scripts/architecture_handoff.py:path.rglob",
+    "skills/workbench/architect/scripts/architecture_workspace.py:git-ls-files",
+    "skills/workbench/assess/scripts/assess_contract.py:git-ls-files",
+    "skills/workbench/blueprint/scripts/blueprint_runtime.py:git-ls-files",
+    "skills/workbench/blueprint/scripts/architecture_handoff.py:git-ls-files",
+    "skills/workbench/blueprint/scripts/architecture_handoff.py:path.rglob",
+    "skills/workbench/construct/scripts/blueprint_runtime.py:git-ls-files",
+    "skills/workbench/construct/scripts/run_verification.py:os.walk",
+    "skills/workbench/diagnose/scripts/diagnosis_workspace.py:git-ls-files",
+    "skills/workbench/ticket/scripts/scope_workspace.py:git-ls-files",
+    "skills/sensemaking/ideate/scripts/ideation_workspace.py:git-ls-files",
+    "skills/sensemaking/router/scripts/route_workspace.py:git-ls-files",
+    "skills/sensemaking/scribe/scripts/bundle_workspace.py:git-ls-files"
+  ]
+}

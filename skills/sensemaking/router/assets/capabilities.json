@@ -1,0 +1,71 @@
+{
+  "generated_by": "tools/validation/sync_router_manifest.py",
+  "capabilities": [
+    {
+      "name": "architect",
+      "invocation": "both",
+      "description": "Decide repository-grounded architecture before blueprint planning; use for boundary, dependency-direction, state ownership, abstraction, consolidation, module or class structure, subsystems, or no-targets."
+    },
+    {
+      "name": "assess",
+      "invocation": "both",
+      "description": "Assess a PR or code change against its issue/spec, acceptance criteria, repository rules, tests, and base behavior for correctness, code quality, maintainability, and proportionate security. Use for PR review, re-review, acceptance-criteria checks, or merge readiness."
+    },
+    {
+      "name": "atlas",
+      "invocation": "model-invoked",
+      "description": "Navigate, author, rebalance, validate, or maintain a project's filesystem-native Map/Landmark/Satellite orientation wiki over eligible project files. Use for unfamiliar project-folder orientation, initial mapping, a hierarchy defect, pointer upkeep, or a freshness drift audit; underlying project files remain truth and missing Atlas state never blocks normal work."
+    },
+    {
+      "name": "blueprint",
+      "invocation": "both",
+      "description": "Plan before editing: close user intent, ground repository facts, decide the implementation, and seal an implementation-complete `blueprint.md` a weak executor applies without engineering judgment. Use when a repository change should be planned before anyone implements it, including work Construct or another agent will build; skip execution."
+    },
+    {
+      "name": "construct",
+      "invocation": "both",
+      "description": "Implement an existing sealed `blueprint.md`; run its Verification; report completion, incomplete verification, or contradiction; skip planning-required work.",
+      "implicit_authority": "sealed-blueprint"
+    },
+    {
+      "name": "diagnose",
+      "invocation": "user-invoked",
+      "description": "Diagnose defects, risks, improvements, and non-apparent runtime causes; seal findings and limitations into diagnosis.md. Use when a concrete problem or improvement opportunity needs its cause investigated from evidence before anyone decides a fix."
+    },
+    {
+      "name": "examiner",
+      "invocation": "both",
+      "description": "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
+    },
+    {
+      "name": "ideate",
+      "invocation": "both",
+      "description": "Search possibilities across alternatives, causal paths, or composed forks for a researchable goal, then seal one state-appropriate ideation.md (decision-ready | experiment-first | research-limited). Invoke for researched, decision-oriented exploration or structured option generation; skip routine context gathering and casual quick-list brainstorming unless structured ideation is explicitly requested. Domain-neutral; repository context is optional."
+    },
+    {
+      "name": "pr",
+      "invocation": "user-invoked",
+      "description": "Write a grounded, reviewer-oriented pull request description for the current branch and open the PR only after explicit user confirmation. Use when a finished branch needs a PR; never merges."
+    },
+    {
+      "name": "reason",
+      "invocation": "both",
+      "description": "Consult at every judgment checkpoint: before committing to an approach, after a failure or direction change, and before presenting a result. Also unblocks decisions, challenges consequential claims, or asks irreducible user-owned questions. Skip only mechanical work with nothing left to judge."
+    },
+    {
+      "name": "scribe",
+      "invocation": "both",
+      "description": "Write source-grounded technical documentation such as runbooks, procedures, setup guides, notices, error messages, and reference pages, or audit an existing document read-only. Use when a document must faithfully carry supplied commands, paths, values, warnings, and recovery without invented facts."
+    },
+    {
+      "name": "ticket",
+      "invocation": "user-invoked",
+      "description": "Persist work items to GitHub or a local store, or select one ready ticket and narrow it into a Blueprint handoff. Use when a request spans several major changes that need session-sized, dependency-ordered tickets, or when choosing the next ready ticket to plan."
+    },
+    {
+      "name": "tutor",
+      "invocation": "both",
+      "description": "Teach any subject, technical or not: a direct explanation, interactive tutoring that checks understanding and adapts, or continuing learning with a realistic study plan and self-contained HTML lesson records under `.learning/`. Use when someone wants to learn, understand, practise, or be taught something; skip explanations incidental to other work."
+    }
+  ]
+}

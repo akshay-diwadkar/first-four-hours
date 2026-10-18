@@ -38,7 +38,7 @@ These are ordinary files you may commit. Delivered teaching is never recorded as
 
 ## When it stops
 
-Each session ends by separating what was taught from what you demonstrated, what remains unresolved, and the next step. Tutor promises no automatic reminders.
+An explanation ends when it answers your question. A tutoring or continuing-learning session ends by separating what was taught from what you demonstrated, what remains unresolved, and the next step. Tutor promises no automatic reminders.
 
 ## Related skills
 

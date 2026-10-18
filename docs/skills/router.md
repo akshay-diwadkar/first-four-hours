@@ -26,7 +26,7 @@ Router reads the current state, drops work that is already done, and lists only 
 
 ## What you get
 
-A sealed `route.md` in the ignored folder `.first-four-hours/routes/<slug>/`. Each step names a skill, why it is needed now, its input, its expected result, and a ready-to-copy prompt. When the current state already meets the target, the route is a single `None:` line instead. Router ends by offering step 1's prompt.
+A sealed `route.md` in the ignored folder `.first-four-hours/routes/<slug>/`. Each step names a skill, why it is needed now, its input, its expected result, and a ready-to-copy prompt. When the current state already meets the target, the route is a single `None:` line instead. Router ends by offering step 1's prompt, or no next step for a `None:` route.
 
 ## When it stops
 

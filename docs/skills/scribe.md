@@ -29,7 +29,7 @@ Scribe works out the audience and the reader's job from your request and sources
 - Write: `document.md`, the deliverable, kept where you want it and committable. Its support bundle, `document-bundle.json`, lives in the ignored folder `.first-four-hours/document-bundles/<slug>/`.
 - Audit: the document's hash and every finding. An audit never modifies the document, its bundle, or its sources.
 
-A passing check means the document is grounded in and consistent with its sources, not that the sources are correct.
+A passing check shows only that the facts the bundle binds, such as commands, paths, values, warnings, and recovery steps, still match their sources and the document. It does not prove that the sources are correct or that they support every claim; that judgment stays with the agent.
 
 ## When it stops
 

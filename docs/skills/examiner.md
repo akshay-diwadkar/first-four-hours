@@ -28,7 +28,7 @@ Examiner researches the official syllabus, examination scheme, specimen and past
 
 One practice set per folder, under `.learning/<subject>/exams/<exam>/<YYYY-MM-DD>-<practice-kind>-<NN>/` in the folder where you started Examiner: the paper, a separate answer key that explains every question, the marking scheme where the examination uses one, and source notes. Answers are not revealed in the reply unless you ask. Attempts and their marking are added to the same set and never overwrite earlier files. These are ordinary files you may commit.
 
-Marking is optional. When you ask for it, Examiner explains each deduction against the scheme, diagnoses only gaps your attempt shows, and offers follow-up practice. When you ask for a plan, it keeps the examination section of the subject's shared `study-plan.html`.
+Marking is optional. When you ask for it, Examiner explains each deduction against the scheme, diagnoses only gaps your attempt shows, and offers follow-up practice. Examiner creates a study plan, or adds an examination section to an existing one, only when you ask for a plan, a schedule, or longer-term preparation. When the subject's shared `study-plan.html` already has an examination section, Examiner keeps it current: it links each new set and updates coverage and results from marked attempts.
 
 ## When it stops
 

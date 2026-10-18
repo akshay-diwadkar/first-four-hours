@@ -372,7 +372,7 @@ CONTRACT_VERSION_DECLARATIONS = (
     ("skills/sensemaking/scribe/templates/document-bundle.json", r'^  "contract_version": "([^"]+)",$', "sensemaking/scribe", "exact"),
 )
 
-# Blueprint sealed-contract authority (#464): the HEAD-divergence runtime
+# Blueprint sealed-contract authority (akshay-diwadkar/skills#464): the HEAD-divergence runtime
 # machinery is retired. These exact identifiers must not reappear in
 # Blueprint's active package surfaces; tests are deliberately not scanned so
 # regression tests can name retired behavior as rejection evidence.

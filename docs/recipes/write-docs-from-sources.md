@@ -35,7 +35,7 @@ The file names are placeholders for your own.
 
 ## You are done when
 
-`document.md` is where you wanted it, every gap is recorded with its next owner, and its check passes. A passing check shows that the facts it binds match the sources, not that the sources are correct.
+`document.md` is where you wanted it, its check passes, and no material reader job is left unsupported. A recorded gap means the document is not done yet: its next owner closes it, then write again. A passing check shows that the facts it binds match the sources, not that the sources are correct.
 
 ## If it goes wrong
 

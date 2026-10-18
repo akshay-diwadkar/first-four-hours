@@ -40,7 +40,7 @@ For example (illustrative):
 
 ## You are done when
 
-For a session: its one ticket is implemented, Construct's verification passed, and the change is reviewed. For the whole request: `select` finds no ticket left to do. Closing tickets is your decision.
+For a session: its one ticket is implemented, Construct's verification passed, and the change is reviewed. For the whole request: no ticket in it is still open. When `select` finds no ready ticket while some are still open, none of them is ready yet (for example, blocked, waiting on your decision, or in progress), and the request is not done. Closing tickets is your decision.
 
 ## If it goes wrong
 

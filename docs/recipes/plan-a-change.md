@@ -43,7 +43,7 @@ Construct's report shows every instruction applied, the plan's verification pass
 
 ## If it goes wrong
 
-- Blueprint will not seal: it is waiting on a question only you can answer, so answer it ([Blueprint](../skills/blueprint.md)).
+- Blueprint will not seal: it is waiting on a question only you can answer, it is reporting a research limit for the direction the plan needs, or no separate subagent could run its challenge. Answer the question, decide what to do about the limit it reports, or run it where a subagent is available ([Blueprint](../skills/blueprint.md)).
 - Construct stops with `plan-contradiction`: run a new `/blueprint` with the original request and Construct's evidence, then a fresh `/construct`. Never patch the plan ([Construct](../skills/construct.md)).
 - Construct reports `verification-incomplete`: run it again when the environment is healthy. An incomplete check is never a pass ([Construct](../skills/construct.md)).
 - Construct stops any other way: follow the table on [Construct](../skills/construct.md).

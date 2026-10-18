@@ -10,7 +10,7 @@ Large work spread over several sessions loses the thread: each session rediscove
 ## Use something else when
 
 - The change fits one session: [Plan a change before your agent starts editing](plan-a-change.md).
-- You do not know which skills the work needs: [Find the next step when work spans several skills](route-work-across-skills.md).
+- You do not know which skills the work needs: [Find the next step when work spans several skills](find-the-next-skill.md).
 
 ## Steps
 

@@ -1,4 +1,4 @@
-<img alt="Skills For People Like Me" src="assets/first-four-hours-banner-cinematic.png">
+<img alt="First Four Hours — Skills for AI agents. Sharpen the axe first." src="assets/first-four-hours-banner.png">
 
 # Skills For People Like Me
 

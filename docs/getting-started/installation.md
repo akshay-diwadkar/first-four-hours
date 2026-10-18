@@ -25,7 +25,7 @@ If you are unsure what you need, install the whole suite: some skills bring in o
 npx skills add akshay-diwadkar/first-four-hours --skill blueprint
 ```
 
-Replace `blueprint` with the name of the skill you want. For planning, install `blueprint` and `construct` together with `ideate` and `reason`, which Blueprint uses while it plans. Construct needs no other skill.
+Replace `blueprint` with the name of the skill you want. For planning, install `blueprint` and `construct` together with `ideate`, which Blueprint uses while it plans, and `reason`, which Ideate consults. Construct needs no other skill.
 
 ## Choose the agent and where skills go
 

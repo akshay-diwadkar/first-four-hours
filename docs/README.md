@@ -18,6 +18,10 @@ These pages are for people who use First Four Hours. The skills themselves are i
 - [Skills](skills/README.md): one page per skill, grouped by domain: what it is for, how to start it, what it produces, and where it stops.
 - [How skills hand work to each other](concepts/handoffs.md): the real handoffs between skills, where they are stored, and who starts the next step.
 
+## Solve a recurring problem
+
+- [Recipes](recipes/README.md): start from a problem you keep losing time to, such as a fix that only patches the symptom or a plan reopened halfway through editing, and see which skills deal with it.
+
 ## Other sources
 
 - The [repository README](../README.md) lists every skill by domain and shows how to install them.

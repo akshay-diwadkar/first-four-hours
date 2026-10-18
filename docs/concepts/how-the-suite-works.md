@@ -23,7 +23,7 @@ When the next step is unclear, or the work spans several skills, `router` lays o
 
 Skills hand work to each other through files, not through your conversation history. A skill that hands work on writes it to its own folder under `.first-four-hours/` at the repository root, which Git ignores, so a later agent or session can pick it up. Deliverables you asked for stay in your project as ordinary files: for example, a document from `scribe`, or the Learning skills' lesson records and practice papers under `.learning/`.
 
-Starting a separate skill on a handoff is your decision: a handoff makes the next step possible, but never starts it. Some skills do bring in another skill within their own run, as their contract describes. For example, `blueprint` may ask `ideate` for options while planning, and the direction remains your choice; several skills also consult `reason` at judgment points.
+Starting a separate skill on a handoff is your decision: a handoff makes the next step possible, but never starts it. Some skills do bring in another skill within their own run, as their contract describes. For example, `blueprint` may ask `ideate` for options while planning, and the direction remains your choice; several skills also consult `reason` at judgment points. [How skills hand work to each other](handoffs.md) describes each real handoff.
 
 ## How the suite is organized
 
@@ -35,7 +35,7 @@ Every skill belongs to one of three domains. The domains help you understand the
 | Sensemaking | Getting ready to decide: reasoning, exploring options, writing technical documents, and coordinating which skill comes next. |
 | Learning | Building a person's own knowledge and ability in any subject, technical or not. |
 
-Domains are not a pipeline, and they do not decide routing: `router` works with the individual skills. A skill's folder, `skills/<domain>/<skill>/`, records its domain. The [repository README](../../README.md) lists current membership.
+Domains are not a pipeline, and they do not decide routing: `router` works with the individual skills. A skill's folder, `skills/<domain>/<skill>/`, records its domain. The [skill index](../skills/README.md) and the [repository README](../../README.md) list current membership.
 
 ## Where the truth lives
 

@@ -30,6 +30,10 @@ These pages are for people who use First Four Hours. The skills themselves are i
 
 - [Troubleshooting](troubleshooting/README.md): find the symptom you see, its likely cause, a check that changes nothing, and the next step.
 
+## Contribute
+
+- [Contributor guide](contributing/README.md): change the suite, validate the affected behavior, and maintain packages, releases, and documentation.
+
 ## Other sources
 
 - The [repository README](../README.md) lists every skill by domain and shows how to install them.

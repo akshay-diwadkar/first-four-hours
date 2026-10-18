@@ -8,8 +8,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "validation"))
 
 import validate_repository as validator  # noqa: E402
+import sync_skill_catalog as catalog  # noqa: E402
 
-def test_link_validation_rejects_broken_skill_and_atlas_wiki_links(
+def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.setattr(validator, "ROOT", tmp_path)
@@ -44,3 +45,36 @@ def test_link_validation_rejects_broken_skill_and_atlas_wiki_links(
     errors = validator.validate_atlas_wiki()
     assert len(errors) == 1
     assert errors[0].startswith("Atlas wiki structure: map.link_broken: ")
+
+    # Links in the user documentation must resolve too.
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "README.md").write_text("[Skills](skills/README.md)\n", encoding="utf-8")
+    errors = validator.validate_documentation_links()
+    assert len(errors) == 1
+    assert "does not exist: skills/README.md" in errors[0]
+
+    # Documentation names only declared handoff folders and active skill paths,
+    # and the handoff page names every declared folder.
+    errors = catalog.validate_documented_paths(
+        {
+            "docs/concepts/handoffs.md": "`.first-four-hours/routes/<slug>/route.md`\n",
+            "docs/README.md": "See `.first-four-hours/reviews/` and `skills/workbench/router/SKILL.md`, not `tests/skills/router/x`.\n",
+        },
+        {"routes", "diagnoses"},
+        {"skills/sensemaking/router"},
+        "docs/concepts/handoffs.md",
+    )
+    assert sorted(errors) == [
+        "docs/README.md: names .first-four-hours/reviews/, which no skill script declares",
+        "docs/README.md: names skills/workbench/router, which is not an active skill folder",
+        "docs/concepts/handoffs.md: missing the handoff folder .first-four-hours/diagnoses/",
+    ]
+
+    # The generated skill facts table must match its sources exactly.
+    page = f"# Reference\n\n{catalog.TABLE_BEGIN}\n| old |\n{catalog.TABLE_END}\n"
+    assert catalog.generated_block_errors(page, "| old |\n", "docs/reference/README.md") == []
+    assert catalog.generated_block_errors(page, "| new |\n", "docs/reference/README.md") == [
+        "docs/reference/README.md: skill facts table is stale; run python tools/validation/sync_skill_catalog.py --write"
+    ]
+    assert catalog.replace_generated_block(page, "| new |\n") == page.replace("| old |", "| new |")
+    assert catalog.generated_block_errors("# Reference\n", "| new |\n", "docs/reference/README.md") != []

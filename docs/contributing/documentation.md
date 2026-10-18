@@ -25,13 +25,14 @@ Take names, commands, artifacts, file paths, invocation modes, and behavior from
 - a skill's `SKILL.md` and `references/` own its behavior;
 - [the skill design philosophy](../../SKILL_PHILOSOPHY.md) owns the design doctrine;
 - [the versioning and validation policy](../../REPO_VERSIONING.md) owns versions, tests, and validation;
-- the skill folders under `skills/<domain>/<skill>/` own the list of skills and their domains. Repository validation fails when the [repository README](../../README.md) catalog or the [skill index](../skills/README.md) is missing a skill, when a skill has no page in `skills/`, or when a page in `skills/` has no skill. Do not keep another list of all skills or their domains in these pages.
+- the skill folders under `skills/<domain>/<skill>/` own the list of skills and their domains. Repository validation fails when the [repository README](../../README.md) catalog or the [skill index](../skills/README.md) is missing a skill, when a skill has no page in `skills/`, or when a page in `skills/` has no skill. The skill facts table in [the reference](../reference/README.md) is generated: change its sources and run `python tools/validation/sync_skill_catalog.py --write` instead of editing it. Do not keep another list of all skills or their domains in these pages;
+- the skill scripts own the handoff folders under `.first-four-hours/`. Repository validation fails when a page names a folder no skill script declares, when [How skills hand work to each other](../concepts/handoffs.md) is missing a declared folder, when a page names a `skills/<domain>/<skill>` path that is not an active skill, or when a local link in these pages or the repository README does not resolve.
 
 Do not copy whole contracts, reasoning protocols, schemas, branch rules, or test-runner internals into these pages. Do not document retired skills, old names, or removed behavior; Git history keeps them.
 
 ## Validation and testing
 
-Explain repository validation and testing only in `contributing/` or `reference/`, and link to [the versioning and validation policy](../../REPO_VERSIONING.md) instead of restating its limits. Skill, recipe, and getting-started pages link there when they need to mention it.
+Explain repository validation and testing only in `contributing/`, `reference/`, or `troubleshooting/`, and link to [the versioning and validation policy](../../REPO_VERSIONING.md) instead of restating its limits. Skill, recipe, and getting-started pages link there when they need to mention it.
 
 ## Conventions
 

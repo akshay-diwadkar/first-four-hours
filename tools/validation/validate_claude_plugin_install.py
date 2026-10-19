@@ -106,5 +106,5 @@ def validate_plugin_install() -> tuple[int, int]:
 def main() -> int:
     argparse.ArgumentParser(description=__doc__).parse_args()
     plugins, skills = validate_plugin_install()
-    print(f"Claude Code plugin installation passed for {plugins} plugins and {skills} skills.")
+    print(f"Claude Code plugin installation passed for {plugins} plugin and {skills} skills.")
     return 0

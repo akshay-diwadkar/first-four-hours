@@ -13,20 +13,9 @@ import validate_repository as repository_validator
 ANSI_ESCAPE_RE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))")
 def expected_groups() -> dict[str, set[str]]:
     return {
-        "Workbench Skills": {
+        "First Four Hours": {
             skill.name
             for skill in repository_validator.discover_skills()
-            if skill.parent.name == "workbench"
-        },
-        "Sensemaking Skills": {
-            skill.name
-            for skill in repository_validator.discover_skills()
-            if skill.parent.name == "sensemaking"
-        },
-        "Learning Skills": {
-            skill.name
-            for skill in repository_validator.discover_skills()
-            if skill.parent.name == "learning"
         },
     }
 
@@ -54,7 +43,7 @@ def validate_output(text: str) -> list[str]:
     if not any(f"Found {expected_skill_count} skills" in line for line in lines):
         errors.append(f"npx output must report exactly {expected_skill_count} discovered skills")
 
-    forbidden_groups = {"General", "Other", "Others"}
+    forbidden_groups = {"General", "Other", "Others", "Workbench Skills", "Sensemaking Skills", "Learning Skills"}
     present_forbidden = forbidden_groups.intersection(lines)
     if present_forbidden:
         errors.append(f"npx output contains fallback groups: {sorted(present_forbidden)}")

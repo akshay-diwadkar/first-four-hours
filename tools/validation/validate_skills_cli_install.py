@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the collection and each skill through the pinned Skills CLI."""
+"""Check this checkout's Skills CLI listing and isolated Diagnose install, plus collection installs for selected roots."""
 
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ import tempfile
 from pathlib import Path
 
 import validate_repository as repository_validator
+import validate_npx_output
 from validation_budget import run_capture
 
 CLI_VERSION = repository_validator.SKILLS_CLI_VERSION
@@ -102,11 +103,29 @@ def validate_installs(repo_root: Path, agent: str) -> None:
     registry = json.loads((repo_root / "invocation-policy.json").read_text(encoding="utf-8"))
     modes = registry["skills"]
     names = set(modes)
+    canonical_root = repo_root.resolve() == repository_validator.ROOT
     with tempfile.TemporaryDirectory(prefix=f"skills-install-{agent}-") as temporary:
         root = Path(temporary)
         complete = root / "complete"
+        if canonical_root:
+            env = os.environ.copy()
+            env.update({"DISABLE_TELEMETRY": "1", "FORCE_COLOR": "0", "NO_COLOR": "1"})
+            listing = run_capture(
+                [npx, "--yes", f"skills@{CLI_VERSION}", "add", str(repo_root), "--list"],
+                cwd=root,
+                env=env,
+            )
+            if listing.returncode:
+                raise RuntimeError((listing.stdout + listing.stderr).decode("utf-8", errors="replace"))
+            errors = validate_npx_output.validate_output(listing.stdout.decode("utf-8", errors="replace"))
+            if errors:
+                raise AssertionError(f"invalid Skills CLI listing: {errors}")
         _run_install(npx, repo_root, complete, agent, "*")
         _assert_install(repo_root, complete, agent, names, modes)
+        if canonical_root:
+            single = root / "single"
+            _run_install(npx, repo_root, single, agent, "diagnose")
+            _assert_install(repo_root, single, agent, {"diagnose"}, modes)
 
 
 
@@ -117,5 +136,8 @@ def main() -> int:
     args = parser.parse_args()
     repo_root = args.repo_root.resolve()
     validate_installs(repo_root, args.agent)
-    print(f"Skills CLI {CLI_VERSION} installation passed for {args.agent}.")
+    if repo_root == repository_validator.ROOT:
+        print(f"Skills CLI {CLI_VERSION} listing and installation passed for {args.agent}.")
+    else:
+        print(f"Skills CLI {CLI_VERSION} installation passed for {args.agent}.")
     return 0

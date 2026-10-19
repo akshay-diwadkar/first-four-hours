@@ -1064,12 +1064,10 @@ def validate_marketplace() -> list[str]:
                 errors.append(f".claude-plugin/marketplace.json: missing {skill_path}/SKILL.md")
 
     expected_groups = {
-        f"{domain}-skills": {
+        "first-four-hours": {
             f"./skills/{skill.parent.name}/{skill.name}"
             for skill in discover_skills()
-            if skill.parent.name == domain
         }
-        for domain in sorted(EXPECTED_DOMAINS)
     }
     if set(actual_groups) != set(expected_groups):
         errors.append(
@@ -1081,7 +1079,7 @@ def validate_marketplace() -> list[str]:
     if len(all_paths) != len(set(all_paths)):
         errors.append(".claude-plugin/marketplace.json: skill paths must belong to only one group")
     if (ROOT / ".claude-plugin" / "plugin.json").exists():
-        errors.append(".claude-plugin/plugin.json must remain absent to preserve the domain installer groups")
+        errors.append(".claude-plugin/plugin.json must remain absent; marketplace.json owns plugin metadata")
     for manifest_name in ("skill.yaml", "skill.yml", "skill.json"):
         if (ROOT / manifest_name).exists():
             errors.append(f"{manifest_name} is unsupported and must remain absent")

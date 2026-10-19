@@ -24,12 +24,10 @@ You need Node.js for `npx`, Python 3.11 or later, and a coding agent that loads 
 npx skills add akshay-diwadkar/first-four-hours --skill '*'
 ```
 
-On Claude Code 2.1.275 or later, you can instead install the suite as three plugins, one per domain. Run these in a Claude Code session:
+On Claude Code 2.1.275 or later, you can instead install the whole suite as the `first-four-hours` plugin. Run this in a Claude Code session:
 
 ```text
-/plugin install workbench-skills --marketplace akshay-diwadkar/first-four-hours
-/plugin install sensemaking-skills --marketplace akshay-diwadkar/first-four-hours
-/plugin install learning-skills --marketplace akshay-diwadkar/first-four-hours
+/plugin install first-four-hours --marketplace akshay-diwadkar/first-four-hours
 ```
 
 [Install First Four Hours](docs/getting-started/installation.md) covers installing one skill, choosing the agent, installing for every project, the plugin skill names, and checking that the install worked.

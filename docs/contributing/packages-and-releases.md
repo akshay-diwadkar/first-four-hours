@@ -42,9 +42,9 @@ Blueprint and Construct also share paired `scripts/blueprint_runtime.py` files w
 
 ## Check distribution when it changes
 
-The [repository validator](../../tools/validation/validate_repository.py) checks package metadata and projection consistency. The [Skills CLI installation check](../../tools/validation/validate_skills_cli_install.py) installs the collection for a selected agent, compares each installed package's files with source, and validates its invocation metadata.
+The [repository validator](../../tools/validation/validate_repository.py) checks package metadata and projection consistency. The [Skills CLI installation check](../../tools/validation/validate_skills_cli_install.py) compares installed package files and invocation metadata with source for a selected agent.
 
-This command exercises collection selection with `--skill '*'`. It does not exercise isolated `--skill <name>` installations, so a passing result establishes collection-install coverage only:
+From this checkout, the command below also checks that the listing has one `First Four Hours` group with every canonical skill name, installs the collection with `--skill '*'`, and installs Diagnose alone with `--skill diagnose`. It does not exercise every isolated skill or every agent. When `--repo-root` selects another directory, the command retains collection-only coverage and reports that narrower result:
 
 ```bash
 python tools/validation/validate_skills_cli_install.py --agent codex
@@ -52,9 +52,17 @@ python tools/validation/validate_skills_cli_install.py --agent codex
 
 This is an affected-agent example. The other accepted agents are `claude-code` and `github-copilot`. Run the check for the affected agent when package distribution changes, following the [policy](../../REPO_VERSIONING.md).
 
-The check requires Node, `npx`, and network access. It uses the Skills CLI version pinned by the repository validator, installs into temporary consumer directories, compares installed copies and policy metadata, and cleans up. Keep that pin in its source rather than maintain another version table. Report unavailable or incomplete installation proof as incomplete.
+The check requires Node and `npx`, plus the cached pinned Skills CLI or registry access. It uses the version pinned by the repository validator, installs into temporary consumer directories, compares installed copies and policy metadata, and cleans up. Keep that pin in its source rather than maintain another version table. Report unavailable or incomplete installation proof as incomplete.
 
-Routine human-documentation changes do not need a network installation check. The installer verifies the Skills CLI surface for the selected agent; native Claude Code plugin completion remains separate work and must not be claimed from these checks or inferred from marketplace metadata.
+Routine human-documentation changes do not need a network installation check. The Skills CLI check verifies only the Skills CLI surface for the selected agent; it says nothing about the Claude Code plugin.
+
+The [Claude Code plugin installation check](../../tools/validation/validate_claude_plugin_install.py) copies the files a commit of this checkout would publish (tracked and untracked files that Git does not ignore) into a temporary marketplace, runs `claude plugin validate --strict` on it, installs its single plugin into a temporary Claude Code configuration, confirms that Claude Code lists only `first-four-hours@first-four-hours` as enabled and discovers every canonical skill, compares each installed skill's files with source, and validates its invocation metadata. It needs the `claude` CLI, never touches your own Claude Code configuration, and removes its temporary configuration. Run it when the marketplace, plugin packaging, or skill membership changes:
+
+```bash
+python tools/validation/validate_claude_plugin_install.py
+```
+
+It installs from a copy of the local checkout, not from GitHub. After a merge that changes plugin packaging, install from `akshay-diwadkar/first-four-hours` as the [installation guide](../getting-started/installation.md) shows.
 
 ## Apply versions to the final diff
 
@@ -72,4 +80,4 @@ The current First Four Hours baseline holds repository, skill, and owned contrac
 
 Use the maintained release rule to turn the entries under Unreleased in [CHANGELOG.md](../../CHANGELOG.md) into a repository release. Update [VERSION](../../VERSION), publish the dated changelog section, retain a new Unreleased section, tag the release, and reuse its changelog entry for the release notes. The [versioning authority](../../REPO_VERSIONING.md) supplies the values, ordering, and first-baseline exception. The README's release badge reads the latest GitHub release and has no version to edit.
 
-These are maintainer actions; no automated release pipeline or workflow file is promised. Complete required [validation](validation.md), the installation checks earned by affected distribution, and human review before declaring readiness. Keep native Claude plugin work with its owning change and update documentation when that behavior ships. Never merge a pull request.
+These are maintainer actions; no automated release pipeline or workflow file is promised. Complete required [validation](validation.md), the installation checks earned by affected distribution, including the Claude Code plugin check when plugin packaging changes, and human review before declaring readiness. Never merge a pull request.

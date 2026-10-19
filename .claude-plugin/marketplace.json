@@ -1,5 +1,5 @@
 {
-  "name": "akshay-diwadkar-skills",
+  "name": "first-four-hours",
   "owner": {
     "name": "Akshay Diwadkar",
     "url": "https://github.com/akshay-diwadkar"
@@ -7,9 +7,9 @@
   "description": "Skills for repository-grounded project work and decision readiness, and for learning any subject.",
   "plugins": [
     {
-      "name": "workbench-skills",
+      "name": "first-four-hours",
       "source": "./",
-      "description": "Skills for understanding, designing, planning, implementing, and auditing codebases.",
+      "description": "Skills for repository-grounded project work and decision readiness, and for learning any subject.",
       "skills": [
         "./skills/workbench/architect",
         "./skills/workbench/assess",
@@ -18,25 +18,11 @@
         "./skills/workbench/construct",
         "./skills/workbench/diagnose",
         "./skills/workbench/pr",
-        "./skills/workbench/ticket"
-      ]
-    },
-    {
-      "name": "sensemaking-skills",
-      "source": "./",
-      "description": "Skills for reasoning, exploration, communication, and coordination.",
-      "skills": [
+        "./skills/workbench/ticket",
         "./skills/sensemaking/ideate",
         "./skills/sensemaking/reason",
         "./skills/sensemaking/router",
-        "./skills/sensemaking/scribe"
-      ]
-    },
-    {
-      "name": "learning-skills",
-      "source": "./",
-      "description": "Skills for building a person's own knowledge and ability in any subject.",
-      "skills": [
+        "./skills/sensemaking/scribe",
         "./skills/learning/examiner",
         "./skills/learning/tutor"
       ]

@@ -152,8 +152,9 @@ python tools/validation/run_mypy.py --test <tests/path.py>
 python tools/validation/run_mypy.py --path <source.py>
 python tools/validation/run_mypy.py --repository-tooling
 python tools/validation/validate_skills_cli_install.py --agent <agent>
+python tools/validation/validate_claude_plugin_install.py
 ```
 
-The mypy command requires an explicit positive scope. Installation uses `npx` and registry access. After a repair, rerun only the invalidated authored command and report the scope it checked. Do not invoke global pytest discovery as another required suite.
+The mypy command requires an explicit positive scope. The Skills CLI installation check uses `npx` and registry access. The Claude Code plugin installation check needs the `claude` CLI and installs into a temporary Claude Code configuration. After a repair, rerun only the invalidated authored command and report the scope it checked. Do not invoke global pytest discovery as another required suite.
 
-Before declaring repository readiness, install release requirements and run the required command above. Run repository validation when repository metadata, package rules, release inputs, or sync contracts change. Run collection installation for an agent when package distribution changes. No skill version bump is required for repository-only tests, validators, documentation, or release dependency changes unless the distributed package or behavior changes.
+Before declaring repository readiness, install release requirements and run the required command above. Run repository validation when repository metadata, package rules, release inputs, or sync contracts change. Run collection installation for an agent when package distribution changes, and the Claude Code plugin installation check when the marketplace, plugin grouping, or skill membership changes. No skill version bump is required for repository-only tests, validators, documentation, or release dependency changes unless the distributed package or behavior changes.

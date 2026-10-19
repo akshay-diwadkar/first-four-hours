@@ -24,16 +24,20 @@ DOCUMENTED_FOLDER_RE = re.compile(r"\.first-four-hours/([a-z][a-z0-9-]*)")
 DOCUMENTED_SKILL_RE = re.compile(r"(?<![\w./-])skills/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)")
 
 
-def groups() -> dict[str, list[str]]:
+def domain_groups() -> dict[str, list[str]]:
     discovered = repository_validator.discover_skills()
     return {
-        f"{domain}-skills": [
+        domain: [
             f"./skills/{skill.parent.name}/{skill.name}"
             for skill in discovered
             if skill.parent.name == domain
         ]
         for domain in ("workbench", "sensemaking", "learning")
     }
+
+
+def groups() -> dict[str, list[str]]:
+    return {"first-four-hours": [path for paths in domain_groups().values() for path in paths]}
 
 
 def _projected_marketplace(payload: dict[str, object]) -> dict[str, object]:
@@ -44,17 +48,14 @@ def _projected_marketplace(payload: dict[str, object]) -> dict[str, object]:
         for plugin in raw_plugins
         if isinstance(plugin, dict) and isinstance(plugin.get("name"), str)
     }
-    descriptions = {
-        "workbench-skills": "Skills for understanding, designing, planning, implementing, and auditing codebases.",
-        "sensemaking-skills": "Skills for reasoning, exploration, communication, and coordination.",
-        "learning-skills": "Skills for building a person's own knowledge and ability in any subject.",
-    }
+    description = "Skills for repository-grounded project work and decision readiness, and for learning any subject."
     plugins: list[dict[str, object]] = []
     for name, paths in groups().items():
         base = dict(existing.get(name, {}))
-        base.update({"name": name, "source": "./", "description": descriptions[name], "skills": paths})
+        base.update({"name": name, "source": "./", "description": description, "skills": paths})
         plugins.append(base)
-    projected["description"] = "Skills for repository-grounded project work and decision readiness, and for learning any subject."
+    projected["name"] = "first-four-hours"
+    projected["description"] = description
     projected["plugins"] = plugins
     return projected
 
@@ -73,7 +74,7 @@ def validate(readme: Path, marketplace: Path) -> list[str]:
         return [f"README unreadable: {exc}"]
     if "### Workbench" not in text or "### Sensemaking" not in text or "### Learning" not in text:
         errors.append("README.md must explain Workbench, Sensemaking, and Learning")
-    for path in sum(groups().values(), []):
+    for path in sum(domain_groups().values(), []):
         link = path.removeprefix("./")
         if f"{link}/SKILL.md" not in text:
             errors.append(f"README.md is missing the active skill link {link}/SKILL.md")
@@ -113,8 +114,8 @@ def check() -> list[str]:
         return errors + [f"docs/skills/README.md unreadable: {exc}"]
     page_stems = {page.stem for page in pages_dir.glob("*.md") if page.name != "README.md"}
     domains = {
-        key.removesuffix("-skills").title(): [path.rsplit("/", 1)[1] for path in paths]
-        for key, paths in groups().items()
+        key.title(): [path.rsplit("/", 1)[1] for path in paths]
+        for key, paths in domain_groups().items()
     }
     errors += validate_skill_pages(index_text, page_stems, domains)
     try:
@@ -126,7 +127,7 @@ def check() -> list[str]:
     documents = {"README.md": (ROOT / "README.md").read_text(encoding="utf-8")}
     for document in sorted((ROOT / "docs").rglob("*.md")):
         documents[document.relative_to(ROOT).as_posix()] = document.read_text(encoding="utf-8")
-    skill_paths = {path.removeprefix("./") for paths in groups().values() for path in paths}
+    skill_paths = {path.removeprefix("./") for paths in domain_groups().values() for path in paths}
     return errors + validate_documented_paths(documents, declared_handoff_folders(), skill_paths, HANDOFF_PAGE)
 
 
@@ -136,8 +137,8 @@ def skill_facts_table() -> str:
         "| Skill | Domain | Source | Starts | Python | Extra packages |",
         "| :--- | :--- | :--- | :--- | :--- | :--- |",
     ]
-    for key, paths in groups().items():
-        domain = key.removesuffix("-skills").title()
+    for key, paths in domain_groups().items():
+        domain = key.title()
         for path in paths:
             rel = path.removeprefix("./")
             name = rel.rsplit("/", 1)[1]

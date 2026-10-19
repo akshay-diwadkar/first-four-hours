@@ -15,6 +15,7 @@ First Four Hours starts its version history at 1.0.0. Earlier release history st
 - The Claude Code marketplace and its single plugin are named `first-four-hours`, giving install id `first-four-hours@first-four-hours`. Users of the retired marketplace or the three preview plugins should follow [Replace an earlier plugin installation](docs/getting-started/installation.md#replace-an-earlier-plugin-installation) to remove the old entries before installing the single plugin.
 - The repository, every skill, and every contract version the repository owns are now 1.0.0. A skill's version is also the version of every artifact, handoff, receipt, bundle, and state format it owns.
 - A consumer accepts another minor or patch version of the same major and refuses any other version.
+- Blueprint 1.0.0: before attacking a draft, the fresh challenger walks it in step order and reports any Proof run or Run that needs something only a later step creates, or that works only outside the way Construct launches it: as its own arguments with no shell, from the repository root, in Construct's inherited environment. Planners probe load-bearing commands the same way.
 
 ### Removed
 

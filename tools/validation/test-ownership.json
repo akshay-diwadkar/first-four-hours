@@ -614,6 +614,7 @@
         "tools/validation/validate_npx_output.py",
         "tools/validation/sync_skill_catalog.py",
         "tools/validation/validate_skills_cli_install.py",
+        "tools/validation/validate_claude_plugin_install.py",
         "tools/validation/validate_runtime_discovery_policy.py"
       ],
       "owner": "validator-contract"
@@ -667,6 +668,7 @@
         "tools/validation/validate_npx_output.py",
         "tools/validation/sync_skill_catalog.py",
         "tools/validation/validate_skills_cli_install.py",
+        "tools/validation/validate_claude_plugin_install.py",
         "tools/validation/validate_runtime_discovery_policy.py",
         "VERSION",
         "CHANGELOG.md"

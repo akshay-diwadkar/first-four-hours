@@ -4,7 +4,7 @@ Try one skill on a real problem in your own project. This page uses Diagnose bec
 
 ## Start Diagnose
 
-You start a skill by name with `/name : request`, the form these pages use. If your agent names skills another way, use its form.
+You start a skill by name with `/name : request`, the form these pages use. If your agent names skills another way, use its form. With the Claude Code plugins, a skill's name starts with its plugin's name, so Diagnose is `/workbench-skills:diagnose`.
 
 For example (illustrative):
 

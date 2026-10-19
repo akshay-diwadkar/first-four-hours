@@ -54,6 +54,7 @@ def _projected_marketplace(payload: dict[str, object]) -> dict[str, object]:
         base = dict(existing.get(name, {}))
         base.update({"name": name, "source": "./", "description": descriptions[name], "skills": paths})
         plugins.append(base)
+    projected["name"] = "first-four-hours"
     projected["description"] = "Skills for repository-grounded project work and decision readiness, and for learning any subject."
     projected["plugins"] = plugins
     return projected

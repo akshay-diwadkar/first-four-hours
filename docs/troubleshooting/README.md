@@ -4,15 +4,15 @@ Find the symptom you see. Each entry gives the likely cause, a check that change
 
 ## A skill did not start, or another skill ran
 
-- **Likely cause:** the skill is not installed for the agent you use, its name is misspelled, or it is `model-invoked` and you named it.
-- **Check:** from the project folder, run `ls .claude/skills` for `claude-code`, or `ls .agents/skills` for `codex` and `github-copilot`, and look for the skill's folder. [The reference](../reference/README.md) gives each skill's start mode.
+- **Likely cause:** the skill is not installed for the agent you use, its name is misspelled or, with the Claude Code plugins, lacks its plugin's name, or it is `model-invoked` and you named it.
+- **Check:** from the project folder, run `ls .claude/skills` for `claude-code`, or `ls .agents/skills` for `codex` and `github-copilot`, and look for the skill's folder. With the Claude Code plugins, run `claude plugin list` and check that the plugin holding the skill shows as enabled. [The reference](../reference/README.md) gives each skill's start mode.
 - **Next step:** follow "If installation fails" in [Install First Four Hours](../getting-started/installation.md) and "If the skill did not start" in [Your first run](../getting-started/first-run.md). Ask for a `model-invoked` skill's outcome in plain words; start any other skill by name when you need it to run.
 
 ## A skill stops when it runs its Python script
 
 - **Likely cause:** the Python the agent runs is older than the skill needs, or a package the skill declares is missing.
 - **Check:** run `python --version`. [The reference](../reference/README.md) gives each skill's minimum Python and links any requirements file.
-- **Next step:** install a Python that meets the minimum. For a skill with a requirements file, install its packages into the Python the agent uses with `python -m pip install -r <skill folder>/requirements.txt`, where `<skill folder>` is the installed skill's folder, such as `.claude/skills/scribe`.
+- **Next step:** install a Python that meets the minimum. For a skill with a requirements file, install its packages into the Python the agent uses with `python -m pip install -r <skill folder>/requirements.txt`, where `<skill folder>` is the installed skill's folder, such as `.claude/skills/scribe`. With the Claude Code plugins, the folder is under the plugin's `installPath`, which `claude plugin list --json` reports, for example `<installPath>/skills/sensemaking/scribe`.
 
 ## A skill stopped instead of writing its handoff
 

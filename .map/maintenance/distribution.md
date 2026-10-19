@@ -6,6 +6,7 @@
 - [Router manifest synchronization](../../tools/validation/sync_router_manifest.py): project skill frontmatter into Router's capability manifest; a changed skill description changes Router's distributed assets too.
 - [Invocation policy](../../invocation-policy.json): inspect suite invocation policy alongside the affected package's metadata.
 - [Installation validation](../../tools/validation/validate_skills_cli_install.py): investigate collection installation and agent-specific distribution checks.
+- [Claude Code plugin validation](../../tools/validation/validate_claude_plugin_install.py): investigate native plugin installation, Claude Code skill discovery, and installed-copy parity in a temporary Claude Code configuration.
 - [Release policy](../../REPO_VERSIONING.md): follow the authoritative coupling between affected skill versions, repository release metadata, dependency inputs, and required verification.
 - [Release history](../../CHANGELOG.md): read released and unreleased user-visible changes; release policy says when to add an entry.
 

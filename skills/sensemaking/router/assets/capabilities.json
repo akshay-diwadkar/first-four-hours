@@ -22,6 +22,11 @@
       "description": "Plan before editing: close user intent, ground repository facts, decide the implementation, and seal an implementation-complete `blueprint.md` a weak executor applies without engineering judgment. Use when a repository change should be planned before anyone implements it, including work Construct or another agent will build; skip execution."
     },
     {
+      "name": "charter",
+      "invocation": "user-invoked",
+      "description": "Turn a rough ambition for an app, project, or large idea into one agreed, resumable charter.md that later work is judged against, optionally published as one GitHub umbrella issue. Use when a whole project needs its purpose, scope, success, and open questions settled before tickets or plans."
+    },
+    {
       "name": "construct",
       "invocation": "both",
       "description": "Implement an existing sealed `blueprint.md`; run its Verification; report completion, incomplete verification, or contradiction; skip planning-required work.",

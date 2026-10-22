@@ -67,6 +67,7 @@ Working on a project and its changes.
 - [Assess](docs/skills/assess.md): review one exact change against its requirements and base behavior before you trust it. [Contract](skills/workbench/assess/SKILL.md)
 - [Atlas](docs/skills/atlas.md): keep a small navigation wiki that points agents to the project files worth reading. [Contract](skills/workbench/atlas/SKILL.md)
 - [Blueprint](docs/skills/blueprint.md): plan a repository change so completely that a weaker agent can carry it out. [Contract](skills/workbench/blueprint/SKILL.md)
+- [Charter](docs/skills/charter.md): give a rough idea for a whole project its agreed purpose, scope, and success before anyone splits it into tickets. [Contract](skills/workbench/charter/SKILL.md)
 - [Construct](docs/skills/construct.md): carry out a sealed Blueprint plan and verify the result. [Contract](skills/workbench/construct/SKILL.md)
 - [Diagnose](docs/skills/diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix. [Contract](skills/workbench/diagnose/SKILL.md)
 - [PR](docs/skills/pr.md): write a reviewer-oriented pull request description and open the pull request once you confirm it. [Contract](skills/workbench/pr/SKILL.md)

@@ -10,7 +10,7 @@ metadata:
 
 Use Atlas as optional project-folder orientation. Underlying project files are authoritative; expand exploration as evidence requires.
 
-When Atlas work is the user's whole request, end with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `diagnose`, `pr`, or `ticket` step as its `/<skill>` command.
+When Atlas work is the user's whole request, end with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, `pr`, or `ticket` step as its `/<skill>` command.
 
 Invoke commands as `python <skill>/scripts/cli.py --repo-root <root> --format json [--input name=value ...] <command>`; `doctor` returns the next command.
 

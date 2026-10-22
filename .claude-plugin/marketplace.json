@@ -15,6 +15,7 @@
         "./skills/workbench/assess",
         "./skills/workbench/atlas",
         "./skills/workbench/blueprint",
+        "./skills/workbench/charter",
         "./skills/workbench/construct",
         "./skills/workbench/diagnose",
         "./skills/workbench/pr",

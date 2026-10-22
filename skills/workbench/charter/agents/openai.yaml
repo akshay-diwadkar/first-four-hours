@@ -1,0 +1,5 @@
+interface:
+  display_name: "Charter"
+  short_description: "Agree a whole project's purpose, scope, and success"
+policy:
+  allow_implicit_invocation: false

@@ -30,4 +30,4 @@ Decide and challenge use only the check whose answer could change the owning act
 
 ## Result
 
-A user-facing result keeps only `Goal`, `Blocker`, `Established`, `Unresolved`, and `Next move`; the owner takes the next move. On explicit user invocation, end with that move as one optional next step: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs. Only a "yes" starts it, via any skill it names, but the user runs a `diagnose`, `pr`, or `ticket` step as its `/<skill>` command.
+A user-facing result keeps only `Goal`, `Blocker`, `Established`, `Unresolved`, and `Next move`; the owner takes the next move. On explicit user invocation, end with that move as one optional next step: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, `pr`, or `ticket` step as its `/<skill>` command.

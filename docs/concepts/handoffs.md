@@ -4,7 +4,7 @@ Every skill can be used on its own. This page explains the real connections betw
 
 ## You start the next skill
 
-A skill that finishes ends with at most one suggested next step, written as a ready-to-run prompt. Only your yes starts it. You run a step for `diagnose`, `pr`, or `ticket` yourself, because those skills start only when you invoke them. A handoff makes the next step possible; it never starts it.
+A skill that finishes ends with at most one suggested next step, written as a ready-to-run prompt. Only your yes starts it. You run a step for `charter`, `diagnose`, `pr`, or `ticket` yourself, because those skills start only when you invoke them. A handoff makes the next step possible; it never starts it.
 
 ## Handoffs live in ignored folders
 
@@ -15,6 +15,7 @@ A skill that hands work to another seals it in its own folder under `.first-four
 | Architect | `.first-four-hours/architectures/<slug>/architecture.md` |
 | Assess | `.first-four-hours/assessments/<slug>/assessment.md` |
 | Blueprint | `.first-four-hours/blueprints/<task-slug>/blueprint.md` and its `request.md` |
+| Charter | `.first-four-hours/charters/<slug>/charter.md` |
 | Diagnose | `.first-four-hours/diagnoses/<slug>/diagnosis.md` |
 | Ideate | `.first-four-hours/ideations/<slug>/ideation.md` |
 | Router | `.first-four-hours/routes/<slug>/route.md` |
@@ -22,7 +23,13 @@ A skill that hands work to another seals it in its own folder under `.first-four
 
 Scribe keeps its support bundle the same way, in `.first-four-hours/document-bundles/<slug>/document-bundle.json`.
 
+Charter's `charter.md` is not sealed: it is a living definition revised in place, and the project's authority until Charter publishes it as a GitHub issue. After a verified publication the issue owns the definition and the file points to it.
+
 Deliverables you asked for are not handoffs and stay committable: Scribe's `document.md`, Ticket's local work-item store, the Atlas wiki, and the Learning skills' files under `.learning/<subject>/`. Construct and Reason write no artifact, and PR writes its draft outside the repository.
+
+## Project definition
+
+[Charter](../skills/charter.md) settles what a whole project is for before any tickets exist. [Ticket](../skills/ticket.md) `persist` can split a `ready` charter into tickets: from a published charter it reuses the umbrella issue as the epic, and from a local-only charter it takes the file as its authority. Charter never splits the work itself, and you decide whether to start Ticket.
 
 ## Planning and execution
 
@@ -45,7 +52,7 @@ Blueprint brings in other help within its own run, not as separate stages:
 
 ## Reason checkpoints
 
-Architect, Assess, Diagnose, Ticket, Ideate, Scribe, Tutor, and Examiner consult [Reason](../skills/reason.md) at their own judgment points, such as before committing to an approach and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start Reason yourself.
+Architect, Assess, Charter, Diagnose, Ticket, Ideate, Scribe, Tutor, and Examiner consult [Reason](../skills/reason.md) at their own judgment points, such as before committing to an approach and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start Reason yourself.
 
 ## Routing
 

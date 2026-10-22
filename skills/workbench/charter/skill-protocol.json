@@ -1,0 +1,73 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateless",
+  "skill": "charter",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {"name": "slug", "kind": "string", "required": true, "repeatable": false, "description": "Project slug; Charter writes only the ignored .first-four-hours/charters/<slug>/charter.md in the target repository.", "choices": []},
+    {"name": "repo", "kind": "string", "required": false, "repeatable": false, "description": "Destination GitHub repository as owner/repo, named by the user.", "choices": [], "accepted_for": ["check", "create", "revise"], "required_for": ["check", "create", "revise"]},
+    {"name": "confirm", "kind": "string", "required": false, "repeatable": false, "description": "content_sha256 that check reported for the exact title and body the user explicitly confirmed.", "choices": [], "accepted_for": ["create", "revise"], "required_for": ["create", "revise"]},
+    {"name": "base", "kind": "string", "required": false, "repeatable": false, "description": "content_sha256 of the existing issue's current text, which the user saw and decided to replace.", "choices": [], "accepted_for": ["revise"]}
+  ],
+  "artifacts": [],
+  "phases": {},
+  "commands": {
+    "prepare": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{repo_root}/.first-four-hours/charters", "{repo_root}/.git/info/exclude"],
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/charter_workspace.py", "--repo-root", "{repo_root}", "--slug", "{input.slug}"],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "check": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/publish_charter.py", "check", "--repo-root", "{repo_root}", "--slug", "{input.slug}", "--repo", "{input.repo}"],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "create": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{repo_root}/.first-four-hours/charters"],
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/publish_charter.py", "create", "--repo-root", "{repo_root}", "--slug", "{input.slug}", "--repo", "{input.repo}", "--confirm", "{input.confirm}"],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "revise": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{repo_root}/.first-four-hours/charters"],
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/publish_charter.py", "revise", "--repo-root", "{repo_root}", "--slug", "{input.slug}", "--repo", "{input.repo}", "--confirm", "{input.confirm}"],
+          "repeat": [{"input": "base", "flag": "--base"}],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    }
+  }
+}

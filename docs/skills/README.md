@@ -8,6 +8,7 @@ Each page below explains one skill: what it is for, when to use it and when to u
 - [Assess](assess.md): review one exact change against its requirements and base behavior before you trust it.
 - [Atlas](atlas.md): keep a small navigation wiki that points agents to the project files worth reading.
 - [Blueprint](blueprint.md): plan a repository change so completely that a weaker agent can carry it out.
+- [Charter](charter.md): give a rough idea for a whole project its agreed purpose, scope, and success before anyone splits it into tickets.
 - [Construct](construct.md): carry out a sealed Blueprint plan and verify the result.
 - [Diagnose](diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix.
 - [PR](pr.md): write a reviewer-oriented pull request description and open the pull request once you confirm it.

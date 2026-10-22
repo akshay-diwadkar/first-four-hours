@@ -9,6 +9,7 @@
     "skills/workbench/blueprint/scripts/architecture_handoff.py:path.rglob",
     "skills/workbench/construct/scripts/blueprint_runtime.py:git-ls-files",
     "skills/workbench/construct/scripts/run_verification.py:os.walk",
+    "skills/workbench/charter/scripts/charter_workspace.py:git-ls-files",
     "skills/workbench/diagnose/scripts/diagnosis_workspace.py:git-ls-files",
     "skills/workbench/ticket/scripts/scope_workspace.py:git-ls-files",
     "skills/sensemaking/ideate/scripts/ideation_workspace.py:git-ls-files",

@@ -42,7 +42,7 @@ Add `--global` to install for your user account, so every project can use the sk
 
 ## Install as a Claude Code plugin
 
-On Claude Code 2.1.275 or later, you can install all 14 skills as one `first-four-hours` plugin instead of using the Skills CLI. Workbench, Sensemaking, and Learning remain categories in the source and documentation; one plugin contains the whole suite.
+On Claude Code 2.1.275 or later, you can install all 15 skills as one `first-four-hours` plugin instead of using the Skills CLI. Workbench, Sensemaking, and Learning remain categories in the source and documentation; one plugin contains the whole suite.
 
 Run this in a Claude Code session:
 
@@ -88,7 +88,7 @@ ls .claude/skills
 
 For `codex` or `github-copilot`, run `ls .agents/skills` instead.
 
-A `--global` install lives in your user account instead of the project. For the Claude Code plugin, run `claude plugin list` in a terminal: this suite should have only `first-four-hours@first-four-hours` enabled. Run `claude plugin details first-four-hours@first-four-hours` to list its 14 skills. For any install, the real check is starting a skill: see [Your first run](first-run.md).
+A `--global` install lives in your user account instead of the project. For the Claude Code plugin, run `claude plugin list` in a terminal: this suite should have only `first-four-hours@first-four-hours` enabled. Run `claude plugin details first-four-hours@first-four-hours` to list its 15 skills. For any install, the real check is starting a skill: see [Your first run](first-run.md).
 
 ## If installation fails
 

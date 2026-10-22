@@ -404,5 +404,40 @@
     "source": "references/practice-records.md",
     "surface": "doctor",
     "text": "Never replace or delete an earlier paper, answer key, marking scheme, source notes, attempt, or marking."
+  },
+  {
+    "id": "charter.no-tickets",
+    "skill": "charter",
+    "source": "SKILL.md",
+    "surface": "doctor",
+    "text": "Charter never creates child or implementation tickets."
+  },
+  {
+    "id": "charter.confirmed-publication",
+    "skill": "charter",
+    "source": "references/publication.md",
+    "surface": "doctor",
+    "text": "Publication requires the user's explicit confirmation of the exact text."
+  },
+  {
+    "id": "charter.local-authority",
+    "skill": "charter",
+    "source": "SKILL.md",
+    "surface": "doctor",
+    "text": "The local file is the sole authority until a publication is verified."
+  },
+  {
+    "id": "charter.no-implied-agreement",
+    "skill": "charter",
+    "source": "SKILL.md",
+    "surface": "doctor",
+    "text": "A recommendation or silence is not agreement."
+  },
+  {
+    "id": "charter.material-revision",
+    "skill": "charter",
+    "source": "SKILL.md",
+    "surface": "doctor",
+    "text": "A material revision is never accepted without an explicit user decision."
   }
 ]

@@ -51,6 +51,8 @@ These results are correct answers, not failures:
 | A `None:` route, or a route that stops early | Router | The current state already meets the target, or the next step depends on a result that does not exist yet. Ask for a fresh route once it does. |
 | A finding with missing evidence | Diagnose | Gather the evidence it names, then run Diagnose again. |
 | A gap with its next owner | Scribe | The named owner supplies the missing source; then write again. |
+| A charter left in `settling` | Charter | Answer the open questions it names, starting with any missing observable success, then run `/charter` again; it resumes the same file. |
+| A publication stop such as `charter.umbrella_differs` or `charter.issue_changed` | Charter | The GitHub issue holds text you have not confirmed. Read it, then decide whether to bring the charter to it or replace it. |
 
 ## Atlas is missing or out of date
 

@@ -25,7 +25,7 @@ Construct checks the plan's seal and that the files it was planned against have 
 
 ## What you get
 
-Your worktree with the change applied, and a report of the instructions, proof and verification results, Atlas repairs, and whether protected paths and HEAD are unchanged. Conditions marked `Owner gate:` are listed as pending for their owner.
+Your worktree with the change applied, and a report of the instructions, proof results, checks run before the change, each final verification command with its expected result and whether the output met it, Atlas repairs, and whether protected paths and HEAD are unchanged. Conditions marked `Owner gate:` are listed as pending for their owner.
 
 ## When it stops
 

@@ -32,6 +32,7 @@ Router owns these composition facts, taken from each producer's current contract
 | `architect` | `architecture.md` | `blueprint` |
 | `ticket` select | `ticket-scope.md` | `blueprint` |
 | `ideate` | `ideation.md`; the user owns selection | `blueprint` |
+| `charter` | a `ready` `charter.md`, or its verified umbrella issue once published | `ticket` persist |
 | `blueprint` | sealed `.first-four-hours/blueprints/<task>/blueprint.md` | `construct` |
 | any change or PR | the change itself | `assess` |
 

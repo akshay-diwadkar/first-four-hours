@@ -130,6 +130,16 @@
       "rationale": "The description depends on one coherent reading of the change; splitting it adds coordination without cheap verification."
     },
     {
+      "skill": "charter",
+      "mode": "direct",
+      "owner": "Charter owns the definition conversation and the charter artifact.",
+      "lifecycle": "The invocation remains the Charter stage owner.",
+      "workers": "No bounded worker seam is earned.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Charter alone writes the charter and its publication pointer.",
+      "rationale": "The semantic work is the conversation itself, and the user owns the decisions."
+    },
+    {
       "skill": "tutor",
       "mode": "direct",
       "owner": "Tutor owns the teaching, its judgment of the learner's demonstrated understanding, and its lesson records and learning sequence.",

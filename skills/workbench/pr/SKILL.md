@@ -46,4 +46,4 @@ python <skill-root>/scripts/cli.py --repo-root <repo> --input draft=<draft.md> \
   --input confirm=<body_sha256 from check> --format json publish
 ```
 
-`confirm` binds the exact text the user saw; after any edit, check, show, and ask again. Report the PR URL. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `diagnose`, `pr`, or `ticket` step as its `/<skill>` command. Never merge the PR.
+`confirm` binds the exact text the user saw; after any edit, check, show, and ask again. Report the PR URL. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, `pr`, or `ticket` step as its `/<skill>` command. Never merge the PR.

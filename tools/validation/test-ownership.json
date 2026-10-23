@@ -47,6 +47,16 @@
         "tests/repository/test_routine_validation.py::test_live_repository_metadata"
       ]
     },
+    "charter-guidance-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
+    "charter-runtime-contract": {
+      "test_targets": [
+        "tests/skills/charter/test_charter.py"
+      ]
+    },
     "assess-guidance-contract": {
       "test_targets": [
         "tests/repository/test_routine_validation.py::test_live_repository_metadata"
@@ -387,6 +397,23 @@
       "owner": "examiner-guidance-contract"
     },
     {
+      "id": "charter-guidance-source",
+      "path_prefixes": [
+        "skills/workbench/charter/SKILL.md",
+        "skills/workbench/charter/README.md",
+        "skills/workbench/charter/references"
+      ],
+      "owner": "charter-guidance-contract"
+    },
+    {
+      "id": "charter-runtime-source",
+      "path_prefixes": [
+        "skills/workbench/charter/scripts",
+        "skills/workbench/charter/skill-protocol.json"
+      ],
+      "owner": "charter-runtime-contract"
+    },
+    {
       "id": "skill-source",
       "path_prefixes": [
         "skills"
@@ -400,6 +427,7 @@
         "skills/workbench/blueprint/references",
         "skills/workbench/blueprint/scripts/blueprint_runtime.py",
         "skills/workbench/blueprint/agents/openai.yaml",
+        "skills/workbench/charter",
         "skills/workbench/construct",
         "skills/workbench/diagnose",
         "skills/workbench/review",
@@ -741,6 +769,7 @@
         "skills/workbench/assess/agents/openai.yaml",
         "skills/workbench/atlas/agents/openai.yaml",
         "skills/workbench/blueprint/agents/openai.yaml",
+        "skills/workbench/charter/agents/openai.yaml",
         "skills/workbench/construct/agents/openai.yaml",
         "skills/workbench/diagnose/agents/openai.yaml",
         "skills/workbench/ticket/agents/openai.yaml",
@@ -891,6 +920,7 @@
     "assess": "assess-runtime-contract",
     "atlas": "atlas-runtime-contract",
     "blueprint": "blueprint-runtime-contract",
+    "charter": "charter-runtime-contract",
     "construct": "construct-runtime-contract",
     "diagnose": "diagnose-runtime-contract",
     "ideate": "ideate-runtime-contract",

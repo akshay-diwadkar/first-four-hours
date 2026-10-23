@@ -5,6 +5,7 @@
     "assess": {"top_level": 750, "references": 10000},
     "atlas": {"top_level": 650, "references": 3500},
     "blueprint": {"top_level": 915, "references": 11750},
+    "charter": {"top_level": 860, "references": 2150},
     "construct": {"top_level": 750, "references": 10000},
     "diagnose": {"top_level": 750, "references": 10000},
     "examiner": {"top_level": 900, "references": 2530},

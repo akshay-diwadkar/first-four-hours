@@ -28,6 +28,7 @@
     "blueprint": "both",
     "router": "model-invoked",
     "ticket": "user-invoked",
+    "charter": "user-invoked",
     "pr": "user-invoked",
     "reason": "both",
     "tutor": "both",

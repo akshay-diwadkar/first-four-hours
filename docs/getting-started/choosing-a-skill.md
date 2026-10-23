@@ -11,6 +11,7 @@ Start from the problem in front of you, not from how the suite is organized. Pic
 | A sealed Blueprint plan that is ready to carry out | [Construct](../skills/construct.md) |
 | A structural question, such as a boundary, dependency direction, or module structure | [Architect](../skills/architect.md) |
 | A finished change you need to trust before merging | [Assess](../skills/assess.md) |
+| A rough idea for a whole app or project whose purpose, scope, and success are not agreed yet | [Charter](../skills/charter.md) |
 | Work too big for one session, or a backlog to pick the next ready ticket from | [Ticket](../skills/ticket.md) |
 | A codebase you do not know yet, where agents keep searching for the files that matter | [Atlas](../skills/atlas.md) (ask in plain words) |
 | Several possible directions and no clear way to choose | [Ideate](../skills/ideate.md) |
@@ -28,6 +29,7 @@ Every skill works alone. A skill's handoff makes the next step possible, but nev
 
 - Diagnose finds a cause, then Blueprint plans a fix for one finding and Construct carries out the plan.
 - Architect settles structure, then Blueprint plans around it.
+- Charter settles what a project is for, then Ticket splits it into tickets.
 - Ticket narrows one ready ticket, then Blueprint plans it.
 - Assess findings go to a new Blueprint run rather than a direct edit.
 - Tutor and Examiner can share one study plan for a subject.

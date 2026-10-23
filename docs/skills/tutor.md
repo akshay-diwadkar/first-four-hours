@@ -40,6 +40,14 @@ These are ordinary files you may commit. Delivered teaching is never recorded as
 
 An explanation ends when it answers your question. A tutoring or continuing-learning session ends by separating what was taught from what you demonstrated, what remains unresolved, and the next step. Tutor promises no automatic reminders.
 
+## Why it's built this way
+
+**The failure it prevents.** An explanation that is delivered is easily assumed to have landed. Tutor helps a weaker agent teach like a skilled tutor: find the learner's real goal and starting point, choose the explanation that makes the idea land, and check understanding instead of assuming it.
+
+**What it refuses, and why.** It never records taught material as understanding; only your own answers and work show what you understand. It uses no mandatory questionnaire, forces no exercises on a direct explanation, and follows no fixed teaching ritual. It uses visuals and motion only when they explain something words cannot; animations have playback controls and respect reduced-motion settings. It promises no automatic reminders.
+
+**Floor and ceiling.** A weaker agent tells an explanation, tutoring, and continuing learning apart, and responds to the misconceptions your answers actually show. A stronger agent chooses its examples, analogies, demonstrations, and depth of research to fit the subject and the learner.
+
 ## Related skills
 
 Tutor works alone. It can take conceptual gaps that [Examiner](examiner.md) found, and it can suggest examination practice. See [How skills hand work to each other](../concepts/handoffs.md).

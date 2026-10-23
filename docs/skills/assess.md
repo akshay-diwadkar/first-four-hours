@@ -41,6 +41,14 @@ Assess returns `blocked` when it cannot establish the authority or evidence it n
 
 When an evidence-backed risk beyond the change could alter the merge decision, Assess stops before sealing and asks you to run `/diagnose` on that risk. You then run Assess again with the resulting `diagnosis.md`; if that diagnosis is missing or contradictory, Assess returns `blocked`.
 
+## Why it's built this way
+
+**The failure it prevents.** Reviews that skim the diff, or trust green checks and the pull request's own description, let through changes that do not do what was asked or that quietly break a caller. Assess judges the change against what it was supposed to do (the request, the requirements, the repository's rules, and the behavior on the base branch) with a senior engineer's judgment, and it keeps going after the first defect.
+
+**What it refuses, and why.** It never fixes what it finds, approves, merges, or changes anything on GitHub. A reviewer that repairs code is no longer reviewing it, and a fix made straight from a review comment reopens decisions the planner owned. Pull request prose, earlier reviews, and passing tests can raise a concern but never clear one. When the same agent wrote the change, Assess asks for a fresh-context review, or says plainly which parts only a self-review examined.
+
+**Floor and ceiling.** A weaker agent must work out what the change has to do before it reads anyone's claims about it, check every candidate finding against evidence, and disclose what it did not examine. A stronger agent decides how deep to go, judges severity from consequence, and looks at security only where the change touches it. `clear` after a sufficient look is a valid result. The scripts check identity, freshness, and evidence; they never grade the review.
+
 ## Related skills
 
 Findings usually lead to a new Blueprint and a fresh Construct run. See [How skills hand work to each other](../concepts/handoffs.md).

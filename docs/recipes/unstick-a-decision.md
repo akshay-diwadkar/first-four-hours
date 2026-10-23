@@ -20,16 +20,31 @@ An agent that cannot decide keeps gathering context, or commits to an approach t
 3. Read its one- or two-line result: material objection, missing evidence, needed user input, or no material concern.
 4. Answer its question if it asked one. The agent, or you, then chooses the next move. Reason does not choose a replacement or start another skill.
 
-## Example
+## A worked scenario
 
-For example (illustrative):
+*Illustrative: Larder is a made-up project, and this is not a recorded run.*
+
+Larder wants order numbers that cannot be guessed, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings.
 
 ```text
-/reason : Challenge the claim that we can drop the old config format without breaking existing installs.
+/reason : Challenge the claim that switching Larder's order IDs from counting numbers to random IDs is safe for existing customers.
 ```
 
+Reason picks `challenge` and attacks that one claim. Its answer is short:
+
 ```text
-/reason : We keep going back and forth between caching in the client or in the server; what is blocking this decision?
+Target: the proposal to switch order IDs to random IDs.
+Disposition: material-objection
+Load-bearing claim: "order IDs are already strings, so switching is safe."
+Challenge: the API returns strings, but receipt emails build order links from the number, so links already in customers' inboxes would stop working.
+```
+
+Reason does not propose the fix. Whoever asked decides: keep the old links working with a redirect, or accept that they break. If Reason had found nothing, `no-material-objection` would have been a valid answer, and still not an approval.
+
+When a decision is stuck rather than doubtful, ask about what is blocking it:
+
+```text
+/reason : We keep going back and forth between caching search results in the app or at the edge; what is blocking this decision?
 ```
 
 ## You are done when

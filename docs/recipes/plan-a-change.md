@@ -23,19 +23,25 @@ An agent that starts editing before the decisions are made settles them halfway 
 4. Start Construct on the sealed plan in a Git worktree.
 5. Read Construct's report and settle the conditions it lists as `Owner gate:`. Then commit and open a pull request yourself, or with [PR](../skills/pr.md).
 
-## Example
+## A worked scenario
 
-For example (illustrative):
+*Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-```text
-/blueprint : Plan adding rate limiting to the public search endpoint; existing API clients must keep working unchanged.
-```
+Someone is scraping Larder's public search endpoint. You want rate limiting without breaking the partner integrations that call it all day.
 
 ```text
-/construct : Implement the sealed blueprint in .first-four-hours/blueprints/<task-slug>/blueprint.md.
+/blueprint : Plan rate limiting for Larder's public search endpoint; existing API clients must keep working unchanged.
 ```
 
-`<task-slug>` is a placeholder for the folder Blueprint reports. Blueprint leaves `blueprint.md` and `request.md` in `.first-four-hours/blueprints/<task-slug>/`, which Git ignores. Construct leaves the change in your worktree, with a report.
+Blueprint asks one question: should partner API keys be exempt? That is a product choice, and the answer changes the plan, so it is yours. Blueprint does not ask where the limiter should go or how to test it; it reads the middleware chain and decides. While grounding, it finds that Larder already has a trusted helper for the client address, and plans to reuse it instead of reading a header any client could forge.
+
+Before sealing, the challenger reads the draft the way a mediocre executor would follow it, and notices that `/search/suggest` shares the search handler. A faithful executor would have limited it too, without anyone deciding to. The planner makes that explicit, then seals the plan in `.first-four-hours/blueprints/search-rate-limit/`. [Anatomy of a sealed blueprint](../concepts/anatomy-of-a-blueprint.md) walks through this plan section by section.
+
+```text
+/construct : Implement the sealed blueprint in .first-four-hours/blueprints/search-rate-limit/blueprint.md.
+```
+
+Construct checks that the cited files have not changed since planning, then applies the steps in order. It writes the planner's test exactly as given, sees it fail on today's code and pass after the change, runs the plan's verification, and compares the final diff with the plan. Its report ends with one pending item, the owner gate: the operations lead must confirm the limit suits production traffic. Nothing is committed until you decide.
 
 ## You are done when
 

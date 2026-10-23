@@ -39,6 +39,14 @@ Git ignores the file, so it exists only in the working copy that wrote it: anoth
 
 Charter stops in `settling` when the purpose has no observable success yet, or when an open question still blocks splitting the work. The file keeps what was agreed, so a later session resumes it instead of starting over. A failed or unconfirmed publication leaves the local file as the authority.
 
+## Why it's built this way
+
+**The failure it prevents.** A project that starts from a rough idea gets split into tickets and built before anyone has agreed what it is for. Later, no one can say whether a piece of work serves the project, because the destination lives in someone's head or an old conversation. Charter turns the ambition into one agreed, resumable definition that a fresh session can judge work against without reconstructing the conversation.
+
+**What it refuses, and why.** It never records a recommendation, or your silence, as agreement: every agreed item traces to your words, a sourced fact, or your explicit confirmation. It never treats the current code as the destination; for an existing project, the code is evidence for a direction you confirm. It never creates tickets or starts implementation, because publishing a definition and splitting it into work are separate decisions. Only you can start it, because only you can say what the project is for.
+
+**Floor and ceiling.** A weaker agent agrees the purpose before asking anything else, then works one area at a time, and brings an interpretation, the consequence of each answer, and a recommendation to every question, instead of handing you a blank questionnaire. A stronger agent sets the depth by how much each uncertainty matters, and reaches for research, an Ideate comparison, or a throwaway prototype when one would improve a decision. `ready` means the scope can be split into tickets, not that every question is answered.
+
 ## Related skills
 
 [Ticket](ticket.md) splits a `ready` charter into tickets: it reuses the published issue as the epic, or takes the local file as its authority. See [How skills hand work to each other](../concepts/handoffs.md).

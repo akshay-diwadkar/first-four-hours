@@ -32,6 +32,14 @@ Committed wiki pages: `MAP.md` and the pages under `.map/`. The wiki is a delive
 
 The hierarchy check reports structural, reachability, link-safety, and portability problems for the agent to repair.
 
+## Why it's built this way
+
+**The failure it prevents.** In an unfamiliar project, every session pays again to find the same files, and keyword searches return many matches that do not matter. Effort spent searching is effort not spent deciding. Atlas points agents at the few files worth reading, and at relationships a filename search would miss, so that relevant context is easy to find. Better plans with less effort is the design goal, not a measured result.
+
+**What it refuses, and why.** It does not explain or copy the code. A page is a pointer with a short cue, not a narrative, because a copy goes stale and then misleads. The project files stay the truth: a missing or stale map never blocks work, and an agent always reads the current files before it decides anything.
+
+**Floor and ceiling.** A weaker agent gets a short path from `MAP.md` through a Landmark and a Satellite to the right file, with a hint about when a task has read enough. A stronger agent treats the map as a starting point, not a fence, and explores further when the task needs it.
+
 ## Related skills
 
 When work moves, renames, deletes, or changes the meaning of a file that a pointer cites, the agent doing that work updates the pointer in the same work. An agent whose work edits files also fixes a map cue that misled it, so small `.map/` edits can appear in a pull request about something else. [Construct](construct.md) only repairs links to files its plan deletes. See [How skills hand work to each other](../concepts/handoffs.md).

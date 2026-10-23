@@ -40,6 +40,14 @@ No file. Each consultation ends with a one- or two-line result naming what it ex
 
 A consultation is one pass. Reason does not call itself again or start other skills.
 
+## Why it's built this way
+
+**The failure it prevents.** A weaker agent does not notice its own blind spots. It commits to an approach that rests on an unchecked assumption, drifts into a side quest, or presents a result without questioning it. Reason helps it reason more like a stronger model from the facts, constraints, and goals it already has, at the moments that matter: before committing to an approach, after a failure or a change of direction, and before presenting a result.
+
+**What it refuses, and why.** It never takes over. It explains what needs reconsidering and why; the agent that consulted it owns the replacement and the work. It writes no file, starts no other skill, and never calls itself again, so a consultation cannot grow into a chain. Skills that rely on it consult it at those moments instead of only considering whether to, because an agent that cannot see its blind spot cannot judge whether it needs the check.
+
+**Floor and ceiling.** A weaker agent gets a bounded check at fixed checkpoints. A stronger agent keeps each consultation in proportion to the stakes, and "no material concern" is a valid result. Simple tasks stay light, and mechanical work with nothing left to judge skips Reason entirely.
+
 ## Related skills
 
 Reason is an internal checkpoint of the skills that consult it, not a stage you must run between them. See [How skills hand work to each other](../concepts/handoffs.md).

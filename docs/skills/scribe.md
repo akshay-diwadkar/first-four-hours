@@ -35,6 +35,14 @@ A passing check shows only that the facts the bundle binds, such as commands, pa
 
 Scribe reports a reader job the sources cannot support as an exact gap with its next owner, instead of calling the document complete.
 
+## Why it's built this way
+
+**The failure it prevents.** Documentation that reads well but cannot be carried out is the real failure: a wrong flag, a missing step, or an invented value surfaces in the middle of an incident. Scribe makes supplied technical information explicit, executable, and traceable to its sources.
+
+**What it refuses, and why.** It never invents a source fact; a fact the sources lack stays a recorded gap with the next owner named. An audit never fixes what it finds, because a review that quietly becomes a rewrite hides what was wrong. Starting it automatically never grants permission to write. It claims no official ASD-STE100 compliance: MTE-1 is its own contract, only inspired by that standard. A clean check means the document is grounded and consistent, not that its sources are correct.
+
+**Floor and ceiling.** A weaker agent keeps every bound command, path, value, warning, and recovery step exactly as supplied, and a mechanical check confirms it. A stronger agent shapes the document around the reader's job, and uses the `strict` profile only where an error would be costly.
+
 ## Related skills
 
 See [How skills hand work to each other](../concepts/handoffs.md).

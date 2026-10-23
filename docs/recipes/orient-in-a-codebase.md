@@ -20,13 +20,24 @@ In an unfamiliar project, every session searches for the same files from scratch
 4. In later sessions, the agent reads `MAP.md`, follows only the relevant branches, and reads the current files before deciding.
 5. Whoever changes a file that a pointer cites updates that pointer in the same work.
 
-## Example
+## A worked scenario
 
-For example (illustrative):
+*Illustrative: Larder is a made-up project, and this is not a recorded run.*
+
+Every new session on Larder starts the same way: the agent searches for "checkout" and gets matches in templates, analytics events, tests, and an old admin tool, and reads a dozen files before it finds the two that matter.
 
 ```text
-Map this repository so agents can find the payment and billing code quickly.
+Map the Larder repository so agents can find the ordering, payment, and customer-message code quickly.
 ```
+
+Atlas writes a small `MAP.md` with one line per area of the project. The line for ordering says to follow it for checkout, order state, payment calls, and the payment webhook, and leads to the ordering Landmark, a short index of Satellites. From there, the checkout Satellite gives a starting file and a stopping point:
+
+- start with `larder/orders/checkout.py`;
+- for payment failures, also read `larder/payments/client.py`;
+- for missing or duplicate confirmations, read `larder/payments/webhooks.py`, where the event ID is stored;
+- for a checkout fix, these are usually enough.
+
+The pages are short pointers, not explanations of the code, so there is little in them to go stale. In the next session, the agent asked about duplicate confirmations reads `MAP.md`, follows the ordering line to its Landmark and the checkout Satellite, and opens the webhook handler, then reads the current code before deciding anything. When a later change moves that handler, the same change updates the pointer.
 
 ## You are done when
 

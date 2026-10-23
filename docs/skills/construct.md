@@ -38,6 +38,14 @@ Your worktree with the change applied, and a report of the instructions, proof r
 | `safety-contradiction` | A safety check failed or the baseline moved, for example HEAD changed. | Restore a trusted state, then run a fresh `/construct`. |
 | Stopped with evidence | A step failed its third attempt, or a resume cannot verify earlier progress. | Judge the diff, then run a fresh `/construct` from a trustworthy worktree, or take the evidence back to `/blueprint` when the plan is at fault. |
 
+## Why it's built this way
+
+**The failure it prevents.** Ordinary implementation agents drift from instructions: they redesign while coding, take a shortcut the plan ruled out, or "improve" a decision they do not understand. Construct makes execution follow the plan reliably, so a weaker, cheaper executor can carry out a strong planner's decisions faithfully.
+
+**What it refuses, and why.** It never changes the plan's method, scope, or decisions, and never edits the plan. It fixes its own coding mistakes, but when the plan disagrees with the actual code it stops with `plan-contradiction` and its evidence instead of improvising. An executor that quietly patches planning gaps has become the planner, without the planner's grounding or challenge. It keeps no state of its own, so a resumed run rereads progress from the worktree instead of trusting an earlier success message.
+
+**Floor and ceiling.** A weaker executor gets ordered steps, exact text to write verbatim, proof for each step with a bounded number of attempts, and a final comparison of the diff with the plan. A stronger executor still writes its own code for every step the plan specifies in prose; pseudocode fixes decisions, not wording.
+
 ## Related skills
 
 Fix review findings the same way: plan the fix with a new Blueprint and apply it with a fresh Construct, so the planner keeps every decision. See [How skills hand work to each other](../concepts/handoffs.md).

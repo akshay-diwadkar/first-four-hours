@@ -63,11 +63,19 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ("new Audio('x.mp3').play();", "media load"),
             ("location.search = '?a=1';", "page navigation"),
             ("location['href'] = 'x.html';", "page navigation"),
-            ('make("a", { href: "collect.html" }).click();', "page navigation"),
+            ('make("a", { href: "collect.html" }).click();', "link target"),
+            ("make('a', { href: target }).click();", "link target"),
+            ("link.href = base + 'collect.html';", "link target"),
+            ("fetchLater('collect');", "network API"),
             ("open('x.html');", "page navigation"),
             ('make("p").innerHTML = \'<meta http-equiv="refresh" content="0">\';', "page navigation")):
         runtime.write_text(f"<script>{sample}</script>\n", encoding="utf-8")
         assert any(error.endswith(f": {name}") for error in validator.validate_paper_runtime(runtime)), sample
+    # In-file code that reaches nothing outside the paper is not refused.
+    runtime.write_text("<script>control.closest('form'); node.getAttribute('style'); details.open();"
+                       " make('a', { href: '#top' }); make('a', { href: url = URL.createObjectURL(blob) });"
+                       " link.setAttribute('href', URL.createObjectURL(blob));</script>\n", encoding="utf-8")
+    assert validator.validate_paper_runtime(runtime) == []
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")
     assert validator.validate_paper_runtime(runtime) == []

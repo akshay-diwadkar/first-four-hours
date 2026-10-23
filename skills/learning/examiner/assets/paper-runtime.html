@@ -552,8 +552,7 @@ rehearsal off and leaves the paper readable and printable.
     if (attemptUrl) { return; }
     pendingDownload = !state.downloaded;
     state.downloaded = true;
-    attemptUrl = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" }));
-    attemptLink.setAttribute("href", attemptUrl);
+    attemptLink.setAttribute("href", attemptUrl = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" })));
     attemptLink.setAttribute("download", fileName);
   }
 
@@ -752,8 +751,8 @@ rehearsal off and leaves the paper readable and printable.
   });
 
   saveButton.addEventListener("click", function () {
-    const url = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" }));
-    const link = make("a", { href: url, download: fileName });
+    let url;
+    const link = make("a", { href: url = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" })), download: fileName });
     link.hidden = true;
     doc.body.appendChild(link);
     link.click();

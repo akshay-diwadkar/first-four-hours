@@ -1483,7 +1483,7 @@ PAPER_RUNTIME_EXTERNAL = (
     ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),
     ("protocol-relative URL", re.compile(r"""["'(=]\s*//[^/\s]""")),
     ("network API", re.compile(
-        r"\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
+        r"\b(?:fetch\w*|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
     ("module import", re.compile(r"\bimport\s*\(|^\s*import\b|@import", re.IGNORECASE | re.MULTILINE)),
     ("external resource element", re.compile(
         r"<\s*(?:link|iframe|img|embed|object|video|audio|source|base)\b|\bsrc\s*=", re.IGNORECASE)),
@@ -1494,13 +1494,20 @@ PAPER_RUNTIME_EXTERNAL = (
         re.IGNORECASE)),
     ("media load", re.compile(r"\bnew\s+(?:Image|Audio)\b")),
     ("helper-created resource", re.compile(
-        r"""\(\s*["'`](?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)["'`]""",
+        r"""(?<![\w$])(?!(?:closest|querySelector|querySelectorAll|matches|getAttribute|hasAttribute|removeAttribute"""
+        r"""|getElementsByTagName|indexOf|lastIndexOf|includes|startsWith|endsWith)\s*\()[\w$]*\s*\(\s*["'`]"""
+        r"""(?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)["'`]""",
         re.IGNORECASE)),
     ("source attribute", re.compile(
         r"""\bsrc(?:set|doc)?["'`]?\]?\s*[:=]|setAttribute\s*\(\s*["'`]src(?:set|doc)?["'`]""", re.IGNORECASE)),
     ("page navigation", re.compile(
-        r"""\blocation\s*(?:\.\s*(?:href|assign|replace)\b|\.\s*\w+\s*=(?!=)|\[|=(?!=))|(?<![\w$])open\s*\("""
-        r"""|\.\s*(?:requestSubmit|submit)\s*\(|\bhref["'`]?\]?\s*[:=,]\s*["'`]|http-equiv|\baction["'`]?\s*[:=]""",
+        r"""\blocation\s*(?:\.\s*(?:href|assign|replace)\b|\.\s*\w+\s*=(?!=)|\[|=(?!=))|(?<![\w$.])open\s*\("""
+        r"""|\b(?:window|self|globalThis|top|parent)\s*\.\s*open\b|\.\s*(?:requestSubmit|submit)\s*\("""
+        r"""|http-equiv|\baction["'`]?\]?\s*=""",
+        re.IGNORECASE)),
+    # A link may only point within the page or at a blob the runtime made itself.
+    ("link target", re.compile(
+        r"""\bhref\b(?!["'`]?\]?\s*[:=,]\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())""",
         re.IGNORECASE)),
 )
 PAPER_RUNTIME_MAX_BYTES = 40000

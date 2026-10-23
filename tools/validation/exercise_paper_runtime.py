@@ -284,11 +284,13 @@ class Session(Connection):
         deadline = time.monotonic() + 20
         port = ""
         while time.monotonic() < deadline:
-            if port_file.exists():
+            try:
                 lines = port_file.read_text(encoding="utf-8", errors="replace").splitlines()
-                if lines and lines[0].strip().isdigit():
-                    port = lines[0].strip()
-                    break
+            except OSError:
+                lines = []  # absent, or still being written by the browser
+            if lines and lines[0].strip().isdigit():
+                port = lines[0].strip()
+                break
             time.sleep(0.1)
         if not port:
             raise ExerciseError("no DevTools port within 20 s")
@@ -893,13 +895,31 @@ def scenario_b(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     after_refusal = page.remaining()
     page.load_file(mid_path)
     session.wait_until("document.querySelector('#q3').value === 'Snow fell at night.'", 5)
+    accepted_hidden = not page.visible("#paper-load-error")
+    accepted_status = page.status()
+    # A file from a run of the same attempt that started later would move the deadline back.
+    later_path = temp / "later-start.html"
+    later_path.write_text(_replace_once(mid, f'"startedAt":{started}', f'"startedAt":{started + 5000}', "mid file"),
+                          encoding="utf-8", newline="\n")
+    page.set_text("#q3", "Changed again.")
+    page.load_file(later_path)
+    try:
+        session.wait_until("(() => { const e = document.querySelector('#paper-load-error');"
+                           " return !!e && e.getClientRects().length > 0; })()", 5)
+    except ExerciseError as exc:
+        raise ExerciseError(f"B5: the file from a later-started run was not refused ({exc})") from exc
+    later_refusal = page.text("#paper-load-error")
+    later_kept = page.value("#q3")
     checks.run("B5", [
         ("give back time" in refusal, f"the load error reads {refusal!r}"),
         (status == "running", f"status after the refused load is {status!r}"),
         (kept == "Changed later.", f"q3 after the refused load is {kept!r}"),
         (after_refusal <= saved_left, f"remaining {after_refusal} ms rose above {saved_left} ms"),
-        (not page.visible("#paper-load-error"), "#paper-load-error is visible after the accepted load"),
-        (page.status() == "running", f"status after the accepted load is {page.status()!r}"),
+        (accepted_hidden, "#paper-load-error is visible after the accepted load"),
+        (accepted_status == "running", f"status after the accepted load is {accepted_status!r}"),
+        ("give back time" in later_refusal, f"the later-start file's load error reads {later_refusal!r}"),
+        (later_kept == "Changed again.", f"q3 after the later-start file is {later_kept!r}"),
+        (page.status() == "running", f"status after the later-start file is {page.status()!r}"),
     ])
 
     session.reload()

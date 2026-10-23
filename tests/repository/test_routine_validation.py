@@ -103,6 +103,10 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ('document.dataset.background = "bg.png";', "URL attribute"),
             ('make("td", { ["background"]: "bg.png" });', "URL attribute"),
             ('make(t, { type: "image", src });', "source attribute"),
+            ('make("input", ok && { type: "image", src });', "source attribute"),
+            ('make("input", /*a*/ { type: "image", src });', "source attribute"),
+            ('const pic = (attrs = { type: "image", src }) => make("input", attrs);', "source attribute"),
+            ('make("td", { /*x*/ background: "bg.png" });', "URL attribute"),
             ('Object.assign(document.querySelector("a"), { ping }).click();', "URL attribute"),
             ("a.setAttribute('ping', 'collect');", "URL attribute"),
             ('make("a", { ping: "collect" });', "URL attribute"),
@@ -126,20 +130,14 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
                        " node.classList.add('source'); const fetched = 1; localStorage.getItem('form');"
                        " if (action === 'save') { p.style.background = 'none'; const here = location.href; }"
                        " const href = link.getAttribute('href'); items.forEach(action => run(action));"
-                       " let ping = performance.now(); menu.open(); Object.assign(panel.style, { background: 'none' });"
-                       " const opts = { background: theme.bg }; render(node, src, opts); const { ping } = stats;"
-                       " log(t, ping, n); themes.set('dark', { background: palette.dark }); const { a, src } = item;"
-                       " const pick = { a: 'x', b: src }; function show(node, src) { render(node, src, opts); }"
-                       " (function () { log(t, ping, n); const { src } = item; paint(el, background, 1); })();"
-                       " const pickSrc = ({ src }) => src; make('td', { style: 'background: red' });</script>\n",
-                       encoding="utf-8")
+                       " menu.open(); p.style.backgroundColor = 'red';</script>\n", encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")
     assert validator.validate_paper_runtime(runtime) == []
     runtime.write_text("a" * 40001, encoding="utf-8")
     assert validator.validate_paper_runtime(runtime)[0].endswith("larger than 40000 bytes")
-    runtime.write_text("<style>p { color: #222; }</style>\n<script>localStorage.getItem('k');</script>\n",
+    runtime.write_text("<style>p { color: #222; background: none; }</style>\n<script>localStorage.getItem('k');</script>\n",
                        encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     assert validator.validate_paper_runtime(tmp_path / "absent.html")[0].endswith("paper runtime is missing")

@@ -1,0 +1,33 @@
+{
+  "description": "Approximate solo seconds per test file, used only to balance concurrent shards. Stale or missing entries change speed, never verdicts; refresh a file's entry from its own solo run (run --test with that file's nodes) when its cost changes materially.",
+  "seconds": {
+    "tests/repository/test_progressive_disclosure.py": 3.3,
+    "tests/repository/test_routine_validation.py": 15.2,
+    "tests/repository/test_skill_repository.py": 4.7,
+    "tests/repository/test_test_ownership.py": 33.3,
+    "tests/repository/test_validation_budget.py": 1.6,
+    "tests/skill_protocol/test_runtime.py": 1.8,
+    "tests/skills/architect/test_architecture_contract.py": 0.1,
+    "tests/skills/architect/test_sealing_and_integration.py": 15.5,
+    "tests/skills/assess/test_assess_contract.py": 22.9,
+    "tests/skills/atlas/test_freshness_state.py": 2.0,
+    "tests/skills/atlas/test_repository_guidance.py": 0.7,
+    "tests/skills/atlas/test_structure_state.py": 0.6,
+    "tests/skills/blueprint/test_blueprint_contract.py": 10.4,
+    "tests/skills/charter/test_charter.py": 17.6,
+    "tests/skills/construct/test_intake.py": 3.3,
+    "tests/skills/construct/test_verification_lifecycle.py": 33.1,
+    "tests/skills/diagnose/test_diagnosis.py": 1.3,
+    "tests/skills/diagnose/test_diagnosis_bundle.py": 0.1,
+    "tests/skills/diagnose/test_evidence_binding.py": 0.4,
+    "tests/skills/ideate/test_ideation_contract.py": 0.1,
+    "tests/skills/ideate/test_ideation_sealer.py": 5.3,
+    "tests/skills/pr/test_pr.py": 25.7,
+    "tests/skills/router/test_router.py": 7.4,
+    "tests/skills/scribe/test_operations.py": 16.0,
+    "tests/skills/scribe/test_semantic_validator.py": 1.4,
+    "tests/skills/ticket/test_github_publish.py": 0.5,
+    "tests/skills/ticket/test_local_persist.py": 3.6,
+    "tests/skills/ticket/test_select_freshness.py": 11.8
+  }
+}

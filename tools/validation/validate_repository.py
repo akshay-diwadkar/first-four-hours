@@ -238,6 +238,8 @@ RETIRED_PACKAGE_PATH_RE = re.compile(
     r"(?=$|[^A-Za-z0-9_-])"
 )
 RETIRED_REASONING_IDENTITIES = ("think", "critic", "elicit")
+# Every RETIRED_REASONING_IDENTITY_RE match contains one of these words under the same flag.
+RETIRED_REASONING_WORD_RE = re.compile(r"(?i)think|critic|elicit")
 RETIRED_REASONING_IDENTITY_RE = re.compile(
     r"(?i)(?:/(?:think|critic|elicit)\b|skills/reasoning/(?:think|critic|elicit)\b|"
     r"`(?:think|critic|elicit)`|^name:\s*(?:think|critic|elicit)\s*$|"
@@ -317,6 +319,7 @@ CANONICAL_CONVERGENCE_REJECTION_LOCATIONS: dict[str, frozenset[str]] = {
     ),
     "tests/classification/test_classification.py": frozenset({"diagram-codebase", "manualize", "optimizations"}),
     "tests/integration/test_installed_skill_execution.py": frozenset({"route-handoff.md", "blueprint-context.md"}),
+    "tests/repository/test_routine_validation.py": frozenset({"map-codebase", "skills/routing", "retired reasoning identity"}),
     "tests/repository/test_skill_repository.py": frozenset(
         {
             *RETIRED_CAPABILITY_IDENTITIES,
@@ -1339,14 +1342,13 @@ def _compatibility_mapping_hits(text: str) -> list[str]:
     except SyntaxError:
         return []
     authority_dicts: set[int] = set()
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        if any(isinstance(target, ast.Name) and target.id == "CANONICAL_REPLACEMENTS" for target in node.targets):
-            authority_dicts.add(id(node.value))
-
     hits: set[str] = set()
+    # ast.walk is breadth-first, so an assignment is seen before the dict it assigns.
     for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            if any(isinstance(target, ast.Name) and target.id == "CANONICAL_REPLACEMENTS" for target in node.targets):
+                authority_dicts.add(id(node.value))
+            continue
         if not isinstance(node, ast.Dict) or id(node) in authority_dicts:
             continue
         for key, value in zip(node.keys, node.values, strict=True):
@@ -1405,12 +1407,16 @@ def validate_canonical_convergence(
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        normalized_text = re.sub(r"/+", "/", text.replace("\\", "/"))
         hits = sorted(token for token in retired_tokens if token in text)
-        if RETIRED_PACKAGE_PATH_RE.search(normalized_text):
-            hits.append(RETIRED_PACKAGE_PATHS[0])
-        if RETIRED_REASONING_IDENTITY_RE.search(normalized_text):
-            hits.append("retired reasoning identity")
+        # Cheap necessary conditions first; slash normalization never creates or removes these words.
+        package_candidate = "skills" in text and "routing" in text
+        reasoning_candidate = RETIRED_REASONING_WORD_RE.search(text) is not None
+        if package_candidate or reasoning_candidate:
+            normalized_text = re.sub(r"/+", "/", text.replace("\\", "/"))
+            if package_candidate and RETIRED_PACKAGE_PATH_RE.search(normalized_text):
+                hits.append(RETIRED_PACKAGE_PATHS[0])
+            if reasoning_candidate and RETIRED_REASONING_IDENTITY_RE.search(normalized_text):
+                hits.append("retired reasoning identity")
         if not hits:
             continue
         mapping_hits = _compatibility_mapping_hits(text)

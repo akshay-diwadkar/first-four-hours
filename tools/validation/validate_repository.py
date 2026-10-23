@@ -1478,6 +1478,76 @@ def validate_atlas_wiki() -> list[str]:
     return [f"Atlas wiki structural validation did not complete (exit {result.returncode}): {detail}"]
 
 
+PAPER_RUNTIME = SKILLS_ROOT / "learning" / "examiner" / "assets" / "paper-runtime.html"
+# A write assigns (never compares, never an arrow) outside a declaration; an in-page link target is a "#" fragment
+# or a blob the runtime made itself. Text cannot show where an action or background value points, so every such
+# write is refused. The runtime never names src, srcset, srcdoc or ping, and its CSS uses background-color, so
+# those words are refused anywhere and background anywhere except as style.background.
+PAPER_RUNTIME_WRITE = r"(?:\+|\|\||&&|\?\?)?=(?![=>])"
+PAPER_RUNTIME_UNDECLARED = r"(?<!\bconst )(?<!\blet )(?<!\bvar )"
+PAPER_RUNTIME_OFF_PAGE = r"""(?!\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())"""
+PAPER_RUNTIME_TAGS = r"(?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)"
+PAPER_RUNTIME_EXTERNAL = (
+    ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),
+    ("protocol-relative URL", re.compile(r"""["'(=]\s*//[^/\s]""")),
+    ("network API", re.compile(
+        r"\b(?:fetch(?:Later)?|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
+    ("module import", re.compile(r"\bimport\s*\(|^\s*import\b|@import", re.IGNORECASE | re.MULTILINE)),
+    ("external resource element", re.compile(
+        r"<\s*(?:link|iframe|img|embed|object|video|audio|source|base)\b|\bsrc\s*=", re.IGNORECASE)),
+    ("worker", re.compile(r"\b(?:Worker|SharedWorker|serviceWorker)\b")),
+    ("CSS resource", re.compile(r"\b(?:url|image-set)\s*\(", re.IGNORECASE)),
+    ("script-created resource", re.compile(
+        r"createElement\s*\(\s*[\"'`](?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)\b",
+        re.IGNORECASE)),
+    ("media load", re.compile(r"\bnew\s+(?:Image|Audio)\b")),
+    ("helper-created resource", re.compile(
+        r"""(?<![\w$.])[\w$]+\s*\(\s*["'`]""" + PAPER_RUNTIME_TAGS + r"""["'`]"""
+        r"""|\(\s*["'`]""" + PAPER_RUNTIME_TAGS + r"""["'`]\s*,\s*\{""",
+        re.IGNORECASE)),
+    ("source attribute", re.compile(r"\bsrc(?:set|doc)?\b", re.IGNORECASE)),
+    # The runtime's CSS sets only background-color, so background is refused everywhere but style.background.
+    ("URL attribute", re.compile(r"""\bformaction\b|\bping\b|(?<!style\.)\bbackground\b(?!-)""", re.IGNORECASE)),
+    ("page navigation", re.compile(
+        r"""\blocation\s*(?:\.\s*(?:assign|replace)\b|\.\s*\w+\s*""" + PAPER_RUNTIME_WRITE + r"""|\[|"""
+        + PAPER_RUNTIME_WRITE + r""")|(?<![\w$])open\s*(?:\?\.\s*)?\((?!\s*\))"""
+        r"""|(?<![\w$])navigate\s*(?:\?\.\s*)?\("""
+        r"""|\.\s*(?:open|navigate)\s*\.\s*(?:call|apply|bind)\b"""
+        r"""|\b(?:window|self|globalThis|top|parent)\s*\.\s*open\b|\[\s*["'`]open["'`]\s*\]"""
+        r"""|\bhistory\s*\.\s*(?:back|forward|go)\b|\bnavigation\s*\.\s*(?:back|forward|traverseTo)\b"""
+        r"""|\.\s*(?:requestSubmit|submit)\s*\(|http-?equiv""",
+        re.IGNORECASE)),
+    # Only a form reads action, but any receiver may be one, so every action write is refused on every receiver.
+    ("form action", re.compile(
+        r"""setAttribute\s*\(\s*["'`]action["'`]|""" + PAPER_RUNTIME_UNDECLARED + r"""\baction["'`]?\]?\s*"""
+        + PAPER_RUNTIME_WRITE,
+        re.IGNORECASE)),
+    # A link may only point within the page or at a blob the runtime made itself.
+    ("link target", re.compile(
+        PAPER_RUNTIME_UNDECLARED + r"""\bhref["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE + PAPER_RUNTIME_OFF_PAGE
+        + r"""|[{,]\s*["'`]?(?:xlink:)?href["'`]?\s*:""" + PAPER_RUNTIME_OFF_PAGE
+        + r"""|setAttribute\s*\(\s*["'`](?:xlink:)?href["'`]\s*,""" + PAPER_RUNTIME_OFF_PAGE
+        + r"""|setAttributeNS\s*\([^,()]*,\s*["'`](?:xlink:)?href["'`]\s*,""" + PAPER_RUNTIME_OFF_PAGE
+        + r"""|[{,]\s*href\s*[,}]""",
+        re.IGNORECASE)),
+)
+PAPER_RUNTIME_MAX_BYTES = 40000
+
+
+def validate_paper_runtime(path: Path = PAPER_RUNTIME) -> list[str]:
+    """Refuse an Examiner paper runtime that loads or sends anything outside its own file."""
+    label = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else path.as_posix()
+    if not path.is_file():
+        return [f"{label}: paper runtime is missing"]
+    errors: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    if len(text.encode("utf-8")) > PAPER_RUNTIME_MAX_BYTES:
+        errors.append(f"{label}: paper runtime is larger than {PAPER_RUNTIME_MAX_BYTES} bytes")
+    errors.extend(f"{label}: paper runtime is not self-contained: {name}"
+                  for name, pattern in PAPER_RUNTIME_EXTERNAL if pattern.search(text))
+    return errors
+
+
 def main() -> int:
     skills = discover_skills()
     errors = ["No skills found under skills/<domain>/<skill>"] if not skills else []
@@ -1499,6 +1569,7 @@ def main() -> int:
     from validate_runtime_discovery_policy import validate as validate_runtime_discovery
     errors.extend(validate_runtime_discovery())
     errors.extend(validate_guidance(ROOT))
+    errors.extend(validate_paper_runtime())
     for skill_dir in skills:
         errors.extend(validate_skill_package(skill_dir))
         errors.extend(validate_script_references(skill_dir))

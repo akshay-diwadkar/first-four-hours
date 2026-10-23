@@ -15,7 +15,7 @@ Identify the exact examination: awarding body or institution, qualification or c
 
 ## Research the requirements
 
-Research the authoritative syllabus or specification, examination scheme, specimen and past papers, and marking guidance for the applicable session. Keep official requirements, patterns inferred from past papers, and changes the student requested distinct. When sources conflict, prefer the awarding body's documents for the applicable session over older, third-party, or general ones, and say which you followed.
+Research the authoritative syllabus or specification, examination scheme, specimen and past papers, and marking guidance for the applicable session, including its rules for candidates: duration and breaks from that session's own papers, navigation, instructions, permitted materials, negative marking, mark-for-review scoring, and access arrangements. Never present an unsourced rule, such as answering order, as official. Keep official requirements, patterns inferred from past papers, and changes the student requested distinct. When sources conflict, prefer the awarding body's documents for the applicable session over older, third-party, or general ones, and say which you followed.
 
 When official requirements cannot be verified, for example without research access or when none are published, offer a clearly labelled approximation with its explicit assumptions.
 

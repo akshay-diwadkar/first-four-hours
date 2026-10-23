@@ -8,6 +8,12 @@ Each skill lives under `skills/<domain>/<skill>/` and must operate after install
 
 The [CLI protocol](../../tools/skill_protocol/README.md) owns manifests and standalone adapters. The [invocation policy](../../invocation-policy.json) records invocation authority alongside package metadata. Domains organize capabilities; activation and permission remain capability-specific.
 
+Examiner ships one [paper runtime](../../skills/learning/examiner/assets/paper-runtime.html) that every on-screen practice paper copies unchanged, so the timed behaviour has one source. The repository validator refuses it when it names a URL, a network call, a module import, an external resource, or a page navigation. The [paper runtime exercise](../../tools/validation/exercise_paper_runtime.py) copies it into a [throwaway paper](../../tools/validation/paper_runtime_fixture.html) and drives a headless Chrome or Edge through the clock, question list, review flags, a second tab, reload and reopen, rest breaks, the break between parts, submission, expiry, saving and loading answer files, and blocked storage. It is not part of the required suite. Run it when the runtime or the fixture changes:
+
+```bash
+python tools/validation/exercise_paper_runtime.py
+```
+
 ## Update the source, then its projections
 
 Edit the canonical source before updating distributed copies. Use the synchronizer for the affected mechanism:

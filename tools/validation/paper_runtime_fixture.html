@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper runtime exercise</title>
+</head>
+<body>
+<header id="instructions">
+<h1>Throwaway practice paper for the paper runtime exercise</h1>
+<p>An original paper made only to exercise the paper runtime. It is not any awarding body's paper.</p>
+<p>Instructions to candidates: answer every question. Part 1 allows 30 seconds and Part 2 allows 6 seconds, with a 3-second break between them. The times are deliberately short for the exercise.</p>
+</header>
+<script type="application/json" id="paper-meta">
+{"id": "runtime-exercise-01", "title": "Paper runtime exercise",
+ "parts": [
+  {"id": "p1", "title": "Part 1", "minutes": 0.5, "navigation": "free", "breakMinutesAfter": 0.05},
+  {"id": "p2", "title": "Part 2", "minutes": 0.1, "navigation": "forward-only"}
+ ],
+ "access": {"extraTimePercent": 50, "restBreaks": true}}
+</script>
+<section class="paper-question" data-question="1" data-part="p1">
+<h2>Question 1 (1 mark)</h2>
+<p>Choose one letter.</p>
+<label><input type="radio" name="q1" value="A"> A</label>
+<label><input type="radio" name="q1" value="B"> B</label>
+</section>
+<section class="paper-question" data-question="2" data-part="p1">
+<h2>Question 2 (2 marks)</h2>
+<p>Choose two letters.</p>
+<label><input type="checkbox" name="q2" value="A"> A</label>
+<label><input type="checkbox" name="q2" value="B"> B</label>
+<label><input type="checkbox" name="q2" value="C"> C</label>
+</section>
+<section class="paper-question" data-question="3" data-part="p1">
+<h2>Question 3 (3 marks)</h2>
+<label for="q3">Write one sentence.</label>
+<textarea id="q3" name="q3" rows="3"></textarea>
+</section>
+<section class="paper-question" data-question="4" data-part="p2">
+<h2>Question 4 (1 mark)</h2>
+<label for="q4">Write any whole number.</label>
+<input type="text" id="q4" name="q4">
+</section>
+<section class="paper-question" data-question="5" data-part="p2">
+<h2>Question 5 (1 mark)</h2>
+<label for="q5">Write any word.</label>
+<input type="text" id="q5" name="q5">
+</section>
+<!-- paper-runtime -->
+</body>
+</html>

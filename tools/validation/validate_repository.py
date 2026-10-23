@@ -1487,10 +1487,11 @@ PAPER_RUNTIME_UNDECLARED = r"(?<!\bconst )(?<!\blet )(?<!\bvar )"
 PAPER_RUNTIME_OFF_PAGE = r"""(?!\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())"""
 PAPER_RUNTIME_ATTRIBUTES = (
     r"""\(\s*["'`](?:a|area|body|table|thead|tbody|tfoot|tr|td|th|img|input|iframe|frame|embed|video|audio|source"""
-    r"""|track|script)["'`]\s*,\s*\{[^{}]*?(?<![\w$-])\[?["'`]?""")
-# A shorthand key opens an object literal or follows one of its commas; a destructuring target is not refused.
-PAPER_RUNTIME_SHORTHAND = r"""\{(?:[^{}]*?,)?\s*"""
-PAPER_RUNTIME_SHORTHAND_END = r"""\s*(?=[,}])(?![^{}]*\}\s*=(?![=>]))"""
+    r"""|track|script)["'`]\s*,\s*\{(?:[^{}]*?,)?\s*\[?["'`]?""")
+# A shorthand key opens an object literal, whose "{" follows an operator rather than closing a statement head, or
+# follows one of its commas; a destructuring target or parameter is not refused.
+PAPER_RUNTIME_SHORTHAND = r"""(?:(?<![=!<>])=(?![=>])|[(,:?\[]|\breturn)\s*\{(?:[^{}]*?,)?\s*"""
+PAPER_RUNTIME_SHORTHAND_END = r"""\s*(?=[,}])(?![^{}]*\}\s*(?:=(?![=>])|\)\s*(?:=>|\{)))"""
 PAPER_RUNTIME_TAGS = r"(?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)"
 PAPER_RUNTIME_EXTERNAL = (
     ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),

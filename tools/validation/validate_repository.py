@@ -1506,7 +1506,8 @@ PAPER_RUNTIME_EXTERNAL = (
         r"""|\(\s*["'`]""" + PAPER_RUNTIME_TAGS + r"""["'`]\s*,\s*\{""",
         re.IGNORECASE)),
     ("source attribute", re.compile(r"\bsrc(?:set|doc)?\b", re.IGNORECASE)),
-    ("URL attribute", re.compile(r"""\bformaction\b|\bping\b""", re.IGNORECASE)),
+    # The runtime's CSS sets only background-color, so background is refused everywhere but style.background.
+    ("URL attribute", re.compile(r"""\bformaction\b|\bping\b|(?<!style\.)\bbackground\b(?!-)""", re.IGNORECASE)),
     ("page navigation", re.compile(
         r"""\blocation\s*(?:\.\s*(?:assign|replace)\b|\.\s*\w+\s*""" + PAPER_RUNTIME_WRITE + r"""|\[|"""
         + PAPER_RUNTIME_WRITE + r""")|(?<![\w$])open\s*(?:\?\.\s*)?\((?!\s*\))"""
@@ -1530,12 +1531,6 @@ PAPER_RUNTIME_EXTERNAL = (
         + r"""|[{,]\s*href\s*[,}]""",
         re.IGNORECASE)),
 )
-# A background word is checked with the runtime's real style elements blanked: those that open outside every script,
-# which runs to its closing tag or the end of the file. Markup comments open neither.
-PAPER_RUNTIME_BACKGROUND = re.compile(r"(?<!style\.)\bbackground\b", re.IGNORECASE)
-PAPER_RUNTIME_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-PAPER_RUNTIME_SCRIPT = re.compile(r"<script\b.*?(?:</script|\Z)", re.IGNORECASE | re.DOTALL)
-PAPER_RUNTIME_STYLE = re.compile(r"<style\b.*?</style", re.IGNORECASE | re.DOTALL)
 PAPER_RUNTIME_MAX_BYTES = 40000
 
 
@@ -1550,14 +1545,6 @@ def validate_paper_runtime(path: Path = PAPER_RUNTIME) -> list[str]:
         errors.append(f"{label}: paper runtime is larger than {PAPER_RUNTIME_MAX_BYTES} bytes")
     errors.extend(f"{label}: paper runtime is not self-contained: {name}"
                   for name, pattern in PAPER_RUNTIME_EXTERNAL if pattern.search(text))
-    markup = PAPER_RUNTIME_COMMENT.sub(lambda match: " " * len(match.group()), text)
-    scripts = [match.span() for match in PAPER_RUNTIME_SCRIPT.finditer(markup)]
-    unstyled = text
-    for match in PAPER_RUNTIME_STYLE.finditer(markup):
-        if not any(start <= match.start() < end for start, end in scripts):
-            unstyled = unstyled[:match.start()] + " " * (match.end() - match.start()) + unstyled[match.end():]
-    if PAPER_RUNTIME_BACKGROUND.search(unstyled):
-        errors.append(f"{label}: paper runtime is not self-contained: URL attribute")
     return errors
 
 

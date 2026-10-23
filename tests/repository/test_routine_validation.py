@@ -137,12 +137,14 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
     assert validator.validate_paper_runtime(runtime) == []
     runtime.write_text("a" * 40001, encoding="utf-8")
     assert validator.validate_paper_runtime(runtime)[0].endswith("larger than 40000 bytes")
-    # Only a real style element exempts background; a "</style>" text in a script or after markup does not.
+    # No element exempts the background word; CSS uses background-color instead.
     for whole in ('<script>document.body.background = "bg.png"; // </style>\n</script>\n',
-                  '<body background="bg.png">x</style>\n'):
+                  '<body background="bg.png">x</style>\n',
+                  '<title><style></title><body background="bg.png"></style>\n',
+                  '<style-x><body background="bg.png"></style-x>\n'):
         runtime.write_text(whole, encoding="utf-8")
         assert any(error.endswith(": URL attribute") for error in validator.validate_paper_runtime(runtime)), whole
-    runtime.write_text("<style>p { color: #222; background: none; }</style>\n<script>localStorage.getItem('k');</script>\n",
+    runtime.write_text("<style>p { color: #222; background-color: #fff; }</style>\n<script>localStorage.getItem('k');</script>\n",
                        encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     assert validator.validate_paper_runtime(tmp_path / "absent.html")[0].endswith("paper runtime is missing")

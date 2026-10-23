@@ -34,6 +34,14 @@ Marking is optional. When you ask for it, Examiner explains each deduction again
 
 Examiner promises no predicted questions, official equivalence, or future scores, and states the limitations it could not resolve.
 
+## Why it's built this way
+
+**The failure it prevents.** Generic practice questions rarely look like the real paper: the wrong question types, the wrong mark allocation, an invented format presented as official. A student who practises on them rehearses the wrong examination. Examiner grounds every paper in the examination's real syllabus, format, and marking scheme, and marks attempts against that scheme.
+
+**What it refuses, and why.** It never presents an inferred format as official; when it cannot verify the official requirements, it offers a clearly labelled approximation with its assumptions. It never copies past papers, and it promises no predicted questions, official equivalence, or future scores. It never delivers a question it has not solved and checked. It does not push the attempt, mark, and retry cycle on someone who only wants a paper.
+
+**Floor and ceiling.** A weaker agent must research the official sources, keep official requirements, inferred patterns, and your own changes apart, and audit every answer, mark total, and explanation before delivery. A stronger agent designs the paper and diagnoses gaps from the evidence in your answers. Its difficulty and timing estimates stay judgments, never claims a check has proved.
+
 ## Related skills
 
 Examiner works alone. When marking shows conceptual gaps, it may offer to continue with [Tutor](tutor.md). See [How skills hand work to each other](../concepts/handoffs.md).

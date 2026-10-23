@@ -14,3 +14,9 @@ Each recipe starts from a problem you keep losing time to and shows the smallest
 - [Learn a subject and practise for its exam](learn-and-practise.md): learning and examination practice drift apart.
 
 Each skill's own page, in [the skill index](../skills/README.md), says what it does and where it stops.
+
+## The worked scenarios
+
+Each recipe ends with a worked scenario. The coding recipes all follow one made-up project, Larder, an online grocery service with orders, payments, customer messages, stock, and search, so you can watch one codebase move from a bug report through planning and review to a pull request. The learning recipe follows a student instead.
+
+The scenarios are illustrative. The prompts, findings, and file excerpts were written to show what each skill does and leaves behind; they were not recorded from a real run. Excerpts are shortened. [Anatomy of a sealed blueprint](../concepts/anatomy-of-a-blueprint.md) walks through one complete Larder plan.

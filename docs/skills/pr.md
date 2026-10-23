@@ -34,6 +34,14 @@ The pull request URL, after your explicit yes. Silence or an earlier approval do
 
 If a check fails, PR repairs the draft or records the missing run and checks again. Without your yes, nothing is pushed or opened.
 
+## Why it's built this way
+
+**The failure it prevents.** Reviewers dislike reviewing pull requests. Many skip the description entirely, and those who read it often still cannot work out from the diff what the change does. PR exists to explain a change in a way that is understandable and that matters to the reviewer: what it does, and what impact it has if it is merged, so the reviewer can piece the change together from the description instead of reverse-engineering the diff.
+
+**What it refuses, and why.** It never invents the intent: it links or quotes the issue or sealed Blueprint instead of restating it as a second source of truth. It never claims a check it did not run; every verification it cites is recorded with its command and exit code. It never opens the pull request without your explicit yes to the exact text, and it never merges, approves, or edits the code.
+
+**Floor and ceiling.** A weaker agent must read the whole diff, find the authority for the change, record its checks, and pass a mechanical grounding check before showing you anything. A stronger agent decides what the reviewer most needs to know and how to say it; the quality of the prose stays its judgment.
+
 ## Related skills
 
 [Assess](assess.md) can review the branch before or after the pull request exists. See [How skills hand work to each other](../concepts/handoffs.md).

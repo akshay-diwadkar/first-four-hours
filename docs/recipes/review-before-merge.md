@@ -21,23 +21,72 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 4. Run Assess again on the reworked branch.
 5. Open the pull request with PR. It shows you the exact text and opens the pull request only after your yes. Merging stays yours.
 
-## Example
+## A worked scenario
 
-For example (illustrative):
+*Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-```text
-/assess : Assess this branch against issue #<number> and the current main branch before merge.
-```
+A branch adds shareable shopping lists for Larder, from issue #40. The tests pass, and the branch's notes say the feature is complete.
 
 ```text
-/blueprint : Plan fixes for the findings in .first-four-hours/assessments/<slug>/assessment.md.
+/assess : Assess this branch against issue #40 and the current main branch before merge.
 ```
+
+Assess reads issue #40 first and works out what the change must do before it reads anyone's claims about it. It returns `findings`:
+
+```markdown
+## Result
+
+`findings`
+
+## Findings
+
+### Finding 1
+
+- Severity: P1
+- Basis: reasoned
+- Defect: the share endpoint loads a list by its number without checking that the caller owns it or holds its share link.
+- Consequence: any signed-in customer can read any other customer's list by changing the number in the address.
+- Required truth: issue #40 allows a list to be opened only by its owner and by people with its link.
+
+### Finding 2
+
+- Severity: P1
+- Basis: reasoned
+- Defect: the migration adds the new sharing column with no default, so every existing list reads as empty, and the list page treats that as an error.
+- Consequence: customers with saved lists would see an error page after deploy.
+- Required truth: existing lists keep working and stay private.
+```
+
+Assess kept going after the first finding. The second never shows up in tests, because the test database starts with no lists.
 
 ```text
-/pr : Open a pull request for this branch against main; it implements issue #<number>.
+/blueprint : Plan fixes for the findings in .first-four-hours/assessments/shared-lists/assessment.md.
 ```
 
-`#<number>` and `<slug>` are placeholders.
+A new Blueprint and a fresh Construct fix both findings, and a second Assess returns `clear`: no material defect found after a sufficient look. That is still not permission to merge.
+
+```text
+/pr : Open a pull request for this branch against main; it implements issue #40.
+```
+
+PR writes for the reviewer who skims and for the one who reads closely but only has the diff. It leads with what changes if this merges, links issue #40 instead of restating it, and claims only checks it actually ran and recorded:
+
+```markdown
+## What changes if this merges
+
+Customers can share a shopping list by link. Only the owner and people holding the link can open it; anyone else gets "not found". Existing lists stay private. Closes #40.
+
+## Where to look first
+
+- The share endpoint: the owner-or-link check is the security boundary.
+- The migration: the new column defaults to not shared, so existing lists keep working.
+
+## Verification
+
+- Ran: `python -m pytest tests/lists -q`: all tests passed.
+```
+
+PR shows you the title and the full text, and opens the pull request only after your yes. Merging stays yours.
 
 ## You are done when
 

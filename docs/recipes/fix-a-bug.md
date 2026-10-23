@@ -20,19 +20,44 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 3. Pick one finding and ask Blueprint to plan its fix, naming the finding. If no viable fix is apparent, or the evidence cannot rank the possible fixes, Blueprint asks [Ideate](../skills/ideate.md) inside its run, and you choose unless you already chose or delegated the choice.
 4. Carry out the sealed plan with Construct, as in [Plan a change before your agent starts editing](plan-a-change.md).
 
-## Example
+## A worked scenario
 
-For example (illustrative):
+*Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-```text
-/diagnose : Find out why some customers receive two order-confirmation emails.
-```
+Larder's support inbox keeps getting the same complaint: some customers receive two order-confirmation emails. The quick patch would be a duplicate filter in the email sender. You start Diagnose instead.
 
 ```text
-/blueprint : Plan a fix for finding <finding-id> in .first-four-hours/diagnoses/<slug>/diagnosis.md.
+/diagnose : Find out why some Larder customers receive two order-confirmation emails.
 ```
 
-`<finding-id>` and `<slug>` are placeholders for the values in your own `diagnosis.md`.
+Diagnose follows the email back from the sender to its caller: the payment webhook handler. The handler sends the confirmation before it records the provider's event ID. Against a local test app, Diagnose replays one captured webhook twice and gets two emails; it replays it again with that event ID already marked as seen and gets none. Changing the suspected cause moved the effect, so the cause is `demonstrated`, not just reproduced. It touches no production system and changes no code.
+
+```markdown
+## Finding webhook-retry-resends-confirmation
+
+- Title: A retried payment webhook sends a second confirmation
+- Cause status: demonstrated
+
+### Summary
+
+The webhook handler sends the order confirmation before it stores the provider's event ID, so a retried delivery sends it again.
+
+### Impact
+
+The provider retries webhooks that answer slowly, so duplicates rise with checkout load.
+
+### Cause / Ownership Boundary
+
+The webhook handler owns the duplicate: it acts on an event before marking it seen. The email sender only does what it is told.
+```
+
+In its report, Diagnose offers two advisory directions: store the event ID before acting, or filter duplicates in the sender. It notes that the second would hide the cause rather than remove it. Neither is a decision; you pick the finding to fix.
+
+```text
+/blueprint : Plan a fix for finding webhook-retry-resends-confirmation in .first-four-hours/diagnoses/duplicate-confirmation-emails/diagnosis.md.
+```
+
+Blueprint plans the fix where the finding puts the cause: the handler stores the event ID in the same transaction as the order update, before anything is sent. Its regression test replays the same webhook twice and expects one email. Construct sees that test fail before the change and pass after it. A filter in the sender would have stopped this symptom and let the next one through, such as a duplicate refund notice.
 
 ## You are done when
 

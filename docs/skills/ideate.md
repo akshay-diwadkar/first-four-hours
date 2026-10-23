@@ -39,6 +39,14 @@ Its `Selection` line records who owns the final choice: `open` (still yours), `u
 
 Ideate never manufactures a winner. When the evidence cannot justify a recommendation, it names the experiment that would decide, or reports the research limit.
 
+## Why it's built this way
+
+**The failure it prevents.** A weaker agent does not know where to look. It stops at the first idea, or at what the repository already does, and misses workable directions that nobody has built here yet. Ideate searches the possibilities from several angles, either composing pieces into steps toward a goal or comparing alternatives, and tests them against your constraints.
+
+**What it refuses, and why.** It never manufactures a winner. When the evidence cannot justify a choice, it names the experiment that would decide or reports the limit of the research. It keeps mechanisms the evidence supports apart from untested ideas, and it does not dismiss an idea only because no one has built it in this project. Its recommendation is never your approval: you make the final selection, and a choice you already made stands without being asked again.
+
+**Floor and ceiling.** A weaker agent generates candidates before judging them, then tests each with the cheapest evidence that could change the conclusion. A stronger agent ranges as widely as the goal deserves, while the cost stays in proportion to the decision.
+
 ## Related skills
 
 Inside a Blueprint run, Ideate returns its result to the planner, who asks for your selection while it is still open. See [How skills hand work to each other](../concepts/handoffs.md).

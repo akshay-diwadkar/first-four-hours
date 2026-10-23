@@ -12,6 +12,7 @@ These pages are for people who use First Four Hours. The skills themselves are i
 
 - [Why First Four Hours exists](concepts/why-first-four-hours.md): the problem the suite addresses, and what it does not promise.
 - [How the suite works](concepts/how-the-suite-works.md): what a skill is, how to pick the smallest one that helps, how skills hand work to each other, and how the suite is organized.
+- [Anatomy of a sealed blueprint](concepts/anatomy-of-a-blueprint.md): one illustrative plan, section by section, and why each part is there.
 
 ## Skills
 

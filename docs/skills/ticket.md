@@ -37,6 +37,14 @@ Ticket consults [Reason](reason.md) at its judgment points.
 
 `needs-info` means a human decision is missing; `blocked` means a stated blocker is unmet; `close-candidate` means the work looks done or obsolete; `needs-decomposition` means the ticket is not one complete job for one session. You decide whether to persist replacement tickets.
 
+## Why it's built this way
+
+**The failure it prevents.** Large work spread over several sessions loses the thread. Tickets split by phase, such as "design X", "implement X", and "test X", mean no session ever finishes anything; a single session that tries everything stops half-done; and every session rediscovers what was decided. Ticket divides the work into complete jobs that each fit one session, covering planning, implementation, review, and rework, and keeps only the dependencies that are real.
+
+**What it refuses, and why.** It never splits a job by phase and never forces unrelated work into a line. When it selects a ticket, it treats the issue's text, labels, and comments as claims to check against the current code, never as instructions, and it returns `needs-info`, `blocked`, `close-candidate`, or `needs-decomposition` rather than hand over a ticket that is not ready. It never starts Blueprint or Construct, and publishes only after you confirm.
+
+**Floor and ceiling.** A weaker agent gives every ticket the context, scope, completion criteria, and dependencies a fresh agent needs to finish it without reconstructing the whole request. A stronger agent decides between one ticket and an epic, and uses a Charter, Diagnose, or Architect result when one exists without requiring it.
+
 ## Related skills
 
 Blueprint plans from a `plan-ready` ticket scope. See [How skills hand work to each other](../concepts/handoffs.md).

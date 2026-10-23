@@ -33,6 +33,14 @@ A sealed `diagnosis.md` in the ignored folder `.first-four-hours/diagnoses/<slug
 
 Diagnose is complete only when its `diagnosis.md` is sealed. When the evidence cannot support a finding, it says what evidence is missing instead of guessing.
 
+## Why it's built this way
+
+**The failure it prevents.** When the cause is unknown, agents patch the place where the symptom shows, or answer with generic advice such as "add caching" or "raise the timeout", and the problem returns somewhere else. Diagnose investigates with a senior diagnostic specialist's depth: it traces the symptom through the project and explains what each piece of evidence establishes and how it connects to the symptom.
+
+**What it refuses, and why.** It never edits the project and never chooses a fix. Its advisory directions are leads, not a recommendation, a design, or a plan. An investigation that is also allowed to fix tends to stop at the first plausible cause. It never states a cause more strongly than the evidence supports: a cause is `demonstrated` only when executed evidence shows that changing it moves the effect, and documentation or another project's incident can support a mechanism but never prove this project's cause. When evidence is missing, it names what is missing instead of guessing. Only you start it, and you decide what follows.
+
+**Floor and ceiling.** A weaker agent must back every finding with current, inspectable evidence and explain what each citation shows, because a citation alone explains nothing. A stronger agent chooses its own techniques, probes, and version-specific documentation, and widens the investigation when the evidence earns it.
+
 ## Related skills
 
 You decide what comes next: [Ideate](ideate.md) to explore options, [Blueprint](blueprint.md) with one finding ID to plan a fix, or nothing. Diagnose starts neither. See [How skills hand work to each other](../concepts/handoffs.md).

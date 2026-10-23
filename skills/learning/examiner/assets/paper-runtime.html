@@ -419,7 +419,7 @@ rehearsal off and leaves the paper readable and printable.
       lines.push("<li>" + line + "</li>");
     });
     lines.push("</ul>",
-      "<script type=\"application/json\" id=\"paper-attempt-data\">" + JSON.stringify(state).replace(/</g, "\\u003c") + "<\/script>",
+      "<script type=\"application/json\" id=\"paper-attempt-data\">" + JSON.stringify(Object.assign({ savedAt: now }, state)).replace(/</g, "\\u003c") + "<\/script>",
       "</body>", "</html>", "");
     return lines.join("\n");
   }
@@ -761,6 +761,32 @@ rehearsal off and leaves the paper readable and printable.
     setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
   });
 
+  function showLoadError(text) {
+    loadError.textContent = text;
+    loadError.hidden = false;
+  }
+
+  /* A loaded rest break ends when its file was saved, never later. */
+  function endSavedRest(loaded) {
+    const part = loaded.parts[loaded.partIndex];
+    if (loaded.status === "rest") {
+      part.restMs = (isNumber(part.restMs) ? part.restMs : 0) +
+        Math.max(0, (isNumber(loaded.savedAt) ? loaded.savedAt : part.restStartedAt) - part.restStartedAt);
+      part.restStartedAt = null;
+      loaded.status = "running";
+    }
+    delete loaded.savedAt;
+  }
+
+  /* Behind: loading would undo this page's attempt, a part's start, or a part's end. */
+  function behind(loaded) {
+    if (loaded.attempt !== state.attempt) { return state.attempt > loaded.attempt; }
+    return state.parts.some(function (part, index) {
+      const other = loaded.parts[index];
+      return isNumber(part.startedAt) && (other.startedAt !== part.startedAt || (isNumber(part.endedAt) && !isNumber(other.endedAt)));
+    });
+  }
+
   loadInput.addEventListener("change", function () {
     const file = loadInput.files && loadInput.files[0];
     if (!file) { return; }
@@ -776,7 +802,12 @@ rehearsal off and leaves the paper readable and printable.
       }
       loadInput.value = "";
       if (state.status === "finished" || !usable(candidate)) {
-        loadError.hidden = false;
+        showLoadError("This file is not an answer file for this practice paper.");
+        return;
+      }
+      endSavedRest(candidate);
+      if (behind(candidate)) {
+        showLoadError("This file does not continue the attempt on this page, so loading it could give back time already used.");
         return;
       }
       loadError.hidden = true;
@@ -787,7 +818,7 @@ rehearsal off and leaves the paper readable and printable.
     };
     reader.onerror = function () {
       loadInput.value = "";
-      loadError.hidden = false;
+      showLoadError("This file is not an answer file for this practice paper.");
     };
     reader.readAsText(file);
   });

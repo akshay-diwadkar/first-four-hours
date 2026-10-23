@@ -1492,7 +1492,16 @@ PAPER_RUNTIME_EXTERNAL = (
     ("script-created resource", re.compile(
         r"createElement\s*\(\s*[\"'`](?:link|script|img|iframe|embed|object|video|audio|source|base|style)\b",
         re.IGNORECASE)),
-    ("image load", re.compile(r"\bnew\s+Image\b")),
+    ("media load", re.compile(r"\bnew\s+(?:Image|Audio)\b")),
+    ("helper-created resource", re.compile(
+        r"""\(\s*["'`](?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)["'`]""",
+        re.IGNORECASE)),
+    ("source attribute", re.compile(
+        r"""\bsrc(?:set|doc)?["'`]?\]?\s*[:=]|setAttribute\s*\(\s*["'`]src(?:set|doc)?["'`]""", re.IGNORECASE)),
+    ("page navigation", re.compile(
+        r"""\blocation\s*(?:\.\s*(?:href|assign|replace)\b|\.\s*\w+\s*=(?!=)|\[|=(?!=))|(?<![\w$])open\s*\("""
+        r"""|\.\s*(?:requestSubmit|submit)\s*\(|\bhref["'`]?\]?\s*[:=,]\s*["'`]|http-equiv|\baction["'`]?\s*[:=]""",
+        re.IGNORECASE)),
 )
 PAPER_RUNTIME_MAX_BYTES = 40000
 
@@ -1503,9 +1512,9 @@ def validate_paper_runtime(path: Path = PAPER_RUNTIME) -> list[str]:
     if not path.is_file():
         return [f"{label}: paper runtime is missing"]
     errors: list[str] = []
-    if path.stat().st_size > PAPER_RUNTIME_MAX_BYTES:
-        errors.append(f"{label}: paper runtime is larger than {PAPER_RUNTIME_MAX_BYTES} bytes")
     text = path.read_text(encoding="utf-8")
+    if len(text.encode("utf-8")) > PAPER_RUNTIME_MAX_BYTES:
+        errors.append(f"{label}: paper runtime is larger than {PAPER_RUNTIME_MAX_BYTES} bytes")
     errors.extend(f"{label}: paper runtime is not self-contained: {name}"
                   for name, pattern in PAPER_RUNTIME_EXTERNAL if pattern.search(text))
     return errors

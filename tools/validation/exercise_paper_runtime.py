@@ -50,7 +50,7 @@ MAC_PATHS = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 )
-EXPECTED_CHECKS = 22
+EXPECTED_CHECKS = 27
 
 
 class ExerciseError(Exception):
@@ -76,57 +76,15 @@ def find_browser(explicit: str | None) -> str:
     raise ExerciseError("no Chrome or Edge found; pass --browser <path>")
 
 
-class Session:
-    """One headless browser on one profile, spoken to over the DevTools protocol."""
+class Connection:
+    """One DevTools WebSocket connection to a page target."""
 
-    def __init__(self, browser: str, profile: Path, downloads: Path) -> None:
-        self.profile = profile
-        self.downloads = downloads
+    def __init__(self) -> None:
         self.events: list[dict[str, Any]] = []
         self.sock: socket.socket | None = None
         self.buffer = b""
         self.next_id = 0
-        self.closed = False
-        port_file = profile / "DevToolsActivePort"
-        if port_file.exists():
-            port_file.unlink()
-        self.process = subprocess.Popen(
-            [browser, "--headless=new", "--remote-debugging-port=0", f"--user-data-dir={profile}",
-             "--no-first-run", "--no-default-browser-check", "--disable-extensions", "about:blank"],
-            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-
-    def connect(self) -> None:
-        port_file = self.profile / "DevToolsActivePort"
-        deadline = time.monotonic() + 20
-        port = ""
-        while time.monotonic() < deadline:
-            if port_file.exists():
-                lines = port_file.read_text(encoding="utf-8", errors="replace").splitlines()
-                if lines and lines[0].strip().isdigit():
-                    port = lines[0].strip()
-                    break
-            time.sleep(0.1)
-        if not port:
-            raise ExerciseError("no DevTools port within 20 s")
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        target = ""
-        while not target:
-            try:
-                with opener.open(f"http://127.0.0.1:{port}/json/list", timeout=5) as response:
-                    listing = json.loads(response.read().decode("utf-8"))
-                target = next((entry["webSocketDebuggerUrl"] for entry in listing if entry.get("type") == "page"), "")
-            except OSError:
-                target = ""
-            if not target:
-                if time.monotonic() >= deadline:
-                    raise ExerciseError("no DevTools page target within 20 s")
-                time.sleep(0.1)
-        self._handshake(target)
-        self.call("Page.enable")
-        self.call("Network.enable")
-        self.call("Browser.setDownloadBehavior",
-                  {"behavior": "allow", "downloadPath": str(self.downloads), "eventsEnabled": True})
+        self.target_id = ""
 
     def _handshake(self, url: str) -> None:
         parsed = urllib.parse.urlsplit(url)
@@ -302,6 +260,111 @@ class Session:
         while float(self.evaluate("Date.now()")) < epoch_ms:
             time.sleep(0.1)
 
+
+class Session(Connection):
+    """One headless browser on one profile, spoken to over the DevTools protocol."""
+
+    def __init__(self, browser: str, profile: Path, downloads: Path) -> None:
+        super().__init__()
+        self.profile = profile
+        self.downloads = downloads
+        self.closed = False
+        self.port = ""
+        port_file = profile / "DevToolsActivePort"
+        if port_file.exists():
+            port_file.unlink()
+        self.process = subprocess.Popen(
+            [browser, "--headless=new", "--remote-debugging-port=0", f"--user-data-dir={profile}",
+             "--no-first-run", "--no-default-browser-check", "--disable-extensions", "about:blank"],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+
+    def connect(self) -> None:
+        port_file = self.profile / "DevToolsActivePort"
+        deadline = time.monotonic() + 20
+        port = ""
+        while time.monotonic() < deadline:
+            if port_file.exists():
+                lines = port_file.read_text(encoding="utf-8", errors="replace").splitlines()
+                if lines and lines[0].strip().isdigit():
+                    port = lines[0].strip()
+                    break
+            time.sleep(0.1)
+        if not port:
+            raise ExerciseError("no DevTools port within 20 s")
+        self.port = port
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        target = ""
+        while not target:
+            try:
+                with opener.open(f"http://127.0.0.1:{port}/json/list", timeout=5) as response:
+                    listing = json.loads(response.read().decode("utf-8"))
+                target = next((entry["webSocketDebuggerUrl"] for entry in listing if entry.get("type") == "page"), "")
+            except OSError:
+                target = ""
+            if not target:
+                if time.monotonic() >= deadline:
+                    raise ExerciseError("no DevTools page target within 20 s")
+                time.sleep(0.1)
+        self._handshake(target)
+        self.call("Page.enable")
+        self.call("Network.enable")
+        self.call("Browser.setDownloadBehavior",
+                  {"behavior": "allowAndName", "downloadPath": str(self.downloads), "eventsEnabled": True})
+
+    def open_tab(self, url: str) -> Connection:
+        created = self.call("Target.createTarget", {"url": "about:blank"})
+        target_id = str(created.get("targetId", ""))
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        deadline = time.monotonic() + 10
+        socket_url = ""
+        while not socket_url:
+            try:
+                with opener.open(f"http://127.0.0.1:{self.port}/json/list", timeout=5) as response:
+                    listing = json.loads(response.read().decode("utf-8"))
+                socket_url = next((entry.get("webSocketDebuggerUrl", "") for entry in listing
+                                   if entry.get("id") == target_id), "")
+            except OSError:
+                socket_url = ""
+            if not socket_url:
+                if time.monotonic() >= deadline:
+                    raise ExerciseError(f"tab {target_id} did not appear within 10 s")
+                time.sleep(0.1)
+        tab = Connection()
+        tab.target_id = target_id
+        tab._handshake(socket_url)
+        tab.call("Page.enable")
+        tab.call("Network.enable")
+        tab.navigate(url)
+        return tab
+
+    def close_tab(self, tab: Connection) -> None:
+        try:
+            self.call("Target.closeTarget", {"targetId": tab.target_id})
+        finally:
+            if tab.sock is not None:
+                try:
+                    tab.sock.close()
+                except OSError:
+                    pass
+                tab.sock = None
+
+    def saved_download(self, seconds: float = 5) -> str:
+        deadline = time.monotonic() + seconds
+        while True:
+            for event in self.events_named("Browser.downloadProgress"):
+                state = event.get("params", {}).get("state")
+                if state == "canceled":
+                    raise ExerciseError("a download was canceled")
+                if state == "completed":
+                    return Path(str(event["params"]["filePath"])).read_text(encoding="utf-8")
+            if self._receive(deadline) is None:
+                raise ExerciseError(f"no download completed within {seconds:g} s")
+
+    def clear_downloads(self) -> None:
+        self.clear_events("Browser.downloadWillBegin")
+        self.clear_events("Browser.downloadProgress")
+
     def close(self) -> None:
         if self.closed:
             return
@@ -331,7 +394,7 @@ class Session:
 class Page:
     """Reads and actions on the paper through the runtime's ids and attributes."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Connection) -> None:
         self.session = session
 
     def js(self, expression: str) -> Any:
@@ -420,6 +483,18 @@ class Page:
 
     def now(self) -> float:
         return float(self.js("Date.now()"))
+
+    def load_file(self, path: Path) -> None:
+        document = self.session.call("DOM.getDocument")
+        node = self.session.call("DOM.querySelector", {"nodeId": document["root"]["nodeId"], "selector": "#paper-load"})
+        self.session.call("DOM.setFileInputFiles", {"files": [str(path)], "nodeId": node["nodeId"]})
+
+    def attempt_data(self, text: str) -> dict[str, Any]:
+        data = self.js(f"JSON.parse(new DOMParser().parseFromString({json.dumps(text)}, 'text/html')"
+                       ".getElementById('paper-attempt-data').textContent)")
+        if not isinstance(data, dict):
+            raise ExerciseError("the answer file holds no attempt data")
+        return data
 
 
 class Checks:
@@ -524,6 +599,29 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     page.click("#paper-palette button[data-palette-question='3']")
     page.set_text("#q3", "Rain fell all day.")
     checks.run("A6", [(page.palette_entry("3")["state"] == "answered", "palette 3 is not answered")])
+
+    tab = session.open_tab(url)
+    try:
+        other = Page(tab)
+        tab_entry = other.palette_entry("2")
+        gap = abs(other.remaining() - page.remaining())
+        tab_status = other.status()
+        tab_visible = other.visible_questions()
+        page.click("#paper-flag")
+        tab.wait_until("document.querySelector(\"#paper-palette button[data-palette-question='3']\")"
+                       ".getAttribute('data-flagged') === 'true'", 3)
+        page.click("#paper-flag")
+        tab.wait_until("document.querySelector(\"#paper-palette button[data-palette-question='3']\")"
+                       ".getAttribute('data-flagged') === 'false'", 3)
+        checks.run("A7", [
+            (tab_status == "running", f"the second tab's status is {tab_status!r}, not running"),
+            (tab_visible == ["3"], f"the second tab shows questions {tab_visible}"),
+            (tab_entry["flagged"] == "true" and tab_entry["state"] == "unanswered", f"the second tab's palette 2 is {tab_entry}"),
+            (gap <= 2500, f"the two tabs' clocks differ by {gap} ms"),
+        ])
+    finally:
+        requests.extend(tab.events)
+        session.close_tab(tab)
     before = page.remaining()
 
     def restored(ident: str, low: int, high: int, label: str) -> None:
@@ -539,22 +637,52 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         ])
 
     session.reload()
-    restored("A7", before - 10000, before - 1, "after reload")
+    restored("A8", before - 10000, before - 1, "after reload")
 
+    a = page.now()
     page.click("#paper-rest")
+    b = page.now()
     status = page.status()
     hidden = page.visible_questions() == []
     frozen = page.remaining()
-    page.session.sleep_until(page.now() + 2000)
+    session.clear_downloads()
+    page.click("#paper-save")
+    rest_file = session.saved_download()
+    rest_data = page.attempt_data(rest_file)
+    session.sleep_until(b + 2000)
     later = page.remaining()
+    c = page.now()
     page.click("#paper-rest")
+    d = page.now()
     resumed = page.remaining()
-    checks.run("A8", [
+    rest_ms = page.stored()["parts"][0]["restMs"]
+    checks.run("A9", [
         (status == "rest", f"status is {status!r}, not rest"),
         (hidden, "a question is visible during the rest break"),
+        (rest_data.get("status") == "rest" and isinstance(rest_data.get("savedAt"), (int, float)),
+         f"the rest-time file has status {rest_data.get('status')!r} and savedAt {rest_data.get('savedAt')!r}"),
         (abs(later - frozen) <= 300, f"remaining moved from {frozen} to {later} ms during the rest break"),
         (page.status() == "running", f"status is {page.status()!r} after the rest break"),
-        (resumed > frozen - 1500, f"remaining {resumed} ms fell too far below {frozen} ms"),
+        (frozen - 1500 < resumed <= frozen, f"remaining {resumed} ms after the rest is not in ({frozen - 1500}, {frozen}]"),
+        (c - b <= rest_ms <= d - a, f"restMs {rest_ms} is not within [{c - b}, {d - a}]"),
+    ])
+
+    rest_path = temp / "rest-time.html"
+    rest_path.write_text(rest_file, encoding="utf-8", newline="\n")
+    rest_before = rest_ms
+    left_before = page.remaining()
+    page.load_file(rest_path)
+    session.wait_until(f"(() => {{ const s = {STORED}; return s.parts[0].restStartedAt === null"
+                       f" && s.parts[0].restMs !== {json.dumps(rest_before)}; }})()", 5)
+    part = rest_data["parts"][0]
+    expected = part["restMs"] + rest_data["savedAt"] - part["restStartedAt"]
+    stored_rest = page.stored()["parts"][0]["restMs"]
+    checks.run("A10", [
+        (page.status() == "running", f"status is {page.status()!r}, not running"),
+        (not page.visible("#paper-load-error"), "#paper-load-error is visible"),
+        (stored_rest == expected, f"restMs after loading is {stored_rest}, not {expected}"),
+        (stored_rest < rest_before, f"restMs after loading {stored_rest} is not below {rest_before}"),
+        (page.remaining() < left_before, "remaining time did not fall after loading the rest-time file"),
     ])
 
     left = page.remaining()
@@ -565,7 +693,7 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     page = Page(session)
     session.sleep_until(started + 3000)
     session.navigate(url)
-    restored("A9", left - 12000, left - 3000, "after reopening")
+    restored("A11", left - 12000, left - 3000, "after reopening")
 
     page.click("#paper-submit")
     confirm_visible = page.visible("#paper-submit-confirm")
@@ -574,13 +702,19 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     break_left = page.remaining("#paper-break-clock")
     stored = page.stored()
     break_ends = stored.get("breakEndsAt") if isinstance(stored, dict) else None
-    checks.run("A10", [
+    page.load_file(rest_path)
+    session.wait_until("(() => { const e = document.querySelector('#paper-load-error');"
+                       " return !!e && e.getClientRects().length > 0; })()", 2)
+    after_refusal = page.stored()
+    checks.run("A12", [
         (confirm_visible, "#paper-submit-confirm is not visible"),
         (confirm_count == "1", f"#paper-submit-confirm data-unanswered is {confirm_count!r}"),
-        (page.status() == "break", f"status is {page.status()!r}, not break"),
         (0 < break_left <= 3000, f"break remaining {break_left} ms is not in (0, 3000]"),
         (page.visible_questions() == [], "a question is visible during the break"),
         (isinstance(break_ends, (int, float)) and not isinstance(break_ends, bool), f"stored breakEndsAt is {break_ends!r}"),
+        ("give back time" in page.text("#paper-load-error"), f"the load error reads {page.text('#paper-load-error')!r}"),
+        (page.status() == "break", f"status is {page.status()!r}, not break"),
+        (after_refusal["parts"][0]["endedBy"] == "submitted", f"part 1 ended by {after_refusal['parts'][0]['endedBy']!r}"),
     ])
     assert isinstance(break_ends, (int, float))
 
@@ -590,7 +724,7 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     stored = page.stored()
     left = page.remaining()
     palette = page.palette()
-    checks.run("A11", [
+    checks.run("A13", [
         (page.status() == "running", f"status is {page.status()!r}, not running"),
         (page.part() == "p2", f"part is {page.part()!r}, not p2"),
         (stored["parts"][1]["startedAt"] == break_ends, f"part 2 started at {stored['parts'][1]['startedAt']}, not {break_ends}"),
@@ -601,7 +735,7 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
 
     page.set_text("#q4", "7")
     page.click("#paper-next")
-    checks.run("A12", [
+    checks.run("A14", [
         (page.visible_questions() == ["5"], f"visible questions are {page.visible_questions()}"),
         (page.disabled("#paper-previous"), "#paper-previous is enabled in a forward-only part"),
     ])
@@ -620,12 +754,13 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         session.pump(0.2)
     session.pump(0.5)
     downloads = session.events_named("Browser.downloadWillBegin")
-    checks.run("A13", [
+    checks.run("A15", [
         (page.status() == "finished", f"status is {page.status()!r}, not finished"),
         (stored["parts"][1]["endedBy"] == "expired", f"part 2 ended by {stored['parts'][1]['endedBy']!r}"),
         (stored["parts"][1]["endedAt"] == deadline, f"part 2 ended at {stored['parts'][1]['endedAt']}, not {deadline}"),
         (stored["parts"][0]["endedBy"] == "submitted", f"part 1 ended by {stored['parts'][0]['endedBy']!r}"),
         (page.locked(), "the finished paper is not locked"),
+        (page.visible_questions() == ["1", "2", "3", "4", "5"], f"visible questions are {page.visible_questions()}"),
         (page.visible("#paper-attempt"), "#paper-attempt is not visible"),
         (download == ANSWER_FILE, f"download name is {download!r}"),
         (isinstance(href, str) and href.startswith("blob:"), f"href is {href!r}"),
@@ -635,29 +770,28 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     ])
 
     answer_text = str(page.js(f"fetch({json.dumps(href)}).then(response => response.text())"))
-    data = page.js(f"JSON.parse(new DOMParser().parseFromString({json.dumps(answer_text)}, 'text/html')"
-                   ".getElementById('paper-attempt-data').textContent)")
-    answers = data.get("answers", {}) if isinstance(data, dict) else {}
-    checks.run("A14", [
+    data = page.attempt_data(answer_text)
+    answers = data.get("answers", {})
+    checks.run("A16", [
         ("This file was made on your device" in answer_text, "the answer file lacks the on-device sentence"),
         ("Attempt 1" in answer_text, "the answer file lacks Attempt 1"),
         ("Question 2: no answer (flagged for review)" in answer_text, "the answer file lacks the flagged unanswered question 2"),
-        (isinstance(data, dict) and data.get("id") == "runtime-exercise-01", "attempt data id differs"),
+        (data.get("id") == "runtime-exercise-01", "attempt data id differs"),
         (answers.get("q1") == "A", f"attempt data q1 is {answers.get('q1')!r}"),
         (answers.get("q3") == "Rain fell all day.", f"attempt data q3 is {answers.get('q3')!r}"),
         (answers.get("q4") == "7", f"attempt data q4 is {answers.get('q4')!r}"),
-        (isinstance(data, dict) and "2" in data.get("flags", []), "attempt data flags lack 2"),
-        (isinstance(data, dict) and data["parts"][0]["endedBy"] == "submitted", "attempt data part 1 not submitted"),
-        (isinstance(data, dict) and data["parts"][1]["endedBy"] == "expired", "attempt data part 2 not expired"),
+        ("2" in data.get("flags", []), "attempt data flags lack 2"),
+        (data["parts"][0]["endedBy"] == "submitted", "attempt data part 1 not submitted"),
+        (data["parts"][1]["endedBy"] == "expired", "attempt data part 2 not expired"),
     ])
-    (temp / "answers.html").write_text(answer_text, encoding="utf-8", newline="\n")
 
     session.clear_events("Browser.downloadWillBegin")
     session.reload()
     session.sleep_until(page.now() + 2000)
-    checks.run("A15", [
+    checks.run("A17", [
         (page.status() == "finished", f"status is {page.status()!r}, not finished"),
         (page.locked(), "the finished paper is not locked after reload"),
+        (page.visible_questions() == ["1", "2", "3", "4", "5"], f"visible questions are {page.visible_questions()}"),
         (page.exists("#paper-attempt-download"), "#paper-attempt-download is missing"),
         (not session.events_named("Browser.downloadWillBegin"), "a download began again after reload"),
     ])
@@ -666,18 +800,24 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     confirm_visible = page.visible("#paper-new-attempt-confirm")
     page.click("#paper-new-attempt-yes")
     stored = page.stored()
-    checks.run("A16", [
+    no_radio = page.js("Array.from(document.querySelectorAll(\"input[name='q1']\")).some(e => e.checked)") is False
+    q3_empty = page.value("#q3") == ""
+    page.load_file(rest_path)
+    session.wait_until("(() => { const e = document.querySelector('#paper-load-error');"
+                       " return !!e && e.getClientRects().length > 0; })()", 5)
+    checks.run("A18", [
         (confirm_visible, "#paper-new-attempt-confirm is not visible"),
-        (page.status() == "not-started", f"status is {page.status()!r}, not not-started"),
         (stored["attempt"] == 2, f"stored attempt is {stored['attempt']!r}"),
-        (page.js("Array.from(document.querySelectorAll(\"input[name='q1']\")).some(e => e.checked)") is False,
-         "a q1 radio is still checked"),
-        (page.value("#q3") == "", f"q3 is {page.value('#q3')!r}"),
+        (no_radio, "a q1 radio is still checked"),
+        (q3_empty, "q3 is not empty after the new attempt"),
+        ("give back time" in page.text("#paper-load-error"), f"the load error reads {page.text('#paper-load-error')!r}"),
+        (page.status() == "not-started", f"status is {page.status()!r}, not not-started"),
+        (page.stored()["attempt"] == 2, "the stored attempt changed after a refused load"),
     ])
 
     requests.extend(session.events)
     foreign = _foreign_requests(requests, [url])
-    checks.run("A17", [(not foreign, f"requests outside the paper: {foreign}")])
+    checks.run("A19", [(not foreign, f"requests outside the paper: {foreign}")])
     session.close()
     return product
 
@@ -696,25 +836,96 @@ def scenario_b(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         ("extra time" not in page.text("#paper-start-screen"), "#paper-start-screen mentions extra time"),
     ])
 
+    session.clear_downloads()
+    page.click("#paper-save")
+    before_start = session.saved_download()
+    begun = session.events_named("Browser.downloadWillBegin")
+    early = page.attempt_data(before_start)
+    checks.run("B2", [
+        (len(begun) == 1, f"{len(begun)} downloads began, not 1"),
+        (bool(begun) and begun[0]["params"].get("suggestedFilename") == ANSWER_FILE,
+         f"download suggested {begun[0]['params'].get('suggestedFilename') if begun else None!r}"),
+        (early.get("status") == "not-started", f"the saved status is {early.get('status')!r}"),
+        (early["parts"][0]["startedAt"] is None, f"the saved part 1 start is {early['parts'][0]['startedAt']!r}"),
+    ])
+    before_path = temp / "before-start.html"
+    before_path.write_text(before_start, encoding="utf-8", newline="\n")
+
     page.click("#paper-start")
     left = page.remaining()
-    checks.run("B2", [
+    checks.run("B3", [
         (page.status() == "running", f"status is {page.status()!r}, not running"),
         (25000 < left <= 30000, f"remaining {left} ms is not in (25000, 30000]"),
     ])
 
-    document = session.call("DOM.getDocument")
-    node = session.call("DOM.querySelector", {"nodeId": document["root"]["nodeId"], "selector": "#paper-load"})
-    session.call("DOM.setFileInputFiles", {"files": [str(temp / "answers.html")], "nodeId": node["nodeId"]})
-    session.wait_until("document.documentElement.getAttribute('data-paper-status') === 'finished'", 5)
-    checks.run("B3", [
-        (page.checked("input[name='q1'][value='A']"), "radio q1 A is not checked"),
-        (page.value("#q3") == "Rain fell all day.", f"q3 is {page.value('#q3')!r}"),
-        (not page.visible("#paper-load-error"), "#paper-load-error is visible"),
+    page.click("#paper-next")
+    page.click("input[name='q2'][value='A']")
+    page.click("input[name='q2'][value='C']")
+    page.click("#paper-flag")
+    entry = page.palette_entry("2")
+    page.click("#paper-next")
+    page.set_text("#q3", "Snow fell at night.")
+    saved_left = page.remaining()
+    session.clear_downloads()
+    page.click("#paper-save")
+    mid = session.saved_download()
+    mid_data = page.attempt_data(mid)
+    started = mid_data["parts"][0]["startedAt"]
+    checks.run("B4", [
+        (entry["state"] == "answered" and entry["flagged"] == "true", f"palette 2 is {entry}"),
+        ("Question 2: A, C (flagged for review)" in mid, "the saved file lacks question 2's ticked boxes and flag"),
+        ("Question 3: Snow fell at night." in mid, "the saved file lacks question 3's answer"),
+        (mid_data.get("answers", {}).get("q2") == ["A", "C"], f"saved q2 is {mid_data.get('answers', {}).get('q2')!r}"),
+        ("2" in mid_data.get("flags", []), f"saved flags are {mid_data.get('flags')!r}"),
+        (mid_data.get("status") == "running", f"saved status is {mid_data.get('status')!r}"),
+        (isinstance(started, (int, float)) and not isinstance(started, bool), f"saved part 1 start is {started!r}"),
+    ])
+    mid_path = temp / "mid-attempt.html"
+    mid_path.write_text(mid, encoding="utf-8", newline="\n")
+    page.set_text("#q3", "Changed later.")
+
+    page.load_file(before_path)
+    session.wait_until("(() => { const e = document.querySelector('#paper-load-error');"
+                       " return !!e && e.getClientRects().length > 0; })()", 5)
+    refusal = page.text("#paper-load-error")
+    status = page.status()
+    kept = page.value("#q3")
+    after_refusal = page.remaining()
+    page.load_file(mid_path)
+    session.wait_until("document.querySelector('#q3').value === 'Snow fell at night.'", 5)
+    checks.run("B5", [
+        ("give back time" in refusal, f"the load error reads {refusal!r}"),
+        (status == "running", f"status after the refused load is {status!r}"),
+        (kept == "Changed later.", f"q3 after the refused load is {kept!r}"),
+        (after_refusal <= saved_left, f"remaining {after_refusal} ms rose above {saved_left} ms"),
+        (not page.visible("#paper-load-error"), "#paper-load-error is visible after the accepted load"),
+        (page.status() == "running", f"status after the accepted load is {page.status()!r}"),
+    ])
+
+    session.reload()
+    reset_status = page.status()
+    reset_q3 = page.value("#q3")
+    page.load_file(mid_path)
+    session.wait_until("document.documentElement.getAttribute('data-paper-status') === 'running'", 5)
+    clock = page.js("(() => ({ left: Number(document.querySelector('#paper-clock').getAttribute('data-remaining-ms')),"
+                    " now: Date.now() }))()")
+    resumed = page.palette_entry("2")
+    checks.run("B6", [
+        (reset_status == "not-started", f"status after reload is {reset_status!r}"),
+        (reset_q3 == "", f"q3 after reload is {reset_q3!r}"),
+        (page.checked("input[name='q2'][value='A']") and page.checked("input[name='q2'][value='C']"),
+         "q2 A and C are not both checked"),
+        (not page.checked("input[name='q2'][value='B']"), "q2 B is checked"),
+        (resumed["flagged"] == "true", f"palette 2 is {resumed}"),
+        (page.value("#q3") == "Snow fell at night.", f"q3 is {page.value('#q3')!r}"),
+        (page.visible_questions() == ["3"], f"visible questions are {page.visible_questions()}"),
+        (clock["left"] < saved_left, f"remaining {clock['left']} ms is not below {saved_left} ms"),
+        (abs(clock["left"] + clock["now"] - (started + 30000)) <= 500,
+         f"the deadline moved: {clock['left']} + {clock['now']} is not {started + 30000}"),
     ])
 
     session.navigate(url_c)
-    checks.run("B4", [
+    checks.run("B7", [
         (page.status() == "invalid", f"status is {page.status()!r}, not invalid"),
         (page.visible("#paper-runtime-error"), "#paper-runtime-error is not visible"),
         (len(page.visible_questions()) == 5, f"visible questions are {page.visible_questions()}"),
@@ -722,7 +933,7 @@ def scenario_b(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     ])
 
     foreign = _foreign_requests(session.events, [url_b, url_c])
-    checks.run("B5", [(not foreign, f"requests outside the papers: {foreign}")])
+    checks.run("B8", [(not foreign, f"requests outside the papers: {foreign}")])
     session.close()
 
 

@@ -28,10 +28,26 @@ def _draft(*blocks: tuple[str, str, tuple[str, ...]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def test_live_repository_metadata() -> None:
+def test_live_repository_metadata(tmp_path: Path) -> None:
     # Call the validator directly: one contained pytest process, with package,
     # reference, protocol, projection, and guidance checks on every routine run.
     assert validator.main() == 0
+    # Retired identities stay detected in any letter case, through backslash paths,
+    # and as executable compatibility mappings; unrelated words are not hits.
+    (tmp_path / "skills").mkdir()
+    samples = {
+        "upper.md": "Use the `Think` skill.\n",
+        "path.md": "See skills\\routing for history.\n",
+        "mapping.py": "LEGACY = {'map-codebase': 'atlas'}\n",
+        "clean.md": "Nothing retired here; skills route through the router.\n",
+    }
+    for name, text in samples.items():
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    assert validator.validate_canonical_convergence(tmp_path, [tmp_path / name for name in samples]) == [
+        "upper.md: retired active surface remains: retired reasoning identity",
+        "path.md: retired active surface remains: skills/routing",
+        "mapping.py: retired compatibility mapping remains: map-codebase -> atlas",
+    ]
     assert inventory_errors(json.loads(INVENTORY.read_text(encoding="utf-8"))) == []
     # A draft's Exact blocks on agent-loaded guidance estimate measured minus
     # replaced plus drafted tokens; a new reference adds its whole text, and an

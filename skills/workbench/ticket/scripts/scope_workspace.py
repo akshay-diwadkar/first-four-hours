@@ -54,16 +54,29 @@ def _is_link(path: Path) -> bool:
 def _git_exclude(root: Path) -> Path:
     """Return the worktree-local exclude path."""
     try:
-        inside = _git(root, "rev-parse", "--is-inside-work-tree")
+        probe = _git(root, "rev-parse", "--is-inside-work-tree", "--show-toplevel", "--git-path", "info/exclude")
     except FileNotFoundError:
         raise WorkspaceError("repo-root must be a Git worktree; ticket-scope.md binds a Git checkout") from None
-    if inside.returncode != 0 or inside.stdout.strip() != "true":
-        raise WorkspaceError("repo-root must be a Git worktree; ticket-scope.md binds a Git checkout")
-    top = _git(root, "rev-parse", "--show-toplevel")
-    if top.returncode != 0 or Path(top.stdout.strip()).resolve() != root:
-        raise WorkspaceError(f"repo-root must be the Git worktree root (expected {top.stdout.strip()}); pass the top-level directory")
-    result = _git(root, "rev-parse", "--git-path", "info/exclude")
-    raw = result.stdout.strip()
+    probe_lines = probe.stdout.strip().splitlines()
+    if probe.returncode == 0 and len(probe_lines) == 3 and probe_lines[0].strip() == "true":
+        # One process answers all three questions in a worktree; anything else replays the separate checks.
+        top_text = probe_lines[1].strip()
+        if Path(top_text).resolve() != root:
+            raise WorkspaceError(f"repo-root must be the Git worktree root (expected {top_text}); pass the top-level directory")
+        result = probe
+        raw = probe_lines[2].strip()
+    else:
+        try:
+            inside = _git(root, "rev-parse", "--is-inside-work-tree")
+        except FileNotFoundError:
+            raise WorkspaceError("repo-root must be a Git worktree; ticket-scope.md binds a Git checkout") from None
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            raise WorkspaceError("repo-root must be a Git worktree; ticket-scope.md binds a Git checkout")
+        top = _git(root, "rev-parse", "--show-toplevel")
+        if top.returncode != 0 or Path(top.stdout.strip()).resolve() != root:
+            raise WorkspaceError(f"repo-root must be the Git worktree root (expected {top.stdout.strip()}); pass the top-level directory")
+        result = _git(root, "rev-parse", "--git-path", "info/exclude")
+        raw = result.stdout.strip()
     if result.returncode != 0 or not raw:
         raise WorkspaceError("Git repository has no resolvable worktree-local info/exclude path; repair Git metadata and retry")
     exclude = Path(raw)

@@ -75,7 +75,7 @@ def _git_metadata(root: Path) -> Path | None:
 def _git_exclude(root: Path) -> Path | None:
     """Return the worktree-local exclude path, or None only for a target with no Git metadata."""
     try:
-        inside = _git(root, "rev-parse", "--is-inside-work-tree")
+        probe = _git(root, "rev-parse", "--is-inside-work-tree", "--show-toplevel", "--git-path", "info/exclude")
     except FileNotFoundError:
         metadata = _git_metadata(root)
         if metadata is not None:
@@ -83,29 +83,50 @@ def _git_exclude(root: Path) -> Path | None:
                 "namespace_unsafe", f"git is unavailable for the Git target at {metadata}; install Git and retry"
             ) from None
         return None
-    if inside.returncode == 0 and inside.stdout.strip() != "true":
-        raise WorkspaceError(
-            "namespace_unsafe",
-            f"repo-root is Git metadata or a bare repository, not a worktree: {root}; pass the worktree top-level directory",
-        )
-    if inside.returncode != 0:
-        metadata = _git_metadata(root)
-        if metadata is not None:
-            reason = "; ".join(inside.stderr.strip().splitlines()) or "no diagnostic output"
+    probe_lines = probe.stdout.strip().splitlines()
+    if probe.returncode == 0 and len(probe_lines) == 3 and probe_lines[0].strip() == "true":
+        # One process answers all three questions in a worktree; anything else replays the separate checks.
+        top_text = probe_lines[1].strip()
+        if Path(top_text).resolve() != root:
             raise WorkspaceError(
                 "namespace_unsafe",
-                f"Git metadata exists at {metadata}, but git cannot resolve the repository for {root} ({reason}); "
-                "repair that repository, for example its ownership trust or a corrupt HEAD, or remove the stray metadata, and retry",
+                f"repo-root must be the Git worktree root (expected {top_text}); pass the top-level directory",
             )
-        return None
-    top = _git(root, "rev-parse", "--show-toplevel")
-    if top.returncode != 0 or Path(top.stdout.strip()).resolve() != root:
-        raise WorkspaceError(
-            "namespace_unsafe",
-            f"repo-root must be the Git worktree root (expected {top.stdout.strip()}); pass the top-level directory",
-        )
-    result = _git(root, "rev-parse", "--git-path", "info/exclude")
-    raw = result.stdout.strip()
+        result = probe
+        raw = probe_lines[2].strip()
+    else:
+        try:
+            inside = _git(root, "rev-parse", "--is-inside-work-tree")
+        except FileNotFoundError:
+            metadata = _git_metadata(root)
+            if metadata is not None:
+                raise WorkspaceError(
+                    "namespace_unsafe", f"git is unavailable for the Git target at {metadata}; install Git and retry"
+                ) from None
+            return None
+        if inside.returncode == 0 and inside.stdout.strip() != "true":
+            raise WorkspaceError(
+                "namespace_unsafe",
+                f"repo-root is Git metadata or a bare repository, not a worktree: {root}; pass the worktree top-level directory",
+            )
+        if inside.returncode != 0:
+            metadata = _git_metadata(root)
+            if metadata is not None:
+                reason = "; ".join(inside.stderr.strip().splitlines()) or "no diagnostic output"
+                raise WorkspaceError(
+                    "namespace_unsafe",
+                    f"Git metadata exists at {metadata}, but git cannot resolve the repository for {root} ({reason}); "
+                    "repair that repository, for example its ownership trust or a corrupt HEAD, or remove the stray metadata, and retry",
+                )
+            return None
+        top = _git(root, "rev-parse", "--show-toplevel")
+        if top.returncode != 0 or Path(top.stdout.strip()).resolve() != root:
+            raise WorkspaceError(
+                "namespace_unsafe",
+                f"repo-root must be the Git worktree root (expected {top.stdout.strip()}); pass the top-level directory",
+            )
+        result = _git(root, "rev-parse", "--git-path", "info/exclude")
+        raw = result.stdout.strip()
     if result.returncode != 0 or not raw:
         raise WorkspaceError(
             "namespace_unsafe", "Git repository has no resolvable worktree-local info/exclude path; repair Git metadata and retry"

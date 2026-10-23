@@ -132,7 +132,7 @@ flowchart LR
 
 def _git(repo: Path, *args: str) -> str:
     return subprocess.run(
-        ["git", "-c", "core.autocrlf=false", "-c", "user.name=PR Test", "-c", "user.email=pr@example.invalid", *args],
+        ["git", "-c", "core.autocrlf=false", "-c", "maintenance.auto=false", "-c", "user.name=PR Test", "-c", "user.email=pr@example.invalid", *args],
         cwd=repo, capture_output=True, encoding="utf-8", check=True,
     ).stdout
 

@@ -31,7 +31,8 @@ def seed_git(repo: Path, files: dict[str, str] | None = None, *, remote: str | N
         git("init", "-q", "-b", "main")
         # Fixture identity is local setup; real commits below read these values.
         with (seed / ".git" / "config").open("a", encoding="utf-8") as config:
-            config.write("\n[user]\n\temail = tests@example.invalid\n\tname = Tests\n")
+            # Commits in fixture copies would otherwise each spawn background `git maintenance run --auto`.
+            config.write("\n[user]\n\temail = tests@example.invalid\n\tname = Tests\n[maintenance]\n\tauto = false\n")
         if remote:
             git("remote", "add", "origin", remote)
         git("add", ".")

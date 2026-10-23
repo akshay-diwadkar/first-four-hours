@@ -571,30 +571,45 @@ def _changes_for_args(args: argparse.Namespace, root: Path) -> list[Change]:
     return changes
 
 
+DURATIONS_PATH = Path(__file__).resolve().parent / "test-durations.json"
 # Test files run in at most this many concurrent pytest processes, so idle cores
 # absorb host load; every case still counts against one supervisor deadline.
 MAX_PARALLEL_SHARDS = 4
 
 
+def _durations() -> dict[str, float]:
+    """Load recorded solo seconds per test file; an absent file packs every file equally."""
+    if not DURATIONS_PATH.is_file():
+        return {}
+    data = json.loads(DURATIONS_PATH.read_text(encoding="utf-8"))
+    seconds = data.get("seconds") if isinstance(data, dict) else None
+    if not isinstance(seconds, dict) or any(
+        not isinstance(path, str) or isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0
+        for path, value in seconds.items()
+    ):
+        raise ValueError("tools/validation/test-durations.json must map test file paths to non-negative seconds")
+    return {path: float(value) for path, value in seconds.items()}
+
+
 def _shards(root: Path, targets: list[str]) -> list[list[str]]:
-    """Keep each file's targets together; pack the largest files first into the lightest shard."""
+    """Keep each file's targets together; pack the slowest recorded files first into the lightest shard."""
     groups: dict[str, list[str]] = {}
     for target in targets:
         groups.setdefault(target.partition("::")[0], []).append(target)
+    recorded = _durations()
+    # A file without a record weighs the mean recorded file, so new modules still spread out.
+    default = sum(recorded.values()) / len(recorded) if recorded else 1.0
 
-    def size(path: str) -> int:
-        try:
-            return (root / path).stat().st_size
-        except OSError:
-            return 0
+    def weight(path: str) -> float:
+        return recorded.get(path, default)
 
     count = min(MAX_PARALLEL_SHARDS, len(groups))
     shards: list[list[str]] = [[] for _ in range(count)]
-    loads = [0] * count
-    for path in sorted(groups, key=lambda path: (-size(path), path)):
+    loads = [0.0] * count
+    for path in sorted(groups, key=lambda path: (-weight(path), path)):
         lightest = loads.index(min(loads))
         shards[lightest].extend(groups[path])
-        loads[lightest] += size(path)
+        loads[lightest] += weight(path)
     return shards
 
 
@@ -675,10 +690,31 @@ def _run_shards(root: Path, command: list[str], shards: list[list[str]], env: di
     return 1 if 1 in codes else next((code for code in codes if code != 0), 0)
 
 
+# Pytest processes inherit only these caller variables (names compared in upper case). Each
+# inherited variable slows every git and Python launch on Windows, and the suite makes over a
+# thousand; the supervisor's SKILLS_* markers stay so the root test hook admits the run.
+SHARD_ENVIRONMENT = frozenset({
+    "APPDATA", "COMMONPROGRAMFILES", "COMMONPROGRAMFILES(X86)", "COMMONPROGRAMW6432", "COMPUTERNAME",
+    "COMSPEC", "HOME", "HOMEDRIVE", "HOMEPATH", "LANG", "LC_ALL", "LC_CTYPE", "LOCALAPPDATA", "LOGNAME",
+    "NUMBER_OF_PROCESSORS", "OS", "PATH", "PATHEXT", "PROCESSOR_ARCHITECTURE", "PROGRAMDATA",
+    "PROGRAMFILES", "PROGRAMFILES(X86)", "PROGRAMW6432", "PYTHONDONTWRITEBYTECODE", "PYTHONHASHSEED",
+    "PYTHONHOME", "PYTHONIOENCODING", "PYTHONPATH", "PYTHONUTF8", "SHELL", "SKILLS_CASE_REPORT",
+    "SKILLS_VALIDATION_ACTIVE", "SYSTEMDRIVE", "SYSTEMROOT", "TEMP", "TERM", "TMP", "TMPDIR", "USER",
+    "USERDOMAIN", "USERNAME", "USERPROFILE", "VIRTUAL_ENV", "WINDIR",
+    # POSIX hosts: shared-libpython builds and git's user configuration location.
+    "DYLD_LIBRARY_PATH", "LD_LIBRARY_PATH", "XDG_CONFIG_HOME",
+})
+
+
+def _shard_environment() -> dict[str, str]:
+    """Return the caller's variables that SHARD_ENVIRONMENT keeps, spelled as the caller spelled them."""
+    return {key: value for key, value in os.environ.items() if key.upper() in SHARD_ENVIRONMENT}
+
+
 def run_pytest(root: Path, targets: list[str], cap: int) -> dict[str, Any]:
     """Execute targets once; the supervisor alone accounts for case verdicts."""
     pytest_env = {
-        **os.environ,
+        **_shard_environment(),
         "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
         "PYTEST_ADDOPTS": "",
         "PYTEST_PLUGINS": "",

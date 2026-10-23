@@ -1478,6 +1478,39 @@ def validate_atlas_wiki() -> list[str]:
     return [f"Atlas wiki structural validation did not complete (exit {result.returncode}): {detail}"]
 
 
+PAPER_RUNTIME = SKILLS_ROOT / "learning" / "examiner" / "assets" / "paper-runtime.html"
+PAPER_RUNTIME_EXTERNAL = (
+    ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),
+    ("protocol-relative URL", re.compile(r"""["'(=]\s*//[^/\s]""")),
+    ("network API", re.compile(
+        r"\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
+    ("module import", re.compile(r"\bimport\s*\(|^\s*import\b|@import", re.IGNORECASE | re.MULTILINE)),
+    ("external resource element", re.compile(
+        r"<\s*(?:link|iframe|img|embed|object|video|audio|source|base)\b|\bsrc\s*=", re.IGNORECASE)),
+    ("worker", re.compile(r"\b(?:Worker|SharedWorker|serviceWorker)\b")),
+    ("CSS resource", re.compile(r"\burl\s*\(", re.IGNORECASE)),
+    ("script-created resource", re.compile(
+        r"createElement\s*\(\s*[\"'`](?:link|script|img|iframe|embed|object|video|audio|source|base|style)\b",
+        re.IGNORECASE)),
+    ("image load", re.compile(r"\bnew\s+Image\b")),
+)
+PAPER_RUNTIME_MAX_BYTES = 40000
+
+
+def validate_paper_runtime(path: Path = PAPER_RUNTIME) -> list[str]:
+    """Refuse an Examiner paper runtime that loads or sends anything outside its own file."""
+    label = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else path.as_posix()
+    if not path.is_file():
+        return [f"{label}: paper runtime is missing"]
+    errors: list[str] = []
+    if path.stat().st_size > PAPER_RUNTIME_MAX_BYTES:
+        errors.append(f"{label}: paper runtime is larger than {PAPER_RUNTIME_MAX_BYTES} bytes")
+    text = path.read_text(encoding="utf-8")
+    errors.extend(f"{label}: paper runtime is not self-contained: {name}"
+                  for name, pattern in PAPER_RUNTIME_EXTERNAL if pattern.search(text))
+    return errors
+
+
 def main() -> int:
     skills = discover_skills()
     errors = ["No skills found under skills/<domain>/<skill>"] if not skills else []
@@ -1499,6 +1532,7 @@ def main() -> int:
     from validate_runtime_discovery_policy import validate as validate_runtime_discovery
     errors.extend(validate_runtime_discovery())
     errors.extend(validate_guidance(ROOT))
+    errors.extend(validate_paper_runtime())
     for skill_dir in skills:
         errors.extend(validate_skill_package(skill_dir))
         errors.extend(validate_script_references(skill_dir))

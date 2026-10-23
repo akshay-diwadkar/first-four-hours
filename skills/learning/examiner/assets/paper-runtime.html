@@ -1,0 +1,825 @@
+<!--
+Examiner paper runtime: the offline timed rehearsal every on-screen practice paper copies unchanged.
+
+Authoring contract
+
+1. In paper.html, write the marker line &lt;!-- paper-runtime --&gt; (read &lt; and &gt; as the
+   less-than and greater-than signs; this comment cannot contain its own closing) immediately
+   before </body>. Then replace that line with this whole file by a byte-for-byte file copy (a file
+   operation such as a shell or tool copy; never retype it), and confirm the paper then contains
+   this file's text exactly once. Never edit it inside a paper. It contains no answers and the
+   paper must not either.
+
+2. The timing data: one <script type="application/json" id="paper-meta"> in the paper, with this
+   shape:
+
+   {"id": "<subject>/<exam>/<set folder>", "title": "<paper title>",
+    "parts": [{"id": "<unique>", "title": "<shown to the student>", "minutes": 105,
+               "navigation": "free", "breakMinutesAfter": 10}],
+    "access": {"extraTimePercent": 25, "restBreaks": true}}
+
+   "id" is the set's path under .learning/ (for example
+   chemistry/aqa-gcse-chemistry-8462/2027-03-14-full-mock-01), unique across every subject and
+   examination, because every paper opened from files shares one browser storage area.
+   "minutes" is the whole-part allowance from the applicable session's own paper. Make one part
+   per separately timed paper, or per section only when the sourced specification times that
+   section separately. "navigation" is "forward-only" only when a source states that candidates
+   cannot return to earlier questions; otherwise "free". "breakMinutesAfter" (optional) is a
+   break the examination schedules before the next part. "access" is declared only for an
+   arrangement the student says they have; leave it {} otherwise.
+
+3. Questions: each question is one
+   <section class="paper-question" data-question="<number>" data-part="<part id>"> holding its
+   labelled controls. Every input, textarea and select has a name; a name belongs to one
+   question only (radio buttons and checkboxes of one question share it).
+
+4. The paper's own instructions state the examination's sourced rules. The runtime's clock,
+   question list, review flags, saving, breaks and automatic submission are practice features;
+   it says so on the page itself, and the paper must never present them as examination rules.
+
+The runtime runs when parsed, after all question markup. Invalid timing data turns the timed
+rehearsal off and leaves the paper readable and printable.
+-->
+<style>
+#paper-runtime { border: 1px solid currentColor; border-radius: 6px; padding: 0.75rem 1rem; margin: 1rem 0; font-family: system-ui, sans-serif; line-height: 1.45; }
+#paper-runtime [hidden], .paper-question[hidden] { display: none !important; }
+#paper-runtime p { margin: 0.4rem 0; }
+#paper-runtime button { font: inherit; padding: 0.3rem 0.7rem; margin: 0.2rem 0.3rem 0.2rem 0; border: 1px solid currentColor; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+#paper-runtime button:disabled { opacity: 0.45; cursor: not-allowed; }
+#paper-runtime-error, #paper-storage-warning, #paper-load-error { border-left: 4px solid #b3261e; padding: 0.4rem 0.7rem; margin: 0.5rem 0; }
+#paper-practice-notice { font-size: 0.9em; opacity: 0.85; }
+#paper-clock, #paper-break-clock { font-variant-numeric: tabular-nums; font-size: 1.6em; font-weight: 600; }
+#paper-palette { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.5rem 0; }
+#paper-palette button { min-width: 2.6rem; margin: 0; }
+#paper-palette button[data-state="answered"] { background: currentColor; }
+#paper-palette button[data-state="answered"] span { filter: invert(1); }
+#paper-palette button[data-state="not-visited"] { border-style: dashed; }
+#paper-palette button[data-flagged="true"]::after { content: " \2691"; }
+#paper-palette button[aria-current="true"] { outline: 2px solid currentColor; outline-offset: 2px; }
+#paper-submit-confirm, #paper-new-attempt-confirm { border: 1px dashed currentColor; padding: 0.5rem 0.7rem; margin: 0.5rem 0; }
+.paper-runtime-row { margin: 0.4rem 0; }
+@media print {
+  #paper-runtime { display: none !important; }
+  .paper-question[hidden] { display: block !important; }
+}
+</style>
+<script>
+(function () {
+  "use strict";
+
+  const doc = document;
+  const root = doc.documentElement;
+  const questions = Array.prototype.slice.call(doc.querySelectorAll(".paper-question"));
+  const CONTROLS = "input, textarea, select";
+  const STATUSES = ["not-started", "running", "rest", "break", "finished"];
+  const anchorNode = questions.length > 0 ? questions[0] : doc.currentScript;
+
+  function make(tag, attrs, text) {
+    const node = doc.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (key) { node.setAttribute(key, attrs[key]); });
+    if (text !== undefined) { node.textContent = text; }
+    return node;
+  }
+
+  function mountPanel(panel) {
+    if (anchorNode && anchorNode.parentNode) {
+      anchorNode.parentNode.insertBefore(panel, anchorNode);
+    } else {
+      doc.body.appendChild(panel);
+    }
+  }
+
+  function controlsOf(section) {
+    return Array.prototype.slice.call(section.querySelectorAll(CONTROLS));
+  }
+
+  function isText(value) { return typeof value === "string" && value.trim() !== ""; }
+  function isNumber(value) { return typeof value === "number" && isFinite(value); }
+  function isObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
+
+  /* Metadata validation: returns a problem sentence, or the checked data. */
+  function validate() {
+    const metaNode = doc.getElementById("paper-meta");
+    if (!metaNode) { return { problem: "The paper-meta timing data block is missing." }; }
+    let data;
+    try { data = JSON.parse(metaNode.textContent); } catch (error) {
+      return { problem: "The paper-meta timing data is not valid JSON." };
+    }
+    if (!isObject(data)) { return { problem: "The paper-meta timing data is not a JSON object." }; }
+    if (!isText(data.id)) { return { problem: "The timing data has no id." }; }
+    if (!isText(data.title)) { return { problem: "The timing data has no title." }; }
+    if (!Array.isArray(data.parts) || data.parts.length === 0) { return { problem: "The timing data declares no parts." }; }
+    const partIds = Object.create(null);
+    for (let index = 0; data.parts.length > index; index += 1) {
+      const part = data.parts[index];
+      const label = "Part " + (index + 1);
+      if (!isObject(part) || !isText(part.id)) { return { problem: label + " has no id." }; }
+      if (partIds[part.id]) { return { problem: "The part id " + part.id + " repeats." }; }
+      partIds[part.id] = { count: 0 };
+      if (!isNumber(part.minutes) || part.minutes <= 0) { return { problem: label + " has no positive number of minutes." }; }
+      if (part.navigation !== "free" && part.navigation !== "forward-only") {
+        return { problem: label + " navigation is neither free nor forward-only." };
+      }
+      if (part.breakMinutesAfter !== undefined && (!isNumber(part.breakMinutesAfter) || part.breakMinutesAfter < 0)) {
+        return { problem: label + " has an invalid breakMinutesAfter." };
+      }
+    }
+    const access = data.access === undefined ? {} : data.access;
+    if (!isObject(access)) { return { problem: "The access arrangements are not an object." }; }
+    if (access.extraTimePercent !== undefined &&
+        (!isNumber(access.extraTimePercent) || access.extraTimePercent < 0 || access.extraTimePercent > 100)) {
+      return { problem: "extraTimePercent is not a number from 0 to 100." };
+    }
+    if (access.restBreaks !== undefined && typeof access.restBreaks !== "boolean") {
+      return { problem: "restBreaks is not true or false." };
+    }
+    if (questions.length === 0) { return { problem: "The paper has no paper-question sections." }; }
+    const seen = Object.create(null);
+    const owners = Object.create(null);
+    for (const section of questions) {
+      const number = section.getAttribute("data-question");
+      if (!number) { return { problem: "A question has an empty data-question." }; }
+      if (seen[number]) { return { problem: "Question " + number + " appears twice." }; }
+      seen[number] = true;
+      const partId = section.getAttribute("data-part");
+      if (partId === null || !partIds[partId]) { return { problem: "Question " + number + " names no declared part." }; }
+      partIds[partId].count += 1;
+      for (const control of controlsOf(section)) {
+        if (!control.name) { return { problem: "A control in question " + number + " has no name." }; }
+        if (owners[control.name] !== undefined && owners[control.name] !== number) {
+          return { problem: "The name " + control.name + " is used in two questions." };
+        }
+        owners[control.name] = number;
+      }
+    }
+    for (const part of data.parts) {
+      if (partIds[part.id].count === 0) { return { problem: "Part " + part.id + " has no question." }; }
+    }
+    return { meta: data, access: access, owners: owners };
+  }
+
+  const checked = validate();
+  if (checked.problem) {
+    const panel = make("div", { id: "paper-runtime" });
+    panel.appendChild(make("p", { id: "paper-runtime-error", role: "alert" },
+      "This paper's timing data is missing or invalid, so the timed rehearsal is off. You can still read and print it. " +
+      checked.problem));
+    mountPanel(panel);
+    questions.forEach(function (section) { section.hidden = false; });
+    root.setAttribute("data-paper-status", "invalid");
+    return;
+  }
+
+  const meta = checked.meta;
+  const access = checked.access;
+  const owners = checked.owners;
+  const extraPercent = isNumber(access.extraTimePercent) ? access.extraTimePercent : 0;
+  const restBreaks = access.restBreaks === true;
+  const KEY = "ffh-paper:" + meta.id;
+  const fileName = "answers-" + meta.id.replace(/[^a-zA-Z0-9-]/g, "-") + ".html";
+  const partOf = Object.create(null);
+  const byNumber = Object.create(null);
+  questions.forEach(function (section) {
+    partOf[section.getAttribute("data-question")] = section.getAttribute("data-part");
+    byNumber[section.getAttribute("data-question")] = section;
+  });
+
+  function questionsOfPart(partId) {
+    return questions.filter(function (section) { return section.getAttribute("data-part") === partId; })
+      .map(function (section) { return section.getAttribute("data-question"); });
+  }
+
+  function freshState(attempt) {
+    return {
+      id: meta.id, attempt: attempt, status: "not-started", partIndex: 0, current: null,
+      visited: [], answers: {}, flags: [], breakEndsAt: null, downloaded: false,
+      parts: meta.parts.map(function (part) {
+        return { id: part.id, startedAt: null, endedAt: null, endedBy: null, restMs: 0, restStartedAt: null };
+      })
+    };
+  }
+
+  /* A stored or loaded state is usable only when it belongs to this paper and has its shape. */
+  function usable(candidate) {
+    if (!isObject(candidate) || candidate.id !== meta.id) { return false; }
+    if (STATUSES.indexOf(candidate.status) === -1) { return false; }
+    if (!isNumber(candidate.attempt) || candidate.attempt < 1) { return false; }
+    if (!Number.isInteger(candidate.partIndex) || candidate.partIndex < 0 || candidate.partIndex >= meta.parts.length) { return false; }
+    if (!Array.isArray(candidate.parts) || candidate.parts.length !== meta.parts.length) { return false; }
+    for (let index = 0; meta.parts.length > index; index += 1) {
+      const part = candidate.parts[index];
+      if (!isObject(part) || part.id !== meta.parts[index].id) { return false; }
+    }
+    const current = candidate.parts[candidate.partIndex];
+    if ((candidate.status === "running" || candidate.status === "rest") && !isNumber(current.startedAt)) { return false; }
+    if (candidate.status === "rest" && !isNumber(current.restStartedAt)) { return false; }
+    if (candidate.status === "break" && !isNumber(candidate.breakEndsAt)) { return false; }
+    return true;
+  }
+
+  function clean(candidate) {
+    const answers = {};
+    if (isObject(candidate.answers)) {
+      Object.keys(candidate.answers).forEach(function (name) {
+        const value = candidate.answers[name];
+        if (owners[name] === undefined) { return; }
+        if (typeof value === "string" && value.trim() !== "") { answers[name] = value; }
+        if (Array.isArray(value)) {
+          const values = value.filter(function (item) { return typeof item === "string"; });
+          if (values.length > 0) { answers[name] = values; }
+        }
+      });
+    }
+    function present(list) {
+      return Array.isArray(list) ? list.filter(function (item, index) {
+        return typeof item === "string" && byNumber[item] !== undefined && list.indexOf(item) === index;
+      }) : [];
+    }
+    candidate.answers = answers;
+    candidate.flags = present(candidate.flags);
+    candidate.visited = present(candidate.visited);
+    candidate.downloaded = candidate.downloaded === true;
+    candidate.parts.forEach(function (part) {
+      if (!isNumber(part.restMs)) { part.restMs = 0; }
+    });
+    const partId = meta.parts[candidate.partIndex].id;
+    if (typeof candidate.current !== "string" || partOf[candidate.current] !== partId) {
+      candidate.current = candidate.status === "running" || candidate.status === "rest" ? questionsOfPart(partId)[0] : null;
+    }
+    if (candidate.current && candidate.visited.indexOf(candidate.current) === -1) { candidate.visited.push(candidate.current); }
+    return candidate;
+  }
+
+  /* Storage: one key per paper id; any failure shows the warning and never blocks the paper. */
+  let store = null;
+  try {
+    const probeStore = window.localStorage;
+    probeStore.setItem(KEY + ":probe", "1");
+    probeStore.removeItem(KEY + ":probe");
+    store = probeStore;
+  } catch (error) {
+    store = null;
+  }
+
+  function readStored() {
+    if (!store) { return null; }
+    try {
+      const raw = store.getItem(KEY);
+      if (raw === null) { return null; }
+      const parsed = JSON.parse(raw);
+      return usable(parsed) ? parsed : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  let state = readStored();
+  state = state ? clean(state) : freshState(1);
+
+  /* Derived values. */
+  function partMeta() { return meta.parts[state.partIndex]; }
+  function partState() { return state.parts[state.partIndex]; }
+  function allowance(index) { return Math.round(meta.parts[index].minutes * 60000 * (1 + extraPercent / 100)); }
+  function deadlineAt(now) {
+    const part = partState();
+    let deadline = part.startedAt + allowance(state.partIndex) + part.restMs;
+    if (state.status === "rest" && isNumber(part.restStartedAt)) { deadline += now - part.restStartedAt; }
+    return deadline;
+  }
+  function remainingAt(now) { return Math.max(0, Math.round(deadlineAt(now) - now)); }
+  function isAnswered(number) {
+    return controlsOf(byNumber[number]).some(function (control) { return state.answers[control.name] !== undefined; });
+  }
+  function addVisited(number) {
+    if (number && state.visited.indexOf(number) === -1) { state.visited.push(number); }
+  }
+
+  /* Part transitions. */
+  function startPart(at) {
+    partState().startedAt = at;
+    state.status = "running";
+    state.breakEndsAt = null;
+    state.current = questionsOfPart(partMeta().id)[0];
+    addVisited(state.current);
+  }
+
+  function endPart(at, how) {
+    const part = partState();
+    part.endedAt = at;
+    part.endedBy = how;
+    const declared = partMeta();
+    if (state.partIndex === meta.parts.length - 1) {
+      state.status = "finished";
+    } else if (declared.breakMinutesAfter > 0) {
+      state.status = "break";
+      state.breakEndsAt = at + Math.round(declared.breakMinutesAfter * 60000);
+      state.partIndex += 1;
+    } else {
+      state.status = "not-started";
+      state.partIndex += 1;
+    }
+    state.current = null;
+  }
+
+  function advance() {
+    let changed = false;
+    for (let guard = 0; 100 > guard; guard += 1) {
+      const now = Date.now();
+      if (state.status === "running" && remainingAt(now) === 0) {
+        endPart(deadlineAt(now), "expired");
+      } else if (state.status === "break" && now >= state.breakEndsAt) {
+        startPart(state.breakEndsAt);
+      } else {
+        break;
+      }
+      changed = true;
+    }
+    return changed;
+  }
+
+  /* Formatting. */
+  function pad(value) { return value > 9 ? String(value) : "0" + value; }
+  function clockText(ms) {
+    const seconds = Math.ceil(ms / 1000);
+    return Math.floor(seconds / 3600) + ":" + pad(Math.floor(seconds / 60) % 60) + ":" + pad(seconds % 60);
+  }
+  function usedText(ms) {
+    const seconds = Math.max(0, Math.floor(ms / 1000));
+    return Math.floor(seconds / 60) + ":" + pad(seconds % 60);
+  }
+  function plural(count, word) { return count + " " + word + (count === 1 ? "" : "s"); }
+  function durationText(ms) {
+    const seconds = Math.round(ms / 1000);
+    if (60 > seconds) { return plural(seconds, "second"); }
+    const pieces = [];
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor(seconds / 60) % 60;
+    if (hours > 0) { pieces.push(plural(hours, "hour")); }
+    if (minutes > 0) { pieces.push(plural(minutes, "minute")); }
+    if (seconds % 60 > 0) { pieces.push(plural(seconds % 60, "second")); }
+    return pieces.join(" ");
+  }
+  function escapeHtml(value) {
+    return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function timeText(ms) { return new Date(ms).toLocaleString(); }
+
+  /* The answer file: a complete HTML document made on the device. */
+  function answerText(number) {
+    const names = [];
+    controlsOf(byNumber[number]).forEach(function (control) {
+      if (names.indexOf(control.name) === -1) { names.push(control.name); }
+    });
+    const values = names.filter(function (name) { return state.answers[name] !== undefined; }).map(function (name) {
+      const value = state.answers[name];
+      return Array.isArray(value) ? value.join(", ") : value;
+    });
+    return values.length > 0 ? values.join("; ") : "no answer";
+  }
+
+  function answerFile() {
+    const now = Date.now();
+    const lines = [
+      "<!doctype html>",
+      "<html lang=\"en\">",
+      "<head>",
+      "<meta charset=\"utf-8\">",
+      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+      "<title>Answers: " + escapeHtml(meta.title) + "</title>",
+      "</head>",
+      "<body style=\"font-family: system-ui, sans-serif; line-height: 1.5; max-width: 46rem; margin: 2rem auto; padding: 0 1rem;\">",
+      "<h1 style=\"font-size: 1.5rem;\">Answers: " + escapeHtml(meta.title) + "</h1>",
+      "<p>Practice set: " + escapeHtml(meta.id) + "</p>",
+      "<p>Attempt " + state.attempt + "</p>",
+      "<p>Made " + escapeHtml(timeText(now)) + "</p>",
+      "<p>This file was made on your device; saving it sent nothing.</p>",
+      "<h2 style=\"font-size: 1.2rem;\">Parts</h2>",
+      "<ul>"
+    ];
+    meta.parts.forEach(function (declared, index) {
+      const part = state.parts[index];
+      let line = "<li>" + escapeHtml(declared.title) + ": ";
+      if (!isNumber(part.startedAt)) {
+        line += "not started";
+      } else {
+        const end = isNumber(part.endedAt) ? part.endedAt : now;
+        line += "started " + escapeHtml(timeText(part.startedAt)) + "; ";
+        line += isNumber(part.endedAt) ? "ended " + escapeHtml(timeText(part.endedAt)) + "; " : "not ended; ";
+        if (part.endedBy === "submitted") { line += "submitted; "; }
+        if (part.endedBy === "expired") { line += "time ran out; "; }
+        line += "time used " + usedText(end - part.startedAt - part.restMs) + " (a diagnostic, not a score)";
+      }
+      lines.push(line + "</li>");
+    });
+    lines.push("</ul>", "<h2 style=\"font-size: 1.2rem;\">Answers</h2>", "<ul>");
+    questions.forEach(function (section) {
+      const number = section.getAttribute("data-question");
+      let line = "Question " + escapeHtml(number) + ": " + escapeHtml(answerText(number));
+      if (state.flags.indexOf(number) !== -1) { line += " (flagged for review)"; }
+      lines.push("<li>" + line + "</li>");
+    });
+    lines.push("</ul>",
+      "<script type=\"application/json\" id=\"paper-attempt-data\">" + JSON.stringify(state).replace(/</g, "\\u003c") + "<\/script>",
+      "</body>", "</html>", "");
+    return lines.join("\n");
+  }
+
+  /* Page elements. */
+  const panel = make("div", { id: "paper-runtime" });
+  const notice = make("p", { id: "paper-practice-notice" },
+    "Practice features: the clock, question list, review flags, breaks, saving and automatic submission belong to this practice paper, not to the rules of the real examination. The examination's own rules are in the instructions above. Saving keeps your answers on this device or in a file you download; nothing is sent anywhere.");
+  const storageWarning = make("p", { id: "paper-storage-warning", role: "alert" },
+    "This browser is not keeping your progress. Use Save answers often and keep the file: a refresh or closing this page would lose your answers and time.");
+  storageWarning.hidden = true;
+  const loadError = make("p", { id: "paper-load-error", role: "alert" }, "This file is not an answer file for this practice paper.");
+  loadError.hidden = true;
+
+  const startScreen = make("div", { id: "paper-start-screen" });
+  const startTitle = make("p", { "class": "paper-runtime-title" });
+  const startTime = make("p");
+  const startButton = make("button", { id: "paper-start", type: "button" }, "Start this part (the clock starts now)");
+  startScreen.append(startTitle, startTime);
+  if (restBreaks) { startScreen.append(make("p", {}, "Supervised rest breaks: available. The clock stops during a rest break.")); }
+  startScreen.append(startButton);
+
+  const clock = make("p", { id: "paper-clock", role: "timer", "aria-label": "Time remaining in this part" });
+  const restButton = restBreaks ? make("button", { id: "paper-rest", type: "button" }) : null;
+  const palette = make("div", { id: "paper-palette", role: "group", "aria-label": "Questions in this part" });
+  const summary = make("p", { id: "paper-summary", "aria-live": "polite" });
+
+  const navigation = make("div", { "class": "paper-runtime-row" });
+  const previousButton = make("button", { id: "paper-previous", type: "button" }, "Previous question");
+  const flagButton = make("button", { id: "paper-flag", type: "button" });
+  const nextButton = make("button", { id: "paper-next", type: "button" }, "Next question");
+  const submitButton = make("button", { id: "paper-submit", type: "button" }, "Submit this part");
+  navigation.append(previousButton, flagButton, nextButton, submitButton);
+
+  const submitConfirm = make("div", { id: "paper-submit-confirm", role: "alertdialog" });
+  const submitText = make("p");
+  const submitYes = make("button", { id: "paper-submit-yes", type: "button" }, "Yes, submit and end this part");
+  const submitNo = make("button", { id: "paper-submit-no", type: "button" }, "No, keep working");
+  submitConfirm.append(submitText, submitYes, submitNo);
+  submitConfirm.hidden = true;
+
+  const breakBox = make("div", { id: "paper-break" });
+  const breakText = make("p");
+  const breakClock = make("p", { id: "paper-break-clock", role: "timer", "aria-label": "Time left in the break" });
+  const breakSkip = make("button", { id: "paper-break-skip", type: "button" }, "End the break and start the next part now");
+  breakBox.append(breakText, breakClock, breakSkip);
+
+  const attemptBox = make("div", { id: "paper-attempt" });
+  const attemptLink = make("a", { id: "paper-attempt-download" }, "Download the answer file again");
+  attemptBox.append(make("p", {}, "This paper is finished and locked. Your answer file has been made: keep it, or send it for marking."), attemptLink);
+  const newAttemptButton = make("button", { id: "paper-new-attempt", type: "button" }, "Start a new attempt");
+  const newAttemptConfirm = make("div", { id: "paper-new-attempt-confirm", role: "alertdialog" });
+  const newAttemptYes = make("button", { id: "paper-new-attempt-yes", type: "button" }, "Yes, start again");
+  const newAttemptNo = make("button", { id: "paper-new-attempt-no", type: "button" }, "No, keep this attempt");
+  newAttemptConfirm.append(make("p", {}, "This starts the paper again with no answers. Save your answer file first if you have not."), newAttemptYes, newAttemptNo);
+  newAttemptConfirm.hidden = true;
+
+  const fileRow = make("div", { "class": "paper-runtime-row" });
+  const saveButton = make("button", { id: "paper-save", type: "button" }, "Save answers (downloads an answer file)");
+  const loadLabel = make("label", { "for": "paper-load" }, "Load a saved answer file to continue: ");
+  const loadInput = make("input", { id: "paper-load", type: "file", accept: ".html" });
+  fileRow.append(saveButton, loadLabel, loadInput);
+
+  const parts = [notice, storageWarning, loadError, startScreen, clock];
+  if (restButton) { parts.push(restButton); }
+  parts.push(palette, summary, navigation, submitConfirm, breakBox, attemptBox, newAttemptButton, newAttemptConfirm, fileRow);
+  panel.append.apply(panel, parts);
+  mountPanel(panel);
+
+  function persist() {
+    if (!store) { storageWarning.hidden = false; return; }
+    try {
+      store.setItem(KEY, JSON.stringify(state));
+    } catch (error) {
+      storageWarning.hidden = false;
+    }
+  }
+
+  /* Controls follow the answers; answers follow the controls. */
+  function restoreControls() {
+    questions.forEach(function (section) {
+      controlsOf(section).forEach(function (control) {
+        const value = state.answers[control.name];
+        if (control.type === "radio") {
+          control.checked = value === control.value;
+        } else if (control.type === "checkbox") {
+          control.checked = Array.isArray(value) && value.indexOf(control.value) !== -1;
+        } else if (control.type !== "file") {
+          control.value = typeof value === "string" ? value : "";
+        }
+      });
+    });
+  }
+
+  function record(control) {
+    const section = control.closest ? control.closest(".paper-question") : null;
+    if (!section || !control.name || state.status !== "running") { return; }
+    if (section.getAttribute("data-part") !== partMeta().id) { return; }
+    const group = controlsOf(section).filter(function (item) { return item.name === control.name; });
+    let value;
+    if (control.type === "checkbox") {
+      value = group.filter(function (item) { return item.type === "checkbox" && item.checked; }).map(function (item) { return item.value; });
+    } else if (control.type === "radio") {
+      const chosen = group.filter(function (item) { return item.type === "radio" && item.checked; })[0];
+      value = chosen ? chosen.value : "";
+    } else {
+      value = control.value;
+    }
+    if ((Array.isArray(value) && value.length > 0) || (typeof value === "string" && value.trim() !== "")) {
+      state.answers[control.name] = value;
+    } else {
+      delete state.answers[control.name];
+    }
+    persist();
+    render();
+  }
+
+  function onAnswer(event) {
+    const control = event.target;
+    if (control && control.matches && control.matches(CONTROLS)) { record(control); }
+  }
+  doc.addEventListener("input", onAnswer);
+  doc.addEventListener("change", onAnswer);
+
+  /* Finished: one answer-file link per entry into finished; one automatic download per attempt. */
+  let attemptUrl = null;
+  let pendingDownload = false;
+  function syncFinished() {
+    if (state.status !== "finished") { attemptUrl = null; return; }
+    if (attemptUrl) { return; }
+    pendingDownload = !state.downloaded;
+    state.downloaded = true;
+    attemptUrl = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" }));
+    attemptLink.setAttribute("href", attemptUrl);
+    attemptLink.setAttribute("download", fileName);
+  }
+
+  let palettePart = null;
+  function renderPalette() {
+    const partId = partMeta().id;
+    if (palettePart !== partId) {
+      palette.textContent = "";
+      questionsOfPart(partId).forEach(function (number) {
+        const button = make("button", { type: "button", "data-palette-question": number });
+        button.appendChild(make("span", {}, number));
+        button.addEventListener("click", function () { act(function () { goTo(number); }); });
+        palette.appendChild(button);
+      });
+      palettePart = partId;
+    }
+    const running = state.status === "running";
+    const forwardOnly = partMeta().navigation === "forward-only";
+    Array.prototype.forEach.call(palette.querySelectorAll("button"), function (button) {
+      const number = button.getAttribute("data-palette-question");
+      const answered = isAnswered(number);
+      const flagged = state.flags.indexOf(number) !== -1;
+      const status = answered ? "answered" : state.visited.indexOf(number) !== -1 ? "unanswered" : "not-visited";
+      button.setAttribute("data-state", status);
+      button.setAttribute("data-flagged", flagged ? "true" : "false");
+      button.setAttribute("aria-current", number === state.current ? "true" : "false");
+      button.setAttribute("aria-label", "Question " + number + ": " +
+        (status === "answered" ? "answered" : status === "unanswered" ? "not answered" : "not visited") +
+        (flagged ? ", flagged for review" : ""));
+      button.disabled = !running || forwardOnly;
+    });
+  }
+
+  function counts() {
+    const numbers = questionsOfPart(partMeta().id);
+    const answered = numbers.filter(isAnswered).length;
+    const flagged = numbers.filter(function (number) { return state.flags.indexOf(number) !== -1; }).length;
+    return { answered: answered, unanswered: numbers.length - answered, flagged: flagged };
+  }
+
+  function renderClocks() {
+    const now = Date.now();
+    if (state.status === "running" || state.status === "rest") {
+      const left = remainingAt(now);
+      clock.setAttribute("data-remaining-ms", String(left));
+      clock.textContent = clockText(left) + (state.status === "rest" ? " (stopped for a rest break)" : "");
+    }
+    if (state.status === "break") {
+      const left = Math.max(0, Math.round(state.breakEndsAt - now));
+      breakClock.setAttribute("data-remaining-ms", String(left));
+      breakClock.textContent = clockText(left);
+    }
+  }
+
+  function render() {
+    const status = state.status;
+    const running = status === "running";
+    const declared = partMeta();
+    const numbers = questionsOfPart(declared.id);
+    const position = numbers.indexOf(state.current);
+    root.setAttribute("data-paper-status", status);
+    root.setAttribute("data-paper-part", declared.id);
+
+    startScreen.hidden = status !== "not-started";
+    startTitle.textContent = declared.title;
+    startTime.textContent = "Time allowed: " + durationText(allowance(state.partIndex)) +
+      (extraPercent > 0 ? ", which includes " + extraPercent + "% extra time (access arrangement)." : ".") +
+      " The clock keeps running from Start, even if you leave this page.";
+
+    clock.hidden = !(running || status === "rest");
+    if (restButton) {
+      restButton.hidden = !(running || status === "rest");
+      restButton.disabled = !(running || status === "rest");
+      restButton.textContent = status === "rest" ? "End the rest break (the clock restarts)" : "Take a supervised rest break (the clock stops)";
+    }
+    palette.hidden = !(running || status === "rest");
+    renderPalette();
+
+    const tally = counts();
+    summary.hidden = status === "not-started" || status === "break";
+    summary.setAttribute("data-answered", String(tally.answered));
+    summary.setAttribute("data-unanswered", String(tally.unanswered));
+    summary.setAttribute("data-flagged", String(tally.flagged));
+    summary.textContent = "This part: " + tally.answered + " answered, " + tally.unanswered + " not answered, " +
+      tally.flagged + " flagged for review. A flagged question without an answer counts as not answered.";
+
+    navigation.hidden = !(running || status === "rest");
+    const flagged = state.flags.indexOf(state.current) !== -1;
+    flagButton.textContent = flagged ? "Remove the review flag" : "Flag this question for review";
+    flagButton.setAttribute("aria-pressed", flagged ? "true" : "false");
+    flagButton.disabled = !running;
+    previousButton.disabled = !running || declared.navigation === "forward-only" || 0 >= position;
+    nextButton.disabled = !running || position === -1 || position >= numbers.length - 1;
+    submitButton.disabled = !running;
+    if (!running) { submitConfirm.hidden = true; }
+    submitConfirm.setAttribute("data-unanswered", String(tally.unanswered));
+    submitText.textContent = "Submit " + declared.title + "? " + plural(tally.unanswered, "question") +
+      " not answered (a flagged question without an answer counts as not answered). You cannot return to this part afterwards.";
+
+    breakBox.hidden = status !== "break";
+    breakText.textContent = "Break before " + declared.title + ". The next part starts by itself when the break ends.";
+
+    attemptBox.hidden = status !== "finished";
+    newAttemptButton.hidden = status !== "finished";
+    if (status !== "finished") { newAttemptConfirm.hidden = true; }
+    loadInput.disabled = status === "finished";
+
+    questions.forEach(function (section) {
+      const number = section.getAttribute("data-question");
+      section.hidden = status === "finished" ? false : !(running && number === state.current);
+      const editable = running && section.getAttribute("data-part") === declared.id;
+      controlsOf(section).forEach(function (control) { control.disabled = !editable; });
+    });
+
+    renderClocks();
+    if (pendingDownload) {
+      pendingDownload = false;
+      attemptLink.click();
+    }
+  }
+
+  function commit() {
+    advance();
+    syncFinished();
+    persist();
+    render();
+  }
+
+  function act(change) {
+    change();
+    commit();
+  }
+
+  function goTo(number) {
+    if (state.status !== "running" || partOf[number] !== partMeta().id) { return; }
+    state.current = number;
+    addVisited(number);
+  }
+
+  function step(offset) {
+    const numbers = questionsOfPart(partMeta().id);
+    const target = numbers[numbers.indexOf(state.current) + offset];
+    if (target !== undefined) { goTo(target); }
+  }
+
+  startButton.addEventListener("click", function () {
+    act(function () { if (state.status === "not-started") { startPart(Date.now()); } });
+  });
+  if (restButton) {
+    restButton.addEventListener("click", function () {
+      act(function () {
+        const part = partState();
+        if (state.status === "running") {
+          part.restStartedAt = Date.now();
+          state.status = "rest";
+        } else if (state.status === "rest") {
+          part.restMs += Date.now() - part.restStartedAt;
+          part.restStartedAt = null;
+          state.status = "running";
+        }
+      });
+    });
+  }
+  previousButton.addEventListener("click", function () {
+    act(function () { if (partMeta().navigation === "free") { step(-1); } });
+  });
+  nextButton.addEventListener("click", function () { act(function () { step(1); }); });
+  flagButton.addEventListener("click", function () {
+    act(function () {
+      if (state.status !== "running" || !state.current) { return; }
+      const index = state.flags.indexOf(state.current);
+      if (index === -1) { state.flags.push(state.current); } else { state.flags.splice(index, 1); }
+    });
+  });
+  submitButton.addEventListener("click", function () {
+    if (state.status !== "running") { return; }
+    render();
+    submitConfirm.hidden = false;
+  });
+  submitNo.addEventListener("click", function () { submitConfirm.hidden = true; });
+  submitYes.addEventListener("click", function () {
+    submitConfirm.hidden = true;
+    act(function () { if (state.status === "running") { endPart(Date.now(), "submitted"); } });
+  });
+  breakSkip.addEventListener("click", function () {
+    act(function () { if (state.status === "break") { startPart(Date.now()); } });
+  });
+  newAttemptButton.addEventListener("click", function () { newAttemptConfirm.hidden = false; });
+  newAttemptNo.addEventListener("click", function () { newAttemptConfirm.hidden = true; });
+  newAttemptYes.addEventListener("click", function () {
+    newAttemptConfirm.hidden = true;
+    act(function () {
+      state = freshState(state.attempt + 1);
+      restoreControls();
+    });
+  });
+
+  saveButton.addEventListener("click", function () {
+    const url = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" }));
+    const link = make("a", { href: url, download: fileName });
+    link.hidden = true;
+    doc.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  });
+
+  loadInput.addEventListener("change", function () {
+    const file = loadInput.files && loadInput.files[0];
+    if (!file) { return; }
+    const reader = new FileReader();
+    reader.onload = function () {
+      let candidate = null;
+      try {
+        const parsed = new DOMParser().parseFromString(String(reader.result), "text/html");
+        const data = parsed.getElementById("paper-attempt-data");
+        candidate = data ? JSON.parse(data.textContent) : null;
+      } catch (error) {
+        candidate = null;
+      }
+      loadInput.value = "";
+      if (state.status === "finished" || !usable(candidate)) {
+        loadError.hidden = false;
+        return;
+      }
+      loadError.hidden = true;
+      state = clean(candidate);
+      attemptUrl = null;
+      restoreControls();
+      commit();
+    };
+    reader.onerror = function () {
+      loadInput.value = "";
+      loadError.hidden = false;
+    };
+    reader.readAsText(file);
+  });
+
+  /* Another tab of the same paper wrote a newer state: adopt it without writing back. */
+  window.addEventListener("storage", function (event) {
+    if (event.key !== KEY || event.newValue === null) { return; }
+    let candidate;
+    try { candidate = JSON.parse(event.newValue); } catch (error) { return; }
+    if (!usable(candidate)) { return; }
+    const wasFinished = state.status === "finished";
+    state = clean(candidate);
+    advance();
+    if (!(wasFinished && state.status === "finished")) { attemptUrl = null; }
+    syncFinished();
+    restoreControls();
+    render();
+  });
+
+  function tick() {
+    if (advance()) {
+      syncFinished();
+      persist();
+      render();
+    } else {
+      renderClocks();
+    }
+  }
+
+  doc.addEventListener("visibilitychange", tick);
+  setInterval(tick, 250);
+  restoreControls();
+  commit();
+})();
+</script>

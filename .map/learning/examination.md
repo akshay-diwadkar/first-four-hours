@@ -1,7 +1,8 @@
 # Examination practice
 
 - [Examiner](../../skills/learning/examiner/SKILL.md): start with identifying the examination, requirement research and the approximation rule, when a study plan is created, and Reason checkpoints.
-- [Papers](../../skills/learning/examiner/references/papers.md): fidelity to the real examination, the four practice-set files including on-screen answering and a self-contained answer key, and the solve-and-audit checklist.
+- [Papers](../../skills/learning/examiner/references/papers.md): fidelity to the real examination and its sourced rules, the four practice-set files including on-screen answering and a self-contained answer key, and the solve-and-audit checklist.
+- [Paper runtime](../../skills/learning/examiner/assets/paper-runtime.html): the offline timed rehearsal every on-screen paper copies unchanged; its opening comment defines the question markup and timing data. [Its browser exercise](../../tools/validation/exercise_paper_runtime.py) proves the behaviour in headless Chrome or Edge.
 - [Marking](../../skills/learning/examiner/references/marking.md): recording attempts, the researched official basis or else an unofficial audited key for a supplied paper, marking against the stated basis, grades only for official papers, diagnosis, and retries.
 - [Practice records](../../skills/learning/examiner/references/practice-records.md): the `exams/<exam>/<date>-<kind>-<NN>/` layout, naming, never-overwrite rule, and the correction route for a wrong key or scheme.
 - [Examination study plan](../../skills/learning/examiner/references/study-planning.md): the Examiner-owned `examination-coverage` section of the shared `study-plan.html`, where diagnosed gaps are named for Tutor.

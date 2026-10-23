@@ -49,6 +49,18 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
         "mapping.py: retired compatibility mapping remains: map-codebase -> atlas",
     ]
     assert inventory_errors(json.loads(INVENTORY.read_text(encoding="utf-8"))) == []
+    # Examiner's paper runtime is refused when it reaches outside its own file.
+    runtime = tmp_path / "paper-runtime.html"
+    runtime.write_text('<script>fetch("https://example.org/answers")</script>\n', encoding="utf-8")
+    refused = validator.validate_paper_runtime(runtime)
+    assert any(error.endswith(": network API") for error in refused)
+    assert any(error.endswith(": absolute URL") for error in refused)
+    runtime.write_text("<script>document.createElement('link').href = 'x.css';</script>\n", encoding="utf-8")
+    assert validator.validate_paper_runtime(runtime)[0].endswith(": script-created resource")
+    runtime.write_text("<style>p { color: #222; }</style>\n<script>localStorage.getItem('k');</script>\n",
+                       encoding="utf-8")
+    assert validator.validate_paper_runtime(runtime) == []
+    assert validator.validate_paper_runtime(tmp_path / "absent.html")[0].endswith("paper runtime is missing")
     # A draft's Exact blocks on agent-loaded guidance estimate measured minus
     # replaced plus drafted tokens; a new reference adds its whole text, and an
     # Exact block on any other path is not counted.

@@ -392,7 +392,8 @@
       "id": "examiner-guidance-source",
       "path_prefixes": [
         "skills/learning/examiner/SKILL.md",
-        "skills/learning/examiner/references"
+        "skills/learning/examiner/references",
+        "skills/learning/examiner/assets"
       ],
       "owner": "examiner-guidance-contract"
     },

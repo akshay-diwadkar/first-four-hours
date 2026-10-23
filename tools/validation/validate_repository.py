@@ -1481,8 +1481,8 @@ def validate_atlas_wiki() -> list[str]:
 PAPER_RUNTIME = SKILLS_ROOT / "learning" / "examiner" / "assets" / "paper-runtime.html"
 # A write assigns (never compares, never an arrow) outside a declaration; an in-page link target is a "#" fragment
 # or a blob the runtime made itself. Text cannot show where an action or background value points, so every such
-# write is refused. The runtime never names src, srcset, srcdoc or ping, and names background only in its own CSS,
-# so any other use of those words is refused.
+# write is refused. The runtime never names src, srcset, srcdoc or ping, and its CSS uses background-color, so
+# those words are refused anywhere and background anywhere except as style.background.
 PAPER_RUNTIME_WRITE = r"(?:\+|\|\||&&|\?\?)?=(?![=>])"
 PAPER_RUNTIME_UNDECLARED = r"(?<!\bconst )(?<!\blet )(?<!\bvar )"
 PAPER_RUNTIME_OFF_PAGE = r"""(?!\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())"""

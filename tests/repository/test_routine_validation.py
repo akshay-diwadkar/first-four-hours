@@ -93,6 +93,17 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ('xdataset.background = "bg.png";', "URL attribute"),
             ('f.action = "#x".replace("#x", "collect.html");', "form action"),
             ('xdataset.action = "collect.html";', "form action"),
+            ('f.action = "#\\";collect.html".slice(3);', "form action"),
+            ('f.action = "#a"\n.replace("#a", "collect.html");', "form action"),
+            ('f.setAttribute("action" + "", "collect.html");', "form action"),
+            ('document.dataset.action = "collect.html";', "form action"),
+            ('state.action = "#save";', "form action"),
+            ('button.dataset.action = "next";', "form action"),
+            ('options.background = "#fff";', "URL attribute"),
+            ('document.dataset.background = "bg.png";', "URL attribute"),
+            ('make("td", { ["background"]: "bg.png" });', "URL attribute"),
+            ('make(t, { type: "image", src });', "source attribute"),
+            ('Object.assign(document.querySelector("a"), { ping }).click();', "URL attribute"),
             ("a.setAttribute('ping', 'collect');", "URL attribute"),
             ('make("a", { ping: "collect" });', "URL attribute"),
             ('make("a", { href: "collect.html" }).click();', "link target"),
@@ -115,9 +126,10 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
                        " node.classList.add('source'); const fetched = 1; localStorage.getItem('form');"
                        " if (action === 'save') { p.style.background = 'none'; const here = location.href; }"
                        " const href = link.getAttribute('href'); items.forEach(action => run(action));"
-                       " let ping = performance.now(); state.action = '#save'; button.dataset.action = 'next';"
-                       " menu.open(); options.background = '#fff'; Object.assign(panel.style, { background: 'none' });"
-                       " const opts = { background: theme.bg };</script>\n", encoding="utf-8")
+                       " let ping = performance.now(); menu.open(); Object.assign(panel.style, { background: 'none' });"
+                       " const opts = { background: theme.bg }; render(node, src, opts); const { ping } = stats;"
+                       " log(t, ping, n); themes.set('dark', { background: palette.dark }); const { a, src } = item;"
+                       " const pick = { a: 'x', b: src };</script>\n", encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")

@@ -1479,35 +1479,53 @@ def validate_atlas_wiki() -> list[str]:
 
 
 PAPER_RUNTIME = SKILLS_ROOT / "learning" / "examiner" / "assets" / "paper-runtime.html"
+# A write assigns (never compares, never an arrow) outside a declaration; an in-page link target is a "#" fragment
+# or a blob the runtime made itself.
+PAPER_RUNTIME_WRITE = r"(?:\+|\|\||&&|\?\?)?=(?![=>])"
+PAPER_RUNTIME_UNDECLARED = r"(?<!const )(?<!let )(?<!var )"
+PAPER_RUNTIME_OFF_PAGE = r"""(?!\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())"""
+PAPER_RUNTIME_TAGS = r"(?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)"
 PAPER_RUNTIME_EXTERNAL = (
     ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),
     ("protocol-relative URL", re.compile(r"""["'(=]\s*//[^/\s]""")),
     ("network API", re.compile(
-        r"\b(?:fetch\w*|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
+        r"\b(?:fetch(?:Later)?|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
     ("module import", re.compile(r"\bimport\s*\(|^\s*import\b|@import", re.IGNORECASE | re.MULTILINE)),
     ("external resource element", re.compile(
         r"<\s*(?:link|iframe|img|embed|object|video|audio|source|base)\b|\bsrc\s*=", re.IGNORECASE)),
     ("worker", re.compile(r"\b(?:Worker|SharedWorker|serviceWorker)\b")),
-    ("CSS resource", re.compile(r"\burl\s*\(", re.IGNORECASE)),
+    ("CSS resource", re.compile(r"\b(?:url|image-set)\s*\(", re.IGNORECASE)),
     ("script-created resource", re.compile(
-        r"createElement\s*\(\s*[\"'`](?:link|script|img|iframe|embed|object|video|audio|source|base|style)\b",
+        r"createElement\s*\(\s*[\"'`](?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)\b",
         re.IGNORECASE)),
     ("media load", re.compile(r"\bnew\s+(?:Image|Audio)\b")),
     ("helper-created resource", re.compile(
-        r"""(?<![\w$])(?!(?:closest|querySelector|querySelectorAll|matches|getAttribute|hasAttribute|removeAttribute"""
-        r"""|getElementsByTagName|indexOf|lastIndexOf|includes|startsWith|endsWith)\s*\()[\w$]*\s*\(\s*["'`]"""
-        r"""(?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)["'`]""",
+        r"""(?<![\w$.])[\w$]+\s*\(\s*["'`]""" + PAPER_RUNTIME_TAGS + r"""["'`]"""
+        r"""|\(\s*["'`]""" + PAPER_RUNTIME_TAGS + r"""["'`]\s*,\s*\{""",
         re.IGNORECASE)),
     ("source attribute", re.compile(
         r"""\bsrc(?:set|doc)?["'`]?\]?\s*[:=]|setAttribute\s*\(\s*["'`]src(?:set|doc)?["'`]""", re.IGNORECASE)),
+    ("URL attribute", re.compile(
+        r"""\bformaction\b|""" + PAPER_RUNTIME_UNDECLARED + r"""(?<!style\.)\bbackground["'`]?\]?\s*"""
+        + PAPER_RUNTIME_WRITE + r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""\bping["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE
+        + r"""|[{,]\s*["'`]?ping["'`]?\s*:|setAttribute\s*\(\s*["'`](?:background|ping)["'`]""",
+        re.IGNORECASE)),
     ("page navigation", re.compile(
-        r"""\blocation\s*(?:\.\s*(?:href|assign|replace)\b|\.\s*\w+\s*=(?!=)|\[|=(?!=))|(?<![\w$.])open\s*\("""
-        r"""|\b(?:window|self|globalThis|top|parent)\s*\.\s*open\b|\.\s*(?:requestSubmit|submit)\s*\("""
-        r"""|http-equiv|\baction["'`]?\]?\s*=""",
+        r"""\blocation\s*(?:\.\s*(?:assign|replace)\b|\.\s*\w+\s*""" + PAPER_RUNTIME_WRITE + r"""|\[|"""
+        + PAPER_RUNTIME_WRITE + r""")|(?<![\w$])(?:open|navigate)\s*(?:\?\.\s*)?\("""
+        r"""|\.\s*(?:open|navigate)\s*\.\s*(?:call|apply|bind)\b"""
+        r"""|\b(?:window|self|globalThis|top|parent)\s*\.\s*open\b|\[\s*["'`]open["'`]\s*\]"""
+        r"""|\bhistory\s*\.\s*(?:back|forward|go)\b|\bnavigation\s*\.\s*(?:back|forward|traverseTo)\b"""
+        r"""|\.\s*(?:requestSubmit|submit)\s*\(|http-?equiv|setAttribute\s*\(\s*["'`]action["'`]"""
+        r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""\baction["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE,
         re.IGNORECASE)),
     # A link may only point within the page or at a blob the runtime made itself.
     ("link target", re.compile(
-        r"""\bhref\b(?!["'`]?\]?\s*[:=,]\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())""",
+        PAPER_RUNTIME_UNDECLARED + r"""\bhref["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE + PAPER_RUNTIME_OFF_PAGE
+        + r"""|[{,]\s*["'`]?(?:xlink:)?href["'`]?\s*:""" + PAPER_RUNTIME_OFF_PAGE
+        + r"""|setAttribute\s*\(\s*["'`](?:xlink:)?href["'`]\s*,""" + PAPER_RUNTIME_OFF_PAGE
+        + r"""|setAttributeNS\s*\([^,()]*,\s*["'`](?:xlink:)?href["'`]\s*,""" + PAPER_RUNTIME_OFF_PAGE
+        + r"""|[{,]\s*href\s*[,}]""",
         re.IGNORECASE)),
 )
 PAPER_RUNTIME_MAX_BYTES = 40000

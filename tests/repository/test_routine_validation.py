@@ -61,20 +61,52 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ('make("img", { src: "logo.png" });', "helper-created resource"),
             ("node.setAttribute('src', 'a.png');", "source attribute"),
             ("new Audio('x.mp3').play();", "media load"),
+            ("document.createElement('meta').httpEquiv = 'refresh';", "script-created resource"),
+            ("p.style.cssText = 'image-set(a.png 1x)';", "CSS resource"),
             ("location.search = '?a=1';", "page navigation"),
             ("location['href'] = 'x.html';", "page navigation"),
+            ("location.href += '?a=1';", "page navigation"),
+            ("open('x.html');", "page navigation"),
+            ('const w = window; w.open("collect.html");', "page navigation"),
+            ('doc.defaultView.open("collect.html");', "page navigation"),
+            ('w.open?.("collect.html");', "page navigation"),
+            ('w.open.call(w, "collect.html");', "page navigation"),
+            ('w["open"]("collect.html");', "page navigation"),
+            ('navigation.navigate("collect.html");', "page navigation"),
+            ("navigation.back();", "page navigation"),
+            ("history.back();", "page navigation"),
+            ("history.go(-1);", "page navigation"),
+            ("form.setAttribute('action', 'collect.html');", "page navigation"),
+            ("form.action = 'collect.html';", "page navigation"),
+            ('make("p").innerHTML = \'<meta http-equiv="refresh" content="0">\';', "page navigation"),
+            ("document.createElement('form');", "script-created resource"),
+            ('ui.make("object", { data: "collect.html" });', "helper-created resource"),
+            ('<button formaction="collect.html">', "URL attribute"),
+            ('button.formAction = "collect.html";', "URL attribute"),
+            ('<td background="bg.png">', "URL attribute"),
+            ("document.body.background = 'bg.png';", "URL attribute"),
+            ("a.setAttribute('ping', 'collect');", "URL attribute"),
+            ('make("a", { ping: "collect" });', "URL attribute"),
             ('make("a", { href: "collect.html" }).click();', "link target"),
             ("make('a', { href: target }).click();", "link target"),
+            ('make("a", { href }).click();', "link target"),
             ("link.href = base + 'collect.html';", "link target"),
-            ("fetchLater('collect');", "network API"),
-            ("open('x.html');", "page navigation"),
-            ('make("p").innerHTML = \'<meta http-equiv="refresh" content="0">\';', "page navigation")):
+            ("link.href += 'collect.html';", "link target"),
+            ("link.href ||= 'collect.html';", "link target"),
+            ("use.setAttribute('xlink:href', 'sprite.svg#a');", "link target"),
+            ("a.setAttributeNS(null, 'href', 'collect.html');", "link target"),
+            ("fetchLater('collect');", "network API")):
         runtime.write_text(f"<script>{sample}</script>\n", encoding="utf-8")
         assert any(error.endswith(f": {name}") for error in validator.validate_paper_runtime(runtime)), sample
     # In-file code that reaches nothing outside the paper is not refused.
-    runtime.write_text("<script>control.closest('form'); node.getAttribute('style'); details.open();"
+    runtime.write_text("<script>control.closest('form'); node.getAttribute('style'); details.open = true;"
                        " make('a', { href: '#top' }); make('a', { href: url = URL.createObjectURL(blob) });"
-                       " link.setAttribute('href', URL.createObjectURL(blob));</script>\n", encoding="utf-8")
+                       " link.setAttribute('href', URL.createObjectURL(blob)); link.getAttribute('href');"
+                       " URL.revokeObjectURL(link.href); document.querySelector('a[href]');"
+                       " node.classList.add('source'); const fetched = 1; localStorage.getItem('form');"
+                       " if (action === 'save') { p.style.background = 'none'; const here = location.href; }"
+                       " const href = link.getAttribute('href'); items.forEach(action => run(action));"
+                       " let ping = performance.now();</script>\n", encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")

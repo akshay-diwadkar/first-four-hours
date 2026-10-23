@@ -34,7 +34,7 @@ The hierarchy check reports structural, reachability, link-safety, and portabili
 
 ## Related skills
 
-When work moves, renames, deletes, or changes the meaning of a file that a pointer cites, the agent doing that work updates the pointer in the same work. [Construct](construct.md) repairs links to files its plan deletes. See [How skills hand work to each other](../concepts/handoffs.md).
+When work moves, renames, deletes, or changes the meaning of a file that a pointer cites, the agent doing that work updates the pointer in the same work. An agent whose work edits files also fixes a map cue that misled it, so small `.map/` edits can appear in a pull request about something else. [Construct](construct.md) only repairs links to files its plan deletes. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

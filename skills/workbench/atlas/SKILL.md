@@ -18,7 +18,7 @@ Invoke commands as `python <skill>/scripts/cli.py --repo-root <root> --format js
 
 1. Read the complete tiny `MAP.md`.
 2. Follow only cue-matching links: a Satellite's start target first, a cross-link only when the task crosses its boundary.
-3. When no cue fits, routes compete, or an entrypoint proves unproductive, reconsider the route or run a targeted native search of the wiki or project files; never hunt through the whole wiki. If your work edits files, fix the misleading cue.
+3. When no cue fits, routes compete, or an entrypoint proves unproductive, reconsider the route or run a targeted native search of the wiki or project files; never hunt through the whole wiki. If your work edits files, fix the misleading cue unless your skill limits Atlas upkeep.
 4. Inspect current project files before making claims or decisions.
 
 ## Author or rebalance

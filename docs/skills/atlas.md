@@ -1,6 +1,6 @@
 # Atlas
 
-Atlas keeps a small navigation wiki in a project so agents find the few files worth reading without searching everything. The wiki is plain Markdown: a tiny `MAP.md` at the root links to `LANDMARK.md` index pages under `.map/`, which link to Satellite pages that point at the actual project files. It belongs to the Workbench domain.
+Atlas keeps a small navigation wiki in a project so agents find the few files worth reading without searching everything. The wiki is plain Markdown: a tiny `MAP.md` at the root links to `LANDMARK.md` index pages under `.map/`, which link to Satellite pages that say which project file to open first, which others matter for which task, and when a kind of task has read enough. It belongs to the Workbench domain.
 
 ## When to use it
 
@@ -22,7 +22,7 @@ Map this repository so agents can find the validation and release code quickly.
 
 ## What happens
 
-To navigate, the agent reads `MAP.md`, follows only the relevant branches, and then reads the current project files before deciding anything. To author or rebalance, Atlas writes the wiki pages and validates the hierarchy with a read-only check. Authoring finishes by adding one short guidance block to the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing, so other agents find the map.
+To navigate, the agent reads `MAP.md`, follows only the branches whose cues match the task, opens the file a Satellite marks as its start, and then reads the current project files before deciding anything. A Satellite's stopping point is a hint; the files still decide what the task needs. To author or rebalance, Atlas writes the wiki pages and validates the hierarchy with a read-only check. Authoring finishes by adding one short guidance block to the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing, so other agents find the map.
 
 ## What you get
 
@@ -34,7 +34,7 @@ The hierarchy check reports structural, reachability, link-safety, and portabili
 
 ## Related skills
 
-When work moves, renames, deletes, or changes the meaning of a file that a pointer cites, the agent doing that work updates the pointer in the same work. [Construct](construct.md) repairs links to files its plan deletes. See [How skills hand work to each other](../concepts/handoffs.md).
+When work moves, renames, deletes, or changes the meaning of a file that a pointer cites, the agent doing that work updates the pointer in the same work. An agent whose work edits files also fixes a map cue that misled it, so small `.map/` edits can appear in a pull request about something else. [Construct](construct.md) only repairs links to files its plan deletes. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

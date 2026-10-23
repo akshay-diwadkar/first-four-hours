@@ -88,6 +88,11 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ("document.body.background = 'bg.png';", "URL attribute"),
             ('make("td", { background: "bg.png" });', "URL attribute"),
             ('make("input", { type: "image", src });', "source attribute"),
+            ('make("td", { id: "c", background });', "URL attribute"),
+            ('c.background = "#".slice(1) + "bg.png";', "URL attribute"),
+            ('xdataset.background = "bg.png";', "URL attribute"),
+            ('f.action = "#x".replace("#x", "collect.html");', "form action"),
+            ('xdataset.action = "collect.html";', "form action"),
             ("a.setAttribute('ping', 'collect');", "URL attribute"),
             ('make("a", { ping: "collect" });', "URL attribute"),
             ('make("a", { href: "collect.html" }).click();', "link target"),
@@ -111,7 +116,8 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
                        " if (action === 'save') { p.style.background = 'none'; const here = location.href; }"
                        " const href = link.getAttribute('href'); items.forEach(action => run(action));"
                        " let ping = performance.now(); state.action = '#save'; button.dataset.action = 'next';"
-                       " menu.open(); options.background = '#fff';</script>\n", encoding="utf-8")
+                       " menu.open(); options.background = '#fff'; Object.assign(panel.style, { background: 'none' });"
+                       " const opts = { background: theme.bg };</script>\n", encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")

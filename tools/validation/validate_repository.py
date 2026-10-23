@@ -1479,13 +1479,14 @@ def validate_atlas_wiki() -> list[str]:
 
 
 PAPER_RUNTIME = SKILLS_ROOT / "learning" / "examiner" / "assets" / "paper-runtime.html"
-# A write assigns (never compares, never an arrow) outside a declaration; an in-page URL is a "#" fragment or a
-# blob the runtime made itself. An object key opens or continues a literal, never a CSS rule, whose "{" follows a
-# selector.
+# A write assigns (never compares, never an arrow) outside a declaration; an in-page link target is a "#" fragment
+# or a blob the runtime made itself. An in-page action or background is a whole "#" literal that ends its
+# expression, and only a real dataset property is exempt.
 PAPER_RUNTIME_WRITE = r"(?:\+|\|\||&&|\?\?)?=(?![=>])"
 PAPER_RUNTIME_UNDECLARED = r"(?<!\bconst )(?<!\blet )(?<!\bvar )"
 PAPER_RUNTIME_OFF_PAGE = r"""(?!\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())"""
-PAPER_RUNTIME_KEY = r"""(?:[(,=:?\[]\s*\{\s*|,\s*)["'`]?"""
+PAPER_RUNTIME_IN_PAGE = r"""(?!\s*(?:"#[^"\n]*"|'#[^'\n]*'|`#[^`$\n]*`)\s*(?:[;,)}\n]|$))"""
+PAPER_RUNTIME_DATASET = r"(?<!\.dataset\.)"
 PAPER_RUNTIME_TAGS = r"(?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)"
 PAPER_RUNTIME_EXTERNAL = (
     ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),
@@ -1509,10 +1510,12 @@ PAPER_RUNTIME_EXTERNAL = (
         r"""\bsrc(?:set|doc)?["'`]?\]?\s*[:=]|[{,]\s*src(?:set|doc)?\s*[,}]"""
         r"""|setAttribute\s*\(\s*["'`]src(?:set|doc)?["'`]""", re.IGNORECASE)),
     ("URL attribute", re.compile(
-        r"""\bformaction\b|""" + PAPER_RUNTIME_UNDECLARED + r"""(?<!style\.)(?<!dataset\.)\bbackground["'`]?\]?\s*"""
-        + PAPER_RUNTIME_WRITE + PAPER_RUNTIME_OFF_PAGE + r"""|""" + PAPER_RUNTIME_KEY + r"""background["'`]?\s*:"""
-        + PAPER_RUNTIME_OFF_PAGE + r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""\bping["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE
-        + r"""|[{,]\s*["'`]?ping["'`]?\s*:|[{,]\s*(?:background|ping)\s*[,}]"""
+        r"""\bformaction\b|""" + PAPER_RUNTIME_UNDECLARED + r"""(?<!style\.)""" + PAPER_RUNTIME_DATASET
+        + r"""\bbackground["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE + PAPER_RUNTIME_IN_PAGE
+        # A background key counts only in the attributes a call gives an element it names.
+        + r"""|\(\s*["'`][\w-]+["'`]\s*,\s*\{[^{}]*?(?<![\w$-])["'`]?background["'`]?\s*(?::"""
+        + PAPER_RUNTIME_IN_PAGE + r"""|[,}])|""" + PAPER_RUNTIME_UNDECLARED + r"""\bping["'`]?\]?\s*"""
+        + PAPER_RUNTIME_WRITE + r"""|[{,]\s*["'`]?ping["'`]?\s*:|[{,]\s*ping\s*[,}]"""
         r"""|setAttribute\s*\(\s*["'`](?:background|ping)["'`]""",
         re.IGNORECASE)),
     ("page navigation", re.compile(
@@ -1526,9 +1529,9 @@ PAPER_RUNTIME_EXTERNAL = (
         re.IGNORECASE)),
     # Only a form reads action, but any receiver may be one, so an off-page action write is refused on every receiver.
     ("form action", re.compile(
-        r"""setAttribute\s*\(\s*["'`]action["'`]\s*,""" + PAPER_RUNTIME_OFF_PAGE
-        + r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""(?<!dataset\.)\baction["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE
-        + PAPER_RUNTIME_OFF_PAGE,
+        r"""setAttribute\s*\(\s*["'`]action["'`]\s*,""" + PAPER_RUNTIME_IN_PAGE
+        + r"""|""" + PAPER_RUNTIME_UNDECLARED + PAPER_RUNTIME_DATASET + r"""\baction["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE
+        + PAPER_RUNTIME_IN_PAGE,
         re.IGNORECASE)),
     # A link may only point within the page or at a blob the runtime made itself.
     ("link target", re.compile(

@@ -76,8 +76,9 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ("navigation.back();", "page navigation"),
             ("history.back();", "page navigation"),
             ("history.go(-1);", "page navigation"),
-            ("form.setAttribute('action', 'collect.html');", "page navigation"),
-            ("form.action = 'collect.html';", "page navigation"),
+            ("form.setAttribute('action', 'collect.html');", "form action"),
+            ("form.action = 'collect.html';", "form action"),
+            ('<form class=outlet action="collect.html">', "form action"),
             ('make("p").innerHTML = \'<meta http-equiv="refresh" content="0">\';', "page navigation"),
             ("document.createElement('form');", "script-created resource"),
             ('ui.make("object", { data: "collect.html" });', "helper-created resource"),
@@ -85,11 +86,14 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ('button.formAction = "collect.html";', "URL attribute"),
             ('<td background="bg.png">', "URL attribute"),
             ("document.body.background = 'bg.png';", "URL attribute"),
+            ('make("td", { background: "bg.png" });', "URL attribute"),
+            ('make("input", { type: "image", src });', "source attribute"),
             ("a.setAttribute('ping', 'collect');", "URL attribute"),
             ('make("a", { ping: "collect" });', "URL attribute"),
             ('make("a", { href: "collect.html" }).click();', "link target"),
             ("make('a', { href: target }).click();", "link target"),
             ('make("a", { href }).click();', "link target"),
+            ('<a class=outlet href="collect.html">', "link target"),
             ("link.href = base + 'collect.html';", "link target"),
             ("link.href += 'collect.html';", "link target"),
             ("link.href ||= 'collect.html';", "link target"),
@@ -106,7 +110,8 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
                        " node.classList.add('source'); const fetched = 1; localStorage.getItem('form');"
                        " if (action === 'save') { p.style.background = 'none'; const here = location.href; }"
                        " const href = link.getAttribute('href'); items.forEach(action => run(action));"
-                       " let ping = performance.now();</script>\n", encoding="utf-8")
+                       " let ping = performance.now(); state.action = '#save'; button.dataset.action = 'next';"
+                       " menu.open(); options.background = '#fff';</script>\n", encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")

@@ -1479,11 +1479,13 @@ def validate_atlas_wiki() -> list[str]:
 
 
 PAPER_RUNTIME = SKILLS_ROOT / "learning" / "examiner" / "assets" / "paper-runtime.html"
-# A write assigns (never compares, never an arrow) outside a declaration; an in-page link target is a "#" fragment
-# or a blob the runtime made itself.
+# A write assigns (never compares, never an arrow) outside a declaration; an in-page URL is a "#" fragment or a
+# blob the runtime made itself. An object key opens or continues a literal, never a CSS rule, whose "{" follows a
+# selector.
 PAPER_RUNTIME_WRITE = r"(?:\+|\|\||&&|\?\?)?=(?![=>])"
-PAPER_RUNTIME_UNDECLARED = r"(?<!const )(?<!let )(?<!var )"
+PAPER_RUNTIME_UNDECLARED = r"(?<!\bconst )(?<!\blet )(?<!\bvar )"
 PAPER_RUNTIME_OFF_PAGE = r"""(?!\s*(?:["'`]#|(?:[\w$]+\s*=\s*)?URL\.createObjectURL\s*\())"""
+PAPER_RUNTIME_KEY = r"""(?:[(,=:?\[]\s*\{\s*|,\s*)["'`]?"""
 PAPER_RUNTIME_TAGS = r"(?:link|script|img|iframe|embed|object|video|audio|source|base|style|form|meta)"
 PAPER_RUNTIME_EXTERNAL = (
     ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),
@@ -1504,20 +1506,29 @@ PAPER_RUNTIME_EXTERNAL = (
         r"""|\(\s*["'`]""" + PAPER_RUNTIME_TAGS + r"""["'`]\s*,\s*\{""",
         re.IGNORECASE)),
     ("source attribute", re.compile(
-        r"""\bsrc(?:set|doc)?["'`]?\]?\s*[:=]|setAttribute\s*\(\s*["'`]src(?:set|doc)?["'`]""", re.IGNORECASE)),
+        r"""\bsrc(?:set|doc)?["'`]?\]?\s*[:=]|[{,]\s*src(?:set|doc)?\s*[,}]"""
+        r"""|setAttribute\s*\(\s*["'`]src(?:set|doc)?["'`]""", re.IGNORECASE)),
     ("URL attribute", re.compile(
-        r"""\bformaction\b|""" + PAPER_RUNTIME_UNDECLARED + r"""(?<!style\.)\bbackground["'`]?\]?\s*"""
-        + PAPER_RUNTIME_WRITE + r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""\bping["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE
-        + r"""|[{,]\s*["'`]?ping["'`]?\s*:|setAttribute\s*\(\s*["'`](?:background|ping)["'`]""",
+        r"""\bformaction\b|""" + PAPER_RUNTIME_UNDECLARED + r"""(?<!style\.)(?<!dataset\.)\bbackground["'`]?\]?\s*"""
+        + PAPER_RUNTIME_WRITE + PAPER_RUNTIME_OFF_PAGE + r"""|""" + PAPER_RUNTIME_KEY + r"""background["'`]?\s*:"""
+        + PAPER_RUNTIME_OFF_PAGE + r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""\bping["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE
+        + r"""|[{,]\s*["'`]?ping["'`]?\s*:|[{,]\s*(?:background|ping)\s*[,}]"""
+        r"""|setAttribute\s*\(\s*["'`](?:background|ping)["'`]""",
         re.IGNORECASE)),
     ("page navigation", re.compile(
         r"""\blocation\s*(?:\.\s*(?:assign|replace)\b|\.\s*\w+\s*""" + PAPER_RUNTIME_WRITE + r"""|\[|"""
-        + PAPER_RUNTIME_WRITE + r""")|(?<![\w$])(?:open|navigate)\s*(?:\?\.\s*)?\("""
+        + PAPER_RUNTIME_WRITE + r""")|(?<![\w$])open\s*(?:\?\.\s*)?\((?!\s*\))"""
+        r"""|(?<![\w$])navigate\s*(?:\?\.\s*)?\("""
         r"""|\.\s*(?:open|navigate)\s*\.\s*(?:call|apply|bind)\b"""
         r"""|\b(?:window|self|globalThis|top|parent)\s*\.\s*open\b|\[\s*["'`]open["'`]\s*\]"""
         r"""|\bhistory\s*\.\s*(?:back|forward|go)\b|\bnavigation\s*\.\s*(?:back|forward|traverseTo)\b"""
-        r"""|\.\s*(?:requestSubmit|submit)\s*\(|http-?equiv|setAttribute\s*\(\s*["'`]action["'`]"""
-        r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""\baction["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE,
+        r"""|\.\s*(?:requestSubmit|submit)\s*\(|http-?equiv""",
+        re.IGNORECASE)),
+    # Only a form reads action, but any receiver may be one, so an off-page action write is refused on every receiver.
+    ("form action", re.compile(
+        r"""setAttribute\s*\(\s*["'`]action["'`]\s*,""" + PAPER_RUNTIME_OFF_PAGE
+        + r"""|""" + PAPER_RUNTIME_UNDECLARED + r"""(?<!dataset\.)\baction["'`]?\]?\s*""" + PAPER_RUNTIME_WRITE
+        + PAPER_RUNTIME_OFF_PAGE,
         re.IGNORECASE)),
     # A link may only point within the page or at a blob the runtime made itself.
     ("link target", re.compile(

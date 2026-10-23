@@ -18,6 +18,7 @@ First Four Hours starts its version history at 1.0.0. Earlier release history st
 - A consumer accepts another minor or patch version of the same major and refuses any other version.
 - Blueprint 1.0.0: before attacking a draft, the fresh challenger walks it in step order and reports any Proof run or Run that needs something only a later step creates, or that works only outside the way Construct launches it: as its own arguments with no shell, from the repository root, in Construct's inherited environment. Planners probe load-bearing commands the same way.
 - Construct 1.0.0: the final report lists each after-implementation verification Run with its `Expect:` and whether the output met it, so every check's verdict can be read without rerunning it.
+- Atlas 1.0.0: Satellite pages mark where to start reading, cue each other link by the task that needs it, and say when a kind of task has read enough. Navigating agents read the start target first and follow only matching links and cross-links. When a file moves or changes meaning, the agent searches `.map/` for its path to update every pointer citing it.
 - Architect, Assess, Atlas, Construct, Ideate, PR, Reason, Scribe, and Ticket 1.0.0 name `charter` among the skills whose suggested next step you run yourself, and Router 1.0.0 knows Charter's handoff to Ticket.
 
 ### Removed

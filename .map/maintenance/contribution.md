@@ -1,16 +1,14 @@
 # Contribution and validation
 
-- [Root agent instructions](../../AGENTS.md): start with repository-specific obligations before changing skills or their supporting machinery.
-- [Contributor entry point](../../CONTRIBUTING.md): set up the validation environment and start a policy-directed contribution.
-- [Contributor workflow](../../docs/contributing/README.md): locate change ownership, focused and required validation, guidance budgets, package projections, and release maintenance.
-- [Documentation rules](../../docs/contributing/documentation.md): read before adding or changing a `docs/` page; it sets the sections, conventions, voice, and where validation policy may be explained.
-- [Skill philosophy](../../SKILL_PHILOSOPHY.md): apply the Change Gate and distinguish agent-owned judgment from mechanical guarantees.
-- [Versioning and validation](../../REPO_VERSIONING.md): authoritative branch, release, test-cap, timing, and verification policy, including known planning traps.
-- [Ownership manifest](../../tools/validation/test-ownership.json): resolve changed paths to their test profiles before modifying or selecting tests.
-- [Supervised runner](../../tools/validation/test_ownership.py): trace selection, collection, and required verification behavior.
-- [Repository validator](../../tools/validation/validate_repository.py): locate cross-package metadata, synchronization, documentation link, and Atlas hierarchy checks.
-- [Context load measurement](../../tools/validation/measure_context_load.py): measure each skill's guidance tokens against [its recorded budget](../../tools/validation/context-load-budgets.json); before editing skill guidance, estimate a Blueprint draft's Exact guidance edits with its `--blueprint` mode (Planning traps in versioning policy).
-- [Pinned instruction rules](../../tests/repository/mandatory_skill_rules.json): exact clauses in skill guidance that [the rule checker](../../tools/validation/instruction_rules.py) requires; rewording a pinned clause fails validation.
+Start with [versioning and validation](../../REPO_VERSIONING.md): the authoritative branch, release, test-cap, timing, and verification policy, and the Planning traps to check before planning a change here. [Root agent instructions](../../AGENTS.md) hold the obligations every change follows; harnesses that load root guidance already have them.
+
+Then read only the line that matches the task:
+
+- Skill guidance (`SKILL.md` or `references/`): apply the Change Gate in [skill philosophy](../../SKILL_PHILOSOPHY.md); read headroom from [context load measurement](../../tools/validation/measure_context_load.py) against [its recorded budget](../../tools/validation/context-load-budgets.json), estimating a Blueprint draft's Exact guidance edits with its `--blueprint` mode; and keep every clause in [pinned instruction rules](../../tests/repository/mandatory_skill_rules.json), which [the rule checker](../../tools/validation/instruction_rules.py) requires, since rewording one fails validation. With the policy above, that is enough to plan a guidance-only edit.
+- Tests or verification selection: resolve changed paths to their test profiles in the [ownership manifest](../../tools/validation/test-ownership.json); read the [supervised runner](../../tools/validation/test_ownership.py) only to trace selection, collection, or a partial or timed-out run.
+- Documentation under `docs/`: [documentation rules](../../docs/contributing/documentation.md) set the sections, conventions, voice, and where validation policy may be explained.
+- A repository validation failure: [the repository validator](../../tools/validation/validate_repository.py) holds the cross-package metadata, synchronization, documentation link, and Atlas hierarchy checks.
+- Environment setup or a first contribution: the [contributor entry point](../../CONTRIBUTING.md), then the [contributor workflow](../../docs/contributing/README.md) for change ownership, focused and required validation, guidance budgets, package projections, and release maintenance.
 
 A skill-guidance edit must fit its recorded budget, keep any pinned clause it touches, and change together with the skill and release version files that versioning policy names. In a delegation protocol, the marked projection region is generated from shared doctrine: edit the doctrine and re-sync, never the region (see [standalone runtimes](runtime.md)).
 

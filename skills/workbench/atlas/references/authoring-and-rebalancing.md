@@ -9,9 +9,9 @@
 
 ## Initial mapping
 
-1. Inspect current project-folder structure and documentation enough to identify major areas.
-2. Define coarse top-level Landmarks.
-3. Inspect current project files for the entrypoints, cues, and costly cross-file conclusions worth caching.
+1. Inspect current project-folder structure, documentation, entrypoints, and tests enough to identify the distinct kinds of work the project receives; the folder tree is evidence, not the outline.
+2. Define coarse top-level Landmarks as work areas. A Landmark that only restates a directory name such as `src` or `tests` usually hides a missed question.
+3. Inspect current project files for the start targets, task cues, stop points, and costly cross-file conclusions worth caching.
 4. Create cohesive Satellites inside each Landmark.
 5. Add nested Landmarks only when another navigation level prevents unrelated reads.
 6. Write the tiny Map, navigation-only Landmarks, and project-file-linked Satellites.
@@ -47,7 +47,7 @@ Do not scan the full wiki routinely. Reconsider hierarchy during initial mapping
 
 ## Completion
 
-Walk a representative actual task through each affected route from `MAP.md` as a fresh agent would, and repair any ambiguous cue, unnecessary hop, or missing entrypoint you meet. This proportionate qualitative check proves no navigation quality.
+Walk at least one representative actual task through each affected route from `MAP.md` as a fresh agent would, choosing tasks of different kinds, such as a change, a diagnosis, and a verification, where a route serves several. For each, note the first project file reached, every point where you searched or guessed, and where you stopped. Repair every ambiguous cue, unproductive first read, unnecessary hop, missing entrypoint, and missing or misleading stop point you meet. This proportionate qualitative check proves no navigation quality.
 
 Authoring or rebalancing is complete after that walkthrough, when `run` succeeds and `setup-guidance` then succeeds. Root guidance is required: agents will not discover the map without it, so run `setup-guidance` without waiting for a request. It creates a missing root `AGENTS.md` or `CLAUDE.md`. Repair every `run` diagnostic and the map diagnostics `setup-guidance` reports (`map.guidance_setup_requires_valid_map`, `map.guidance_map_unreadable`), then rerun until both succeed. Report any other `setup-guidance` diagnostic, or the user declining root guidance, as incomplete authoring with that diagnostic or refusal; never hand-edit, relink, re-encode, or restore root instruction files to get past it, and never add `<!-- OPT-OUT ATLAS -->` yourself. Completion never requires freshness state; [freshness and maintenance](freshness-and-maintenance.md) makes freshness current.
 
@@ -61,7 +61,7 @@ MAP.md
        -> .map/auth/request-auth.md
 ```
 
-The Map says when authentication context is useful. The Landmark routes within authentication. The Satellite points to productive project-file entrypoints with brief cues about request authentication.
+The Map says when authentication context is useful. The Landmark routes within authentication. The Satellite marks where reading about request authentication starts, cues its other links by task, and says when a kind of task has read enough.
 
 ### Nested hierarchy and cross-link
 
@@ -94,6 +94,30 @@ Authentication establishes a principal before authorization.
 - [Request middleware][request-middleware] — principal construction starts here.
 
 [request-middleware]: ../../src/auth.py
+```
+
+### Read-path Satellite
+
+A Satellite marks its start, routes its other links by task, and says when to stop:
+
+```markdown
+<!-- .map/auth/request-identity.md -->
+# Request identity
+
+Requests gain a principal here; authorization rules live in [authorization][authz].
+
+- Start: [Request middleware][middleware] — `authenticate_request` sets every request's principal.
+- [Token service][tokens] — read when changing issuance, refresh, or invalidation.
+- [Auth settings][settings] — read for token lifetime or clock-skew changes.
+
+The middleware and [its tests][auth-tests] are enough for a middleware change; changing invalidation order also needs the token service, and those tests prove both. The [generated client][generated] is produced from the middleware by `make auth`: edit the middleware and regenerate.
+
+[middleware]: ../../src/auth.py
+[tokens]: ../../src/tokens.py
+[settings]: ../../src/config/settings.py
+[auth-tests]: ../../tests/test_auth.py
+[generated]: ../../src/auth_generated.py
+[authz]: authorization.md
 ```
 
 ### Overgrown Satellite promotion
@@ -162,6 +186,7 @@ Prefer a Satellite such as `access-tokens.md` that points to the productive entr
 - A Map that lists project files, symbols, or Satellites bypasses progressive disclosure.
 - A Landmark with project-file links or implementation details mixes navigation with freshness-bearing knowledge.
 - A Satellite for one trivial helper or a generated caller inventory caches cheap project-folder facts.
+- A Satellite with no start target, or with links cued only by topic, makes the reader open each file to decide.
 - A Satellite containing access tokens, refresh tokens, and sessions despite independent use should promote.
 - A nested Landmark whose children are always read together should collapse.
 - A resolver, fuzzy/BM25 ranker, embedding/vector search, top-K selector, alias registry, section injector, or hierarchy scorer duplicates agent navigation and project-folder filesystem truth.

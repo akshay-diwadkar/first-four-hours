@@ -6,4 +6,4 @@
 - [Freshness and maintenance](../../skills/workbench/atlas/references/freshness-and-maintenance.md): load for a deliberate drift audit, beyond updating pointers affected by the current change.
 - [Guidance installer](../../skills/workbench/atlas/scripts/repository_guidance.py): trace how the managed root block is located, spaced, and removed across LF and CRLF checkouts.
 
-Navigation stays optional: missing Atlas state never blocks work. Authoring or rebalancing is complete only after a representative-task walkthrough and then successful `run` and `setup-guidance`; freshness is a separate deliberate audit, so a usable map does not imply a current baseline.
+Navigation stays optional: missing Atlas state never blocks work. Authoring or rebalancing is complete only after a representative-task walkthrough and then successful `run` and `setup-guidance`; freshness is a separate deliberate audit, so a usable map does not imply a current baseline. Editing Atlas guidance also couples to budgets, pinned clauses, and versions; see [contribution and validation](../maintenance/contribution.md).

@@ -21,7 +21,7 @@ Keep every record under `.learning/` in the folder where the learner invoked Tut
 
 ## Start here page
 
-On every save, create or refresh in place the subject's self-contained `START_HERE.html`; the never-overwrite and next-number rules below do not apply to it. In plain words, it says what each kind of file is, including Examiner's `exams/`, whose answer keys are for after an attempt, which to open first, the next step, linked to the study plan when one exists, else to its record, and what to ask Tutor or Examiner to continue. It copies no list of lessons or sets, progress, coverage, or results; keep what it says about files Tutor does not write.
+On every save, create or refresh in place the subject's self-contained `START_HERE.html`; the never-overwrite and next-number rules do not apply to it. In plain words, it says what each kind of file there is, including any Examiner `exams/`, whose answer keys are for after an attempt, which to open first, the next step, linked to the study plan when one exists, else to its record, and what to ask Tutor or Examiner to continue. It copies no list of lessons or sets, progress, coverage, or results; keep what it says about files Tutor does not write.
 
 ## Never overwrite
 

@@ -8,7 +8,7 @@ A draft is **elevated** when it shows any of these, and **standard** otherwise:
 
 - a Location creating, changing, or deleting a file that runs as code (script, validator, test, runtime) or that one reads as configuration or fixtures;
 - a budgeted or deadline gate over something the plan edits, such as token-budgeted guidance or deadline-bound tests;
-- Locations in more than one skill, package, or service, not counting docs, Atlas pages, or changelog entries describing the change, or a changed contract another one consumes;
+- a changed contract another skill, package, or service consumes, or Locations in more than one of them (docs, Atlas pages, and changelog entries describing the change do not count);
 - an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service);
 - a change to Blueprint's or Construct's seal runtime.
 
@@ -59,7 +59,7 @@ Seal only when all are true:
 - every acceptance condition not marked `Owner gate:` has an executable path;
 - supported adversarial findings have evidence-backed closure in the repaired plan; unresolved load-bearing uncertainty blocks seal;
 - the separate fresh-context challenge ran at the draft's tier;
-- no step or Run forces the executor to choose a repair, scope, authority, ownership, validation or typing scope, budget exception, compatibility, or other semantic decision;
+- no step or Run forces the executor to discover or choose an additional repair, scope, policy or authority, ownership, validation or typing scope, exception or budget override, compatibility, or other semantic decision;
 - verification is discriminating and proportionate.
 
 If substantive judgment is still required anywhere, the Blueprint is not ready to seal. After sealing, stop. A changed request or answer means a fresh draft and workspace; a frozen request or sealed Blueprint is never edited in place.

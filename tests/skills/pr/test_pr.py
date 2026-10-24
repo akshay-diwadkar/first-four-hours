@@ -269,14 +269,23 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
     monkeypatch.setattr(sys, "path", list(sys.path))
     publish = _load_publish()
     calls: list[list[str]] = []
-    views: list[dict[str, Any]] = []
+    views: list[dict[str, Any] | None] = []
 
     def fake_gh(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         calls.append(list(argv))
+        if argv[:2] == ["ssh", "-G"]:
+            # Like ssh whose config aliases github-work to github.com and sends github.com over port 443, and an ssh
+            # that cannot run for github-gone.
+            if argv[-1] == "github-gone":
+                raise FileNotFoundError("ssh")
+            hostname = {"github-work": "github.com", "github.com": "ssh.github.com"}.get(argv[-1], argv[-1])
+            return subprocess.CompletedProcess(argv, 0, f"user git\nhostname {hostname}\nport 22\n", "")
         if argv[:3] == ["gh", "pr", "view"]:
             # Like gh, return only the requested --json fields.
             fields = argv[argv.index("--json") + 1].split(",")
             view = views.pop(0)
+            if view is None:
+                return subprocess.CompletedProcess(argv, 1, "", "HTTP 404: Could not resolve to a Repository")
             return subprocess.CompletedProcess(argv, 0, json.dumps({key: view[key] for key in fields if key in view}), "")
         return subprocess.CompletedProcess(argv, 0, "https://github.com/acme/widget/pull/7\n", "")
 
@@ -383,3 +392,25 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
         "gh", "pr", "edit", "7", "--repo", "github.com/acme/widget", "--body-file", str(draft.resolve()),
         "--title", "Greet callers by their name",
     ], calls
+    # Like gh, update reads an SSH host alias as the host it names.
+    edit = ["gh", "pr", "edit", "7", "--repo", "github.com/acme/widget"]
+    _git(repo, "remote", "set-url", "origin", "git@github-work:acme/widget.git")
+    views.append(pr)
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 0 and out["status"] == "updated", out
+    assert calls[-2][:6] == view and calls[-1][:6] == edit, calls
+    # An SSH push URL that ssh sends to ssh.github.com is still the HTTPS fetch URL's github.com repository.
+    _git(repo, "remote", "set-url", "origin", "https://github.com/acme/widget.git")
+    _git(repo, "remote", "set-url", "--push", "origin", "git@github.com:acme/widget.git")
+    views.append(pr)
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 0 and out["status"] == "updated", out
+    assert calls[-2][:6] == view and calls[-1][:6] == edit, calls
+    _git(repo, "config", "--unset", "remote.origin.pushurl")
+    # An alias ssh cannot resolve stays as written, and when gh pr view then fails, update names that repository
+    # rather than only a missing pull request.
+    _git(repo, "remote", "set-url", "origin", "git@github-gone:acme/widget.git")
+    views.append(None)
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.update_missing"], out
+    assert "`github-gone/acme/widget`" in out[0]["message"], out

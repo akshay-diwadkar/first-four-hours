@@ -36,26 +36,51 @@ def _strip_remote(ref: str, remotes: list[str]) -> tuple[str | None, str]:
     return None, ref
 
 
-def _github_repo(url: str) -> str | None:
+def _ssh_hostname(host: str, cwd: Path) -> str:
+    # Like gh, resolve an SSH host alias to the host ssh connects to.
+    try:
+        completed = run_gh(["ssh", "-G", host], cwd)
+    except (OSError, subprocess.TimeoutExpired):
+        return host
+    if completed.returncode:
+        return host
+    for line in (completed.stdout or "").splitlines():
+        key, _, value = line.partition(" ")
+        if key == "hostname" and value.strip():
+            return value.strip()
+    return host
+
+
+def _github_repo(url: str, cwd: Path) -> str | None:
     url = url.strip()
     if "://" in url:
         parts = urlsplit(url)
         if parts.scheme not in {"https", "http", "ssh", "git", "git+ssh", "ssh+git"} or not parts.hostname:
             return None
         host, path = parts.hostname, parts.path
+        ssh_transport = parts.scheme in {"ssh", "git+ssh", "ssh+git"}
     else:
         match = re.fullmatch(r"(?:[^@/:]+@)?([^/:]+):(.+)", url)
         # A one-letter host is a Windows drive such as C:/repo, not an scp-like remote.
         if match is None or len(match[1]) == 1:
             return None
         host, path = match[1], match[2]
+        ssh_transport = True
     path = path.strip("/")
     if path.endswith(".git"):
         path = path[:-4]
     segments = path.split("/")
     if len(segments) != 2 or not all(segments):
         return None
-    return f"{host.lower()}/{segments[0]}/{segments[1]}"
+    # Never let a URL pass an option to ssh.
+    if host.startswith("-"):
+        return None
+    if ssh_transport:
+        host = _ssh_hostname(host, cwd)
+    host = host.lower()
+    if host.endswith(".github.com"):
+        host = "github.com"
+    return f"{host}/{segments[0]}/{segments[1]}"
 
 
 def _detail(completed: subprocess.CompletedProcess[str]) -> str:
@@ -91,9 +116,9 @@ def _update(
         push_urls = [line for line in git(repo, "remote", "get-url", "--push", head_remote).splitlines() if line.strip()]
     except GitError:
         push_urls = []
-    gh_repo = _github_repo(fetch_url)
+    gh_repo = _github_repo(fetch_url, repo)
     # Never name the URL in the message: it can carry credentials.
-    if gh_repo is None or len(push_urls) != 1 or _github_repo(push_urls[0]) != gh_repo:
+    if gh_repo is None or len(push_urls) != 1 or _github_repo(push_urls[0], repo) != gh_repo:
         return emit(
             [
                 (
@@ -111,13 +136,16 @@ def _update(
     except (OSError, subprocess.TimeoutExpired) as exc:
         return emit([("pr.publish_failed", f"gh pr view did not complete: {exc}.", "Check gh installation and authentication, then rerun.")], draft)
     if view.returncode:
+        # gh fails alike for a missing pull request and an unresolvable repository, so name the repository.
         return emit(
             [
                 (
                     "pr.update_missing",
-                    f"gh pr view found no pull request for branch `{head_branch}`: {_detail(view)}.",
+                    f"gh pr view could not read a pull request for branch `{head_branch}` in `{gh_repo}`: {_detail(view)}.",
                     "If gh reports no pull request for this branch, ask the user whether to open one instead; "
-                    "otherwise repair the reported gh problem and rerun.",
+                    f"if gh cannot resolve, reach, or see `{gh_repo}`, log gh in to that host or switch to the account "
+                    "that can see it, or point the remote at the repository gh knows; otherwise repair the reported "
+                    "gh problem. Then rerun.",
                 )
             ],
             draft,

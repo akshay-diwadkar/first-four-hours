@@ -28,7 +28,7 @@ Open `Goal` with the chosen approach and its load-bearing invariants, before any
 
 ## Bounded exploration
 
-Exploration establishes facts, never decisions. [Bounded exploration](delegation-protocol.md) owns the envelope and the local-or-delegated choice; re-verify any returned fact that becomes load-bearing. When solutions must first be found, follow [Ideate in planning](ideate-in-planning.md).
+Exploration establishes facts, never decisions. [Bounded exploration](delegation-protocol.md) owns the envelope and the local-or-delegated choice; re-verify any returned fact that becomes load-bearing. When solutions must first be found, follow [Ideate in planning](ideate-in-planning.md). A sealed plan for a like task under `.first-four-hours/blueprints/` may seed your structure; a seal proves shape, not review acceptance, so re-derive from current source every premise and decision you take.
 
 ## Repository traps and Atlas
 

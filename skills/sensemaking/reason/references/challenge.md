@@ -4,7 +4,7 @@
 
 Do not reopen goal selection, do routine domain work, or promote style-only criticism. Prefer fresh isolated challenge when proportionate; it is never required.
 
-Find the claim whose failure changes the proposed action, acceptance, or claimed completion. Prefer proposal, authoritative evidence, material assumptions, consequence, and stop condition over the proposing agent's transcript. Never request or persist chain-of-thought.
+Find the claim whose failure changes the proposed action, acceptance, or claimed completion: imagine the proposal or result has already failed, name the most plausible cause, and select the claim that cause would break. Prefer proposal, authoritative evidence, material assumptions, consequence, and stop condition over the proposing agent's transcript. Never request or persist chain-of-thought.
 
 Use the smallest relevant lens:
 
@@ -17,14 +17,14 @@ Use the smallest relevant lens:
 - an affected consumer, boundary, stakeholder, permission, or recovery path is omitted;
 - proposed proof can pass while required behavior remains wrong;
 - compatibility, migration, permission, or authority is assumed;
-- scope no longer matches the stated problem;
-- evidence is stale or completion proves activity rather than outcome.
+- scope no longer matches the authoritative request, including any settled narrowing, or the result is checked against a restated goal instead;
+- evidence is stale, completion proves activity rather than outcome, or observed output does not show the claimed outcome.
 
-A challenge is material only when it connects to goal achievement, correctness, consequence, risk, authority, or completion. Prefer disconfirmation over supportive restatement. Raise a better approach only when it is material and supported, as what to reconsider and why; the owner decides any replacement, and none is required.
+A challenge is material only when it connects to goal achievement, correctness, consequence, risk, authority, or completion. Prefer disconfirmation over supportive restatement. Raise a better approach only when it is material and supported.
 
 ## Resolve or stop
 
-Re-check load-bearing evidence when economical. When the selected claim rests on rival explanations, selected evidence, an uncertain premise, or an unclear link to the required outcome, apply the one matching [evidence check](decide.md#evidence-checks) whose answer could change the disposition. If the objection remains unresolved, name the smallest credible read, test, comparison, source check, or user-owned decision that distinguishes the outcomes; when none is economical, keep the uncertainty as `insufficient-evidence`.
+Prefer observation to rereading your own reasoning: before concluding, state what an economical read, search, run, or test must show to check the load-bearing claim, then take it within read-only authority or name it for the owner; output already in hand counts when checked against that statement. A completion claim any available read, search, run, or test could settle cannot receive `no-material-objection` until it is checked, and a disposition resting on no observation says so. When the selected claim rests on rival explanations, selected evidence, an uncertain premise, or an unclear link to the required outcome, apply the one matching [evidence check](decide.md#evidence-checks) whose answer could change the disposition. If the objection remains unresolved, name the smallest credible read, test, comparison, source check, or user-owned decision that distinguishes the outcomes; when none is economical, keep the uncertainty as `insufficient-evidence`.
 
 Stop at one disposition:
 

@@ -34,6 +34,8 @@ First Four Hours starts its version history at 1.0.0. Earlier release history st
 
 - Tutor 1.0.0 and Examiner 1.0.0: whenever either saves files for a subject, it creates or refreshes `.learning/<subject>/START_HERE.html`, the page to open first. In plain words it says what each kind of file in the folder is, that any answer key is for after an attempt, which to open first, the next step linked to the study plan when one exists or else to the record that holds it, and what to ask Tutor or Examiner to continue. It is refreshed in place and copies no list of lessons or sets, progress, coverage, or results.
 
+- Reason 1.0.0: a challenge checks its load-bearing claim against an observation instead of rereading the agent's own reasoning. It first states what an economical read, search, run, or test must show, then takes that observation itself when it can do so without changing anything, or names it for the agent to take. It says when its result rests on no observation, and it does not clear a completion claim that any available check could settle until that check is done. It picks that claim by imagining the work has already failed and naming the most plausible cause. It checks the result against the observed output and the request as settled, rather than a restated goal. After a failure, Reason names the assumption the failure disproved, or treats an unknown cause as missing evidence, so a changed approach does not rest on a disproved assumption.
+
 ### Removed
 
 - Support for artifacts, receipts, and state written under earlier internal versions. Reseal or regenerate them with the current skills.

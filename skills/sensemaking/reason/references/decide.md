@@ -15,7 +15,7 @@ Classify blockers:
 
 For competing causes or actions, seek the cheapest discriminator, using the matching [evidence check](#evidence-checks) when one applies. If all plausible causes imply one action, stop. If options are materially equivalent, prefer the simplest sufficiently reversible authorized convention.
 
-Retry a failed approach only with new evidence; otherwise change approach. Before a costly, high-consequence, or hard-to-reverse commitment, test the cheapest useful falsifier; when independent adversarial challenge is that falsifier, switch internally to challenge.
+After a failure, name the assumption it falsified, or record its cause as unknown and treat that as evidence-owned; retry only with new evidence, otherwise change to an approach that does not rest on a falsified assumption. Before a costly, high-consequence, or hard-to-reverse commitment, test the cheapest useful falsifier; when independent adversarial challenge is that falsifier, switch internally to challenge.
 
 Exit as soon as one defensible owned move exists.
 

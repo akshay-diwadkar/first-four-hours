@@ -37,6 +37,7 @@ RUNTIME = ROOT / "skills" / "learning" / "examiner" / "assets" / "paper-runtime.
 MARKER = "<!-- paper-runtime -->"
 STORED = "JSON.parse(localStorage.getItem('ffh-paper:runtime-exercise-01'))"
 ANSWER_FILE = "answers-runtime-exercise-01.html"
+ORANGE = "rgb(232, 113, 10)"
 BLOCK_STORAGE = "Object.defineProperty(window,'localStorage',{get(){throw new DOMException('blocked','SecurityError')}})"
 BROWSER_NAMES = ("chrome", "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "msedge", "microsoft-edge")
 BROWSER_PATHS = (
@@ -469,6 +470,30 @@ class Page:
                 return entry
         raise ExerciseError(f"palette has no question {number}")
 
+    def flag_colors(self, number: str) -> dict[str, Any]:
+        selector = f"#paper-palette button[data-palette-question='{number}']"
+        value = self.js(f"(() => {{ const b = document.querySelector({json.dumps(selector)}); if (!b) return null; "
+                        "return {border: getComputedStyle(b).borderTopColor, glyph: getComputedStyle(b, '::after').color}; })()")
+        if not isinstance(value, dict):
+            raise ExerciseError(f"palette has no question {number}")
+        return value
+
+    def layout(self) -> dict[str, Any]:
+        value = self.js(
+            "(() => { const p = document.querySelector('#paper-runtime');"
+            " const q = Array.from(document.querySelectorAll('.paper-question')).find(e => e.getClientRects().length > 0) || null;"
+            " const n = document.querySelector('#paper-next'); const box = p.getBoundingClientRect();"
+            " const next = n.getBoundingClientRect(); const style = getComputedStyle(p);"
+            " return { position: style.position, last: document.body.lastElementChild.id,"
+            " opaque: style.backgroundColor !== 'rgba(0, 0, 0, 0)', layer: style.zIndex,"
+            " beforeQuestion: p.nextElementSibling === document.querySelector('.paper-question'),"
+            " margin: getComputedStyle(document.body).marginLeft,"
+            " gap: q ? q.getBoundingClientRect().left - box.right : null,"
+            " nextInView: next.top >= 0 && next.bottom <= window.innerHeight }; })()")
+        if not isinstance(value, dict):
+            raise ExerciseError("the panel layout could not be read")
+        return value
+
     def remaining(self, selector: str = "#paper-clock") -> int:
         return self.number(selector, "data-remaining-ms")
 
@@ -576,11 +601,35 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         (40000 < left <= 45000, f"remaining {left} ms is not in (40000, 45000]"),
     ])
 
+    session.call("Emulation.setDeviceMetricsOverride", {"width": 1280, "height": 800, "deviceScaleFactor": 1, "mobile": False})
+    session.reload()
+    wide = page.layout()
+    session.call("Emulation.setEmulatedMedia", {"media": "print"})
+    printed = page.js("getComputedStyle(document.body).marginLeft")
+    session.call("Emulation.setEmulatedMedia", {"media": ""})
+    session.wait_until("document.body.lastElementChild.id === 'paper-runtime'"
+                       " && getComputedStyle(document.querySelector('#paper-runtime')).position === 'fixed'", 3)
+    session.call("Emulation.setDeviceMetricsOverride", {"width": 800, "height": 800, "deviceScaleFactor": 1, "mobile": False})
+    session.wait_until("document.querySelector('#paper-runtime').nextElementSibling"
+                       " === document.querySelector('.paper-question')", 3)
+    narrow = page.layout()
+    session.call("Emulation.clearDeviceMetricsOverride")
     palette = page.palette()
+    gap = wide["gap"]
     checks.run("A3", [
         ([entry["question"] for entry in palette] == ["1", "2", "3"], f"palette is {palette}"),
         ([entry["state"] for entry in palette] == ["unanswered", "not-visited", "not-visited"], f"palette states are {palette}"),
         (page.visible_questions() == ["1"], f"visible questions are {page.visible_questions()}"),
+        (wide["position"] == "fixed", f"the wide panel position is {wide['position']!r}"),
+        (wide["last"] == "paper-runtime", f"the body's last element on a wide screen is {wide['last']!r}"),
+        (wide["opaque"] is True, "the wide panel is transparent"),
+        (wide["layer"] == "10", f"the wide panel z-index is {wide['layer']!r}"),
+        (isinstance(gap, (int, float)) and not isinstance(gap, bool) and gap >= 0, f"the wide panel overlaps the question by {gap!r}"),
+        (wide["nextInView"] is True, "#paper-next is outside the wide viewport"),
+        (printed == "8px", f"the printed body margin is {printed!r}"),
+        (narrow["position"] == "static", f"the narrow panel position is {narrow['position']!r}"),
+        (narrow["beforeQuestion"] is True, "the narrow panel is not right before the first question"),
+        (narrow["margin"] == "8px", f"the narrow body margin is {narrow['margin']!r}"),
     ])
 
     page.click("input[name='q1'][value='A']")
@@ -592,8 +641,13 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     page.click("#paper-next")
     page.click("#paper-flag")
     entry = page.palette_entry("2")
+    flagged = page.flag_colors("2")
+    plain = page.flag_colors("1")
     checks.run("A5", [
         (entry["state"] == "unanswered" and entry["flagged"] == "true", f"palette 2 is {entry}"),
+        (flagged["border"] == ORANGE, f"flagged palette 2 border is {flagged['border']!r}"),
+        (flagged["glyph"] == ORANGE, f"flagged palette 2 glyph is {flagged['glyph']!r}"),
+        (plain["border"] != ORANGE, "unflagged palette 1 border is orange"),
         (page.attr("#paper-summary", "data-unanswered") == "2", "summary data-unanswered is not 2"),
         (page.attr("#paper-summary", "data-flagged") == "1", "summary data-flagged is not 1"),
     ])
@@ -865,6 +919,7 @@ def scenario_b(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     page.click("input[name='q2'][value='C']")
     page.click("#paper-flag")
     entry = page.palette_entry("2")
+    answered_flag = page.flag_colors("2")
     page.click("#paper-next")
     page.set_text("#q3", "Snow fell at night.")
     saved_left = page.remaining()
@@ -875,6 +930,8 @@ def scenario_b(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     started = mid_data["parts"][0]["startedAt"]
     checks.run("B4", [
         (entry["state"] == "answered" and entry["flagged"] == "true", f"palette 2 is {entry}"),
+        (answered_flag["border"] == ORANGE, f"answered flagged palette 2 border is {answered_flag['border']!r}"),
+        (answered_flag["glyph"] == ORANGE, f"answered flagged palette 2 glyph is {answered_flag['glyph']!r}"),
         ("Question 2: A, C (flagged for review)" in mid, "the saved file lacks question 2's ticked boxes and flag"),
         ("Question 3: Snow fell at night." in mid, "the saved file lacks question 3's answer"),
         (mid_data.get("answers", {}).get("q2") == ["A", "C"], f"saved q2 is {mid_data.get('answers', {}).get('q2')!r}"),

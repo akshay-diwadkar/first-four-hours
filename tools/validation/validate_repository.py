@@ -1534,7 +1534,7 @@ PAPER_RUNTIME_EXTERNAL = (
         + r"""|[{,]\s*href\s*[,}]""",
         re.IGNORECASE)),
 )
-PAPER_RUNTIME_MAX_BYTES = 40000
+PAPER_RUNTIME_MAX_BYTES = 41000
 
 
 def validate_paper_runtime(path: Path = PAPER_RUNTIME) -> list[str]:

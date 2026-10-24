@@ -54,10 +54,15 @@ rehearsal off and leaves the paper readable and printable.
 #paper-palette button[data-state="answered"] { background-color: currentColor; }
 #paper-palette button[data-state="answered"] span { filter: invert(1); }
 #paper-palette button[data-state="not-visited"] { border-style: dashed; }
-#paper-palette button[data-flagged="true"]::after { content: " \2691"; }
+#paper-palette button[data-flagged="true"] { border-color: #e8710a; box-shadow: inset 0 0 0 2px #e8710a; }
+#paper-palette button[data-flagged="true"]::after { content: " \2691"; color: #e8710a; }
 #paper-palette button[aria-current="true"] { outline: 2px solid currentColor; outline-offset: 2px; }
 #paper-submit-confirm, #paper-new-attempt-confirm { border: 1px dashed currentColor; padding: 0.5rem 0.7rem; margin: 0.5rem 0; }
 .paper-runtime-row { margin: 0.4rem 0; }
+@media screen and (min-width: 64rem) {
+  body { margin-left: 21rem !important; }
+  #paper-runtime { position: fixed; top: 1rem; left: 1rem; z-index: 10; width: 18rem; max-height: calc(100vh - 2rem); overflow-y: auto; box-sizing: border-box; margin: 0; background-color: Canvas; }
+}
 @media print {
   #paper-runtime { display: none !important; }
   .paper-question[hidden] { display: block !important; }
@@ -81,12 +86,20 @@ rehearsal off and leaves the paper readable and printable.
     return node;
   }
 
+  /* On a wide screen the panel is the body's last child, so no paper container can hold its fixed side menu. */
+  const wide = window.matchMedia("screen and (min-width: 64rem)");
   function mountPanel(panel) {
-    if (anchorNode && anchorNode.parentNode) {
-      anchorNode.parentNode.insertBefore(panel, anchorNode);
-    } else {
-      doc.body.appendChild(panel);
+    function place() {
+      if (wide.matches) {
+        doc.body.appendChild(panel);
+      } else if (anchorNode && anchorNode.parentNode) {
+        anchorNode.parentNode.insertBefore(panel, anchorNode);
+      } else {
+        doc.body.appendChild(panel);
+      }
     }
+    place();
+    wide.addEventListener("change", place);
   }
 
   function controlsOf(section) {
@@ -427,7 +440,7 @@ rehearsal off and leaves the paper readable and printable.
   /* Page elements. */
   const panel = make("div", { id: "paper-runtime" });
   const notice = make("p", { id: "paper-practice-notice" },
-    "Practice features: the clock, question list, review flags, breaks, saving and automatic submission belong to this practice paper, not to the rules of the real examination. The examination's own rules are in the instructions above. Saving keeps your answers on this device or in a file you download; nothing is sent anywhere.");
+    "Practice features: the clock, question list, review flags, breaks, saving and automatic submission belong to this practice paper, not to the rules of the real examination. The examination's own rules are in the paper's instructions. Saving keeps your answers on this device or in a file you download; nothing is sent anywhere.");
   const storageWarning = make("p", { id: "paper-storage-warning", role: "alert" },
     "This browser is not keeping your progress. Use Save answers often and keep the file: a refresh or closing this page would lose your answers and time.");
   storageWarning.hidden = true;

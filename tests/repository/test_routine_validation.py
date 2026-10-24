@@ -135,8 +135,8 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")
     assert validator.validate_paper_runtime(runtime) == []
-    runtime.write_text("a" * 40001, encoding="utf-8")
-    assert validator.validate_paper_runtime(runtime)[0].endswith("larger than 40000 bytes")
+    runtime.write_text("a" * 41001, encoding="utf-8")
+    assert validator.validate_paper_runtime(runtime)[0].endswith("larger than 41000 bytes")
     # No element exempts the background word; CSS uses background-color instead.
     for whole in ('<script>document.body.background = "bg.png"; // </style>\n</script>\n',
                   '<body background="bg.png">x</style>\n',

@@ -18,6 +18,8 @@ Each section serves one reader job. A section exists only once it holds a page w
 
 [The documentation entrypoint](../README.md) is the single way in. Link every new page from it, or from a page it already links.
 
+[START_HERE.md](../../START_HERE.md), at the repository root, is the plain-language front door for a reader new to AI coding agents. It routes by situation into these pages and keeps no list of skills. When a page it summarizes changes, check it too.
+
 ## Facts come from source
 
 Take names, commands, artifacts, file paths, invocation modes, and behavior from the current source, not from memory or old issues. Link to the source that owns a fact instead of copying it:
@@ -26,7 +28,7 @@ Take names, commands, artifacts, file paths, invocation modes, and behavior from
 - [the skill design philosophy](../../SKILL_PHILOSOPHY.md) owns the design doctrine;
 - [the versioning and validation policy](../../REPO_VERSIONING.md) owns versions, tests, and validation;
 - the skill folders under `skills/<domain>/<skill>/` own the list of skills and their domains. Repository validation fails when the [repository README](../../README.md) catalog or the [skill index](../skills/README.md) is missing a skill, when a skill has no page in `skills/`, or when a page in `skills/` has no skill. The skill facts table in [the reference](../reference/README.md) is generated: change its sources and run `python tools/validation/sync_skill_catalog.py --write` instead of editing it. Do not keep another list of all skills or their domains in these pages;
-- the skill scripts own the handoff folders under `.first-four-hours/`. Repository validation fails when a page names a folder no skill script declares, when [How skills hand work to each other](../concepts/handoffs.md) is missing a declared folder, when a page names a `skills/<domain>/<skill>` path that is not an active skill, or when a local link in these pages or the repository README does not resolve.
+- the skill scripts own the handoff folders under `.first-four-hours/`. Repository validation fails when a page names a folder no skill script declares, when [How skills hand work to each other](../concepts/handoffs.md) is missing a declared folder, when a page names a `skills/<domain>/<skill>` path that is not an active skill, or when a local link in these pages, the repository README, or `START_HERE.md` does not resolve.
 
 Do not copy whole contracts, reasoning protocols, schemas, branch rules, or test-runner internals into these pages. Do not document retired skills, old names, or removed behavior; Git history keeps them.
 

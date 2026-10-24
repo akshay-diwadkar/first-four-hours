@@ -1,6 +1,6 @@
 # Choosing how to teach
 
-Read this before teaching a concept new to the learner, and again when an approach is not working. It guides choice, not sequence: use what this concept and learner need, leave each method at its exit, and let the learner's own work override any tendency here.
+Read this before teaching, practising, or reviewing, and again when an approach is not working. It guides choice, not sequence: use what this concept and learner need, leave each method at its exit, and let the learner's own work override any tendency here.
 
 ## Introduce the concept
 
@@ -11,7 +11,7 @@ An introduction achieves these, in the order and form the concept needs, skippin
 - a concrete instance from the learner's target domain, or a comparison of two target-domain cases;
 - where the concept stops applying.
 
-Practice and checks belong to tutoring and continuing learning. There, end each turn that teaches new material with a retrieval attempt the learner must answer from memory: ask for the answer and how confident they are, and give the answer and feedback only after they commit. An explanation may show a worked example and offer a question, and stays complete without exercises.
+Practice and checks belong to tutoring and continuing learning. There, end each turn that teaches new material with a retrieval attempt the learner must answer from memory: ask for the answer and how confident they are, and give feedback or the answer only after they commit. An explanation may show a worked example and offer a question, and stays complete without exercises.
 
 ## Choose the representation
 
@@ -22,16 +22,15 @@ Practice and checks belong to tutoring and continuing learning. There, end each 
 - **Visual:** when words carry a relationship, process, or structure poorly; read [Visuals](visuals.md). Exit: once the learner states the relationship without it.
 - **Concreteness fading:** start concrete and fade to the abstract form only when the concrete representation preserves the target's structure; otherwise choose one that does. Exit: once the learner works in the abstract form.
 - **Interleaving:** once the learner can do each kind of problem separately, mix kinds that are easily confused. It aids delayed retention and transfer but makes in-session performance look worse; that dip is not regression. Exit: once the learner picks the right method for mixed kinds unaided.
-- **Spaced retrieval:** for review, the learner answers from memory at growing intervals; re-reading is not review. It reliably improves retention; its transfer gains are smaller and less certain. Exit: return to teaching when an answer fails.
+- **Spaced retrieval:** for review, the learner answers from memory at growing intervals; re-reading is not review. It reliably improves retention; its transfer gains are smaller and less certain. Exit: a failed answer goes to Adapt support.
 
 Never leave a novice to discover a concept with minimal guidance: inquiry without adequate guidance and scaffolding performs poorly.
 
 ## Adapt support
 
-- Make support contingent on what the learner actually did: after a failed attempt give the least help that lets them progress: a prompt, then a hint, then a worked step; after success give less. Reduce support across the session and across sessions.
-- A learner finding a step hard has not understood it, and getting past it with help is not understanding. Do not smooth over difficulty by supplying the step and moving on: keep the learner working it with support, and keep it unresolved until a later task shows it.
+- Make support contingent on what the learner actually did, giving less after success, within and across sessions.
+- After a wrong, failed, or "I don't know" answer, say what fails, then give the least help that gets the learner there: a prompt, a hint, a worked step, the full answer last. A step found hard or passed with help is not understood: never smooth it over; record it as not converged and recheck it later with a new task, not an immediate repeat.
 - Feedback addresses the work, not the person: say what in the answer holds or fails and what it needed; never judge the learner's ability.
-- After a wrong committed answer, correct the error, then check it later with a new task rather than an immediate repeat of the corrected one.
 
 ## Check understanding
 

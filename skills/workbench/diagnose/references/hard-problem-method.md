@@ -24,7 +24,9 @@ For each hypothesis, keep temporarily its mechanism, motivating difference or ob
 
 ## 6. Run discriminating probes
 
-Prefer probes whose outcome splits the remaining hypotheses: swap experiments (A's artifact in B's environment and the reverse), bisection over the difference inventory, minimization that preserves the ratio, and profiling or stack samples of the slow stage. Write the predicted outcome per hypothesis before running. Control confounders such as warm caches and concurrent load, and repeat when variance is plausible.
+For a regression with a known-good revision, reading history is usually cheaper than executing: `git log -S` or `-G` on the symptom's identifiers, `git log -L` over the owning function, `git blame`, and `git diff <good> <bad>` over the stage that owns the gap often name the responsible change as `history` or `command` evidence. Bisect only what history leaves ambiguous, and skip history when the difference inventory points outside version control, such as a dependency or environment change.
+
+Prefer probes whose outcome splits the remaining hypotheses: swap experiments (A's artifact in B's environment and the reverse), bisection over the difference inventory, minimization that preserves the ratio, and profiling or stack samples of the slow stage. Write the predicted outcome per hypothesis before running. Control confounders such as warm caches and concurrent load, and repeat when variance is plausible. Run each of these, bisection included, and step 7's interventions only as a [non-mutating probe](diagnosis-techniques.md#non-mutating-probes) allows.
 
 When evidence lives where you cannot execute, hand the user one probe at a time: exact code or commands, where to run it, what to save, and what each plausible outcome would mean. Saved outputs become `capture` evidence under the declared `evidence_root` per the [Diagnosis Contract](diagnosis-contract.md).
 

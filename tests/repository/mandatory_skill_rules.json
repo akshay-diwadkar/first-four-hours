@@ -35,6 +35,13 @@
     "text": "Diagnose is read-only"
   },
   {
+    "id": "diagnosis.non-mutating-probes",
+    "skill": "diagnose",
+    "source": "references/diagnosis-techniques.md",
+    "surface": "doctor",
+    "text": "A probe is non-mutating only when it writes nothing into the target checkout, its Git metadata, or its ignored or untracked files while it runs"
+  },
+  {
     "id": "diagnosis.neutral-finding-model",
     "skill": "diagnose",
     "source": "references/diagnosis-contract.md",

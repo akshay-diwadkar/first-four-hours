@@ -21,6 +21,16 @@ Keep all independently material accepted findings from the bounded pass. Only me
 
 External documentation or another project's incident may support a mechanism or direction but never alone establishes this project's cause. Cite it only when relevant, and match version-sensitive claims to the environment's actual versions.
 
+## Non-mutating probes
+
+A probe is non-mutating only when it writes nothing into the target checkout, its Git metadata, or its ignored or untracked files while it runs; restoring a change afterwards does not qualify it. Reading files and history (`git log`, `git show`, `git blame`, `git diff <rev> <rev>`) qualifies; run status and working-tree diff queries as `git --no-optional-locks`, since they can otherwise rewrite the index.
+
+A probe that bisects or checks out revisions (`git bisect` writes `refs/bisect/*` and `BISECT_*` state, and moves HEAD unless `--no-checkout`), builds, installs, flips a setting, or runs tests or tools that write caches, coverage, logs, or bytecode runs instead in a disposable copy outside the target and the installed skill. The copy reproduces the inspected snapshot: a `git clone` of the snapshot revision plus any uncommitted changes the evidence cites, or a directory copy of a filesystem snapshot; never `git worktree add`, which writes the target's Git metadata. Installs and builds there use an environment created inside the copy, leaving the user's environments and local services unchanged.
+
+Run such a probe in place only when every write it makes is suppressed or redirected outside the target, as `PYTHONDONTWRITEBYTECODE=1` with `pytest -p no:cacheprovider` does for a Python test run that writes nothing else; comparing `git --no-optional-locks status --porcelain --ignored` before and after can confirm it. When no isolation is available, record the probe in `open_probes` or hand it to the user.
+
+Save a copy's output under `evidence_root`, outside the copy, as `capture` evidence with `agent-probe` provenance and an `origin` naming the copy's revision; its observation states how the copy differs from the target, such as missing ignored configuration, submodules, or large files. `command` evidence runs only in the target. Remove the copy after sealing.
+
 ## Missing facts
 
 Pursue the cheapest decision-changing evidence path first; interpretation and acceptance stay diagnosis-owned. Ask through `reason` one minimum question only for irreducible user-only expected-behavior, operational, or policy facts. Re-verify a Reason result against current evidence and decide; persist only its accepted consequence, never Reason state or artifacts.

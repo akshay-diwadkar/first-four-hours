@@ -8,6 +8,7 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
 
 ```text
 .learning/<subject>/
+  START_HERE.html          the plain-language page a student opens first
   study-plan.html          the one shared study plan
   lessons/                 Tutor's lessons; Examiner may read them but never writes there
   exams/<exam>/<YYYY-MM-DD>-<practice-kind>-<NN>/
@@ -19,6 +20,10 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
 - `<YYYY-MM-DD>` is the date the set was created. `<practice-kind>` is `full-mock`, `section-practice`, `topic-practice`, or `supplied-paper`. `<NN>` is one more than the highest set number already in that `exams/<exam>/` folder, zero-padded to two digits.
 - List `.learning/` and the subject's `exams/` before creating a folder. Reuse the existing subject or examination folder for the same goal or examination instead of creating a near-duplicate; when you cannot tell, ask.
 - The files are ordinary files the student may commit. Never add them to `.gitignore`, `.git/info/exclude`, or any other ignore rule.
+
+## Start here page
+
+Whenever you save in a subject folder, create or refresh its `START_HERE.html`, self-contained like a practice-set file. In plain words for someone new to the folder, it says what each kind of file there is, including Tutor's `lessons/`, that an answer key is for after an attempt, which file to open first, the current next step linked to the record holding it, and what to ask Examiner or Tutor to continue. It links rather than copies: no set list, coverage, or results. It is the one file rewritten in place; keep what it says about files Examiner does not write.
 
 ## Never overwrite
 

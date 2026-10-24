@@ -156,7 +156,7 @@
       "lifecycle": "Examiner remains the examination-practice owner when a student brings an attempt or another skill names an examination goal.",
       "workers": "No worker seam is earned; paper design, solving, and audit depend on one coherent reading of the examination's requirements.",
       "specialists": "No separate specialist branch is currently earned.",
-      "writes": "Examiner writes only under .learning/<subject>/ in the invocation folder: practice sets under exams/<exam>/ and only its own sections of study-plan.html.",
+      "writes": "Examiner writes only under .learning/<subject>/ in the invocation folder: practice sets under exams/<exam>/, only its own sections of study-plan.html, and the subject's START_HERE.html.",
       "rationale": "Fidelity and audit depend on the same requirement reading that wrote the paper; splitting it adds coordination without cheap verification."
     }
   ]

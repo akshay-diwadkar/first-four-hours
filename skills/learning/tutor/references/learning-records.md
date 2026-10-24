@@ -8,6 +8,7 @@ Keep every record under `.learning/` in the folder where the learner invoked Tut
 
 ```text
 .learning/<subject>/
+  START_HERE.html            the page to open first
   study-plan.html            the one shared study plan
   lessons/<NN>-<topic>.html  one file per lesson or kept explanation
   exams/<exam>/              examination practice; Tutor may read it but never creates it
@@ -17,6 +18,10 @@ Keep every record under `.learning/` in the folder where the learner invoked Tut
 - List `.learning/` before creating a subject folder. Reuse the existing folder for the same goal instead of creating a near-duplicate such as `learning-spanish` beside `spanish`; when you cannot tell whether a folder is the same goal, ask.
 - `<NN>` is the next number in learning order, zero-padded to two digits (`01`, `02`): one more than the highest number already in `lessons/`. A kept one-off explanation takes the next number in its subject.
 - The records are ordinary files the learner may commit. Never add them to `.gitignore`, `.git/info/exclude`, or any other ignore rule.
+
+## Start here page
+
+On every save, create or refresh in place the subject's self-contained `START_HERE.html`; the never-overwrite and next-number rules do not apply to it. In plain words, it says what each kind of file there is, including any Examiner `exams/`; that any answer key is for after an attempt; which to open first; the next step, linked to the study plan when one exists, else to its record; and what to ask Tutor or Examiner to continue. It copies no list of lessons or sets, progress, coverage, or results; keep what it says about files Tutor does not write.
 
 ## Never overwrite
 

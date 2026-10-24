@@ -15,7 +15,7 @@ Studying for a written examination mixes two jobs, learning the ideas and practi
 
 ## Steps
 
-1. Start Tutor for continuing learning with your goal, your available time, and any deadline. It saves lesson records and `study-plan.html` under `.learning/<subject>/` in the folder where you start it.
+1. Start Tutor for continuing learning with your goal, your available time, and any deadline. It saves lesson records, `study-plan.html`, and `START_HERE.html`, the plain-language page to open first, under `.learning/<subject>/` in the folder where you start it.
 2. Start Examiner naming the exact examination (awarding body, qualification, subject, level, session), and ask it to add the examination to your study plan.
 3. Attempt the paper, then ask Examiner to mark it. It explains each deduction against the marking scheme and diagnoses only the gaps your attempt shows.
 4. Take conceptual gaps back to Tutor, and repeat.

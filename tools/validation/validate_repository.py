@@ -1240,13 +1240,12 @@ def validate_markdown_references(skill_dir: Path) -> list[str]:
 
 
 def validate_documentation_links() -> list[str]:
-    """Validate local Markdown links in the root README and START_HERE files and user documentation."""
+    """Validate local Markdown links in the repository README and user documentation."""
     errors: list[str] = []
     repository_root = ROOT.resolve()
     documents: list[Path] = []
-    for name in ("README.md", "START_HERE.md"):
-        if (ROOT / name).is_file():
-            documents.append(ROOT / name)
+    if (ROOT / "README.md").is_file():
+        documents.append(ROOT / "README.md")
     if (ROOT / "docs").is_dir():
         documents.extend(sorted((ROOT / "docs").rglob("*.md")))
     for document in documents:

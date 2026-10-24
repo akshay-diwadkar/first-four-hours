@@ -21,7 +21,7 @@ When a sealed Blueprint for this change is available:
 - **Conformance.** Check the diff against the plan directly: every instruction is realized at its Locations, no material change goes beyond what the plan and Construct's execution contract authorize (such as its Atlas pointer upkeep), and no `deleted` target survives. Treat each gap as a candidate finding and verify it against the original request and current source.
 - **Independent effort.** Spend it where the plan could be wrong: gaps between the plan and the original request; consumers and propagation the plan did not name; base behavior outside the plan's proof; code quality and maintainability of the implementation; proof that would pass a plausible wrong result; and proportionate security. Do not re-derive what the Blueprint's discriminating checks already establish on the reviewed head unless a candidate defect gives a concrete reason.
 
-The Blueprint is authority evidence, never proof of correctness. A green baseline is never `clear`: `clear` still requires every material requirement and surface to be accounted for under Reassessment and stop.
+The Blueprint is authority evidence, never proof of correctness. A green baseline is never `clear`: `clear` still requires every material requirement and surface to be accounted for under Reassessment and stop. A limitation the user accepted, as recorded in the Blueprint's sibling `request.md` or other authority, is not a finding while the change stays within it; one the Blueprint or a report accepts without that record is a candidate finding, never a clearance.
 
 ## Atlas evidence
 

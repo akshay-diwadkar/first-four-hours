@@ -27,7 +27,7 @@ Start it yourself with `/blueprint`, or the agent may start it when your request
 1. Blueprint asks only questions whose answers change the correct solution, such as the outcome, compatibility, tradeoffs, or scope. It decides files, seams, and tests itself.
 2. It reads the repository and probes its current state. It never builds or runs the planned change, not even in a scratch copy.
 3. When no viable solution is apparent, or the evidence cannot rank materially different directions, it asks [Ideate](ideate.md) for options inside the same run. You make the final choice unless you already chose or delegated it.
-4. Before sealing, a separate fresh-context subagent challenges the draft. It assumes a mediocre executor built the plan literally and review rejected the result, then writes that review. A plan that creates, changes, or deletes code that runs or the configuration it reads, edits something under a time or size budget, spreads to other skills or packages, has irreversible or outward-facing effects, or changes the seal runtime gets the full attack from a challenger at least as capable as the planner. Every other plan gets a shorter brief and the cheapest capable model. Blueprint repairs every supported finding.
+4. Before sealing, a separate fresh-context subagent challenges the draft. It assumes a mediocre executor built the plan literally and review rejected the result, then writes that review. A plan that creates, changes, or deletes code that runs or the configuration it reads, edits something under a time or size budget, spreads to other skills or packages, has irreversible or outward-facing effects, or changes the seal runtime gets the full attack from a challenger at least as capable as the planner. Every other plan gets a shorter brief and the cheapest capable model. Blueprint repairs every supported finding. Before this challenge, for every plan, Blueprint decides each input, state, configuration, or environment that could still break a rule the change must never break, and how the plan refuses or tests it; the full attack lists them again from source, independently of the plan, and checks the plan against each. Every plan also needs proof that fails when a guard the code relies on for such a rule is removed, unless another guard already stops every input that could reach it, and any test stand-in a plan's proof relies on must answer as the real thing it replaces would.
 5. It seals the plan and reports its path.
 
 ## What you get
@@ -37,6 +37,7 @@ A sealed `blueprint.md` next to a frozen copy of your request, `request.md`, in 
 ## When it stops
 
 - It does not seal while a question only you can answer is open.
+- It does not seal with a known gap in what you asked for or in a rule the change must never break unless you accepted that gap, which your request then records.
 - If Ideate can only report a research limit for the direction the plan needs, Blueprint reports that limit to you instead of sealing.
 - If no separate subagent can run the challenge, it stops without sealing.
 

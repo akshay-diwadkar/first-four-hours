@@ -343,6 +343,13 @@
     "text": "relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source"
   },
   {
+    "id": "plan.no-self-accepted-gap",
+    "skill": "blueprint",
+    "source": "references/challenge-and-rehearsal.md",
+    "surface": "doctor",
+    "text": "no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance"
+  },
+  {
     "id": "pr.confirmed-publication",
     "skill": "pr",
     "source": "SKILL.md",

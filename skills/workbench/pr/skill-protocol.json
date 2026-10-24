@@ -6,12 +6,12 @@
   "run_dir_policy": "outside_skill_and_repo",
   "requirements": [],
   "inputs": [
-    {"name": "runs", "kind": "path", "path_policy": "future", "required": false, "repeatable": false, "description": "Run log (JSON lines) outside the target repository; record appends to it, check and publish read it.", "choices": [], "accepted_for": ["record", "check", "publish"], "required_for": ["record", "check", "publish"]},
+    {"name": "runs", "kind": "path", "path_policy": "future", "required": false, "repeatable": false, "description": "Run log (JSON lines) outside the target repository; record appends to it, check, publish, and update read it.", "choices": [], "accepted_for": ["record", "check", "publish", "update"], "required_for": ["record", "check", "publish", "update"]},
     {"name": "arg", "kind": "string", "required": false, "repeatable": true, "description": "One argv element of the verification command to run and record, in order.", "choices": [], "accepted_for": ["record"], "required_for": ["record"]},
-    {"name": "draft", "kind": "path", "required": false, "repeatable": false, "description": "Agent-authored PR description draft outside the target repository.", "choices": [], "accepted_for": ["check", "publish"], "required_for": ["check", "publish"]},
-    {"name": "base", "kind": "string", "required": false, "repeatable": false, "description": "Git ref of the PR base, such as origin/main; the description covers base...HEAD.", "choices": [], "accepted_for": ["check", "publish"], "required_for": ["check", "publish"]},
-    {"name": "title", "kind": "string", "required": false, "repeatable": false, "description": "PR title the user confirmed.", "choices": [], "accepted_for": ["publish"], "required_for": ["publish"]},
-    {"name": "confirm", "kind": "string", "required": false, "repeatable": false, "description": "body_sha256 that check reported for the exact draft the user explicitly confirmed.", "choices": [], "accepted_for": ["publish"], "required_for": ["publish"]}
+    {"name": "draft", "kind": "path", "required": false, "repeatable": false, "description": "Agent-authored PR description draft outside the target repository.", "choices": [], "accepted_for": ["check", "publish", "update"], "required_for": ["check", "publish", "update"]},
+    {"name": "base", "kind": "string", "required": false, "repeatable": false, "description": "Git ref of the PR base, such as origin/main; the description covers base...HEAD.", "choices": [], "accepted_for": ["check", "publish", "update"], "required_for": ["check", "publish", "update"]},
+    {"name": "title", "kind": "string", "required": false, "repeatable": false, "description": "PR title the user confirmed; for update, only a new title the user confirmed.", "choices": [], "accepted_for": ["publish", "update"], "required_for": ["publish"]},
+    {"name": "confirm", "kind": "string", "required": false, "repeatable": false, "description": "body_sha256 that check reported for the exact draft the user explicitly confirmed.", "choices": [], "accepted_for": ["publish", "update"], "required_for": ["publish", "update"]}
   ],
   "artifacts": [],
   "phases": {},
@@ -50,6 +50,19 @@
         {
           "argv": ["{python}", "{skill_dir}/scripts/publish_pr.py", "--repo-root", "{repo_root}", "--draft", "{input.draft}", "--runs", "{input.runs}", "--base", "{input.base}", "--title", "{input.title}", "--confirm", "{input.confirm}"],
           "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "update": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/publish_pr.py", "--update", "--repo-root", "{repo_root}", "--draft", "{input.draft}", "--runs", "{input.runs}", "--base", "{input.base}", "--confirm", "{input.confirm}"],
+          "repeat": [{"input": "title", "flag": "--title"}],
           "capture_stdout": null,
           "diagnostics_json": true,
           "failure": "blocked"

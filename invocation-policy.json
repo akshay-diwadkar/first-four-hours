@@ -29,7 +29,7 @@
     "router": "model-invoked",
     "ticket": "user-invoked",
     "charter": "user-invoked",
-    "pr": "user-invoked",
+    "pr": "both",
     "reason": "both",
     "tutor": "both",
     "examiner": "both"

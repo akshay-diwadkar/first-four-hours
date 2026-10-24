@@ -49,8 +49,8 @@
     },
     {
       "name": "pr",
-      "invocation": "user-invoked",
-      "description": "Write a grounded, reviewer-oriented pull request description for the current branch and open the PR only after explicit user confirmation. Use when a finished branch needs a PR; never merges."
+      "invocation": "both",
+      "description": "Write a grounded, reviewer-oriented pull request description for the current branch and open or update its PR only after explicit user confirmation. Use when a finished branch needs a PR or a refreshed description; never merges."
     },
     {
       "name": "reason",

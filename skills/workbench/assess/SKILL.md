@@ -40,4 +40,4 @@ python /absolute/skill-root/scripts/cli.py --repo-root /absolute/repo \
   --input output=<prepared output_path> --format json check
 ```
 
-Report the sealed result, path, and each finding's severity and defect as sealed, with no approval or readiness claim beyond it. Stop after one current `assessment.md` is sealed and checked. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, `pr`, or `ticket` step as its `/<skill>` command.
+Report the sealed result, path, and each finding's severity and defect as sealed, with no approval or readiness claim beyond it. Stop after one current `assessment.md` is sealed and checked. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.

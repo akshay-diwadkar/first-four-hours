@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Re-check a confirmed PR description and open the pull request with gh."""
+"""Re-check a confirmed PR description, then open the pull request or update the branch's open one with gh."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -34,10 +36,192 @@ def _strip_remote(ref: str, remotes: list[str]) -> tuple[str | None, str]:
     return None, ref
 
 
+def _ssh_hostname(host: str, cwd: Path) -> str:
+    # Like gh, resolve an SSH host alias to the host ssh connects to.
+    try:
+        completed = run_gh(["ssh", "-G", host], cwd)
+    except (OSError, subprocess.TimeoutExpired):
+        return host
+    if completed.returncode:
+        return host
+    for line in (completed.stdout or "").splitlines():
+        key, _, value = line.partition(" ")
+        if key == "hostname" and value.strip():
+            return value.strip()
+    return host
+
+
+def _github_repo(url: str, cwd: Path) -> str | None:
+    url = url.strip()
+    if "://" in url:
+        parts = urlsplit(url)
+        if parts.scheme not in {"https", "http", "ssh", "git", "git+ssh", "ssh+git"} or not parts.hostname:
+            return None
+        host, path = parts.hostname, parts.path
+        ssh_transport = parts.scheme in {"ssh", "git+ssh", "ssh+git"}
+    else:
+        match = re.fullmatch(r"(?:[^@/:]+@)?([^/:]+):(.+)", url)
+        # A one-letter host is a Windows drive such as C:/repo, not an scp-like remote.
+        if match is None or len(match[1]) == 1:
+            return None
+        host, path = match[1], match[2]
+        ssh_transport = True
+    path = path.strip("/")
+    if path.endswith(".git"):
+        path = path[:-4]
+    segments = path.split("/")
+    if len(segments) != 2 or not all(segments):
+        return None
+    # Never let a URL pass an option to ssh.
+    if host.startswith("-"):
+        return None
+    if ssh_transport:
+        host = _ssh_hostname(host, cwd)
+    host = host.lower()
+    if host.endswith(".github.com"):
+        host = "github.com"
+    return f"{host}/{segments[0]}/{segments[1]}"
+
+
+def _detail(completed: subprocess.CompletedProcess[str]) -> str:
+    return (completed.stderr or "").strip() or (completed.stdout or "").strip()
+
+
+def _update(
+    repo: Path,
+    draft: Path,
+    base: str,
+    base_branch: str,
+    head_remote: str | None,
+    head_branch: str,
+    head: str,
+    title: str | None,
+) -> int:
+    if head_remote is None:
+        return emit(
+            [
+                (
+                    "pr.branch_unpushed",
+                    f"the upstream `{head_branch}` is not a remote branch, so no pushed repository holds the pull request.",
+                    "Push the branch to its GitHub remote and rerun.",
+                )
+            ],
+            draft,
+        )
+    try:
+        fetch_url = git(repo, "remote", "get-url", head_remote)
+    except GitError:
+        fetch_url = ""
+    try:
+        push_urls = [line for line in git(repo, "remote", "get-url", "--push", head_remote).splitlines() if line.strip()]
+    except GitError:
+        push_urls = []
+    gh_repo = _github_repo(fetch_url, repo)
+    # Never name the URL in the message: it can carry credentials.
+    if gh_repo is None or len(push_urls) != 1 or _github_repo(push_urls[0], repo) != gh_repo:
+        return emit(
+            [
+                (
+                    "pr.update_missing",
+                    f"remote `{head_remote}` does not fetch from and push to one [HOST/]OWNER/REPO repository, "
+                    "so update cannot tell which repository the branch was pushed to.",
+                    "Point the remote's fetch and push URLs at the GitHub repository the branch is pushed to, push, and rerun.",
+                )
+            ],
+            draft,
+        )
+    fields = "number,state,url,baseRefName,headRefName,headRefOid,isCrossRepository"
+    try:
+        view = run_gh(["gh", "pr", "view", head_branch, "--repo", gh_repo, "--json", fields], repo)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return emit([("pr.publish_failed", f"gh pr view did not complete: {exc}.", "Check gh installation and authentication, then rerun.")], draft)
+    if view.returncode:
+        # gh fails alike for a missing pull request and an unresolvable repository, so name the repository.
+        return emit(
+            [
+                (
+                    "pr.update_missing",
+                    f"gh pr view could not read a pull request for branch `{head_branch}` in `{gh_repo}`: {_detail(view)}.",
+                    "If gh reports no pull request for this branch, ask the user whether to open one instead; "
+                    f"if gh cannot resolve, reach, or see `{gh_repo}`, log gh in to that host or switch to the account "
+                    "that can see it, or point the remote at the repository gh knows; otherwise repair the reported "
+                    "gh problem. Then rerun.",
+                )
+            ],
+            draft,
+        )
+    try:
+        data = json.loads(view.stdout or "")
+    except ValueError:
+        data = None
+    if not isinstance(data, dict) or type(data.get("number")) is not int or not isinstance(data.get("url"), str):
+        return emit([("pr.publish_failed", "gh pr view returned unreadable output.", "Check gh installation, then rerun.")], draft)
+    number = data["number"]
+    if data.get("headRefName") != head_branch or data.get("isCrossRepository") is not False:
+        return emit(
+            [
+                (
+                    "pr.update_missing",
+                    f"pull request #{number} is not from branch `{head_branch}` of this repository.",
+                    "Open a pull request for this branch with publish, or update that pull request from its own branch.",
+                )
+            ],
+            draft,
+        )
+    state = data.get("state")
+    if state != "OPEN":
+        return emit(
+            [
+                (
+                    "pr.update_not_open",
+                    f"pull request #{number} for `{head_branch}` is {str(state).lower()}; only an open pull request is updated.",
+                    "Open a new pull request with publish instead.",
+                )
+            ],
+            draft,
+        )
+    if data.get("headRefOid") != head:
+        return emit(
+            [
+                (
+                    "pr.branch_unpushed",
+                    f"pull request #{number} is at `{data.get('headRefOid')}`, not at the pushed HEAD `{head}`.",
+                    "Push this HEAD to the pull request's branch, wait until GitHub shows it, and rerun.",
+                )
+            ],
+            draft,
+        )
+    if data.get("baseRefName") != base_branch:
+        return emit(
+            [
+                (
+                    "pr.update_base_mismatch",
+                    f"pull request #{number} targets `{data.get('baseRefName')}`, but the draft was checked against `{base}`.",
+                    "Check the draft against the pull request's base and rerun with that base.",
+                )
+            ],
+            draft,
+        )
+    # Always name the repository: PR number N in gh's default repository may be another pull request.
+    gh_argv = ["gh", "pr", "edit", str(number), "--repo", gh_repo, "--body-file", str(draft)]
+    if title is not None:
+        gh_argv += ["--title", title]
+    try:
+        completed = run_gh(gh_argv, repo)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return emit([("pr.publish_failed", f"gh pr edit did not complete: {exc}.", "Check gh installation and authentication, then rerun.")], draft)
+    if completed.returncode:
+        return emit([("pr.publish_failed", f"gh pr edit failed: {_detail(completed)}.", "Repair the reported gh problem, then rerun.")], draft)
+    print(json.dumps({"status": "updated", "url": data["url"]}, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("--repo-root", "--draft", "--runs", "--base", "--title", "--confirm"):
+    for name in ("--repo-root", "--draft", "--runs", "--base", "--confirm"):
         parser.add_argument(name, required=True)
+    parser.add_argument("--title")
+    parser.add_argument("--update", action="store_true")
     args = parser.parse_args(argv)
     repo = Path(args.repo_root).resolve()
     draft = Path(args.draft).resolve()
@@ -47,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
         return emit(problems, draft)
 
     gates: list[Problem] = []
-    if not args.title.strip():
+    if (args.title is None and not args.update) or (args.title is not None and not args.title.strip()):
         gates.append(("pr.title_missing", "the PR title is empty.", "Pass the title the user confirmed."))
     if args.confirm != result["body_sha256"]:
         gates.append(
@@ -99,6 +283,8 @@ def main(argv: list[str] | None = None) -> int:
             ],
             draft,
         )
+    if args.update:
+        return _update(repo, draft, args.base, base_branch, head_remote, head_branch, result["head"], args.title)
     gh_argv = ["gh", "pr", "create", "--base", base_branch, "--head", head_branch, "--title", args.title, "--body-file", str(draft)]
     try:
         completed = run_gh(gh_argv, repo)

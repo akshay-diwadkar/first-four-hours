@@ -17,7 +17,7 @@ When the next skill is unclear, an agent either picks one and drifts into a side
 
 1. Ask for the outcome in plain words. Router starts when the agent recognizes the task, not by name.
 2. Read the sealed `route.md`. Each step names a skill, why it is needed now, its input, its expected result, and a ready-to-copy prompt.
-3. Say yes to step 1's prompt. For [Diagnose](../skills/diagnose.md), [Ticket](../skills/ticket.md), and [PR](../skills/pr.md), you type the prompt yourself.
+3. Say yes to step 1's prompt. For [Diagnose](../skills/diagnose.md) and [Ticket](../skills/ticket.md), you type the prompt yourself.
 4. When the route runs out, ask again from the new state. A route never continues itself.
 
 ## A worked scenario

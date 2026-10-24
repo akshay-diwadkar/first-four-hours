@@ -331,16 +331,28 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
         "gh", "pr", "create", "--base", "main", "--head", "feature",
         "--title", "Greet callers by name", "--body-file", str(draft.resolve()),
     ]]
-    # Update edits only this branch's own open PR on the checked base.
+    # Update edits only this branch's own open PR at the pushed HEAD, in the repository it was pushed to, on the checked base.
+    calls.clear()
+    # A remote URL that names no GitHub repository, or a remote that fetches from one repository and pushes to another,
+    # is refused before any gh call.
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.update_missing"], out
+    _git(repo, "remote", "set-url", "origin", "https://github.com/acme/widget.git")
+    _git(repo, "remote", "set-url", "--push", "origin", "https://github.com/someone/widget.git")
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.update_missing"], out
+    assert calls == [], calls
+    _git(repo, "config", "--unset", "remote.origin.pushurl")
+    head = _git(repo, "rev-parse", "HEAD").strip()
     pr = {
         "number": 7, "state": "OPEN", "url": "https://github.com/acme/widget/pull/7",
-        "baseRefName": "main", "headRefName": "feature", "isCrossRepository": False,
+        "baseRefName": "main", "headRefName": "feature", "headRefOid": head, "isCrossRepository": False,
     }
-    calls.clear()
-    # A same-repository PR from another branch (gh can resolve a branch named `42` to PR #42) is not this PR.
+    # A same-repository PR from another branch (gh can resolve a branch named `42` to PR #42) is not this PR, and a
+    # same-named PR whose head is another commit is not the one this run pushed.
     views.extend([
         {**pr, "state": "MERGED"}, {**pr, "isCrossRepository": True}, {**pr, "headRefName": "other"},
-        {**pr, "baseRefName": "release"},
+        {**pr, "headRefOid": "0" * 40}, {**pr, "baseRefName": "release"},
     ])
     code, out = run(confirmed, update=True, title=None)
     assert code == 1 and [item["code"] for item in out] == ["pr.update_not_open"], out
@@ -349,15 +361,25 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
     code, out = run(confirmed, update=True, title=None)
     assert code == 1 and [item["code"] for item in out] == ["pr.update_missing"], out
     code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.branch_unpushed"], out
+    code, out = run(confirmed, update=True, title=None)
     assert code == 1 and [item["code"] for item in out] == ["pr.update_base_mismatch"], out
-    assert [call[:4] for call in calls] == [["gh", "pr", "view", "feature"]] * 4, calls
+    # gh looks the branch up in the repository it was pushed to, never in gh's default repository.
+    view = ["gh", "pr", "view", "feature", "--repo", "github.com/acme/widget"]
+    assert [call[:6] for call in calls] == [view] * 5, calls
     # Without a new title, update replaces only the body; a confirmed new title is set too.
     views.extend([pr, pr])
     code, out = run(confirmed, update=True, title=None)
     assert code == 0 and out == {"status": "updated", "url": "https://github.com/acme/widget/pull/7"}, out
-    assert calls[-1] == ["gh", "pr", "edit", "7", "--body-file", str(draft.resolve())], calls
+    assert calls[-1] == [
+        "gh", "pr", "edit", "7", "--repo", "github.com/acme/widget", "--body-file", str(draft.resolve()),
+    ], calls
+    # An SSH remote URL names the same repository.
+    _git(repo, "remote", "set-url", "origin", "git@github.com:acme/widget.git")
     code, out = run(confirmed, update=True, title="Greet callers by their name")
     assert code == 0 and out["status"] == "updated", out
+    assert calls[-2][:6] == view, calls
     assert calls[-1] == [
-        "gh", "pr", "edit", "7", "--body-file", str(draft.resolve()), "--title", "Greet callers by their name",
+        "gh", "pr", "edit", "7", "--repo", "github.com/acme/widget", "--body-file", str(draft.resolve()),
+        "--title", "Greet callers by their name",
     ], calls

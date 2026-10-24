@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -34,14 +36,78 @@ def _strip_remote(ref: str, remotes: list[str]) -> tuple[str | None, str]:
     return None, ref
 
 
+def _github_repo(url: str) -> str | None:
+    url = url.strip()
+    if "://" in url:
+        parts = urlsplit(url)
+        if parts.scheme not in {"https", "http", "ssh", "git", "git+ssh", "ssh+git"} or not parts.hostname:
+            return None
+        host, path = parts.hostname, parts.path
+    else:
+        match = re.fullmatch(r"(?:[^@/:]+@)?([^/:]+):(.+)", url)
+        # A one-letter host is a Windows drive such as C:/repo, not an scp-like remote.
+        if match is None or len(match[1]) == 1:
+            return None
+        host, path = match[1], match[2]
+    path = path.strip("/")
+    if path.endswith(".git"):
+        path = path[:-4]
+    segments = path.split("/")
+    if len(segments) != 2 or not all(segments):
+        return None
+    return f"{host.lower()}/{segments[0]}/{segments[1]}"
+
+
 def _detail(completed: subprocess.CompletedProcess[str]) -> str:
     return (completed.stderr or "").strip() or (completed.stdout or "").strip()
 
 
-def _update(repo: Path, draft: Path, base: str, base_branch: str, head_branch: str, title: str | None) -> int:
-    fields = "number,state,url,baseRefName,headRefName,isCrossRepository"
+def _update(
+    repo: Path,
+    draft: Path,
+    base: str,
+    base_branch: str,
+    head_remote: str | None,
+    head_branch: str,
+    head: str,
+    title: str | None,
+) -> int:
+    if head_remote is None:
+        return emit(
+            [
+                (
+                    "pr.branch_unpushed",
+                    f"the upstream `{head_branch}` is not a remote branch, so no pushed repository holds the pull request.",
+                    "Push the branch to its GitHub remote and rerun.",
+                )
+            ],
+            draft,
+        )
     try:
-        view = run_gh(["gh", "pr", "view", head_branch, "--json", fields], repo)
+        fetch_url = git(repo, "remote", "get-url", head_remote)
+    except GitError:
+        fetch_url = ""
+    try:
+        push_urls = [line for line in git(repo, "remote", "get-url", "--push", head_remote).splitlines() if line.strip()]
+    except GitError:
+        push_urls = []
+    gh_repo = _github_repo(fetch_url)
+    # Never name the URL in the message: it can carry credentials.
+    if gh_repo is None or len(push_urls) != 1 or _github_repo(push_urls[0]) != gh_repo:
+        return emit(
+            [
+                (
+                    "pr.update_missing",
+                    f"remote `{head_remote}` does not fetch from and push to one [HOST/]OWNER/REPO repository, "
+                    "so update cannot tell which repository the branch was pushed to.",
+                    "Point the remote's fetch and push URLs at the GitHub repository the branch is pushed to, push, and rerun.",
+                )
+            ],
+            draft,
+        )
+    fields = "number,state,url,baseRefName,headRefName,headRefOid,isCrossRepository"
+    try:
+        view = run_gh(["gh", "pr", "view", head_branch, "--repo", gh_repo, "--json", fields], repo)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return emit([("pr.publish_failed", f"gh pr view did not complete: {exc}.", "Check gh installation and authentication, then rerun.")], draft)
     if view.returncode:
@@ -86,6 +152,17 @@ def _update(repo: Path, draft: Path, base: str, base_branch: str, head_branch: s
             ],
             draft,
         )
+    if data.get("headRefOid") != head:
+        return emit(
+            [
+                (
+                    "pr.branch_unpushed",
+                    f"pull request #{number} is at `{data.get('headRefOid')}`, not at the pushed HEAD `{head}`.",
+                    "Push this HEAD to the pull request's branch, wait until GitHub shows it, and rerun.",
+                )
+            ],
+            draft,
+        )
     if data.get("baseRefName") != base_branch:
         return emit(
             [
@@ -97,7 +174,8 @@ def _update(repo: Path, draft: Path, base: str, base_branch: str, head_branch: s
             ],
             draft,
         )
-    gh_argv = ["gh", "pr", "edit", str(number), "--body-file", str(draft)]
+    # Always name the repository: PR number N in gh's default repository may be another pull request.
+    gh_argv = ["gh", "pr", "edit", str(number), "--repo", gh_repo, "--body-file", str(draft)]
     if title is not None:
         gh_argv += ["--title", title]
     try:
@@ -178,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
             draft,
         )
     if args.update:
-        return _update(repo, draft, args.base, base_branch, head_branch, args.title)
+        return _update(repo, draft, args.base, base_branch, head_remote, head_branch, result["head"], args.title)
     gh_argv = ["gh", "pr", "create", "--base", base_branch, "--head", head_branch, "--title", args.title, "--body-file", str(draft)]
     try:
         completed = run_gh(gh_argv, repo)

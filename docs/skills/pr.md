@@ -32,7 +32,7 @@ The pull request URL, after your explicit yes, whether PR opened it or updated i
 
 ## When it stops
 
-If a check fails, PR repairs the draft or records the missing run and checks again. Without your yes, nothing is pushed, opened, or updated. PR does not update a closed or merged pull request, one opened from another repository, or one whose base differs from the base the description was checked against.
+If a check fails, PR repairs the draft or records the missing run and checks again. Without your yes, nothing is pushed, opened, or updated. PR looks the pull request up only in the repository your branch was pushed to, and does not update a closed or merged pull request, one opened from another repository, one whose head is not the commit you pushed, or one whose base differs from the base the description was checked against.
 
 ## Why it's built this way
 

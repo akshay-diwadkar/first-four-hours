@@ -1,8 +1,8 @@
 # Update
 
-Read this when the branch already has an open pull request. `update` replaces that pull request's body with the checked draft and keeps its title unless the user confirms a new one. It refuses a closed or merged pull request, one opened from another repository, and one whose base is not the `base` you checked against.
+Read this when the branch already has an open pull request. `update` replaces that pull request's body with the checked draft and keeps its title unless the user confirms a new one. It refuses a closed or merged pull request, one opened from another repository, one whose head is not the commit you pushed, and one whose base is not the `base` you checked against.
 
-1. Read the pull request with `gh pr view <branch> --json number,state,url,title,body,baseRefName`, where `<branch>` is the branch's upstream name; continue only when `state` is `OPEN`. Use its `baseRefName` as the base, for example `origin/<baseRefName>`.
+1. Read the pull request with `gh pr view <branch> --repo <HOST/OWNER/REPO> --json number,state,url,title,body,baseRefName`, where `<branch>` is the branch's upstream name and `<HOST/OWNER/REPO>` comes from its remote's URL, for example `github.com/acme/widget`; continue only when `state` is `OPEN`. Use its `baseRefName` as the base, for example `origin/<baseRefName>`.
 2. Ground, record, draft, and check as for a new pull request. Write the description the pull request needs now, not a log of changes since the last one: keep each part of the current body that still holds, including text someone else added, and drop what the new commits made untrue.
 3. Show the user the current title, the complete checked draft, and what it drops from the current body, and ask whether to update the pull request, and to push the branch first when its upstream is missing or behind. Only an explicit yes authorizes it; silence or an earlier approval does not. After a yes, push if needed, then:
 

@@ -21,7 +21,7 @@ Keep every record under `.learning/` in the folder where the learner invoked Tut
 
 ## Start here page
 
-Whenever you save in a subject folder, create or refresh its `START_HERE.html`, self-contained like a lesson. In plain words for someone new to the folder, it says what each kind of file there is, including Examiner's `exams/`, which to open first, the current next step linked to the record holding it, and what to ask Tutor or Examiner to continue. It links rather than copies: no lesson list, progress, or results. It is the one file rewritten in place; keep what it says about files Tutor does not write.
+On every save in a subject folder, create or refresh its `START_HERE.html`, self-contained like a lesson. In plain words for a newcomer, it says what each kind of file there is, including Examiner's `exams/`, whose answer keys are for after an attempt, which to open first, the next step linked to the record holding it, and what to ask Tutor or Examiner to continue. It links `study-plan.html` when it exists and copies no lesson list, progress, or results. Never overwrite does not cover it; keep what it says about files Tutor does not write.
 
 ## Never overwrite
 

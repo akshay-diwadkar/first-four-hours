@@ -10,7 +10,7 @@ Optional read-only evidence workers are earned only when separate bounded scopes
 
 ## Candidate gate
 
-Promote only a structural candidate with current or credible near-term consequence, such as recurring propagation burden, conflicting ownership, distributed invariants or lifecycle, wrong dependency direction, leaky abstraction, repeated caller burden, structural testability friction, duplicated state or policy, or a real capability blocked by current structure.
+Promote only a structural candidate with current or credible near-term consequence, such as recurring propagation burden, conflicting ownership, distributed invariants or lifecycle, wrong dependency direction, leaky abstraction, repeated caller burden, structural testability friction, duplicated state or policy, or a real capability blocked by current structure. Load [Structural Techniques](structural-techniques.md) before promoting or rejecting a candidate: it gives cheap history and import evidence for these signals and discriminators for weighing them.
 
 Reject naming or style preference, doctrine, healthy unconventional structure, hypothetical reuse, unsupported speculation, and isolated defects. Concrete current defects belong to `diagnose` unless the user supplied the defect as the architecture target.
 

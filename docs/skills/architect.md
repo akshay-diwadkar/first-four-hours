@@ -23,7 +23,7 @@ Start it yourself with `/architect`, or the agent may start it when your request
 
 ## What happens
 
-Architect grounds the question in the repository, applies design principles where they help, and prefers the simplest structure that meets the goal. It consults [Reason](reason.md) at its judgment points. It edits no implementation files.
+Architect grounds the question in the repository. Before choosing a structure, it looks for every existing mechanism that already does the job and makes it the owner, merges it, or records why it stays separate, instead of quietly adding a parallel one. It applies design principles where they help, and prefers the simplest structure that meets the goal. It consults [Reason](reason.md) at its judgment points. It edits no implementation files.
 
 ## What you get
 

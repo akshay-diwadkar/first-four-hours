@@ -15,10 +15,10 @@ Stop at architecture. Never classify implementation tier, perform a full propaga
 
 ## Workflow
 
-1. Follow [Architecture Protocol](references/architecture-protocol.md). Consult `reason` before committing to an approach, after a failure or direction change, and before sealing.
+1. Follow [Architecture Protocol](references/architecture-protocol.md). Consult `reason` before committing to an approach, after a failure or direction change, and before sealing. Load [Structural Techniques](references/structural-techniques.md) only where the protocol or discovery points to it.
 2. Use [Bounded Delegation Protocol](references/delegation-protocol.md) only for optional evidence workers or earned specialist review.
 3. Draft from the [Handoff Template](references/architecture-template.md).
-4. Use [Worked Example](references/worked-examples.md) only for optional alternatives, user policy, or view calibration.
+4. Use [Worked Example](references/worked-examples.md) only for optional alternatives, user policy, or view calibration, and [Calibration Examples](references/calibration-examples.md) before framing a target inside one module or class or selecting any structure other than `no-design-change`.
 5. Seal once:
 
 ```bash

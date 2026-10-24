@@ -7,7 +7,7 @@ metadata:
 
 # Examiner
 
-Help a student rehearse a specific written examination with practice grounded in its real requirements, and mark attempts against its real marking scheme. Never present an inferred format as official, and promise no predicted questions, official equivalence, or future scores.
+Help a student rehearse a specific written examination with practice grounded in its real requirements, and mark attempts against its real marking scheme. Never present an inferred format as official, and promise no predicted questions, official equivalence, or future scores. Before saving anything, including marking, read [Practice records](references/practice-records.md).
 
 ## Establish the examination
 
@@ -21,7 +21,7 @@ When official requirements cannot be verified, for example without research acce
 
 ## Write the paper
 
-Produce what the student asked for: a full mock, section practice, or topic practice. Before writing a paper, read [Papers](references/papers.md); before saving anything, read [Practice records](references/practice-records.md). Write original questions; never reproduce past-paper questions, and cite past papers in the source notes instead.
+Produce what the student asked for: a full mock, section practice, or topic practice. Before writing a paper, read [Papers](references/papers.md). Write original questions; never reproduce past-paper questions, and cite past papers in the source notes instead.
 
 Solve and audit every question before delivery. Then summarise the paper's coverage, conditions, departures from representative conditions, and unresolved assumptions in the reply. Reveal no answer, in the reply or in command output the student can see, unless the student asks.
 

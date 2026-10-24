@@ -8,7 +8,7 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
 
 ```text
 .learning/<subject>/
-  START_HERE.html          the plain-language page a student opens first
+  START_HERE.html          the page to open first
   study-plan.html          the one shared study plan
   lessons/                 Tutor's lessons; Examiner may read them but never writes there
   exams/<exam>/<YYYY-MM-DD>-<practice-kind>-<NN>/
@@ -23,7 +23,7 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
 
 ## Start here page
 
-On every save in a subject folder, create or refresh its `START_HERE.html`, self-contained like a practice-set file. In plain words for a newcomer, it says what each kind of file there is, including Tutor's `lessons/`, that an answer key is for after an attempt, which file to open first, the next step linked to the record holding it, and what to ask Examiner or Tutor to continue. It links `study-plan.html` when it exists and copies no set list, coverage, or results. Never overwrite does not cover it; keep what it says about files Examiner does not write.
+On every save, create or refresh in place the subject's self-contained `START_HERE.html`; the never-overwrite and next-number rules below do not apply to it. In plain words, it says what each kind of file is, including Tutor's `lessons/`, that an answer key is for after an attempt, which to open first, the next step, linked to the study plan when one exists, else to its record, and what to ask Examiner or Tutor to continue. It copies no list of lessons or sets, progress, coverage, or results; keep what it says about files Examiner does not write.
 
 ## Never overwrite
 

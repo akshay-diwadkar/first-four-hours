@@ -10,7 +10,6 @@ First Four Hours starts its version history at 1.0.0. Earlier release history st
 
 - Claude Code plugin installation. On Claude Code 2.1.275 or later, install all 15 skills as the `first-four-hours` plugin with `/plugin install first-four-hours --marketplace akshay-diwadkar/first-four-hours`. Plugin skills start as `/first-four-hours:<skill>`, for example `/first-four-hours:diagnose`.
 - Charter 1.0.0: a user-invoked Workbench skill, started with `/charter`, that turns a rough ambition for a whole project into one agreed, resumable `.first-four-hours/charters/<slug>/charter.md`. On request it publishes the charter as one GitHub umbrella issue after you confirm the exact text, and never creates tickets.
-- `START_HERE.md` at the repository root: a plain-language way in for someone who has never used an AI coding agent. It says what the suite is, that a coding agent installed on your computer is required, how to install and check it, three illustrative first requests, what a first run leaves behind, and what to do when a skill does not start. The README now points there first.
 
 ### Changed
 

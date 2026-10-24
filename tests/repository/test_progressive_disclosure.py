@@ -46,15 +46,12 @@ def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
     assert len(errors) == 1
     assert errors[0].startswith("Atlas wiki structure: map.link_broken: ")
 
-    # Links in the user documentation and the root START_HERE front door must resolve too.
+    # Links in the user documentation must resolve too.
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "README.md").write_text("[Skills](skills/README.md)\n", encoding="utf-8")
-    (tmp_path / "START_HERE.md").write_text("[Install](docs/missing.md)\n", encoding="utf-8")
     errors = validator.validate_documentation_links()
-    assert sorted(errors) == [
-        "START_HERE.md: local Markdown link target does not exist: docs/missing.md",
-        "docs/README.md: local Markdown link target does not exist: skills/README.md",
-    ]
+    assert len(errors) == 1
+    assert "does not exist: skills/README.md" in errors[0]
 
     # Documentation names only declared handoff folders and active skill paths,
     # and the handoff page names every declared folder.

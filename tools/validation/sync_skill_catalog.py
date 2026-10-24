@@ -125,8 +125,6 @@ def check() -> list[str]:
     else:
         errors += generated_block_errors(reference_text, skill_facts_table(), "docs/reference/README.md")
     documents = {"README.md": (ROOT / "README.md").read_text(encoding="utf-8")}
-    if (ROOT / "START_HERE.md").is_file():
-        documents["START_HERE.md"] = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
     for document in sorted((ROOT / "docs").rglob("*.md")):
         documents[document.relative_to(ROOT).as_posix()] = document.read_text(encoding="utf-8")
     skill_paths = {path.removeprefix("./") for paths in domain_groups().values() for path in paths}

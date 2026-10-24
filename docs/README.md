@@ -4,7 +4,6 @@ These pages are for people who use First Four Hours. The skills themselves are i
 
 ## Get started
 
-- [Start here](../START_HERE.md): the plain-language way in for someone new to AI coding agents: what the suite is, what you need, and a first request.
 - [Install First Four Hours](getting-started/installation.md): what you need, how to install the whole suite or one skill, and how to check that it worked.
 - [Your first run](getting-started/first-run.md): start one skill on a real problem, see what it leaves behind, and learn how skills start.
 - [Choose a skill](getting-started/choosing-a-skill.md): find the smallest skill for the problem in front of you, and when to combine skills.

@@ -2,6 +2,8 @@
 
 # First Four Hours
 
+**New to AI coding agents? Read [START_HERE.md](START_HERE.md) first.** It explains in plain words what this is, what you need, and how to make your first request. This README is the full overview for people who already use a coding agent: how the suite works, how to install it, and every skill.
+
 [![Latest Release](https://img.shields.io/github/v/release/akshay-diwadkar/first-four-hours?sort=semver&display_name=tag&cacheSeconds=300)](https://github.com/akshay-diwadkar/first-four-hours/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](pyproject.toml)

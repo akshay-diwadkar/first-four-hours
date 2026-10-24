@@ -35,7 +35,7 @@ An explanation or a tutoring session writes nothing unless you ask to keep somet
 
 - `lessons/<NN>-<topic>.html`: one self-contained HTML record per lesson, numbered in learning order, holding the teaching material and what you demonstrated;
 - `study-plan.html`: the one study plan for the subject, shared with Examiner;
-- `START_HERE.html`: the page to open first. In plain words it says what each file in the folder is, where to pick up, and what to ask to continue. Tutor and Examiner refresh it whenever they save.
+- `START_HERE.html`: the page to open first. In plain words it says what each kind of file in the folder is, where to pick up, and what to ask to continue. Tutor and Examiner refresh it whenever they save.
 
 These are ordinary files you may commit. Delivered teaching is never recorded as understanding; only your own answers and work show it.
 

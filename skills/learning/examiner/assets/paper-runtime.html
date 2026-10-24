@@ -51,7 +51,7 @@ rehearsal off and leaves the paper readable and printable.
 #paper-clock, #paper-break-clock { font-variant-numeric: tabular-nums; font-size: 1.6em; font-weight: 600; }
 #paper-palette { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.5rem 0; }
 #paper-palette button { min-width: 2.6rem; margin: 0; }
-#paper-palette button[data-state="answered"] { background-color: currentColor; }
+#paper-palette button[data-state="answered"] { background-color: currentColor !important; }
 #paper-palette button[data-state="answered"] span { filter: invert(1); }
 #paper-palette button[data-state="not-visited"] { border-style: dashed; }
 #paper-palette button[data-flagged="true"] { border-color: #e8710a; box-shadow: inset 0 0 0 2px #e8710a; }
@@ -61,7 +61,8 @@ rehearsal off and leaves the paper readable and printable.
 .paper-runtime-row { margin: 0.4rem 0; }
 @media screen and (min-width: 64rem) {
   body { margin-left: 21rem !important; }
-  #paper-runtime { position: fixed; top: 1rem; left: 1rem; z-index: 10; width: 18rem; max-height: calc(100vh - 2rem); overflow-y: auto; box-sizing: border-box; margin: 0; background-color: Canvas; }
+  #paper-runtime { position: fixed; top: 1rem; left: 1rem; z-index: 10; width: 18rem; max-height: calc(100vh - 2rem); overflow-y: auto; box-sizing: border-box; margin: 0; color-scheme: light dark; background-color: Canvas !important; color: CanvasText !important; }
+  #paper-runtime * { color: inherit !important; background-color: transparent !important; }
 }
 @media print {
   #paper-runtime { display: none !important; }
@@ -496,9 +497,9 @@ rehearsal off and leaves the paper readable and printable.
   const loadInput = make("input", { id: "paper-load", type: "file", accept: ".html" });
   fileRow.append(saveButton, loadLabel, loadInput);
 
-  const parts = [notice, storageWarning, loadError, startScreen, clock];
+  const parts = [storageWarning, loadError, startScreen, clock];
   if (restButton) { parts.push(restButton); }
-  parts.push(palette, summary, navigation, submitConfirm, breakBox, attemptBox, newAttemptButton, newAttemptConfirm, fileRow);
+  parts.push(navigation, submitConfirm, palette, summary, breakBox, attemptBox, newAttemptButton, newAttemptConfirm, fileRow, notice);
   panel.append.apply(panel, parts);
   mountPanel(panel);
 

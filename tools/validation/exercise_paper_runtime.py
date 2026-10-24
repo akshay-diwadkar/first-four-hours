@@ -19,6 +19,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import shutil
 import socket
 import struct
@@ -484,7 +485,19 @@ class Page:
             " const q = Array.from(document.querySelectorAll('.paper-question')).find(e => e.getClientRects().length > 0) || null;"
             " const n = document.querySelector('#paper-next'); const box = p.getBoundingClientRect();"
             " const next = n.getBoundingClientRect(); const style = getComputedStyle(p);"
+            " const pal = document.querySelector('#paper-palette').getBoundingClientRect();"
+            " const note = document.querySelector('#paper-practice-notice').getBoundingClientRect();"
+            " const name = e => e.tagName + (e.id ? '#' + e.id : '');"
+            " const inner = Array.from(p.querySelectorAll('*'));"
+            " const offColor = inner.filter(e => getComputedStyle(e).color !== style.color).slice(0, 5).map(name);"
+            " const offBackground = inner.filter(e => !e.matches('#paper-palette button[data-state=\"answered\"]')"
+            " && getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)').slice(0, 5).map(name);"
             " return { position: style.position, last: document.body.lastElementChild.id,"
+            " color: style.color, background: style.backgroundColor,"
+            " clockColor: getComputedStyle(document.querySelector('#paper-clock')).color,"
+            " offColor: offColor, offBackground: offBackground,"
+            " navAbovePalette: next.bottom <= pal.top, noticeBelowPalette: note.top >= pal.bottom,"
+            " nextInPanel: next.bottom <= box.bottom,"
             " opaque: style.backgroundColor !== 'rgba(0, 0, 0, 0)', layer: style.zIndex,"
             " beforeQuestion: p.nextElementSibling === document.querySelector('.paper-question'),"
             " margin: getComputedStyle(document.body).marginLeft,"
@@ -537,6 +550,21 @@ class Checks:
 
 def _normal(url: str) -> str:
     return urllib.parse.unquote(url).lower()
+
+
+def contrast(first: str, second: str) -> float:
+    """The WCAG contrast ratio of two computed rgb() or rgba() colours."""
+    def luminance(value: str) -> float:
+        match = re.match(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)", value)
+        if not match:
+            raise ExerciseError(f"{value!r} is not an rgb() colour")
+        channels = []
+        for raw in match.groups():
+            c = int(raw) / 255
+            channels.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
+        return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+    lighter, darker = sorted((luminance(first), luminance(second)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
 
 
 def _foreign_requests(events: list[dict[str, Any]], allowed: list[str]) -> list[str]:
@@ -609,6 +637,25 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     session.call("Emulation.setEmulatedMedia", {"media": ""})
     session.wait_until("document.body.lastElementChild.id === 'paper-runtime'"
                        " && getComputedStyle(document.querySelector('#paper-runtime')).position === 'fixed'", 3)
+    page.js("document.head.appendChild(Object.assign(document.createElement('style'), {id: 'exercise-dark-paper', textContent:"
+            " 'body { color: rgb(238, 238, 238); background-color: rgb(17, 17, 17); }"
+            " div, p, a, label, input, span, button { color: rgb(238, 238, 238) !important;"
+            " background-color: rgb(34, 34, 34) !important; }'})) !== null")
+    session.call("Emulation.setEmulatedMedia", {"media": "", "features": [{"name": "prefers-color-scheme", "value": "light"}]})
+    light = page.layout()
+    session.call("Emulation.setEmulatedMedia", {"media": "", "features": [{"name": "prefers-color-scheme", "value": "dark"}]})
+    dark = page.layout()
+    session.call("Emulation.setEmulatedMedia", {"media": "", "features": []})
+    page.js("document.getElementById('exercise-dark-paper').remove() === undefined")
+    session.call("Emulation.setDeviceMetricsOverride", {"width": 1366, "height": 768, "deviceScaleFactor": 1, "mobile": False})
+    page.js("(() => { const pal = document.querySelector('#paper-palette'); const first = pal.querySelector('button');"
+            " for (let i = 0; 80 > i; i += 1) { const copy = first.cloneNode(true); copy.classList.add('exercise-dummy');"
+            " if (i === 0) { copy.setAttribute('data-state', 'answered'); } pal.appendChild(copy); }"
+            " document.querySelector('#paper-storage-warning').hidden = false; return true; })()")
+    long = page.layout()
+    answered_fill = page.js("getComputedStyle(document.querySelector('.exercise-dummy')).backgroundColor")
+    page.js("(() => { document.querySelectorAll('.exercise-dummy').forEach(e => e.remove());"
+            " document.querySelector('#paper-storage-warning').hidden = true; return true; })()")
     session.call("Emulation.setDeviceMetricsOverride", {"width": 800, "height": 800, "deviceScaleFactor": 1, "mobile": False})
     session.wait_until("document.querySelector('#paper-runtime').nextElementSibling"
                        " === document.querySelector('.paper-question')", 3)
@@ -630,6 +677,26 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         (narrow["position"] == "static", f"the narrow panel position is {narrow['position']!r}"),
         (narrow["beforeQuestion"] is True, "the narrow panel is not right before the first question"),
         (narrow["margin"] == "8px", f"the narrow body margin is {narrow['margin']!r}"),
+        (wide["navAbovePalette"] is True, "#paper-next is not above the wide palette"),
+        (wide["noticeBelowPalette"] is True, "the practice notice is not below the wide palette"),
+        (narrow["navAbovePalette"] is True, "#paper-next is not above the narrow palette"),
+        (narrow["noticeBelowPalette"] is True, "the practice notice is not below the narrow palette"),
+        (contrast(light["color"], light["background"]) >= 4.5,
+         f"light panel text {light['color']} on {light['background']} is below 4.5:1"),
+        (contrast(light["clockColor"], light["background"]) >= 4.5,
+         f"light clock {light['clockColor']} on {light['background']} is below 4.5:1"),
+        (contrast(dark["color"], dark["background"]) >= 4.5,
+         f"dark panel text {dark['color']} on {dark['background']} is below 4.5:1"),
+        (contrast(dark["clockColor"], dark["background"]) >= 4.5,
+         f"dark clock {dark['clockColor']} on {dark['background']} is below 4.5:1"),
+        (light["offColor"] == [], f"light panel elements with the paper's colour: {light['offColor']}"),
+        (light["offBackground"] == [], f"light panel elements with a background: {light['offBackground']}"),
+        (dark["offColor"] == [], f"dark panel elements with the paper's colour: {dark['offColor']}"),
+        (dark["offBackground"] == [], f"dark panel elements with a background: {dark['offBackground']}"),
+        (light["background"] != dark["background"], f"the panel background is {light['background']} in both preferences"),
+        (long["nextInView"] is True, "#paper-next is outside the 1366x768 viewport on a long paper"),
+        (long["nextInPanel"] is True, "#paper-next is below the side menu's visible area on a long paper"),
+        (answered_fill == long["color"], f"an answered button is filled {answered_fill!r}, not {long['color']!r}"),
     ])
 
     page.click("input[name='q1'][value='A']")

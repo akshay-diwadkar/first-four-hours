@@ -29,7 +29,7 @@ Never leave a novice to discover a concept with minimal guidance: inquiry withou
 ## Adapt support
 
 - Make support contingent on what the learner actually did, giving less after success, within and across sessions.
-- After a wrong, failed, or "I don't know" answer, say what fails, then give the least help that gets the learner there: a prompt, a hint, a worked step, the full answer last. A step found hard or passed with help is not understood: never smooth it over; record it as not converged and recheck it later with a new task, not an immediate repeat.
+- After a wrong, failed, or "I don't know" answer, say what fails, then give the least help that gets the learner there: a prompt, a hint, a worked step, the full answer last. A step found hard or passed with help is not understood: never smooth it over; keep it open and recheck it later with a new task, not an immediate repeat.
 - Feedback addresses the work, not the person: say what in the answer holds or fails and what it needed; never judge the learner's ability.
 
 ## Check understanding

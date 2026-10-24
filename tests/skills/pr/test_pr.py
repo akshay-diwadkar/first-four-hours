@@ -334,14 +334,20 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
         "baseRefName": "main", "headRefName": "feature", "isCrossRepository": False,
     }
     calls.clear()
-    views.extend([{**pr, "state": "MERGED"}, {**pr, "isCrossRepository": True}, {**pr, "baseRefName": "release"}])
+    # A same-repository PR from another branch (gh can resolve a branch named `42` to PR #42) is not this PR.
+    views.extend([
+        {**pr, "state": "MERGED"}, {**pr, "isCrossRepository": True}, {**pr, "headRefName": "other"},
+        {**pr, "baseRefName": "release"},
+    ])
     code, out = run(confirmed, update=True, title=None)
     assert code == 1 and [item["code"] for item in out] == ["pr.update_not_open"], out
     code, out = run(confirmed, update=True, title=None)
     assert code == 1 and [item["code"] for item in out] == ["pr.update_missing"], out
     code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.update_missing"], out
+    code, out = run(confirmed, update=True, title=None)
     assert code == 1 and [item["code"] for item in out] == ["pr.update_base_mismatch"], out
-    assert [call[:4] for call in calls] == [["gh", "pr", "view", "feature"]] * 3, calls
+    assert [call[:4] for call in calls] == [["gh", "pr", "view", "feature"]] * 4, calls
     # Without a new title, update replaces only the body; a confirmed new title is set too.
     views.extend([pr, pr])
     code, out = run(confirmed, update=True, title=None)

@@ -27,7 +27,7 @@ Start it yourself with `/blueprint`, or the agent may start it when your request
 1. Blueprint asks only questions whose answers change the correct solution, such as the outcome, compatibility, tradeoffs, or scope. It decides files, seams, and tests itself.
 2. It reads the repository and probes its current state. It never builds or runs the planned change, not even in a scratch copy.
 3. When no viable solution is apparent, or the evidence cannot rank materially different directions, it asks [Ideate](ideate.md) for options inside the same run. You make the final choice unless you already chose or delegated it.
-4. Before sealing, a separate fresh-context subagent challenges the draft as a mediocre executor would follow it. Blueprint repairs every supported finding.
+4. Before sealing, a separate fresh-context subagent challenges the draft. It assumes a mediocre executor built the plan literally and review rejected the result, then writes that review. A plan that creates, changes, or deletes code that runs or the configuration it reads, edits something under a time or size budget, spreads to other skills or packages, has irreversible or outward-facing effects, or changes the seal runtime gets the full attack from a challenger at least as capable as the planner. Every other plan gets a shorter brief and the cheapest capable model. Blueprint repairs every supported finding.
 5. It seals the plan and reports its path.
 
 ## What you get
@@ -46,7 +46,7 @@ A sealed plan never changes. A changed request needs a new plan in a fresh task 
 
 Blueprint is also meant to raise the planning floor: when only an executor-level model is available, it should help that model plan better than it would unaided. Like comparable quality at lower cost, this is an aim, not a measured guarantee.
 
-When plan quality matters most, use your strongest affordable model for planning. The executor can be cheaper because the plan already settles every decision, and the challenger does not need to be stronger than the planner.
+When plan quality matters most, use your strongest affordable model for planning. The executor can be cheaper because the plan already settles every decision. Blueprint picks the challenger's model from the plan's risk signals, as step 4 of What happens describes.
 
 The repository's tests prove the planning and execution mechanics with deterministic fakes and no live models; they say nothing about model quality or cost. To compare for yourself, run the same request through different planner and executor pairings by hand, each from the same base commit with a fresh task folder, and compare the outcomes and token use. That comparison is optional and outside repository validation.
 

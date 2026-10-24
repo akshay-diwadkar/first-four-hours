@@ -1,18 +1,5 @@
 # Planning contract
 
-- [The rent rule](#the-rent-rule)
-- [Intent closure](#intent-closure)
-- [Approach and scope](#approach-and-scope)
-- [Bounded exploration](#bounded-exploration)
-- [Repository traps and Atlas](#repository-traps-and-atlas)
-- [Attack the problem](#attack-the-problem)
-- [Commands and evidence](#commands-and-evidence)
-- [Implementation instructions](#implementation-instructions)
-- [Step proof](#step-proof)
-- [Conditional branches](#conditional-branches)
-- [Verification and completion](#verification-and-completion)
-- [Source and worktree binding](#source-and-worktree-binding)
-
 Its questions are cues for finding what a plan must settle, not a form: a strong planner may reach the same decisions by another route, and every planner must still settle them.
 
 Planning readiness answers three practical questions:

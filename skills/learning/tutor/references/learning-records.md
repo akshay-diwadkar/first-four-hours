@@ -28,8 +28,8 @@ Each lesson is one self-contained HTML file a browser opens directly: CSS, JavaS
 
 1. **Teaching material:** the explanation, examples, visuals, and exercises, readable later without the conversation, with citations for researched claims.
 2. **Learning record:** a compact `<section id="learning-record">` with:
-   - **Demonstrated:** what the learner showed they can do, each with brief evidence from their own answer, explanation, or work;
-   - **Unresolved:** difficulties and misconceptions still open;
+   - **Demonstrated:** what the learner showed they can do, each with brief evidence from more than one of their own tasks, such as answers, explanations, or work, and the representation, such as a worked example, comparison, analogy, or diagram, that produced each piece of evidence;
+   - **Unresolved:** difficulties and misconceptions still open and, listed apart as shown once, anything only one task has shown so far, with its evidence and representation;
    - **Next:** the next step;
    - **Updated:** the date of the last change, as `YYYY-MM-DD`.
 

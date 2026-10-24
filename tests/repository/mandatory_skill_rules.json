@@ -385,6 +385,20 @@
     "text": "Never replace or delete an earlier lesson, and never rewrite its teaching material."
   },
   {
+    "id": "tutor.converging-evidence",
+    "skill": "tutor",
+    "source": "references/teaching-methods.md",
+    "surface": "doctor",
+    "text": "A concept counts as demonstrated only with converging evidence from more than one task."
+  },
+  {
+    "id": "tutor.no-unsupported-claims",
+    "skill": "tutor",
+    "source": "references/teaching-methods.md",
+    "surface": "doctor",
+    "text": "Never assert a fixed learning style, a retention percentage, a brain-based explanation, or a percentage of understanding."
+  },
+  {
     "id": "examiner.no-inferred-official",
     "skill": "examiner",
     "source": "SKILL.md",

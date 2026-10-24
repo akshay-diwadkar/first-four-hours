@@ -28,8 +28,8 @@ Each lesson is one self-contained HTML file a browser opens directly: CSS, JavaS
 
 1. **Teaching material:** the explanation, examples, visuals, and exercises, readable later without the conversation, with citations for researched claims.
 2. **Learning record:** a compact `<section id="learning-record">` with:
-   - **Demonstrated:** what the learner showed they can do, each with brief evidence from their own answer, explanation, or work;
-   - **Unresolved:** difficulties and misconceptions still open;
+   - **Demonstrated:** what the learner showed they can do, each with brief evidence meeting the Check understanding rules in [Choosing how to teach](teaching-methods.md), and the representation, such as a worked example or comparison, that produced each piece;
+   - **Unresolved:** difficulties and misconceptions still open, including steps passed with help, and, listed apart as not converged, anything shown unaided that does not yet meet those rules, with its evidence and representation;
    - **Next:** the next step;
    - **Updated:** the date of the last change, as `YYYY-MM-DD`.
 
@@ -39,4 +39,4 @@ Make lessons easy to revisit: clear headings, a readable line length, legible li
 
 ## Recovering progress
 
-At the start of a continuing session, read the subject's `study-plan.html` and the learning records of its recent lessons. They are the only progress state; write no separate Markdown or notes file that repeats them. When practice shows new understanding or a new difficulty, update the affected lesson's learning record and the study plan.
+At the start of a continuing session, read the subject's `study-plan.html` and the learning records of its recent lessons. They are the only progress state; write no separate Markdown or notes file that repeats them. When practice shows new understanding or a new difficulty, add it to the affected lesson's record, move it between Demonstrated and Unresolved in every other record that lists it, and update the study plan.

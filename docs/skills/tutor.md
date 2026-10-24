@@ -27,6 +27,8 @@ Start it yourself with `/tutor`, or the agent may start it when your request mat
 
 Tutor starts once the goal is clear enough and asks only questions that would change the teaching. It researches in proportion to how current, contested, or high-stakes the material is, and states uncertainty instead of inventing detail. It uses diagrams or animations only when they explain better than words. It consults [Reason](reason.md) only at decisions that matter, never on every turn.
 
+When an idea is new to you, Tutor starts from what the idea is for and how it works, with a concrete case from your subject, and says where it stops applying. It uses an analogy only as a bridge, saying where the analogy breaks down. In tutoring, it moves from a worked example to a problem you finish to one you solve alone, gives less help as you need less, and ends with a question you answer from memory, with how sure you are, before it shows the answer. It counts something as understood only when more than one task, on a case different from the one it taught with, shows it, and it schedules review as answering from memory rather than re-reading.
+
 ## What you get
 
 An explanation or a tutoring session writes nothing unless you ask to keep something. Continuing learning saves files under `.learning/<subject>/` in the folder where you started Tutor:
@@ -44,9 +46,9 @@ An explanation ends when it answers your question. A tutoring or continuing-lear
 
 **The failure it prevents.** An explanation that is delivered is easily assumed to have landed. Tutor helps a weaker agent teach like a skilled tutor: find the learner's real goal and starting point, choose the explanation that makes the idea land, and check understanding instead of assuming it.
 
-**What it refuses, and why.** It never records taught material as understanding; only your own answers and work show what you understand. It uses no mandatory questionnaire, forces no exercises on a direct explanation, and follows no fixed teaching ritual. It uses visuals and motion only when they explain something words cannot; animations have playback controls and respect reduced-motion settings. It promises no automatic reminders.
+**What it refuses, and why.** It never records taught material as understanding; only your own answers and work show what you understand, and how clear an explanation felt is not evidence. It uses no mandatory questionnaire, forces no exercises on a direct explanation, and follows no fixed teaching ritual. It never claims you have a learning style, a retention percentage, a brain-based explanation, or a percentage of understanding, because research does not support them. It uses visuals and motion only when they explain something words cannot; animations have playback controls and respect reduced-motion settings. It promises no automatic reminders.
 
-**Floor and ceiling.** A weaker agent tells an explanation, tutoring, and continuing learning apart, and responds to the misconceptions your answers actually show. A stronger agent chooses its examples, analogies, demonstrations, and depth of research to fit the subject and the learner.
+**Floor and ceiling.** A weaker agent tells an explanation, tutoring, and continuing learning apart, and responds to the misconceptions your answers actually show. It chooses among worked examples, comparisons, analogies, counterexamples, visuals, and practice from memory with a research-grounded guide that says when each helps and when to stop using it. A stronger agent chooses its examples, analogies, demonstrations, and depth of research to fit the subject and the learner.
 
 ## Related skills
 

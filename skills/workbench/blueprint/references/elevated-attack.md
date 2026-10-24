@@ -2,6 +2,8 @@
 
 An elevated challenger (see Tier in [Adversarial challenge](challenge-and-rehearsal.md)) also works through this.
 
+Start from each load-bearing invariant the request or Goal implies: re-enumerate its invariant-violation paths ([planning contract](planning-contract.md#attack-the-problem)) from source and the configuration, defaults, and aliases the code resolves through, independently of the plan's list, and ask of each whether a weak implementation could look compliant while the prohibited outcome stays reachable. Beside the findings, return a compact list of each invariant and path checked, marked rejected, proved, or a finding, so the planner sees what was considered.
+
 Attack at least these dimensions and their examples; the examples are cues to look beyond, not a checklist to stop at:
 
 - **Outcome:** a material decision left open or disguised as executor freedom; a requested outcome, preserved obligation, or affected consumer dropped by the plan's own non-goals; a requirement narrowed or reinterpreted without the user's decision; a compliant result that misses the request; unearned mechanisms such as tamper machinery inside a trusted local environment; inaccurate deliverable Exact text, such as docs or agent-loaded wording.

@@ -50,7 +50,8 @@ Seal only when all are true:
 - decision-critical repository claims are grounded;
 - all material engineering and design decisions are settled;
 - every request clause and imported invariant traces completely, as the requirement trace defines;
-- every producible input state and exit path of changed behavior is decided;
+- every producible input state, exit path, and invariant-violation path of changed behavior is decided;
+- no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance;
 - where completion or a resume relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source, and proof fails an implementation that trusts a stale record or a missing relationship;
 - current consumers, preservation, and safety boundaries are accounted for;
 - the plan is minimum-sufficient;

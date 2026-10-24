@@ -29,7 +29,7 @@ Before repairing a diagnostic, read the reference that owns it: [Declared text](
 
 Line 1 is the HTML-comment contract marker `blueprint-contract: <version>`, where preparation writes Blueprint's own version and any version with the same major is accepted; the H1 title follows as the next non-empty line. The document holds:
 
-- `Goal` — only a short approvable summary (approach, load-bearing invariants, what changes, what does not, main risks), with no separate list of what must be true when the work is done;
+- `Goal` — only a short approvable summary (approach, load-bearing invariants, what changes, what does not, main risks, user-accepted gaps), with no separate list of what must be true when the work is done;
 - `Current State` — only implementation-relevant repository facts and `**Source:**` citations of existing decision-critical repository files;
 - `Implementation` — ordered `### N.` instructions, each declaring one or more `**Location:**` lines, each citing exactly one target (one backticked `path` or `path::symbol` per line) followed by its explicit `**State:** existing|new|deleted` line, plus exact changes, preservation rules, and each decision in the form the [planning contract](references/planning-contract.md#implementation-instructions) requires;
 - `Verification` — `Run:` commands with observable `Expect:` results, each of which must exit `0` on a correct implementation, an optional `Incomplete:` line after an `Expect:` naming an environmental incomplete outcome, plus an optional before-implementation baseline only when it earns its cost and still exits `0`; a pre-change red observation is `Current State` evidence, never an authored command;

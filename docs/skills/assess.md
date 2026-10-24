@@ -23,7 +23,7 @@ Start it yourself with `/assess`, or the agent may start it when your request ma
 
 ## What happens
 
-Assess fixes the exact target, base, and head, reads the authoritative requirements, and works out what the change must do before it reads pull request prose or earlier reviews. Those can suggest concerns but never clear one. It reports every independently material defect it finds, not only the first. If the same agent wrote or planned the change, Assess first asks for a fresh-context review, and it discloses any part that only a self-review examined. It consults [Reason](reason.md) at its judgment points.
+Assess fixes the exact target, base, and head, reads the authoritative requirements, and works out what the change must do before it reads pull request prose or earlier reviews. Those can suggest concerns but never clear one. It reports every independently material defect it finds, not only the first. A gap you accepted, as recorded in the plan's frozen request, is not a finding while the change stays within it; a gap the plan accepted without your recorded decision can still be one. If the same agent wrote or planned the change, Assess first asks for a fresh-context review, and it discloses any part that only a self-review examined. It consults [Reason](reason.md) at its judgment points.
 
 ## What you get
 

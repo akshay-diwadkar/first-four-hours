@@ -16,7 +16,7 @@ Verify every candidate setting against the installed framework and runtime versi
 
 ## Establish headroom
 
-For a setting, a quick A/B probe or a stated first-principles bound is often the cheapest trustworthy observation. Flip a setting only in a scratch copy, temporary environment override, or throwaway process, never by editing the target repository. Record an unrun decision-changing setting flip as an `open_probe`.
+For a setting, a quick A/B probe or a stated first-principles bound is often the cheapest trustworthy observation. Flip a setting only as a [non-mutating probe](diagnosis-techniques.md#non-mutating-probes) allows: in a disposable copy, or through a temporary environment override or throwaway process that writes nothing into the target, never by editing the target repository. Record an unrun decision-changing setting flip as an `open_probe`.
 
 ## State the trade-off
 

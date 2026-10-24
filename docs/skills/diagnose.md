@@ -23,7 +23,7 @@ Only you can start Diagnose: type `/diagnose`. The agent never starts it on its 
 
 ## What happens
 
-Diagnose stays on the named problem unless evidence earns a wider look. It traces symptoms through the repository, may consult authoritative technology documentation for version-specific behavior, and runs only non-mutating probes. It asks before using shared or billable resources or production data. It never edits the project or touches GitHub issues. It consults [Reason](reason.md) at its judgment points.
+Diagnose stays on the named problem unless evidence earns a wider look. It traces symptoms through the repository, may consult authoritative technology documentation for version-specific behavior, and runs only non-mutating probes: a probe that would write into your project, such as bisecting history, building, installing, or running tests that leave caches, runs in a throwaway copy outside your project with its own environment, runs with those writes switched off, or is left for you to run. For a regression from a known-good version, it usually reads the project's history before running anything. It asks before using shared or billable resources or production data. It never edits the project or touches GitHub issues. It consults [Reason](reason.md) at its judgment points.
 
 ## What you get
 

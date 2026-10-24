@@ -274,7 +274,10 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
     def fake_gh(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         calls.append(list(argv))
         if argv[:3] == ["gh", "pr", "view"]:
-            return subprocess.CompletedProcess(argv, 0, json.dumps(views.pop(0)), "")
+            # Like gh, return only the requested --json fields.
+            fields = argv[argv.index("--json") + 1].split(",")
+            view = views.pop(0)
+            return subprocess.CompletedProcess(argv, 0, json.dumps({key: view[key] for key in fields if key in view}), "")
         return subprocess.CompletedProcess(argv, 0, "https://github.com/acme/widget/pull/7\n", "")
 
     monkeypatch.setattr(publish, "run_gh", fake_gh)

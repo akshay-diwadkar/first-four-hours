@@ -27,7 +27,7 @@ Start it yourself with `/reason`, or the agent may start it when your request ma
 Reason picks the smallest branch that fits the concern:
 
 - `decide` restores readiness when no defensible next move exists;
-- `challenge` attacks one load-bearing claim in a concrete proposal or result, checking it against an observation whose expected result it states first, such as a file read, a search, or a run it names for the agent, instead of rereading the agent's own reasoning;
+- `challenge` attacks one load-bearing claim in a concrete proposal or result, preferring an observation whose expected result it states first, such as a file read, a search, or a run it names for the agent, over rereading the agent's own reasoning, and saying so when its result rests on no observation;
 - `ask` puts one smallest action-changing question to you when progress depends on a fact or choice only you can supply.
 
 The agent that consulted it weighs the result, fixes supported gaps, and chooses any replacement itself.

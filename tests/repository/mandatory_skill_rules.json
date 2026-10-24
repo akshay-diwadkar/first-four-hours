@@ -406,6 +406,13 @@
     "text": "Never replace or delete an earlier paper, answer key, marking scheme, source notes, attempt, or marking."
   },
   {
+    "id": "examiner.no-reconstructed-official-scheme",
+    "skill": "examiner",
+    "source": "references/marking.md",
+    "surface": "doctor",
+    "text": "never reconstruct an official scheme and present it as official"
+  },
+  {
     "id": "charter.no-tickets",
     "skill": "charter",
     "source": "SKILL.md",

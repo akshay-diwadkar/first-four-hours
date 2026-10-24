@@ -21,7 +21,7 @@ One row per skill. The table is generated from the skill folders, [the invocatio
 | [`charter`](../skills/charter.md) | Workbench | [`skills/workbench/charter/`](../../skills/workbench/charter/SKILL.md) | `user-invoked` | 3.11 or later | none |
 | [`construct`](../skills/construct.md) | Workbench | [`skills/workbench/construct/`](../../skills/workbench/construct/SKILL.md) | `both` | 3.11 or later | none |
 | [`diagnose`](../skills/diagnose.md) | Workbench | [`skills/workbench/diagnose/`](../../skills/workbench/diagnose/SKILL.md) | `user-invoked` | 3.11 or later | none |
-| [`pr`](../skills/pr.md) | Workbench | [`skills/workbench/pr/`](../../skills/workbench/pr/SKILL.md) | `user-invoked` | 3.11 or later | none |
+| [`pr`](../skills/pr.md) | Workbench | [`skills/workbench/pr/`](../../skills/workbench/pr/SKILL.md) | `both` | 3.11 or later | none |
 | [`ticket`](../skills/ticket.md) | Workbench | [`skills/workbench/ticket/`](../../skills/workbench/ticket/SKILL.md) | `user-invoked` | 3.11 or later | [`requirements.txt`](../../skills/workbench/ticket/requirements.txt) |
 | [`ideate`](../skills/ideate.md) | Sensemaking | [`skills/sensemaking/ideate/`](../../skills/sensemaking/ideate/SKILL.md) | `both` | 3.11 or later | none |
 | [`reason`](../skills/reason.md) | Sensemaking | [`skills/sensemaking/reason/`](../../skills/sensemaking/reason/SKILL.md) | `both` | none | none |

@@ -52,7 +52,7 @@ Each skill has a mode that controls whether the agent may start it, recorded in 
 | Mode | Skills | How it starts |
 | :--- | :--- | :--- |
 | `both` | Every other skill | The agent may start it when your request matches its purpose, and you can start it by name. |
-| `user-invoked` | `charter`, `diagnose`, `pr`, `ticket` | Only you start it, by name. The agent never starts it on its own. |
+| `user-invoked` | `charter`, `diagnose`, `ticket` | Only you start it, by name. The agent never starts it on its own. |
 | `model-invoked` | `atlas`, `router` | The agent starts it when a task matches. Ask for the outcome in plain words instead of naming it. |
 
 Name a skill when you want to be sure it runs. On Claude Code and GitHub Copilot, the `model-invoked` skills are kept out of the skills you start by name; Codex has no such setting. Each skill's page in [the skill index](../skills/README.md) says how to start it.

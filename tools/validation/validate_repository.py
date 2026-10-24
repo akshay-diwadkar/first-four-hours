@@ -90,6 +90,8 @@ SEALED_BLUEPRINT_AUTHORITY = "sealed-blueprint"
 SEALED_BLUEPRINT_SKILL = "construct"
 SEALED_BLUEPRINT_INPUTS = {"blueprint_file"}
 IMPLICIT_EXTERNAL_OUTPUT_SKILLS = {"architect", "assess"}
+# PR may start implicitly by the user's decision; its explicit-yes rule, not this check, guards publish and update.
+IMPLICIT_CONFIRMED_PUBLICATION_SKILLS = {"pr": {"external-write", "publication", "repository-write"}}
 CONSTRUCT_VERIFY_ARGV = (
     "{python}",
     "{skill_dir}/scripts/run_verification.py",
@@ -862,6 +864,7 @@ def validate_skill_invocation_metadata(skill_dir: Path, mode: str) -> list[str]:
     blocked_capabilities = set(dangerous)
     if skill_dir.name in IMPLICIT_EXTERNAL_OUTPUT_SKILLS:
         blocked_capabilities.discard("external-output")
+    blocked_capabilities -= IMPLICIT_CONFIRMED_PUBLICATION_SKILLS.get(skill_dir.name, set())
     if blocked_capabilities and mode != "user-invoked" and not implicit_authority:
         errors.append(
             f"{prefix}: {mode} conflicts with authority-required capabilities: "

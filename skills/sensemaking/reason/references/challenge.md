@@ -36,4 +36,4 @@ When one objection suffices, report only the strongest; challenge again only aft
 
 ## Result
 
-A user-facing result keeps only `Target`, its disposition, `Load-bearing claim`, and only the needed challenge, evidence, consequence, or discriminator. On explicit user invocation, end with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, `pr`, or `ticket` step as its `/<skill>` command.
+A user-facing result keeps only `Target`, its disposition, `Load-bearing claim`, and only the needed challenge, evidence, consequence, or discriminator. On explicit user invocation, end with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.

@@ -4,7 +4,7 @@ Every skill can be used on its own. This page explains the real connections betw
 
 ## You start the next skill
 
-A skill that finishes ends with at most one suggested next step, written as a ready-to-run prompt. Only your yes starts it. You run a step for `charter`, `diagnose`, `pr`, or `ticket` yourself, because those skills start only when you invoke them. A handoff makes the next step possible; it never starts it.
+A skill that finishes ends with at most one suggested next step, written as a ready-to-run prompt. Only your yes starts it. You run a step for `charter`, `diagnose`, or `ticket` yourself, because those skills start only when you invoke them. A handoff makes the next step possible; it never starts it.
 
 ## Handoffs live in ignored folders
 
@@ -64,7 +64,7 @@ Architect, Assess, Charter, Diagnose, Ticket, Ideate, Scribe, Tutor, and Examine
 
 ## Review and pull requests
 
-[Assess](../skills/assess.md) is read-only and grants no approval or merge authority. [PR](../skills/pr.md) opens a pull request only after you confirm its exact text, and never merges. Every commit and merge stays yours.
+[Assess](../skills/assess.md) is read-only and grants no approval or merge authority. [PR](../skills/pr.md) opens a pull request, or updates its description, only after you confirm its exact text, and never merges. Every commit and merge stays yours.
 
 ## Learning
 

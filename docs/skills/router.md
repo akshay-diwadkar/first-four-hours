@@ -42,7 +42,7 @@ Router stops at the first step whose need depends on an unmade decision, an unkn
 
 ## Related skills
 
-Only your later yes starts a step. You run the prompt for a user-invoked skill, such as [Diagnose](diagnose.md), [Ticket](ticket.md), or [PR](pr.md), yourself. See [How skills hand work to each other](../concepts/handoffs.md).
+Only your later yes starts a step. You run the prompt for a user-invoked skill, such as [Diagnose](diagnose.md) or [Ticket](ticket.md), yourself. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

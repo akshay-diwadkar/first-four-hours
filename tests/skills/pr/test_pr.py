@@ -269,20 +269,29 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
     monkeypatch.setattr(sys, "path", list(sys.path))
     publish = _load_publish()
     calls: list[list[str]] = []
+    views: list[dict[str, Any]] = []
 
     def fake_gh(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         calls.append(list(argv))
+        if argv[:3] == ["gh", "pr", "view"]:
+            return subprocess.CompletedProcess(argv, 0, json.dumps(views.pop(0)), "")
         return subprocess.CompletedProcess(argv, 0, "https://github.com/acme/widget/pull/7\n", "")
 
     monkeypatch.setattr(publish, "run_gh", fake_gh)
 
-    def run(confirm: str, base: str = "main") -> tuple[int, Any]:
-        code = publish.main([
-            "--repo-root", str(repo), "--draft", str(draft), "--runs", str(runs),
-            "--base", base, "--title", "Greet callers by name", "--confirm", confirm,
-        ])
+    def run(
+        confirm: str, base: str = "main", *, update: bool = False, title: str | None = "Greet callers by name"
+    ) -> tuple[int, Any]:
+        argv = ["--repo-root", str(repo), "--draft", str(draft), "--runs", str(runs)]
+        argv += ["--base", base, "--confirm", confirm]
+        if title is not None:
+            argv += ["--title", title]
+        code = publish.main(argv + (["--update"] if update else []))
         return code, json.loads(capsys.readouterr().out)
 
+    # The CLI's update takes no title, and unconfirmed text on a branch with no upstream changes nothing.
+    code, envelope = _cli(repo, "update", f"draft={draft}", f"runs={runs}", "base=main", "confirm=" + "0" * 64)
+    assert code != 0 and set(envelope["blocking_reasons"]) == {"pr.publish_unconfirmed", "pr.branch_unpushed"}, envelope
     # Unconfirmed text on a branch with no upstream opens nothing.
     code, out = run("0" * 64)
     assert code == 1 and {item["code"] for item in out} == {"pr.publish_unconfirmed", "pr.branch_unpushed"}, out
@@ -319,3 +328,27 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
         "gh", "pr", "create", "--base", "main", "--head", "feature",
         "--title", "Greet callers by name", "--body-file", str(draft.resolve()),
     ]]
+    # Update edits only this branch's own open PR on the checked base.
+    pr = {
+        "number": 7, "state": "OPEN", "url": "https://github.com/acme/widget/pull/7",
+        "baseRefName": "main", "headRefName": "feature", "isCrossRepository": False,
+    }
+    calls.clear()
+    views.extend([{**pr, "state": "MERGED"}, {**pr, "isCrossRepository": True}, {**pr, "baseRefName": "release"}])
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.update_not_open"], out
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.update_missing"], out
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 1 and [item["code"] for item in out] == ["pr.update_base_mismatch"], out
+    assert [call[:4] for call in calls] == [["gh", "pr", "view", "feature"]] * 3, calls
+    # Without a new title, update replaces only the body; a confirmed new title is set too.
+    views.extend([pr, pr])
+    code, out = run(confirmed, update=True, title=None)
+    assert code == 0 and out == {"status": "updated", "url": "https://github.com/acme/widget/pull/7"}, out
+    assert calls[-1] == ["gh", "pr", "edit", "7", "--body-file", str(draft.resolve())], calls
+    code, out = run(confirmed, update=True, title="Greet callers by their name")
+    assert code == 0 and out["status"] == "updated", out
+    assert calls[-1] == [
+        "gh", "pr", "edit", "7", "--body-file", str(draft.resolve()), "--title", "Greet callers by their name",
+    ], calls

@@ -12,7 +12,8 @@ from typing import Any
 from _diagnostic_contract import normalize_diagnostic
 from _document_contract import BUNDLE_FILENAME, WORKSPACE_DIR, require_canonical_name
 from _skill_protocol_runtime import compatible_version
-from bundle_workspace import in_namespace
+from bundle_workspace import WorkspaceError, in_namespace, require_external_bundle
+from check_document_language import collect_diagnostics
 from jsonschema import Draft7Validator
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
@@ -21,7 +22,7 @@ BUNDLE_CONTRACT_VERSION = "1.0.0"
 # Source-binding repairs point at the bundle or source, never the audited document.
 SOURCE_REPAIRS = {
     "unsafe_source_path": "Bind a repository-relative source path inside the repository root.",
-    "namespace_source": f"Bind a source outside {WORKSPACE_DIR}/; support state is never evidence.",
+    "namespace_source": f"Bind a source outside {WORKSPACE_DIR}/; Scribe audit reports are never evidence.",
     "missing_source": (
         "Bind an existing source file, or report the missing fact as an unresolved gap; "
         "never create a source to satisfy the bundle or edit the document to unblock it."
@@ -130,10 +131,9 @@ def _safe_source(repo_root: Path, relative: str) -> Path | None:
     return candidate
 
 
-def validate_document(text: str, bundle: dict[str, Any], repo_root: Path) -> list[dict[str, str]]:
-    """Return stable semantic diagnostics without modifying any input."""
+def validate_sources(bundle: dict[str, Any], repo_root: Path) -> list[dict[str, str]]:
+    """Return stable source-binding diagnostics for the whole bundle without modifying any input."""
     root = repo_root.resolve()
-    sections = _section_bounds(text)
     errors: list[dict[str, str]] = []
 
     for source in bundle["sources"]:
@@ -148,7 +148,7 @@ def validate_document(text: str, bundle: dict[str, Any], repo_root: Path) -> lis
                     "namespace_source",
                     location,
                     "critical",
-                    f"Source is inside the {WORKSPACE_DIR}/ support namespace, which is never evidence: {source['path']}",
+                    f"Source is inside the {WORKSPACE_DIR}/ audit namespace, which is never evidence: {source['path']}",
                 )
             )
             continue
@@ -160,18 +160,27 @@ def validate_document(text: str, bundle: dict[str, Any], repo_root: Path) -> lis
             errors.append(_error("source_hash_mismatch", location, "critical", f"Source hash changed: {source['path']}"))
 
     declared = {source["id"] for source in bundle["sources"]}
-    for record in [*bundle.get("required_facts", []), *bundle.get("integrity_literals", [])]:
-        for source_id in record["source_ids"]:
-            if source_id not in declared:
-                message = f"{record['id']} cites undeclared source {source_id}"
-                errors.append(_error("undeclared_source", f"source {source_id}", "critical", message))
+    for document in bundle["documents"]:
+        for record in [*document.get("required_facts", []), *document.get("integrity_literals", [])]:
+            for source_id in record["source_ids"]:
+                if source_id not in declared:
+                    message = f"{record['id']} cites undeclared source {source_id}"
+                    errors.append(_error("undeclared_source", f"source {source_id}", "critical", message))
 
-    for fact in bundle.get("required_facts", []):
+    return sorted(errors, key=lambda item: (item["location"], item["type"], item["message"]))
+
+
+def validate_document(text: str, document: dict[str, Any]) -> list[dict[str, str]]:
+    """Return stable semantic diagnostics for one listed document without modifying any input."""
+    sections = _section_bounds(text)
+    errors: list[dict[str, str]] = []
+
+    for fact in document.get("required_facts", []):
         scoped, _, location = _scope(text, fact.get("section"), sections)
         if fact["claim"] not in scoped:
             errors.append(_error("missing_required_fact", location, "error", f"Missing fact {fact['id']}: {fact['claim']}"))
 
-    for item in bundle.get("integrity_literals", []):
+    for item in document.get("integrity_literals", []):
         scoped, _, location = _scope(text, item.get("section"), sections)
         if item["literal"] in scoped:
             continue
@@ -182,7 +191,7 @@ def validate_document(text: str, bundle: dict[str, Any], repo_root: Path) -> lis
             error_type = f"missing_{item['kind']}"
         errors.append(_error(error_type, location, "critical", f"Required {item['kind']} changed or is missing: {item['literal']}"))
 
-    for procedure in bundle.get("procedures", []):
+    for procedure in document.get("procedures", []):
         scoped, _, location = _scope(text, procedure.get("section"), sections)
         positions = [scoped.find(marker) for marker in procedure["ordered_markers"]]
         missing = [marker for marker, position in zip(procedure["ordered_markers"], positions, strict=True) if position < 0]
@@ -191,7 +200,7 @@ def validate_document(text: str, bundle: dict[str, Any], repo_root: Path) -> lis
         elif positions != sorted(positions):
             errors.append(_error("procedure_order", location, "critical", f"Procedure {procedure['id']} is out of order"))
 
-    for warning in bundle.get("warnings", []):
+    for warning in document.get("warnings", []):
         scoped, _, location = _scope(text, warning.get("section"), sections)
         warning_at = scoped.find(warning["warning"])
         action_at = scoped.find(warning["dangerous_action"])
@@ -202,17 +211,17 @@ def validate_document(text: str, bundle: dict[str, Any], repo_root: Path) -> lis
         elif warning_at > action_at:
             errors.append(_error("warning_order", location, "critical", f"Warning {warning['id']} follows the dangerous action"))
 
-    for recovery in bundle.get("recovery_steps", []):
+    for recovery in document.get("recovery_steps", []):
         scoped, _, location = _scope(text, recovery.get("section"), sections)
         if recovery["step"] not in scoped:
             errors.append(_error("missing_recovery_step", location, "critical", f"No recovery step for {recovery['id']}: {recovery['step']}"))
 
-    for prerequisite in bundle.get("prerequisites", []):
+    for prerequisite in document.get("prerequisites", []):
         scoped, _, location = _scope(text, prerequisite.get("section"), sections)
         if prerequisite["marker"] not in scoped:
             errors.append(_error("missing_prerequisite", location, "critical", f"Missing prerequisite {prerequisite['id']}"))
 
-    for branch in bundle.get("branches", []):
+    for branch in document.get("branches", []):
         scoped, _, location = _scope(text, branch.get("section"), sections)
         if branch["condition"] not in scoped:
             errors.append(_error("missing_branch", location, "critical", f"Missing branch condition {branch['id']}: {branch['condition']}"))
@@ -223,14 +232,64 @@ def validate_document(text: str, bundle: dict[str, Any], repo_root: Path) -> lis
     return sorted(errors, key=lambda item: (item["location"], item["type"], item["message"]))
 
 
+def resolve_documents(bundle: dict[str, Any], repo_root: Path) -> list[Path]:
+    """Resolve every listed document path in bundle order without reading any document."""
+    root = repo_root.resolve()
+    paths = []
+    for index, document in enumerate(bundle["documents"]):
+        raw = document["path"]
+        path = Path(raw).resolve() if Path(raw).is_absolute() else _safe_source(root, raw)
+        if path is None:
+            raise ValueError(
+                f"documents.{index}.path escapes the repository root: {raw}; "
+                "give an absolute path or a repository-relative path inside it"
+            )
+        if in_namespace(root, path):
+            raise WorkspaceError(
+                "namespace_document",
+                f"documents.{index}.path is inside {WORKSPACE_DIR}/, which holds only audit reports; "
+                f"keep the document where its reader uses it: {raw}",
+            )
+        paths.append(path)
+    return paths
+
+
+def inspect_bundle(repo_root: Path, bundle_path: Path) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
+    """Load an external bundle, check its sources, and check every listed document; read-only."""
+    root = repo_root.resolve()
+    bundle = load_bundle(require_external_bundle(root, bundle_path))
+    paths = resolve_documents(bundle, root)
+    sources = validate_sources(bundle, root)
+    records = []
+    for spec, path in zip(bundle["documents"], paths, strict=True):
+        try:
+            data = path.read_bytes()
+            text = data.decode("utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise ValueError(f"cannot read document {path}: {exc}") from exc
+        records.append(
+            {
+                "path": path,
+                "profile": spec["profile"],
+                "document_sha256": "sha256:" + sha256_bytes(data),
+                "language": collect_diagnostics(text, spec["profile"], bundle["glossary"]),
+                "semantic": validate_document(text, spec),
+                "reader_findings": spec.get("reader_findings", []),
+            }
+        )
+    return sources, records
+
+
 def repair_diagnostics(
     language: list[dict[str, Any]],
     semantic: list[dict[str, str]],
     *,
     phase: str,
-    document: Path,
+    path: Path,
+    document: Path | None = None,
 ) -> list[dict[str, Any]]:
     """Convert language and semantic findings into canonical repair-ready diagnostics."""
+    named = {"document": str(document)} if document is not None else {}
     result = [
         normalize_diagnostic(
             {
@@ -242,11 +301,12 @@ def repair_diagnostics(
                 "required_action": item["fix"],
                 "valid_repairs": [item["fix"]],
                 "supporting_evidence": [item["sentence"]],
+                **named,
             },
             skill="scribe",
             phase=phase,
             artifact="document",
-            path=document,
+            path=path,
         )
         for item in language
     ]
@@ -261,11 +321,12 @@ def repair_diagnostics(
                     if item["type"] in SOURCE_REPAIRS
                     else {}
                 ),
+                **named,
             },
             skill="scribe",
             phase=phase,
             artifact="document-bundle" if item["location"].startswith("source ") else "document",
-            path=document,
+            path=path,
         )
         for item in semantic
     )

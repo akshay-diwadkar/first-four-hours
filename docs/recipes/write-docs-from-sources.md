@@ -16,10 +16,10 @@ Documentation that reads well but cannot be followed is the costly kind: a wrong
 
 1. Start Scribe naming the document and its sources. Writing needs your authority to create or revise it.
 2. Answer only the publication or content-policy questions it asks.
-3. Read `document.md` and the gaps it recorded. Take each gap to the next owner it names; do not fill it by hand in the document.
+3. Read the document and the gaps it recorded. Take each gap to the next owner it names; do not fill it by hand in the document.
 4. Once that owner has closed the gap, ask Scribe to write again.
 
-To check an existing document against its sources later, ask Scribe to audit it. An audit never modifies the document; revising it is a separate write.
+To check existing documents against their sources later, ask Scribe to audit them. An audit never modifies a document: it writes its report, one section per document, to `.first-four-hours/scribes/<slug>/scribe-audit.md`, and revising a document is a separate write.
 
 ## A worked scenario
 
@@ -45,7 +45,7 @@ The audit reports the mismatch and changes nothing. Revising the runbook is a se
 
 ## You are done when
 
-`document.md` is where you wanted it, its check passes, and no material reader job is left unsupported. A recorded gap means the document is not done yet: its next owner closes it, then write again. A passing check shows that the facts it binds match the sources, not that the sources are correct.
+The document is where you wanted it, its check passes, and no material reader job is left unsupported. A recorded gap means the document is not done yet: its next owner closes it, then write again. A passing check shows that the facts it binds match the sources, not that the sources are correct.
 
 ## If it goes wrong
 

@@ -21,11 +21,11 @@ A skill that hands work to another seals it in its own folder under `.first-four
 | Router | `.first-four-hours/routes/<slug>/route.md` |
 | Ticket | `.first-four-hours/ticket-scopes/<slug>/ticket-scope.md` |
 
-Scribe keeps its support bundle the same way, in `.first-four-hours/document-bundles/<slug>/document-bundle.json`.
+Scribe keeps its audit report the same way, in `.first-four-hours/scribes/<slug>/scribe-audit.md`. Its support bundle is a temporary file outside the repository.
 
 Charter's `charter.md` is not sealed: it is a living definition revised in place, and the project's authority until Charter publishes it as a GitHub issue. After a verified publication the issue owns the definition and the file points to it.
 
-Deliverables you asked for are not handoffs and stay committable: Scribe's `document.md`, Ticket's local work-item store, the Atlas wiki, and the Learning skills' files under `.learning/<subject>/`. Construct and Reason write no artifact, and PR writes its draft outside the repository.
+Deliverables you asked for are not handoffs and stay committable: Scribe's documents, Ticket's local work-item store, the Atlas wiki, and the Learning skills' files under `.learning/<subject>/`. Construct and Reason write no artifact, and PR writes its draft outside the repository.
 
 ## Project definition
 

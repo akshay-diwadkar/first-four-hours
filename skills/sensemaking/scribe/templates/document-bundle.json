@@ -1,6 +1,5 @@
 {
   "contract_version": "1.0.0",
-  "profile": "standard",
   "glossary": {
     "terms": [],
     "abbreviations": {},
@@ -16,11 +15,18 @@
       "authority": "Name the source owner or contract."
     }
   ],
-  "required_facts": [],
-  "integrity_literals": [],
-  "procedures": [],
-  "warnings": [],
-  "recovery_steps": [],
-  "prerequisites": [],
-  "branches": []
+  "documents": [
+    {
+      "path": "docs/document.md",
+      "profile": "standard",
+      "required_facts": [],
+      "integrity_literals": [],
+      "procedures": [],
+      "warnings": [],
+      "recovery_steps": [],
+      "prerequisites": [],
+      "branches": [],
+      "reader_findings": []
+    }
+  ]
 }

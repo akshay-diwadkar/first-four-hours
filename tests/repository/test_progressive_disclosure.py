@@ -106,6 +106,26 @@ def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
     assert plugin["source"] == "./"
     assert plugin["skills"] == paths
     assert catalog.domain_groups() == {domain: [path] for domain, path in zip(members, paths)}
+    # The Cursor manifests list the same domain-tree skills, and the catalog check compares them exactly.
+    cursor_plugin = catalog._projected_cursor_plugin()
+    assert cursor_plugin == {"name": "first-four-hours", "description": plugin["description"], "skills": paths}
+    cursor_marketplace = catalog._projected_cursor_marketplace()
+    assert cursor_marketplace["plugins"] == [
+        {"name": "first-four-hours", "source": "./", "description": plugin["description"]}
+    ]
+    cursor = tmp_path / ".cursor-plugin"
+    missing_errors = catalog.cursor_manifest_errors(cursor)
+    assert [error.split(" unreadable: ")[0] for error in missing_errors] == [
+        ".cursor-plugin/plugin.json", ".cursor-plugin/marketplace.json"
+    ]
+    cursor.mkdir()
+    (cursor / "plugin.json").write_text(json.dumps(cursor_plugin), encoding="utf-8")
+    (cursor / "marketplace.json").write_text(json.dumps(cursor_marketplace), encoding="utf-8")
+    assert catalog.cursor_manifest_errors(cursor) == []
+    (cursor / "plugin.json").write_text(json.dumps({**cursor_plugin, "skills": paths[:-1]}), encoding="utf-8")
+    stale = ".cursor-plugin/plugin.json is not derived from the current domain tree"
+    assert catalog.cursor_manifest_errors(cursor) == [stale]
+    assert stale in catalog.check()
     table = catalog.skill_facts_table()
     for domain, name in members.items():
         assert f"| {domain.title()} | [`skills/{domain}/{name}/`]" in table

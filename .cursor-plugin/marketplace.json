@@ -1,0 +1,13 @@
+{
+  "name": "first-four-hours",
+  "owner": {
+    "name": "Akshay Diwadkar"
+  },
+  "plugins": [
+    {
+      "name": "first-four-hours",
+      "source": "./",
+      "description": "Skills for repository-grounded project work and decision readiness, and for learning any subject."
+    }
+  ]
+}

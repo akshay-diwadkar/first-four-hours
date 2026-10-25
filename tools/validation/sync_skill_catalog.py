@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Project the filesystem-owned skill domains into distribution metadata and the docs skill facts table, and check the README, docs skill catalogs, and documented paths against them."""
+"""Project the filesystem-owned skill domains into distribution metadata, the Cursor plugin and marketplace manifests, and the docs skill facts table, and check the README, docs skill catalogs, and documented paths against them."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ TABLE_END = "<!-- skill-facts:end -->"
 HANDOFF_FOLDER_RE = re.compile(r'ARTIFACT_ROOT,\s*"([a-z][a-z0-9-]*)"\s*\)')
 DOCUMENTED_FOLDER_RE = re.compile(r"\.first-four-hours/([a-z][a-z0-9-]*)")
 DOCUMENTED_SKILL_RE = re.compile(r"(?<![\w./-])skills/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)")
+PLUGIN_DESCRIPTION = "Skills for repository-grounded project work and decision readiness, and for learning any subject."
 
 
 def domain_groups() -> dict[str, list[str]]:
@@ -48,16 +49,44 @@ def _projected_marketplace(payload: dict[str, object]) -> dict[str, object]:
         for plugin in raw_plugins
         if isinstance(plugin, dict) and isinstance(plugin.get("name"), str)
     }
-    description = "Skills for repository-grounded project work and decision readiness, and for learning any subject."
     plugins: list[dict[str, object]] = []
     for name, paths in groups().items():
         base = dict(existing.get(name, {}))
-        base.update({"name": name, "source": "./", "description": description, "skills": paths})
+        base.update({"name": name, "source": "./", "description": PLUGIN_DESCRIPTION, "skills": paths})
         plugins.append(base)
     projected["name"] = "first-four-hours"
-    projected["description"] = description
+    projected["description"] = PLUGIN_DESCRIPTION
     projected["plugins"] = plugins
     return projected
+
+
+def _projected_cursor_plugin() -> dict[str, object]:
+    return {"name": "first-four-hours", "description": PLUGIN_DESCRIPTION, "skills": groups()["first-four-hours"]}
+
+
+def _projected_cursor_marketplace() -> dict[str, object]:
+    return {
+        "name": "first-four-hours",
+        "owner": {"name": "Akshay Diwadkar"},
+        "plugins": [{"name": "first-four-hours", "source": "./", "description": PLUGIN_DESCRIPTION}],
+    }
+
+
+def _cursor_manifests() -> dict[str, dict[str, object]]:
+    return {"plugin.json": _projected_cursor_plugin(), "marketplace.json": _projected_cursor_marketplace()}
+
+
+def cursor_manifest_errors(directory: Path) -> list[str]:
+    errors: list[str] = []
+    for name, projection in _cursor_manifests().items():
+        try:
+            payload = json.loads((directory / name).read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            errors.append(f".cursor-plugin/{name} unreadable: {exc}")
+            continue
+        if payload != projection:
+            errors.append(f".cursor-plugin/{name} is not derived from the current domain tree")
+    return errors
 
 
 def validate(readme: Path, marketplace: Path) -> list[str]:
@@ -107,6 +136,7 @@ def validate_skill_pages(index_text: str, page_stems: set[str], domains: dict[st
 
 def check() -> list[str]:
     errors = validate(ROOT / "README.md", ROOT / ".claude-plugin" / "marketplace.json")
+    errors += cursor_manifest_errors(ROOT / ".cursor-plugin")
     pages_dir = ROOT / "docs" / "skills"
     try:
         index_text = (pages_dir / "README.md").read_text(encoding="utf-8")
@@ -223,6 +253,10 @@ def main() -> int:
     if args.write:
         payload = json.loads(marketplace.read_text(encoding="utf-8"))
         marketplace.write_text(json.dumps(_projected_marketplace(payload), indent=2) + "\n", encoding="utf-8")
+        cursor = ROOT / ".cursor-plugin"
+        cursor.mkdir(exist_ok=True)
+        for name, projection in _cursor_manifests().items():
+            (cursor / name).write_text(json.dumps(projection, indent=2) + "\n", encoding="utf-8", newline="\n")
         if REFERENCE_PAGE.is_file():
             text = REFERENCE_PAGE.read_text(encoding="utf-8")
             REFERENCE_PAGE.write_text(replace_generated_block(text, skill_facts_table()), encoding="utf-8", newline="\n")

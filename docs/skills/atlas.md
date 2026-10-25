@@ -14,10 +14,10 @@ Atlas keeps a small navigation wiki in a project so agents find the few files wo
 
 ## How to start it
 
-The suite marks Atlas as model-invoked: the agent starts it when a task matches, and it is not meant to be started by name. Ask for the outcome in plain words. For example (illustrative):
+Start it yourself with `/atlas`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-Map this repository so agents can find the validation and release code quickly.
+/atlas : Map this repository so agents can find the validation and release code quickly.
 ```
 
 ## What happens

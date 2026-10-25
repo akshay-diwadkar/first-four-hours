@@ -14,7 +14,7 @@ In an unfamiliar project, every session searches for the same files from scratch
 
 ## Steps
 
-1. Ask for the map in plain words. Atlas starts when the agent recognizes the task, not by name.
+1. Start Atlas with `/atlas`, or ask for the map in plain words and the agent starts it.
 2. Atlas writes `MAP.md` and pages under `.map/`, checks the hierarchy, and adds a short guidance block to the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing. Adding `<!-- OPT-OUT ATLAS -->` to a root file keeps the block out of it.
 3. Review and commit the pages. The map is a deliverable, not a handoff.
 4. In later sessions, the agent reads `MAP.md`, follows only the relevant branches, and reads the current files before deciding.

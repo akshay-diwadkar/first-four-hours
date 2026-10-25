@@ -1,7 +1,6 @@
 ---
 name: atlas
 description: Navigate, author, rebalance, validate, or maintain a project's filesystem-native Map/Landmark/Satellite orientation wiki over eligible project files. Use for unfamiliar project-folder orientation, initial mapping, a hierarchy defect, pointer upkeep, or a freshness drift audit; underlying project files remain truth and missing Atlas state never blocks normal work.
-user-invocable: false
 metadata:
   version: "1.0.0"
 ---

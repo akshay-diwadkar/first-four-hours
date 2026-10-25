@@ -1,0 +1,21 @@
+{
+  "name": "first-four-hours",
+  "description": "Skills for repository-grounded project work and decision readiness, and for learning any subject.",
+  "skills": [
+    "./skills/workbench/architect",
+    "./skills/workbench/assess",
+    "./skills/workbench/atlas",
+    "./skills/workbench/blueprint",
+    "./skills/workbench/charter",
+    "./skills/workbench/construct",
+    "./skills/workbench/diagnose",
+    "./skills/workbench/pr",
+    "./skills/workbench/ticket",
+    "./skills/sensemaking/ideate",
+    "./skills/sensemaking/reason",
+    "./skills/sensemaking/router",
+    "./skills/sensemaking/scribe",
+    "./skills/learning/examiner",
+    "./skills/learning/tutor"
+  ]
+}

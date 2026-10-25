@@ -30,6 +30,8 @@ On Claude Code 2.1.275 or later, you can instead install the whole suite as the 
 /plugin install first-four-hours --marketplace akshay-diwadkar/first-four-hours
 ```
 
+In Cursor, you can install the same suite as a plugin; [Install as a Cursor plugin](docs/getting-started/installation.md#install-as-a-cursor-plugin) shows how.
+
 [Install First Four Hours](docs/getting-started/installation.md) covers installing one skill, choosing the agent, installing for every project, the plugin skill names, and checking that the install worked.
 
 ## First use

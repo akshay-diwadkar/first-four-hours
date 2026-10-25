@@ -4,16 +4,17 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
-First Four Hours starts its version history at 1.0.0. Earlier release history stays in the `akshay-diwadkar/skills` repository.
+First Four Hours starts its version history at 1.0.0.
 
 ### Added
 
 - Claude Code plugin installation. On Claude Code 2.1.275 or later, install all 15 skills as the `first-four-hours` plugin with `/plugin install first-four-hours --marketplace akshay-diwadkar/first-four-hours`. Plugin skills start as `/first-four-hours:<skill>`, for example `/first-four-hours:diagnose`.
 - Charter 1.0.0: a user-invoked Workbench skill, started with `/charter`, that turns a rough ambition for a whole project into one agreed, resumable `.first-four-hours/charters/<slug>/charter.md`. On request it publishes the charter as one GitHub umbrella issue after you confirm the exact text, and never creates tickets.
+- Cursor plugin installation. Install all 15 skills as the `first-four-hours` Cursor plugin, either by cloning the repository into `~/.cursor/plugins/local/first-four-hours` and reloading Cursor, or, on a Teams or Enterprise plan, by importing the repository as a team marketplace. Cursor has no setting to hide a skill from `/`, so it also lists Router there.
 
 ### Changed
 
-- The Claude Code marketplace and its single plugin are named `first-four-hours`, giving install id `first-four-hours@first-four-hours`. Users of the retired marketplace or the three preview plugins should follow [Replace an earlier plugin installation](docs/getting-started/installation.md#replace-an-earlier-plugin-installation) to remove the old entries before installing the single plugin.
+- Atlas 1.0.0: Atlas's mode is now `both`. You can start it by name, for example `/atlas`, and the agent still starts it when a task matches. Router 1.0.0's capability list records the new mode.
 - The repository, every skill, and every contract version the repository owns are now 1.0.0. A skill's version is also the version of every artifact, handoff, receipt, bundle, and state format it owns.
 - A consumer accepts another minor or patch version of the same major and refuses any other version.
 - Blueprint 1.0.0: before attacking a draft, the fresh challenger walks it in step order and reports any Proof run or Run that needs something not yet created at its phase (a Before implementation Run comes before every instruction), or that works only outside the way Construct launches it: as its own arguments with no shell, from the repository root, in Construct's inherited environment. Planners probe load-bearing commands the same way.

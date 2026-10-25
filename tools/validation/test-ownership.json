@@ -626,6 +626,8 @@
         "pyproject.toml",
         "invocation-policy.json",
         ".claude-plugin/marketplace.json",
+        ".cursor-plugin/plugin.json",
+        ".cursor-plugin/marketplace.json",
         "skills/workbench/ticket/requirements.txt",
         "skills/sensemaking/scribe/requirements.txt"
       ],
@@ -828,6 +830,7 @@
     "CONTRIBUTING.md",
     "invocation-policy.json",
     ".claude-plugin",
+    ".cursor-plugin",
     "MAP.md",
     ".mapignore",
     ".map",

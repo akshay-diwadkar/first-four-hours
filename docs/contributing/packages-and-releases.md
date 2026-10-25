@@ -42,7 +42,7 @@ Regenerate catalog membership and reference facts after their sources change:
 python tools/validation/sync_skill_catalog.py --write
 ```
 
-These examples run from the repository root. Catalog writing updates derived marketplace membership and the generated facts block in the [reference](../reference/README.md). Maintain affected human skill pages, their [index](../skills/README.md), and the repository README catalog separately as their checks require. The writer does not author that prose.
+These examples run from the repository root. Catalog writing updates derived marketplace membership, the Cursor plugin manifest, and the generated facts block in the [reference](../reference/README.md). Maintain affected human skill pages, their [index](../skills/README.md), and the repository README catalog separately as their checks require. The writer does not author that prose.
 
 Blueprint and Construct also share paired `scripts/blueprint_runtime.py` files with no synchronizer. When changing that runtime, update both copies identically and include proof covering their consumer, as Planning traps in the [versioning policy](../../REPO_VERSIONING.md) require. Use the existing source and projection mechanisms; do not invent a parallel synchronizer or hand-edit generated copies.
 
@@ -69,6 +69,8 @@ python tools/validation/validate_claude_plugin_install.py
 ```
 
 It installs from a copy of the local checkout, not from GitHub. After a merge that changes plugin packaging, install from `akshay-diwadkar/first-four-hours` as the [installation guide](../getting-started/installation.md) shows.
+
+The Cursor plugin and marketplace manifests, `.cursor-plugin/plugin.json` and `.cursor-plugin/marketplace.json`, are written by catalog writing and checked by the repository validator. No command-line installation check exists for Cursor: when plugin packaging or skill membership changes, install the plugin locally as the [installation guide](../getting-started/installation.md#install-as-a-cursor-plugin) shows and confirm in Cursor that every skill is listed.
 
 ## Apply versions to the final diff
 

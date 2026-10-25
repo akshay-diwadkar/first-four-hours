@@ -12,7 +12,7 @@ Find the symptom you see. Each entry gives the likely cause, a check that change
 
 - **Likely cause:** the Python the agent runs is older than the skill needs, or a package the skill declares is missing.
 - **Check:** run `python --version`. [The reference](../reference/README.md) gives each skill's minimum Python and links any requirements file.
-- **Next step:** install a Python that meets the minimum. For a skill with a requirements file, install its packages into the Python the agent uses with `python -m pip install -r <skill folder>/requirements.txt`, where `<skill folder>` is the installed skill's folder, such as `.claude/skills/scribe`. With the Claude Code plugin, the folder is under its `installPath`, which `claude plugin list --json` reports, for example `<installPath>/skills/sensemaking/scribe`.
+- **Next step:** install a Python that meets the minimum. For a skill with a requirements file, install its packages into the Python the agent uses with `python -m pip install -r <skill folder>/requirements.txt`, where `<skill folder>` is the installed skill's folder, such as `.claude/skills/scribe`. With the Claude Code plugin, the folder is under its `installPath`, which `claude plugin list --json` reports, for example `<installPath>/skills/sensemaking/scribe`. With a local Cursor plugin, it is under the clone, for example `~/.cursor/plugins/local/first-four-hours/skills/sensemaking/scribe`.
 
 ## A skill stopped instead of writing its handoff
 
@@ -57,7 +57,7 @@ These results are correct answers, not failures:
 ## Atlas is missing or out of date
 
 - **Likely cause:** the project has no Atlas wiki, or a file a pointer cites was moved, renamed, or deleted.
-- **Check:** a missing wiki blocks nothing; skills read the project files directly. For a stale wiki, ask the agent in plain words to check the Atlas wiki, because Atlas is `model-invoked`. Its read-only hierarchy check reports structural, reachability, link-safety, and portability problems.
+- **Check:** a missing wiki blocks nothing; skills read the project files directly. For a stale wiki, start Atlas with `/atlas` or ask the agent in plain words to check the Atlas wiki. Its read-only hierarchy check reports structural, reachability, link-safety, and portability problems.
 - **Next step:** whoever changes a cited file updates its pointer in the same work. Construct repairs links to files its plan deletes and lists other affected pointers for the next plan. See [Atlas](../skills/atlas.md).
 
 ## Repository validation did not pass

@@ -16,7 +16,7 @@ One row per skill. The table is generated from the skill folders, [the invocatio
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | [`architect`](../skills/architect.md) | Workbench | [`skills/workbench/architect/`](../../skills/workbench/architect/SKILL.md) | `both` | 3.11 or later | none |
 | [`assess`](../skills/assess.md) | Workbench | [`skills/workbench/assess/`](../../skills/workbench/assess/SKILL.md) | `both` | 3.11 or later | none |
-| [`atlas`](../skills/atlas.md) | Workbench | [`skills/workbench/atlas/`](../../skills/workbench/atlas/SKILL.md) | `model-invoked` | 3.11 or later | none |
+| [`atlas`](../skills/atlas.md) | Workbench | [`skills/workbench/atlas/`](../../skills/workbench/atlas/SKILL.md) | `both` | 3.11 or later | none |
 | [`blueprint`](../skills/blueprint.md) | Workbench | [`skills/workbench/blueprint/`](../../skills/workbench/blueprint/SKILL.md) | `both` | 3.11 or later | none |
 | [`charter`](../skills/charter.md) | Workbench | [`skills/workbench/charter/`](../../skills/workbench/charter/SKILL.md) | `user-invoked` | 3.11 or later | none |
 | [`construct`](../skills/construct.md) | Workbench | [`skills/workbench/construct/`](../../skills/workbench/construct/SKILL.md) | `both` | 3.11 or later | none |

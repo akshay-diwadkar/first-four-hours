@@ -80,6 +80,16 @@ def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
     assert "docs/README.md: link target does not exist: guide/gone.md" in errors
     for relative in ("skills/README.md", "notes.md", "bad.md"):
         (tmp_path / "docs" / relative).unlink()
+    # A link error alone still blocks publication.
+    assert validator.validate_wiki_publication() == []
+    built, errors = publish_wiki.build_pages(tmp_path, "owner/repo", "main")
+    assert built == {}
+    assert errors == ["docs/README.md: link target does not exist: guide/gone.md"]
+    # Without docs/README.md the wiki would have no Home page.
+    (tmp_path / "docs" / "README.md").unlink()
+    assert validator.validate_wiki_publication() == [
+        "GitHub wiki: docs/README.md: missing, so the wiki has no Home page"
+    ]
     (tmp_path / "docs" / "README.md").write_text(
         pages["README.md"].replace(", [gone](guide/gone.md)", ""), encoding="utf-8"
     )

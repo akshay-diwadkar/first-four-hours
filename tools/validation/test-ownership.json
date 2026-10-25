@@ -146,7 +146,7 @@
     },
     "scribe-runtime-contract": {
       "test_targets": [
-        "tests/skills/scribe/test_operations.py",
+        "tests/skills/scribe/test_documents.py",
         "tests/skills/scribe/test_semantic_validator.py"
       ]
     },

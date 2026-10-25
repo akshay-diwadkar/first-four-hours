@@ -24,7 +24,7 @@
     "tests/skills/ideate/test_ideation_sealer.py": 5.3,
     "tests/skills/pr/test_pr.py": 25.7,
     "tests/skills/router/test_router.py": 7.4,
-    "tests/skills/scribe/test_operations.py": 16.0,
+    "tests/skills/scribe/test_documents.py": 16.0,
     "tests/skills/scribe/test_semantic_validator.py": 1.4,
     "tests/skills/ticket/test_github_publish.py": 0.5,
     "tests/skills/ticket/test_local_persist.py": 3.6,

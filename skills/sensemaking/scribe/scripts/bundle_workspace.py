@@ -1,4 +1,4 @@
-"""Prepare and locate the repository-local ignored .first-four-hours/document-bundles/<slug>/ support namespace."""
+"""Prepare the ignored .first-four-hours/scribes/<slug>/ audit workspace and check where the document bundle lives."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from _document_contract import ARTIFACT_ROOT, BUNDLE_FILENAME, WORKSPACE_DIR, WORKSPACE_PARTS
+from _document_contract import ARTIFACT_ROOT, AUDIT_FILENAME, BUNDLE_FILENAME, WORKSPACE_DIR, WORKSPACE_PARTS
 
 WORKSPACE_RULE = f"/{WORKSPACE_DIR}/"
 GIT_TIMEOUT_SECONDS = 30
@@ -25,11 +25,11 @@ class WorkspaceError(Exception):
 
 
 def normalize_slug(name: str) -> str:
-    """Normalize one human document name to a safe lower-kebab path segment."""
+    """Normalize one human audit name to a safe lower-kebab path segment."""
     normalized = name.strip().casefold()
     slug = re.sub(r"-+", "-", "".join(character if character.isalnum() else "-" for character in normalized)).strip("-")
     if not slug:
-        raise WorkspaceError("invalid_slug", "document slug must contain at least one letter or digit; choose a short descriptive slug")
+        raise WorkspaceError("invalid_slug", "audit slug must contain at least one letter or digit; choose a short descriptive slug")
     return slug
 
 
@@ -204,13 +204,13 @@ def _check_entries(root: Path, normalized: str) -> None:
 
 
 def prepare_workspace(repo_root: Path, slug: str) -> tuple[Path, bool]:
-    """Create .first-four-hours/document-bundles/<slug>/, ignore it locally for Git targets, and return (bundle path, git_ignored)."""
+    """Create .first-four-hours/scribes/<slug>/, ignore it locally for Git targets, and return (audit report path, git_ignored)."""
     root = repo_root.resolve()
     if not root.is_dir():
         raise WorkspaceError("namespace_unsafe", f"repo-root is not an existing directory: {repo_root}")
     normalized = normalize_slug(slug)
     exclude = _git_exclude(root)
-    relative = f"{WORKSPACE_DIR}/{normalized}/{BUNDLE_FILENAME}"
+    relative = f"{WORKSPACE_DIR}/{normalized}/{AUDIT_FILENAME}"
     _check_entries(root, normalized)
     destination = root / relative
     if _is_link(destination) or destination.exists() and not destination.is_file():
@@ -243,31 +243,6 @@ def prepare_workspace(repo_root: Path, slug: str) -> tuple[Path, bool]:
     return destination, exclude is not None
 
 
-def locate_bundle(repo_root: Path, slug: str) -> tuple[Path, bool]:
-    """Return (bundle path, git_ignored) for a prepared namespace without writing anything."""
-    root = repo_root.resolve()
-    if not root.is_dir():
-        raise WorkspaceError("namespace_unsafe", f"repo-root is not an existing directory: {repo_root}")
-    normalized = normalize_slug(slug)
-    exclude = _git_exclude(root)
-    relative = f"{WORKSPACE_DIR}/{normalized}/{BUNDLE_FILENAME}"
-    _check_entries(root, normalized)
-    if exclude is not None:
-        status = _git(root, "check-ignore", "--no-index", "--quiet", "--", relative).returncode
-        if status == 1:
-            raise WorkspaceError(
-                "namespace_not_ignored", f"{WORKSPACE_DIR}/ is not ignored by Git; run prepare for slug {normalized} and retry"
-            )
-        if status != 0:
-            raise WorkspaceError("namespace_unsafe", "cannot query the repository ignore boundary; repair Git ignore metadata and retry")
-    bundle = root / relative
-    if _is_link(bundle) or not bundle.is_file():
-        raise WorkspaceError(
-            "bundle_missing", f"write a regular {BUNDLE_FILENAME} at {bundle}; run prepare first if the namespace is missing"
-        )
-    return bundle, exclude is not None
-
-
 def in_namespace(repo_root: Path, path: Path) -> bool:
     """Return whether path lies inside the support namespace of repo_root."""
     try:
@@ -275,3 +250,15 @@ def in_namespace(repo_root: Path, path: Path) -> bool:
     except ValueError:
         return False
     return tuple(part.casefold() for part in parts[:2]) == WORKSPACE_PARTS
+
+
+def require_external_bundle(repo_root: Path, bundle: Path) -> Path:
+    """Return the resolved bundle path, refusing a bundle inside the target repository."""
+    path = bundle.resolve(strict=True)
+    if repo_root.resolve() in path.parents:
+        raise WorkspaceError(
+            "bundle_in_repository",
+            f"{BUNDLE_FILENAME} must be outside the target repository: {path}; "
+            "write it in a temporary directory outside the repository",
+        )
+    return path

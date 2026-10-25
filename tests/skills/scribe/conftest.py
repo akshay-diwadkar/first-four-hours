@@ -15,16 +15,20 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 
+CHECKS = ("required_facts", "integrity_literals", "procedures", "warnings", "recovery_steps", "prerequisites", "branches")
+
+
 @pytest.fixture
 def document_case(tmp_path: Path) -> tuple[Path, Path, dict[str, Any]]:
-    """A committed source in a Git target, a document outside it, and a source-bound bundle."""
+    """A committed source in a Git target, two documents outside it, and a bundle binding both to that source."""
     repo = tmp_path / "repo"
     seed_git(repo, {"source.txt": "The service starts with port 8080.\n"})
-    document = tmp_path / "document.md"
-    document.write_text("# Procedure\n\nRun the service.\n", encoding="utf-8")
+    documents = tmp_path / "documents"
+    documents.mkdir()
+    for name in ("runbook.md", "reference.md"):
+        (documents / name).write_text("# Procedure\n\nRun the service.\n", encoding="utf-8")
     bundle = {
         "contract_version": "1.0.0",
-        "profile": "strict",
         "glossary": {
             "terms": [],
             "abbreviations": {},
@@ -40,12 +44,9 @@ def document_case(tmp_path: Path) -> tuple[Path, Path, dict[str, Any]]:
                 "authority": "service contract",
             }
         ],
-        "required_facts": [],
-        "integrity_literals": [],
-        "procedures": [],
-        "warnings": [],
-        "recovery_steps": [],
-        "prerequisites": [],
-        "branches": [],
+        "documents": [
+            {"path": str(documents / name), "profile": "strict", **{check: [] for check in CHECKS}}
+            for name in ("runbook.md", "reference.md")
+        ],
     }
-    return repo, document, bundle
+    return repo, documents, bundle

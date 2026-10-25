@@ -116,7 +116,7 @@
       "lifecycle": "An invocation remains the documentation-stage owner under its operation and profile authority.",
       "workers": "No worker seam is earned; source grounding and language decisions are tightly coupled.",
       "specialists": "No separate specialist branch is currently earned.",
-      "writes": "Only an authorized write operation may modify documentation; audits remain read-only.",
+      "writes": "Only an authorized write operation may modify documentation; audits never modify documents and write only their ignored report.",
       "rationale": "Deterministic validators already own cheap mechanical checks, leaving no useful agent-worker seam."
     },
     {

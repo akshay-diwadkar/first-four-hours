@@ -1,24 +1,27 @@
 # Install First Four Hours
 
-Skills are folders your coding agent loads. You add them to a project, or to your user account, with the Skills CLI. On Claude Code or Cursor, you can instead install the whole suite as one plugin.
+A skill is a folder of instructions for a coding agent. Install the skills in a project or in your user account with the Skills command-line interface (CLI). On Claude Code or Cursor, you can install the whole suite as one plugin instead.
 
 ## What you need
 
-- For the Skills CLI route, Node.js provides `npx`.
-- For the Claude Code or Cursor plugin route, Git fetches the plugin; Node.js is not required for those routes.
-- Python 3.11 or later, available as `python`. Many skills run Python scripts that ship with them.
-- A coding agent that loads skills. The repository's own install check covers the agent names `claude-code`, `codex`, and `github-copilot`.
-- A folder to work in. Workbench skills work on the project folder you start them in, usually a Git repository. The Learning skills, `tutor` and `examiner`, work in any folder.
+- For the Skills CLI route, Node.js supplies `npx`.
+- For the Claude Code or Cursor plugin route, Git fetches the plugin. The plugin routes do not need Node.js.
+- Python 3.11 or later, available as `python`. Many skills run Python scripts from their own folders.
+- Extra Python packages for Scribe and Ticket. See [Install extra packages](#install-extra-packages).
+- A coding agent with skill support. The repository's own install check covers the agent names `claude-code`, `codex`, and `github-copilot`.
+- A folder to work in. Workbench skills work on the project folder where you start them, usually a Git repository. The Learning skills, `tutor` and `examiner`, work in any folder.
 
 ## Install the whole suite
 
-Run this from your project's root folder:
+Run this command from the root folder of your project:
 
 ```bash
 npx skills add akshay-diwadkar/first-four-hours --skill '*'
 ```
 
-If you are unsure what you need, install the whole suite: some skills bring in others while they run.
+**Unresolved gap:** the repository install check does not run the unpinned command above or the `akshay-diwadkar/first-four-hours` source name. The check runs Skills CLI 1.5.21 (`skills@1.5.21`) with `--copy` against a local checkout. No repository source records the result of the command above. Next owner: the repository maintainer.
+
+If you are unsure about your needs, install the whole suite. Some skills bring in other skills during their work.
 
 ## Install one skill
 
@@ -26,59 +29,103 @@ If you are unsure what you need, install the whole suite: some skills bring in o
 npx skills add akshay-diwadkar/first-four-hours --skill blueprint
 ```
 
-Replace `blueprint` with the name of the skill you want. For planning, install `blueprint` and `construct` together with `ideate`, which Blueprint uses while it plans, and `reason`, which Ideate consults. Construct needs no other skill.
+Replace `blueprint` with the name of the skill you want. The unresolved gap in [Install the whole suite](#install-the-whole-suite) also applies to this command.
 
-Many skills, including Diagnose and Tutor, consult `reason` at their judgment points. When you install one of them on its own, install `reason` too. [How skills hand work to each other](../concepts/handoffs.md) lists the skills that consult it.
+For planning, install `blueprint`, `construct`, `ideate`, and `reason` together. Blueprint uses Ideate during planning. Ideate consults Reason. Construct needs no other skill.
+
+Many skills, including Diagnose and Tutor, consult `reason` at their judgment points. Each skill with Reason checkpoints also needs `reason`. [How skills hand work to each other](../concepts/handoffs.md) lists the skills with Reason checkpoints.
 
 ## Choose the agent and where skills go
 
-To install for one named agent, add `--agent` with `claude-code`, `codex`, or `github-copilot`:
+Use `--agent` to name one agent: `claude-code`, `codex`, or `github-copilot`.
 
 ```bash
 npx skills add akshay-diwadkar/first-four-hours --skill '*' --agent codex
 ```
 
-Add `--global` to install for your user account, so every project can use the skills instead of only the current one.
+Add `--global` to install for your user account instead of the current project.
+
+**Unresolved gap:** the repository sources do not say where a `--global` install puts the skill folders. The repository install check does not run `--global`. Next owner: the repository maintainer.
+
+## Install extra packages
+
+Scribe and Ticket need extra Python packages. Each of the two skills lists its packages in its own `requirements.txt` file:
+
+- `scribe`: `jsonschema`.
+- `ticket`: `tree-sitter` and its language grammars.
+
+Use the same `python` command as your agent. Run the commands below from your project folder for a `claude-code` project install:
+
+```bash
+python -m pip install -r .claude/skills/scribe/requirements.txt
+python -m pip install -r .claude/skills/ticket/requirements.txt
+```
+
+For `codex` or `github-copilot`, replace `.claude/skills` with `.agents/skills` in each command. Skip the command for a skill you do not use.
+
+For the Claude Code plugin, the skill folders are under the `installPath` value from `claude plugin list --json`. For example, Scribe is in `<installPath>/skills/sensemaking/scribe`. For the local Cursor plugin, Scribe is in `~/.cursor/plugins/local/first-four-hours/skills/sensemaking/scribe`.
 
 ## Install as a Claude Code plugin
 
-On Claude Code 2.1.275 or later, you can install all 15 skills as one `first-four-hours` plugin instead of using the Skills CLI.
+On Claude Code 2.1.275 or later, you can install all 15 skills as one `first-four-hours` plugin instead of the Skills CLI.
 
-Run this in a Claude Code session:
+Run this command in a Claude Code session:
 
 ```text
 /plugin install first-four-hours --marketplace akshay-diwadkar/first-four-hours
 ```
 
-The command adds the `first-four-hours` marketplace if needed and installs the plugin for your user account, so every project can use it. You need Git and Python 3.11 or later for this route. For Claude Code, choose either the plugin or the Skills CLI to avoid duplicate skills.
+If necessary, the command adds the `first-four-hours` marketplace. The command installs the plugin for your user account, so every project can use the plugin. The plugin route needs Git and Python 3.11 or later. For Claude Code, use the plugin or the Skills CLI, not both, to prevent duplicate skills.
 
-Plugin skill names start with `first-four-hours:`. Start Diagnose with `/first-four-hours:diagnose`, Ideate with `/first-four-hours:ideate`, and Tutor with `/first-four-hours:tutor`. Each skill keeps its start mode.
+Plugin skill names start with `first-four-hours:`. For example, start Diagnose with `/first-four-hours:diagnose`, Ideate with `/first-four-hours:ideate`, and Tutor with `/first-four-hours:tutor`. Each skill keeps its start mode.
 
-The plugin has no pinned version and follows repository commits. To update it, run `/plugin marketplace update first-four-hours` in a Claude Code session, or `claude plugin update first-four-hours@first-four-hours` in a terminal, then start a new session.
+The plugin has no pinned version and follows repository commits. Run `/plugin marketplace update first-four-hours` in a Claude Code session to update the plugin. Another option is `claude plugin update first-four-hours@first-four-hours` in a terminal. A new session uses the updated plugin.
+
+**Unresolved gap:** no repository source backs the two update commands or the statement about pinned versions. The plugin installation check does not run an update. Next owner: the repository maintainer.
 
 ## Install as a Cursor plugin
 
-In Cursor, you can install all 15 skills as one `first-four-hours` plugin instead of using the Skills CLI. You need Git and Python 3.11 or later for this route.
+In Cursor, you can install all 15 skills as one `first-four-hours` plugin instead of the Skills CLI. The Cursor route needs Git and Python 3.11 or later.
 
-To install it for yourself, clone the repository into Cursor's local plugin folder:
+To install the plugin for yourself, clone the repository into the local plugin folder of Cursor:
 
 ```bash
 git clone https://github.com/akshay-diwadkar/first-four-hours "$HOME/.cursor/plugins/local/first-four-hours"
 ```
 
-Then restart Cursor or run **Developer: Reload Window**, and open **Customize** to confirm that the skills appear. On an Enterprise plan, an administrator must first turn on **Allow Local Plugin Imports**. To update the plugin, run `git -C "$HOME/.cursor/plugins/local/first-four-hours" pull`, then reload the window.
+Restart Cursor. As an alternative, run **Developer: Reload Window**. Open **Customize** and look for the skills. On an Enterprise plan, an administrator must first enable **Allow Local Plugin Imports**.
 
-On a Teams or Enterprise plan, an administrator can instead add the repository for the whole team: in the Cursor dashboard, open **Plugins & MCPs**, choose **Add Marketplace** under **Team Marketplaces**, choose **Import from Repo**, and paste `https://github.com/akshay-diwadkar/first-four-hours`. Team members then install `first-four-hours` from **Customize**.
+Run `git -C "$HOME/.cursor/plugins/local/first-four-hours" pull` to update the plugin. After the pull, reload the window.
 
-Cursor also loads skills from `.agents/skills/` and `.claude/skills/`, in a project or in your user folder, which is where the Skills CLI installs them. Use either the plugin or the Skills CLI to avoid duplicate skills.
+On a Teams or Enterprise plan, an administrator can add the repository for the whole team:
 
-Start a skill by typing `/` in the chat and choosing it. Each skill keeps its start mode, except that Cursor has no setting to hide a skill from `/`: it also lists `router`, which the agent starts on its own, so ask for Router's outcome in plain words instead.
+1. In the Cursor dashboard, open **Plugins & MCPs**.
+2. Choose **Add Marketplace** under **Team Marketplaces**.
+3. Choose **Import from Repo**.
+4. Paste `https://github.com/akshay-diwadkar/first-four-hours`.
+
+Team members can then install `first-four-hours` from **Customize**.
+
+Cursor also loads skills from `.agents/skills/` and `.claude/skills/` in a project or in your user folder. The Skills CLI installs skills into the same folders. Use the plugin or the Skills CLI, not both, to prevent duplicate skills.
+
+Type `/` in the chat to choose a skill. Each skill keeps its start mode. Cursor has no setting to hide a skill from `/`. The `/` list therefore also shows `router`, which the agent starts on its own. Ask for the result of Router in plain words instead.
+
+**Unresolved gap:** `CHANGELOG.md` backs only the clone folder, the reload, the team marketplace import, and the `router` entry in `/`. No repository source backs the following Cursor details:
+
+- the clone URL in the `git clone` command;
+- the **Developer: Reload Window** command and the **Customize** view;
+- the **Allow Local Plugin Imports** setting;
+- the `git pull` update command;
+- the dashboard menu names for the team marketplace;
+- the extra skill folders of Cursor.
+
+No repository check installs the Cursor plugin. Next owner: the repository maintainer.
 
 ## Check the installation
 
-A project install puts one folder per skill, each holding a `SKILL.md`, in `.claude/skills/` for `claude-code` and in `.agents/skills/` for `codex` and `github-copilot`. It also writes `skills-lock.json` in the project folder.
+A project install puts one folder per skill in `.claude/skills/` for `claude-code`. Each folder holds a `SKILL.md` file. For `codex` and `github-copilot`, the folders are in `.agents/skills/`. A project install also writes `skills-lock.json` in the project folder.
 
-From your project folder, run:
+From your project folder, run this command:
 
 ```bash
 ls .claude/skills
@@ -86,19 +133,23 @@ ls .claude/skills
 
 For `codex` or `github-copilot`, run `ls .agents/skills` instead.
 
-A `--global` install lives in your user account instead of the project. For the Claude Code plugin, run `claude plugin list` in a terminal: this suite should have only `first-four-hours@first-four-hours` enabled. Run `claude plugin details first-four-hours@first-four-hours` to list its 15 skills. For any install, the real check is starting a skill: see [Your first run](first-run.md).
+For a `--global` install, see the unresolved gap in [Choose the agent and where skills go](#choose-the-agent-and-where-skills-go).
+
+For the Claude Code plugin, run `claude plugin list` in a terminal. The list must show `first-four-hours@first-four-hours` as enabled. To list the 15 skills of the plugin, run `claude plugin details first-four-hours@first-four-hours`.
+
+Start a skill to verify any install. See [Your first run](first-run.md).
 
 ## If installation fails
 
-- `npx` is not found: install Node.js, then open a new terminal.
-- The skill folders are missing, or are in the other folder: run the install again with the `--agent` name of the agent you use.
-- A plugin install cannot fetch the marketplace: check that `git --version` works and that you can reach github.com, then run the install again.
-- Cursor does not list the plugin's skills: check that `"$HOME/.cursor/plugins/local/first-four-hours/.cursor-plugin/plugin.json"` exists, reload the window, and on an Enterprise plan ask an administrator to allow local plugin imports.
-- The agent does not recognize a skill you name: check that the folder from the previous section holds that skill's `SKILL.md`, then start a new agent session from the project folder.
-- A skill starts but stops when it runs its Python script: check that `python --version` reports 3.11 or later.
-- Anything else: open an issue at https://github.com/akshay-diwadkar/first-four-hours/issues with the command you ran and its output.
+- `npx` is not available: install Node.js. After the installation, open a new terminal.
+- The skill folders are missing or in the other folder: install again with the `--agent` name of your agent.
+- A plugin install cannot fetch the marketplace: run `git --version` to verify Git. Verify your access to github.com. Run the install again.
+- Cursor does not list the skills of the plugin: verify the file `~/.cursor/plugins/local/first-four-hours/.cursor-plugin/plugin.json`. Reload the window. On an Enterprise plan, ask an administrator to allow local plugin imports.
+- The agent does not recognize a skill name: verify the `SKILL.md` file of the skill in the folder from the previous section. Start a new agent session from the project folder.
+- A skill fails during a Python script: run `python --version`. The output must show 3.11 or later. For Scribe or Ticket, also install the [extra packages](#install-extra-packages).
+- Anything else: open an issue at https://github.com/akshay-diwadkar/first-four-hours/issues with the command and its output.
 
 ## Next
 
 - [Your first run](first-run.md): start one skill on a real problem.
-- [Choose a skill](choosing-a-skill.md): find the skill for the problem in front of you.
+- [Choose a skill](choosing-a-skill.md): find the skill for your problem.

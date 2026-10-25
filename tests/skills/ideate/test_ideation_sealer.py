@@ -36,6 +36,7 @@ def _valid_draft() -> str:
         "| Caching cuts latency | https://example.com | § 2 | 2026-07 | high |\n\n"
         "## Exploration\n\n"
         "Search shape: alternative\n"
+        "- Obvious defaults: scale out the API servers\n"
         "- Simplify/eliminate: not applicable — every endpoint is required\n"
         "- Invert/relax an authorized constraint: not applicable — the latency target is the user's\n"
         "- Domain transfer: Option 1, response caching\n"
@@ -137,6 +138,7 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
         ("unknown-stop", research, "- Research: searched enough — docs only\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
         ("no-shape", "Search shape: alternative\n", "", ["ideation.invalid_search_shape"], "'Search shape: alternative | path | composed'"),
         ("skipped-lens", "- Domain transfer: Option 1, response caching\n", "", ["ideation.lens_unaccounted"], "'- Domain transfer: <candidate>'"),
+        ("no-defaults", "- Obvious defaults: scale out the API servers\n", "", ["ideation.lens_unaccounted"], "'- Obvious defaults: <candidate>'"),
         ("misplaced-lens", baseline + survivor, survivor + baseline, ["ideation.lens_unaccounted"], "'- Preserve baseline: <candidate>'"),
         ("unordered-path", "Search shape: alternative\n", "Search shape: path\n", ["ideation.lens_unaccounted"] * 5, "'- Cheapest-learning-first: <candidate>'"),
         # Orderings hidden in an HTML comment are invisible to a reader, so they do not count.

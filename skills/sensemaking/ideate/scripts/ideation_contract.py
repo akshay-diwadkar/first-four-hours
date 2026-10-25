@@ -72,6 +72,7 @@ SEARCH_SHAPES = ("alternative", "path", "composed")
 SEARCH_SHAPE_RE = re.compile(r"^Search shape:[ \t]*(.*)$", re.MULTILINE)
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 CAUSAL_LENSES = (
+    "Obvious defaults",
     "Simplify/eliminate",
     "Invert/relax an authorized constraint",
     "Domain transfer",

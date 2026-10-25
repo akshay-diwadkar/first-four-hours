@@ -83,6 +83,7 @@ Exploration opens with the divergence record, required in every search:
 
 ```text
 Search shape: alternative | path | composed
+- Obvious defaults:
 - Simplify/eliminate:
 - Invert/relax an authorized constraint:
 - Domain transfer:
@@ -92,7 +93,7 @@ Search shape: alternative | path | composed
 - Preserve baseline:
 ```
 
-A `path` or `composed` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`. The sealer checks only that each line exists outside HTML comments and is non-empty.
+A `path` or `composed` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer. The sealer checks only that each line exists outside HTML comments and is non-empty.
 
 Then `### Dropped` lists each dropped candidate with a one-line reason, and each surviving candidate, ordering, or path gets its own subsection holding only what distinguishes it under the decision criteria. Path and composed exploration describe causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
 
@@ -134,7 +135,7 @@ Before generating, ask what problem the stated goal serves and whether a reframe
 
 ### Generation
 
-Diverge before judging feasibility, in every domain. Generate a wide, cheap candidate set from the lenses before research; research then tests, extends, or eliminates candidates and may add new ones, so candidates are never limited to what research found. Collapse duplicate mechanisms. Evaluate only survivors in depth, and record every dropped candidate with a one-line reason, in alternative and path searches alike. No idea count is imposed: generation is complete when every lens is accounted for.
+Diverge before judging feasibility, in every domain. Generate a wide, cheap candidate set from the lenses before research; research then tests, extends, or eliminates candidates and may add new ones, so candidates are never limited to what research found. First ideas tend to be the typical ones, so name them on the `Obvious defaults:` line first and make every other causal lens look past them: a default stays an eligible candidate but fills no other causal lens line except `Preserve baseline:`, which names the status quo even when it is also a default, and a lens that yields nothing beyond the defaults reads not applicable with its reason. After the lenses, imagine every candidate so far forbidden and add whatever then appears. Collapse duplicate mechanisms. Evaluate only survivors in depth: compare each against the lead and the baseline rather than scoring it alone, and recombine parts of survivors that won on different criteria into a further candidate. Record every dropped candidate with a one-line reason, in alternative and path searches alike. No idea count is imposed: generation is complete when every lens is accounted for and the forbidden-set pass has run.
 
 ### Search shapes and lenses
 
@@ -144,12 +145,13 @@ Choose the search structure that best fits the problem:
 - **Composed:** a sequence with an architectural fork that needs option resolution, or an option whose selection continues into a causal or strategy progression.
 
 Causal-divergence lenses, for every search:
+- **Obvious defaults:** Name at least one answer a typical agent would give first, so the other lenses look past them; this line is never not applicable.
 - **Simplify/eliminate:** Remove requirement or bypass problem.
 - **Invert/relax an authorized constraint:** Only alter constraints within Ideate’s delegated authority.
-- **Domain transfer:** Apply proven paradigms from analogous domains.
-- **Combine mechanisms:** Pair fast path with robust fallback.
-- **Actor/timing/control:** Shift client/server, sync/async, human/automated.
-- **Failure recovery:** Shift prevention to graceful degradation or caching.
+- **Domain transfer:** State the problem without its domain's nouns, then borrow from a distant field that solved that abstracted problem.
+- **Combine mechanisms:** Pair mechanisms whose strengths cover each other's weaknesses, such as a quick common route with a careful fallback.
+- **Actor/timing/control:** Shift who acts, whose view counts, when it happens, or who decides.
+- **Failure recovery:** Shift from preventing failure to limiting it or recovering from it.
 - **Preserve baseline:** Keep current/status-quo approach as a legitimate candidate when available evidence does not justify intervention.
 
 Sequencing lenses, for path and composed searches; each proposes a competing ordering, never a justification of an order already chosen:
@@ -161,7 +163,7 @@ Sequencing lenses, for path and composed searches; each proposes a competing ord
 
 ### Dominant discriminator and search saturation
 
-When possibilities remain, identify the dominant discriminator: the cheapest credible observation, decision, or authority that could materially change the conclusion or next commitment. Once every lens is accounted for, stop search when:
+When possibilities remain, identify the dominant discriminator: the cheapest credible observation, decision, or authority that could materially change the conclusion or next commitment. Once every lens is accounted for and the forbidden-set pass has run, stop search when:
 - remaining possibilities collapse to the same mechanism or causal/dependency path;
 - one recommended direction or coherent causal/dependency path is supported across all material evidence-backed discriminators;
 - remaining variation is downstream or cosmetic;

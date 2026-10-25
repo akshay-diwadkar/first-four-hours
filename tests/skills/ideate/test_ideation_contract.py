@@ -36,6 +36,7 @@ def _valid_body(
             "## Exploration\n\n"
             "### Divergence\n"
             "Search shape: alternative\n"
+            "- Obvious defaults: add a database index\n"
             "- Simplify/eliminate: drop the slow join\n"
             "- Invert/relax an authorized constraint: not applicable — the latency target is the user's\n"
             "- Domain transfer: Strategy A, CDN-style response caching\n"

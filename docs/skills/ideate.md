@@ -23,7 +23,7 @@ Start it yourself with `/ideate`, or the agent may start it when your request ma
 
 ## What happens
 
-Ideate frames the goal and decision criteria, generates candidates from several angles before judging them, then tests, extends, or eliminates them with the cheapest evidence that could change the conclusion. It keeps mechanisms the evidence supports apart from untested hypotheses. It consults [Reason](reason.md) at its judgment points.
+Ideate frames the goal and decision criteria, names the obvious answers first, then generates candidates from several angles that look past them, all before judging any. It tests, extends, or eliminates them with the cheapest evidence that could change the conclusion, compares the survivors with each other and with the current approach, and recombines their strongest parts. It keeps mechanisms the evidence supports apart from untested hypotheses. It consults [Reason](reason.md) at its judgment points.
 
 ## What you get
 

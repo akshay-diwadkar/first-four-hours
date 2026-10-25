@@ -36,11 +36,33 @@ In Cursor, you can install the same suite as a plugin; [Install as a Cursor plug
 
 ## First use
 
-Start a skill on a real problem by naming it in your agent's chat. For example (illustrative):
+Ask an agent for an app and it starts coding in seconds, on its guess of what you meant. Charter settles what you are building first. Start it by naming it in your agent's chat. For example (illustrative):
 
 ```text
-/diagnose : Find out why authentication tokens expire early under high concurrency.
+/charter : I want an app that helps small shops track stock without spreadsheets. It should show owners how much money they lose to stock that expires or never sells. Staff shouldn't be able to change stock, and setup should take five minutes.
 ```
+
+Before anyone writes code, Charter works through the idea with you, a few questions at a time, and catches what a coding agent would guess past:
+
+- **A promise with nothing behind it.** The app promises to show money lost, but nothing records what each item cost or when it expires.
+- **A sentence with two meanings.** "Staff shouldn't be able to change stock" could mean staff never edit stock, or that their edits need the owner's approval. Charter asks which; an agent would pick one and build it.
+- **Two wishes that collide.** Five-minute setup cannot include entering every product's cost and expiry date. Charter raises the conflict and records what you decide.
+
+You end with one agreed charter: purpose, who it serves, what success looks like, what is out of scope, and what is still open. The first run takes a while on purpose. With the Claude Code plugin, start it as `/first-four-hours:charter`.
+
+From there, each step starts only when you say so:
+
+1. **Ticket** splits the agreed scope into session-sized tickets and picks the next one that is ready.
+2. **Blueprint** plans that ticket so completely that nothing is left to decide, after **Architect** settles any structural question first.
+3. **Construct** carries out the plan and runs its checks.
+4. **Assess** reviews the change against the ticket before you trust it, and **PR** opens the pull request.
+
+Already have a project? Start where you are:
+
+- **Give it a direction.** Charter works on an existing project too. It treats the code as evidence of where the project stands and settles with you where it is going.
+- **Help agents find their way.** Atlas keeps a small map that points agents to the files worth reading, so every session stops rediscovering the codebase.
+- **Find what to improve.** Architect, with no target, looks for structural problems worth fixing, and may conclude that nothing needs to change.
+- **Fix what hurts now.** Diagnose finds the cause of a bug before anyone patches it, and Assess reviews a change you already have.
 
 [Your first run](docs/getting-started/first-run.md) shows what a skill leaves behind and how each skill starts.
 
@@ -48,6 +70,7 @@ Start a skill on a real problem by naming it in your agent's chat. For example (
 
 | You are dealing with | Start with |
 | :--- | :--- |
+| An idea for an app or project that nobody has pinned down yet | `charter` |
 | Something is wrong and you do not know why | `diagnose` |
 | A change that should be planned before anyone edits code | `blueprint`, then `construct` to carry out the plan |
 | A finished change you need to trust before merging | `assess` |

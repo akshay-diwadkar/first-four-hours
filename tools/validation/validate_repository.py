@@ -32,6 +32,7 @@ from test_ownership import validate as validate_test_ownership  # noqa: E402
 
 from tools.skill_protocol import validate_manifest  # noqa: E402
 from tools.skill_protocol.runtime import compatible_version  # noqa: E402
+from tools.wiki.publish_wiki import MARKDOWN_LINK_RE, wiki_errors  # noqa: E402
 
 SKILLS_ROOT = ROOT / "skills"
 ATLAS_STRUCTURE_SCRIPT = SKILLS_ROOT / "workbench" / "atlas" / "scripts" / "structure_state.py"
@@ -156,7 +157,6 @@ CONSTRUCT_INPUT_WIRING = {
 }
 LATEST_RELEASE_BADGE_RE = re.compile(r"\[!\[Latest Release\]\((?P<badge_url>[^)]+)\)\]\((?P<target_url>[^)]+)\)")
 LATEST_RELEASE_URL = "https://github.com/akshay-diwadkar/first-four-hours/releases/latest"
-MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\((?:<(?P<bracketed>[^>]+)>|(?P<plain>[^)\s]+))(?:\s+['\"][^)]*['\"])?\)")
 LEGACY_SCOPE_NAME = "scope" + "-issue"
 LEGACY_SCOPE_ALLOWED = {
     "skills/workbench/ticket/references/issue-plan-contract.json",
@@ -1261,6 +1261,13 @@ def validate_documentation_links() -> list[str]:
     return errors
 
 
+def validate_wiki_publication() -> list[str]:
+    """Keep the user documentation publishable to the flat GitHub wiki."""
+    if not (ROOT / "docs").is_dir():
+        return []
+    return [f"GitHub wiki: {error}" for error in wiki_errors(ROOT)]
+
+
 def validate_skill_protocol(skill_dir: Path) -> list[str]:
     """Validate protocol participants."""
     manifest_path = skill_dir / "skill-protocol.json"
@@ -1561,6 +1568,7 @@ def main() -> int:
     errors.extend(validate_changelog())
     errors.extend(validate_readme_release_link())
     errors.extend(validate_documentation_links())
+    errors.extend(validate_wiki_publication())
     errors.extend(validate_marketplace())
     errors.extend(validate_invocation_policy(skill_dirs=skills))
     errors.extend(validate_certified_platform_coverage())

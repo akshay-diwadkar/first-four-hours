@@ -18,6 +18,8 @@ Each section serves one reader job. A section exists only once it holds a page w
 
 [The documentation entrypoint](../README.md) is the single way in. Link every new page from it, or from a page it already links.
 
+After each merge to `main` that changes `docs/`, the [wiki publishing workflow](../../.github/workflows/publish-wiki.yml) replaces the repository's GitHub wiki with these pages. The entrypoint becomes the wiki's Home, and every other page becomes a wiki page named after its H1 title. So every page needs an H1 title that starts with a letter or digit, uses only letters, digits, spaces, commas, apostrophes, and hyphens, and differs from every other title by more than case or spacing; repository validation checks this. Links to files outside `docs/` become links to those files on GitHub. Edit pages here: changes made on the wiki are overwritten.
+
 ## Facts come from source
 
 Take names, commands, artifacts, file paths, invocation modes, and behavior from the current source, not from memory or old issues. Link to the source that owns a fact instead of copying it:

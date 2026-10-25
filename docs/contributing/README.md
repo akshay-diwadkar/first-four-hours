@@ -41,7 +41,7 @@ Use only the resources a package needs; this table is not mandatory scaffolding.
 2. Bound the files, affected consumers, and preserved behavior. Classify a new capability by its primary job; use concrete ownership to select work and tests.
 3. Before editing agent-loaded guidance, [measure its context usage](validation.md) and inspect pinned instruction rules. Remove sediment and disclose exceptional detail progressively while preserving required meaning.
 4. Update the canonical implementation or guidance, then its required projections, affected consumer contracts, earned tests, and [human documentation](documentation.md). Maintain Atlas pointers affected by the change without remapping unrelated areas.
-5. Once the final observable diff is stable, apply [version and release policy](packages-and-releases.md) to the affected skills and owned formats. Respect the current baseline exception.
+5. Once the final observable diff is stable, apply [version and release policy](packages-and-releases.md) to the affected skills and owned formats.
 6. Run the smallest relevant deterministic proof, expand by affected risk, and finish the [required validation](validation.md) on the final relevant revision.
 
 Agents retain semantic judgment within each skill's authority. Choose only the capabilities the task needs; this workflow does not require a fixed skill pipeline or a consultation on every decision. Follow the affected skill's own invocation, consultation, and handoff contract.

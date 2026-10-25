@@ -766,6 +766,13 @@
       "owner": "repository-contract"
     },
     {
+      "id": "wiki-publishing-workflow",
+      "path_prefixes": [
+        ".github/workflows/publish-wiki.yml"
+      ],
+      "owner": "documentation-contract"
+    },
+    {
       "id": "skill-packaged-metadata",
       "path_prefixes": [
         "skills/workbench/architect/agents/openai.yaml",
@@ -834,7 +841,8 @@
     "MAP.md",
     ".mapignore",
     ".map",
-    "docs"
+    "docs",
+    ".github"
   ],
   "inventory": {
     "restricted_roots": [],

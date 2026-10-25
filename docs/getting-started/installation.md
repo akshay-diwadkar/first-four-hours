@@ -19,7 +19,7 @@ Run this command from the root folder of your project:
 npx skills add akshay-diwadkar/first-four-hours --skill '*'
 ```
 
-**Unresolved gap:** the repository install check does not run the unpinned command above or the `akshay-diwadkar/first-four-hours` source name. The check runs Skills CLI 1.5.21 (`skills@1.5.21`) with `--copy` against a local checkout. No repository source records the result of the command above. Next owner: the repository maintainer.
+**Not verified here:** this repository's install check runs Skills CLI 1.5.21 (`skills@1.5.21`) with `--copy` against a local checkout. It does not run the unpinned command above or install from the `akshay-diwadkar/first-four-hours` source name.
 
 If you are unsure about your needs, install the whole suite. Some skills bring in other skills during their work.
 
@@ -29,7 +29,7 @@ If you are unsure about your needs, install the whole suite. Some skills bring i
 npx skills add akshay-diwadkar/first-four-hours --skill blueprint
 ```
 
-Replace `blueprint` with the name of the skill you want. The unresolved gap in [Install the whole suite](#install-the-whole-suite) also applies to this command.
+Replace `blueprint` with the name of the skill you want. The note in [Install the whole suite](#install-the-whole-suite) also applies to this command.
 
 For planning, install `blueprint`, `construct`, `ideate`, and `reason` together. Blueprint uses Ideate during planning. Ideate consults Reason. Construct needs no other skill.
 
@@ -45,7 +45,7 @@ npx skills add akshay-diwadkar/first-four-hours --skill '*' --agent codex
 
 Add `--global` to install for your user account instead of the current project.
 
-**Unresolved gap:** the repository sources do not say where a `--global` install puts the skill folders. The repository install check does not run `--global`. Next owner: the repository maintainer.
+**Not verified here:** this repository does not record where a `--global` install puts the skill folders, and its install check does not run `--global`.
 
 ## Install extra packages
 
@@ -81,7 +81,7 @@ Plugin skill names start with `first-four-hours:`. For example, start Diagnose w
 
 The plugin has no pinned version and follows repository commits. Run `/plugin marketplace update first-four-hours` in a Claude Code session to update the plugin. Another option is `claude plugin update first-four-hours@first-four-hours` in a terminal. A new session uses the updated plugin.
 
-**Unresolved gap:** no repository source backs the two update commands or the statement about pinned versions. The plugin installation check does not run an update. Next owner: the repository maintainer.
+**Not verified here:** this repository does not confirm the two update commands or that the plugin has no pinned version, and its plugin installation check does not run an update.
 
 ## Install as a Cursor plugin
 
@@ -110,16 +110,16 @@ Cursor also loads skills from `.agents/skills/` and `.claude/skills/` in a proje
 
 Type `/` in the chat to choose a skill. Each skill keeps its start mode. Cursor has no setting to hide a skill from `/`. The `/` list therefore also shows `router`, which the agent starts on its own. Ask for the result of Router in plain words instead.
 
-**Unresolved gap:** `CHANGELOG.md` backs only the clone folder, the reload, the team marketplace import, and the `router` entry in `/`. No repository source backs the following Cursor details:
+**Not verified here:** no check in this repository installs the Cursor plugin, and this repository does not confirm these Cursor details:
 
 - the clone URL in the `git clone` command;
 - the **Developer: Reload Window** command and the **Customize** view;
 - the **Allow Local Plugin Imports** setting;
 - the `git pull` update command;
 - the dashboard menu names for the team marketplace;
-- the extra skill folders of Cursor.
-
-No repository check installs the Cursor plugin. Next owner: the repository maintainer.
+- the extra skill folders of Cursor;
+- that restarting Cursor loads the plugin;
+- that Cursor has no setting to hide a skill from `/`, so `/` also shows `router`.
 
 ## Check the installation
 
@@ -133,7 +133,7 @@ ls .claude/skills
 
 For `codex` or `github-copilot`, run `ls .agents/skills` instead.
 
-For a `--global` install, see the unresolved gap in [Choose the agent and where skills go](#choose-the-agent-and-where-skills-go).
+For a `--global` install, see the note in [Choose the agent and where skills go](#choose-the-agent-and-where-skills-go).
 
 For the Claude Code plugin, run `claude plugin list` in a terminal. The list must show `first-four-hours@first-four-hours` as enabled. To list the 15 skills of the plugin, run `claude plugin details first-four-hours@first-four-hours`.
 

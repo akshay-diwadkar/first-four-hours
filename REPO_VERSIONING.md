@@ -32,7 +32,7 @@ If implementation scope is narrowed, lower or remove any provisional bump so the
 
 ## First Four Hours v1 Baseline
 
-The First Four Hours baseline reset `VERSION`, every skill's `metadata.version`, and every contract version the repository owns to `1.0.0` once, as one breaking change. Keep these values at `1.0.0` until the First Four Hours baseline is established; the rules above then apply from v1. Old internal versions are not accepted for compatibility: artifacts sealed under them are resealed by their producing skill. The first release publishes the `## [Unreleased]` entry in `CHANGELOG.md` as `1.0.0` without an increment.
+The First Four Hours baseline reset `VERSION`, every skill's `metadata.version`, and every contract version the repository owns to `1.0.0` once, as one breaking change, and the first release, `1.0.0`, established it. The rules above apply to every change after that release. Old internal versions are not accepted for compatibility: artifacts sealed under them are resealed by their producing skill.
 
 ## Contract Versions
 

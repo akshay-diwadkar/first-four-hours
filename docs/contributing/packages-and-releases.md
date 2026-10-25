@@ -82,10 +82,10 @@ When policy calls for a skill version change, update its `metadata.version`, own
 
 Keep [VERSION](../../VERSION) as one repository release value and [CHANGELOG.md](../../CHANGELOG.md) as the single release history. Repository-only human documentation, tests, and formatting require no version bump or changelog entry unless they change installation, packaging, release output, or distributed behavior.
 
-The current First Four Hours baseline holds repository, skill, and owned contract versions at `1.0.0` until the baseline is established. Its first release publishes Unreleased as `1.0.0` without an increment. Apply that policy exception before ordinary version arithmetic; this documentation change needs no bump.
+The first release, `1.0.0`, established the First Four Hours baseline, so ordinary version arithmetic applies to every later change.
 
 ## Prepare a release from maintained truth
 
-Use the maintained release rule to turn the entries under Unreleased in [CHANGELOG.md](../../CHANGELOG.md) into a repository release. Update [VERSION](../../VERSION), publish the dated changelog section, retain a new Unreleased section, tag the release, and reuse its changelog entry for the release notes. The [versioning authority](../../REPO_VERSIONING.md) supplies the values, ordering, and first-baseline exception. The README's release badge reads the latest GitHub release and has no version to edit.
+Use the maintained release rule to turn the entries under Unreleased in [CHANGELOG.md](../../CHANGELOG.md) into a repository release. Update [VERSION](../../VERSION), publish the dated changelog section, retain a new Unreleased section, tag the release, and reuse its changelog entry for the release notes. The [versioning authority](../../REPO_VERSIONING.md) supplies the values and ordering. The README's release badge reads the latest GitHub release and has no version to edit.
 
 These are maintainer actions; no automated release pipeline or workflow file is promised. Complete required [validation](validation.md), the installation checks earned by affected distribution, including the Claude Code plugin check when plugin packaging changes, and human review before declaring readiness. Never merge a pull request.

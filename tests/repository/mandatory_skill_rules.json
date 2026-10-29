@@ -494,6 +494,6 @@
     "skill": "construct",
     "source": "references/execution-contract.md",
     "surface": "doctor",
-    "text": "After that mutation stop, once the caller establishes a trusted state, it takes the stopped command and its `changed_paths` and `index_changed` evidence to a Blueprint amendment as for a `plan-contradiction`, never rerunning that sealed plan unchanged"
+    "text": "After that mutation stop, once the caller establishes a trusted state, it takes the stopped command, `changed_paths`, and `index_changed` to a Blueprint amendment as for a `plan-contradiction`, never rerunning that sealed plan unchanged"
   }
 ]

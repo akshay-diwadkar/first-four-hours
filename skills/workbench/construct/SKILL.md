@@ -2,7 +2,7 @@
 name: construct
 description: "Implement an existing sealed `blueprint.md`; run its Verification; report completion, incomplete verification, or contradiction; skip planning-required work."
 metadata:
-  version: "1.0.3"
+  version: "1.0.4"
   implicit-authority: sealed-blueprint
 ---
 

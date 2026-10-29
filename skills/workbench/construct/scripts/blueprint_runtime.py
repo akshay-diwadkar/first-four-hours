@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.0.3"
+CONTRACT_VERSION = "1.0.4"
 STEP_ATTEMPT_LIMIT = 3
 BLUEPRINT_FILENAME = "blueprint.md"
 REQUEST_FILENAME = "request.md"

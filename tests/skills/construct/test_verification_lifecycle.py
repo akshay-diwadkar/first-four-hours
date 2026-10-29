@@ -92,7 +92,7 @@ BREAK_CHECK = (
     "print('mutant caught')\n"
 )
 GREETING_TEXT = 'GREETING = "hello"\nPAYLOAD = """left\vtab\fform\x85nel\u2028line\u2029paragraph\rreturn"""\n'
-STEP_PLAN = """<!-- blueprint-contract: 1.0.3 -->
+STEP_PLAN = """<!-- blueprint-contract: 1.0.4 -->
 # Blueprint: specified steps
 
 ## Goal
@@ -179,7 +179,7 @@ Expect: prints mutant caught.
 - The greeting module exists.
 - Every repository check invocation prints checking to stderr.
 """
-UNAVAILABLE_PLAN = """<!-- blueprint-contract: 1.0.3 -->
+UNAVAILABLE_PLAN = """<!-- blueprint-contract: 1.0.4 -->
 # Blueprint: unavailable proof
 
 ## Goal
@@ -519,7 +519,7 @@ RED_DELETION_PLAN = (
 
 
 def _overwrite_draft() -> str:
-    return """<!-- blueprint-contract: 1.0.3 -->
+    return """<!-- blueprint-contract: 1.0.4 -->
 # Blueprint: ignored overwrite proof
 
 ## Goal
@@ -621,6 +621,11 @@ def test_verification_rejects_ignored_only_overwrite(tmp_path: Path, capsys: pyt
     assert (repo / "scratch/existing.txt").read_text(encoding="utf-8") == "changed"
     assert subprocess.run(["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"], cwd=repo, capture_output=True, check=True).stdout == git_before
     assert payload["diagnostics"][0]["details"]["changed_paths"] == ["scratch/existing.txt"]
+    # The stop names its authored command and routes recovery to a Blueprint amendment, never an unchanged rerun.
+    assert payload["diagnostics"][0]["category"] == "unsafe_state"
+    assert any("tests/test_overwrite.py" in item for item in payload["diagnostics"][0]["supporting_evidence"])
+    assert "Blueprint amendment" in payload["diagnostics"][0]["required_action"]
+    assert "preserve unrelated work" in payload["diagnostics"][0]["required_action"]
     assert payload["result"]["verification"]["results"][0]["passed"] is False
     # A carried-out deletion is started implementation: resume routes to apply, never to a red prove must refuse,
     # and prove red reports an unrecoverable gap, never a plan defect.

@@ -66,10 +66,10 @@ class ConstructError(ValueError):
     def _required_action(self) -> str:
         if self.owner == "blueprint":
             return "Return the contradiction to Blueprint, obtain a fresh sealed Blueprint, and start a new Construct run."
-        if self.category == "unsafe_state":
-            return "Preserve unrelated work and resume only from a trusted repository state or explicit authority."
         if self.valid_repairs:
             return self.valid_repairs[0]
+        if self.category == "unsafe_state":
+            return "Preserve unrelated work and resume only from a trusted repository state or explicit authority."
         return "Repair the named local contract defect and retry the same Construct action."
 
     def diagnostic(self, *, phase: str = "verify") -> dict[str, Any]:
@@ -860,6 +860,11 @@ def _run_guarded(
             evidence=[json.dumps(summary["step"], sort_keys=True)],
             result=partial,
             details={"changed_paths": changed_paths, "index_changed": index_before != index_after},
+            valid_repairs=(
+                "Stop as safety-contradiction and preserve unrelated work, including the changed paths. Outside this run, "
+                "the caller establishes a trusted state with explicit authority, then takes this authored command, "
+                "changed_paths, and index_changed to a Blueprint amendment; never rerun this sealed plan unchanged.",
+            ),
         )
     return summary
 
@@ -1374,7 +1379,8 @@ def apply_blocks(repo_root: Path, blueprint_path: Path, number: int, kind: str |
                 category="unsafe_state",
                 details={"written": written, "failed": entry["path"]},
                 valid_repairs=(
-                    "Stop as safety-contradiction: report the written and unwritten files; the caller re-establishes a trusted state.",
+                    "Stop as safety-contradiction and preserve unrelated work: report the written and unwritten files; "
+                    "the caller resumes only from a re-established trusted state or explicit authority.",
                 ),
             ) from exc
         written.append(entry["path"])

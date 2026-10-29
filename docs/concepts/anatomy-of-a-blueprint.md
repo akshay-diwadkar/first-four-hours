@@ -70,7 +70,7 @@ The instruction is prose, not code. It settles every choice a mediocre executor 
 ```markdown
 **Frozen:** `tests/api/test_rate_limit.py`
 (the test file follows here, written by the planner)
-**Proof run:** `python -m pytest tests/api/test_rate_limit.py -q`
+**Proof run:** `python -m pytest -p no:cacheprovider tests/api/test_rate_limit.py -q`
 Red: today a client can send any number of search requests; the request after the limit returns 200 instead of 429.
 Expect: exits 0 and reports 4 passed.
 ```
@@ -86,17 +86,17 @@ Expect: exits 0 and reports 4 passed.
 
 ### After implementation
 
-Run: `python -m pytest tests/api tests/search -q`
+Run: `python -m pytest -p no:cacheprovider tests/api tests/search -q`
 Expect: exits 0 with no failures; the existing search tests pass unchanged.
 
 ## Completion Conditions
 
-- A client over the limit on /search or /search/suggest gets 429 with Retry-After; under the limit, responses are unchanged. Shown by `python -m pytest tests/api tests/search -q`.
-- A partner key sending 100 requests in a minute gets no 429. Shown by `python -m pytest tests/api tests/search -q`.
+- A client over the limit on /search or /search/suggest gets 429 with Retry-After; under the limit, responses are unchanged. Shown by `python -m pytest -p no:cacheprovider tests/api tests/search -q`.
+- A partner key sending 100 requests in a minute gets no 429. Shown by `python -m pytest -p no:cacheprovider tests/api tests/search -q`.
 - Owner gate: the operations lead confirms that 60 requests a minute suits production traffic.
 ```
 
-**Why it's there.** Verification is a list of exact commands, each with the result it must show. Construct runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so.
+**Why it's there.** Verification is a list of exact commands, each with the result it must show. Construct runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so. Each command only reads: Construct stops one that writes anything inside the worktree, caches included, which is why the example turns pytest's cache off with `-p no:cacheprovider`.
 
 Completion conditions state outcomes, not tasks. The Goal summarizes the approach and what must stay true; the concrete outcomes, each ending with the command whose result shows it, appear only here, so a condition no check can show stands out as a missing check. The last one starts with `Owner gate:` because no command can settle it; a person has to. Construct lists it as pending for its owner and never claims it.
 

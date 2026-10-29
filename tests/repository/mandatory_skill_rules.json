@@ -357,6 +357,13 @@
     "text": "no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance"
   },
   {
+    "id": "plan.verification-purity",
+    "skill": "blueprint",
+    "source": "references/planning-contract.md",
+    "surface": "doctor",
+    "text": "so an authored command writes nothing in the worktree or `.git`"
+  },
+  {
     "id": "pr.confirmed-publication",
     "skill": "pr",
     "source": "SKILL.md",

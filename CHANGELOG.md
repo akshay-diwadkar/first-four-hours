@@ -4,6 +4,11 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Fixed
+
+- Blueprint 1.0.1: plans no longer author verification that writes inside the worktree. Every Run and Proof run must leave the worktree untouched, ignored files and tool caches included, and must take one of three verification shapes. The challenger checks this against Construct's execution contract, so Construct no longer stops a sealed plan because its own verification wrote a file.
+- Construct 1.0.1: ships the Blueprint 1.0.1 runtime copy, so it reports contract version 1.0.1. It still accepts every sealed 1.x plan.
+
 ## [1.0.0] - 2026-10-25
 
 The first public release of First Four Hours: 15 skills for coding agents. Each skill helps an agent do one job properly before it moves on: find the real cause, settle the plan, carry the plan out faithfully, or check the result that matters. The skills need Python 3.11 or later and a coding agent that loads skills; Scribe and Ticket also need extra Python packages, and the plugin routes need Git. The README describes each skill and the documentation covers installation and first use. Distributed under the MIT License.

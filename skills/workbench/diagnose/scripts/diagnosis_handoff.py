@@ -14,7 +14,7 @@ import re
 
 from _skill_protocol_runtime import compatible_version_pattern
 
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.0.1"
 RECEIPT_MARKER = "diagnosis"
 
 ARTIFACT_TITLE = "Diagnosis"

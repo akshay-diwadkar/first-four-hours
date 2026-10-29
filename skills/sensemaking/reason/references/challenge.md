@@ -4,7 +4,7 @@
 
 Do not reopen goal selection, do routine domain work, or promote style-only criticism. Prefer fresh isolated challenge when proportionate; it is never required.
 
-Find the claim whose failure changes the proposed action, acceptance, or claimed completion: imagine the proposal or result has already failed, name the most plausible cause, and select the claim that cause would break. Prefer proposal, authoritative evidence, material assumptions, consequence, and stop condition over the proposing agent's transcript. Never request or persist chain-of-thought.
+Find the claim whose failure changes the proposed action, acceptance, or claimed completion: imagine the proposal or result has already failed, name the most plausible cause, and select the claim that cause would break. Prefer proposal, authoritative evidence, material assumptions, consequence, and stop condition over the proposing agent's transcript. Never request or persist chain-of-thought. At a checkpoint on a non-trivial decision, the selected claim is the strongest opposing argument, and the pass still tests blind spots and verifies every other load-bearing assumption before `no-material-objection`.
 
 Use the smallest relevant lens:
 

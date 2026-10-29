@@ -92,7 +92,7 @@ BREAK_CHECK = (
     "print('mutant caught')\n"
 )
 GREETING_TEXT = 'GREETING = "hello"\nPAYLOAD = """left\vtab\fform\x85nel\u2028line\u2029paragraph\rreturn"""\n'
-STEP_PLAN = """<!-- blueprint-contract: 1.0.2 -->
+STEP_PLAN = """<!-- blueprint-contract: 1.0.3 -->
 # Blueprint: specified steps
 
 ## Goal
@@ -179,7 +179,7 @@ Expect: prints mutant caught.
 - The greeting module exists.
 - Every repository check invocation prints checking to stderr.
 """
-UNAVAILABLE_PLAN = """<!-- blueprint-contract: 1.0.2 -->
+UNAVAILABLE_PLAN = """<!-- blueprint-contract: 1.0.3 -->
 # Blueprint: unavailable proof
 
 ## Goal
@@ -519,7 +519,7 @@ RED_DELETION_PLAN = (
 
 
 def _overwrite_draft() -> str:
-    return """<!-- blueprint-contract: 1.0.2 -->
+    return """<!-- blueprint-contract: 1.0.3 -->
 # Blueprint: ignored overwrite proof
 
 ## Goal

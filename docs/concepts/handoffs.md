@@ -52,7 +52,7 @@ Blueprint brings in other help within its own run, not as separate stages:
 
 ## Reason checkpoints
 
-Architect, Assess, Charter, Diagnose, Ticket, Ideate, Scribe, Tutor, and Examiner consult [Reason](../skills/reason.md) at their own judgment points, such as before committing to an approach and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start Reason yourself.
+Architect, Assess, Blueprint, Charter, Diagnose, Ticket, Ideate, Scribe, Tutor, and Examiner consult [Reason](../skills/reason.md) at their own judgment points, such as before committing to an approach, after a failure, and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start Reason yourself.
 
 ## Routing
 

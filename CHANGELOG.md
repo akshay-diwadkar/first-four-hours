@@ -4,6 +4,13 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Changed
+
+- Reason 1.0.1: a failed tool, probe, identity check, or seal the work relies on now triggers the after-failure checkpoint. On a non-trivial decision, a checkpoint must state the strongest opposing argument, test blind spots, and verify every load-bearing assumption; an untested "no material concern" no longer counts as a consultation. The visible result line names the risk tested, and the checkpoint trace counts a checkpoint as consulted only then and lists each further checkpoint an owner skill names.
+- Diagnose 1.0.1: consults Reason after any failure or direction change, not only after a failed direction. Its diagnosis contract version is now 1.0.1; Blueprint and Construct still accept every 1.x diagnosis.
+- Blueprint 1.0.3: the planner now consults Reason before committing to an approach, after a failure such as a failed probe or blocked seal, or a direction change, before the fresh challenge, and before sealing, and its seal and stop reports trace those checkpoints. The pre-challenge checkpoint attacks the draft's most load-bearing premise and its verification to catch defects before the challenger does. This reverses the 2026-10-11 decision that Blueprint needs no Reason consultations.
+- Construct 1.0.3: ships the Blueprint 1.0.3 runtime copy, so it reports contract version 1.0.3. It still accepts every sealed 1.x plan.
+
 ### Fixed
 
 - Blueprint 1.0.1: plans no longer author verification that writes inside the worktree. Every Run and Proof run must leave the worktree untouched, ignored files and tool caches included, and must take one of three verification shapes. The challenger checks this against Construct's execution contract, so Construct no longer stops a sealed plan because its own verification wrote a file.

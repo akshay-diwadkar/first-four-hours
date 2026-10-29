@@ -1,6 +1,6 @@
 # Adversarial challenge
 
-One separate fresh-context subagent challenges every draft before handoff, at its tier; it is never skipped because the change looks small.
+One separate fresh-context subagent challenges every draft before handoff, at its tier. Before launching it, consult `reason` in owner context, one pass without a subagent: attack the draft's most load-bearing premise and its verification against the Construct Verification section below, to catch defects before the challenger does.
 
 ## Tier
 

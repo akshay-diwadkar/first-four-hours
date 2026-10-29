@@ -46,7 +46,7 @@ A consultation is one pass. Reason does not call itself again or start other ski
 
 **What it refuses, and why.** It never takes over. It explains what needs reconsidering and why; the agent that consulted it owns the replacement and the work. It writes no file, starts no other skill, and never calls itself again, so a consultation cannot grow into a chain. Skills that rely on it consult it at those moments instead of only considering whether to, because an agent that cannot see its blind spot cannot judge whether it needs the check.
 
-**Floor and ceiling.** A weaker agent gets a bounded check at fixed checkpoints, including after a failed tool, probe, identity check, or seal its work relies on. A stronger agent keeps each consultation in proportion to the stakes, and "no material concern" is a valid result once the strongest argument against a non-trivial decision has been tested; an untested affirmation is not a consultation. Simple tasks stay light, and mechanical work with nothing left to judge skips Reason entirely.
+**Floor and ceiling.** A weaker agent gets a bounded check at fixed checkpoints, including after a failed tool, probe, identity check, or seal its work relies on. A stronger agent keeps each consultation in proportion to the stakes, and "no material concern" is a valid result for a non-trivial decision only once the strongest opposing argument has been stated, blind spots tested, and every load-bearing assumption verified; an untested affirmation is not a consultation. Simple tasks stay light, and mechanical work with nothing left to judge skips Reason entirely.
 
 ## Related skills
 

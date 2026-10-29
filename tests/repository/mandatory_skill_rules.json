@@ -487,7 +487,7 @@
     "skill": "blueprint",
     "source": "references/planning-contract.md",
     "surface": "doctor",
-    "text": "After a `verification.mutated_workspace` stop, its `changed_paths` and `index_changed` prove writes, not their full surface or writer: an amendment reshapes each command that wrote, listing no writes, and never claims the stopped command pure; it cites any other writer and drops that dependency or states the limitation."
+    "text": "An amendment after a `verification.mutated_workspace` stop cites the stopped command and summarizes `changed_paths` and `index_changed`, proving writes but not their full surface or writer; it reshapes each writing command, inventorying no writes, never calls that command pure, and names any other writer to drop or state as a limitation."
   },
   {
     "id": "implement.mutation-recovery",

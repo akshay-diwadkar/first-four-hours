@@ -1379,7 +1379,8 @@ def apply_blocks(repo_root: Path, blueprint_path: Path, number: int, kind: str |
                 category="unsafe_state",
                 details={"written": written, "failed": entry["path"]},
                 valid_repairs=(
-                    "Stop as safety-contradiction: report the written and unwritten files; the caller re-establishes a trusted state.",
+                    "Stop as safety-contradiction and preserve unrelated work: report the written and unwritten files; "
+                    "the caller resumes only from a re-established trusted state or explicit authority.",
                 ),
             ) from exc
         written.append(entry["path"])

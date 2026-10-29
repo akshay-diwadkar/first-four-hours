@@ -31,7 +31,7 @@ npx skills add akshay-diwadkar/first-four-hours --skill blueprint
 
 Replace `blueprint` with the name of the skill you want. The note in [Install the whole suite](#install-the-whole-suite) also applies to this command.
 
-For planning, install `blueprint`, `construct`, `ideate`, and `reason` together. Blueprint uses Ideate during planning. Ideate consults Reason. Construct needs no other skill.
+For planning, install `blueprint`, `construct`, `ideate`, and `reason` together. Blueprint consults Reason and uses Ideate during planning. Ideate consults Reason. Construct needs no other skill.
 
 Many skills, including Diagnose and Tutor, consult `reason` at their judgment points. Each skill with Reason checkpoints also needs `reason`. [How skills hand work to each other](../concepts/handoffs.md) lists the skills with Reason checkpoints.
 

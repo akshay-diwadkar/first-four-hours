@@ -27,8 +27,8 @@ One row per skill. The table is generated from the skill folders, [the invocatio
 | [`reason`](../skills/reason.md) | Sensemaking | [`skills/sensemaking/reason/`](../../skills/sensemaking/reason/SKILL.md) | `both` | none | none |
 | [`router`](../skills/router.md) | Sensemaking | [`skills/sensemaking/router/`](../../skills/sensemaking/router/SKILL.md) | `model-invoked` | 3.11 or later | none |
 | [`scribe`](../skills/scribe.md) | Sensemaking | [`skills/sensemaking/scribe/`](../../skills/sensemaking/scribe/SKILL.md) | `both` | 3.11 or later | [`requirements.txt`](../../skills/sensemaking/scribe/requirements.txt) |
-| [`examiner`](../skills/examiner.md) | Learning | [`skills/learning/examiner/`](../../skills/learning/examiner/SKILL.md) | `both` | none | none |
-| [`tutor`](../skills/tutor.md) | Learning | [`skills/learning/tutor/`](../../skills/learning/tutor/SKILL.md) | `both` | none | none |
+| [`examiner`](../skills/examiner.md) | Learning | [`skills/learning/examiner/`](../../skills/learning/examiner/SKILL.md) | `both` | 3.11 or later | none |
+| [`tutor`](../skills/tutor.md) | Learning | [`skills/learning/tutor/`](../../skills/learning/tutor/SKILL.md) | `both` | 3.11 or later | none |
 <!-- skill-facts:end -->
 
 ## Other facts

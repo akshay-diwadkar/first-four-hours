@@ -1592,7 +1592,7 @@ def main() -> int:
     errors.extend(validate_ticket_rename(source_files=files))
     for module_name in (
         "sync_diagnostic_runtime", "sync_classification_runtime", "sync_skill_protocol_runtime",
-        "sync_architecture_handoff", "sync_delegation_projection", "sync_router_manifest",
+        "sync_architecture_handoff", "sync_learning_link_check", "sync_delegation_projection", "sync_router_manifest",
         "sync_skill_catalog",
     ):
         import importlib

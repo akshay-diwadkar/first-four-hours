@@ -8,13 +8,13 @@
     "charter": {"top_level": 860, "references": 2150},
     "construct": {"top_level": 750, "references": 10000},
     "diagnose": {"top_level": 750, "references": 10000},
-    "examiner": {"top_level": 900, "references": 3030},
+    "examiner": {"top_level": 987, "references": 3030},
     "ideate": {"top_level": 758, "references": 10000},
     "pr": {"top_level": 700, "references": 1000},
     "reason": {"top_level": 650, "references": 3500},
     "router": {"top_level": 500, "references": 1000},
     "scribe": {"top_level": 750, "references": 10000},
     "ticket": {"top_level": 750, "references": 10000},
-    "tutor": {"top_level": 800, "references": 2640}
+    "tutor": {"top_level": 946, "references": 2671}
   }
 }

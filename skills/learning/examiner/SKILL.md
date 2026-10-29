@@ -2,12 +2,12 @@
 name: examiner
 description: "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Examiner
 
-Help a student rehearse a specific written examination with practice grounded in its real requirements, and mark attempts against its real marking scheme. Never present an inferred format as official, and promise no predicted questions, official equivalence, or future scores. Before saving anything, including marking, read [Practice records](references/practice-records.md).
+Help a student rehearse a specific written examination with practice grounded in its real requirements, and mark attempts against its real marking scheme. Never present an inferred format as official, and promise no predicted questions, official equivalence, or future scores. Before saving anything, including marking, read [Practice records](references/practice-records.md). Save HTML unless the student asks for Markdown, written directly, never by a generator script. Before delivering, run `python <skill-root>/scripts/cli.py --repo-root <folder> --input target=<path> --format json check-links` on what you saved and fix every finding.
 
 ## Establish the examination
 
@@ -21,7 +21,7 @@ When official requirements cannot be verified, for example without research acce
 
 ## Write the paper
 
-Produce what the student asked for: a full mock, section practice, or topic practice. Before writing a paper, read [Papers](references/papers.md). Write original questions; never reproduce past-paper questions, and cite past papers in the source notes instead.
+Produce what the student asked for: a full mock, section practice, or topic practice. Offer, with your recommendation, any open choice that changes the paper, such as sections, length, or timing; never settle it silently. Before writing a paper, read [Papers](references/papers.md). Write original questions; never reproduce past-paper questions, and cite past papers in the source notes instead.
 
 Solve and audit every question before delivery. Then summarise the paper's coverage, conditions, departures from representative conditions, and unresolved assumptions in the reply. Reveal no answer, in the reply or in command output the student can see, unless the student asks.
 

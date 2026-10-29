@@ -384,7 +384,9 @@
       "id": "tutor-guidance-source",
       "path_prefixes": [
         "skills/learning/tutor/SKILL.md",
-        "skills/learning/tutor/references"
+        "skills/learning/tutor/references",
+        "skills/learning/tutor/scripts",
+        "skills/learning/tutor/skill-protocol.json"
       ],
       "owner": "tutor-guidance-contract"
     },
@@ -393,7 +395,9 @@
       "path_prefixes": [
         "skills/learning/examiner/SKILL.md",
         "skills/learning/examiner/references",
-        "skills/learning/examiner/assets"
+        "skills/learning/examiner/assets",
+        "skills/learning/examiner/scripts",
+        "skills/learning/examiner/skill-protocol.json"
       ],
       "owner": "examiner-guidance-contract"
     },

@@ -26,6 +26,7 @@ Before delivery, solve every question from the paper alone, as a student would, 
 - coverage matches the request and the syllabus areas the source notes claim;
 - your solution, the answer key, and the marking scheme agree, and every explanation supports the answer it explains;
 - the key repeats each question and its options exactly as the paper labels them, and each answer control matches its question's instructions;
+- the link check passes for the set folder;
 - the runtime appears byte for byte and its timing data matches the instructions; in a browser when available, reloading or loading a saved answer file restores every answer.
 
 Fix every failure and audit the changed questions again. An audit cannot prove difficulty or timing; keep those as labelled estimates.

@@ -1,0 +1,28 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateless",
+  "skill": "examiner",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {"name": "target", "kind": "path", "required": false, "repeatable": false, "description": "A saved HTML file, or a folder whose HTML files are checked (not recursively).", "choices": [], "accepted_for": ["check-links"], "required_for": ["check-links"]}
+  ],
+  "artifacts": [],
+  "phases": {},
+  "commands": {
+    "check-links": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/check_links.py", "{input.target}"],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    }
+  }
+}

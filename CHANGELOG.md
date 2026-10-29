@@ -4,6 +4,11 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- Tutor 1.1.0: asks whether you want a quick explanation, a self-contained HTML page, or a course (one lesson per session or all at once) when your request doesn't say, and offers open material choices with a recommendation instead of deciding silently. Saved material is HTML unless you ask for Markdown, and a new `check-links` command checks it for broken links, missing anchors, and network-loaded assets before delivery. Visuals can now be step-through simulations for multi-stage processes.
+- Examiner 1.1.0: offers open paper choices with a recommendation, saves HTML unless you ask for Markdown, and checks every saved set with the same `check-links` command before delivery.
+
 ## [1.0.0] - 2026-10-25
 
 The first public release of First Four Hours: 15 skills for coding agents. Each skill helps an agent do one job properly before it moves on: find the real cause, settle the plan, carry the plan out faithfully, or check the result that matters. The skills need Python 3.11 or later and a coding agent that loads skills; Scribe and Ticket also need extra Python packages, and the plugin routes need Git. The README describes each skill and the documentation covers installation and first use. Distributed under the MIT License.

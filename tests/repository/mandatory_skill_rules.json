@@ -481,5 +481,19 @@
     "source": "SKILL.md",
     "surface": "doctor",
     "text": "A material revision is never accepted without an explicit user decision."
+  },
+  {
+    "id": "plan.mutation-recovery",
+    "skill": "blueprint",
+    "source": "references/planning-contract.md",
+    "surface": "doctor",
+    "text": "After a `verification.mutated_workspace` stop, its `changed_paths` and `index_changed` prove writes, not their full surface or writer: an amendment reshapes each command that wrote, listing no writes, and never claims the stopped command pure; it cites any other writer and drops that dependency or states the limitation."
+  },
+  {
+    "id": "implement.mutation-recovery",
+    "skill": "construct",
+    "source": "references/execution-contract.md",
+    "surface": "doctor",
+    "text": "After that mutation stop, once the caller establishes a trusted state, it takes the stopped command and its `changed_paths` and `index_changed` evidence to a Blueprint amendment as for a `plan-contradiction`, never rerunning that sealed plan unchanged"
   }
 ]

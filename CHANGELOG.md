@@ -8,6 +8,9 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 - Blueprint 1.0.1: plans no longer author verification that writes inside the worktree. Every Run and Proof run must leave the worktree untouched, ignored files and tool caches included, and must take one of three verification shapes. The challenger checks this against Construct's execution contract, so Construct no longer stops a sealed plan because its own verification wrote a file.
 - Construct 1.0.1: ships the Blueprint 1.0.1 runtime copy, so it reports contract version 1.0.1. It still accepts every sealed 1.x plan.
+- Architect 1.0.1: in a Git worktree with no commits, the architecture snapshot now covers only tracked and non-ignored untracked files (plus the contents of nested repositories and submodules), so dependency installs, tool caches, and build output that Git ignores no longer stale a sealed handoff, and checks no longer walk them. A handoff sealed by Architect 1.0.0 in such a worktree that no longer matches is refused with a message to reseal it with Architect.
+- Blueprint 1.0.2: ships the Architect 1.0.1 handoff verifier, so a no-HEAD architecture handoff stays current across Git-ignored output.
+- Construct 1.0.2: ships the Blueprint 1.0.2 runtime copy, so it reports contract version 1.0.2. It still accepts every sealed 1.x plan.
 
 ## [1.0.0] - 2026-10-25
 

@@ -23,7 +23,7 @@ If the request supplies a concrete architecture target, boundary, subsystem, or 
 
 ## 2. Build direct evidence
 
-Record only evidence needed to trust the decision. Use the direct locator syntax in `architecture-template.md`; distinguish repository, request, runtime, and external evidence. Local evidence may include a line-range SHA-256; sealing computes it when omitted.
+Record only evidence needed to trust the decision. Use the direct locator syntax in `architecture-template.md`; distinguish repository, request, runtime, and external evidence. Local evidence may include a line-range SHA-256; sealing computes it when omitted. Git-ignored runtime evidence binds nothing; record it as uncertainty, never sole support.
 
 Complete when every persisted structural claim cites a defined locator and every missing decision-changing repository fact has been gathered or preserved as an unknown.
 
@@ -53,6 +53,6 @@ Run the seal command in `SKILL.md` workflow step 5. Complete only when the comma
 
 ## 7. Hand off without mutation
 
-Complete only when the command emits exactly one `architecture.md`, every local evidence binding verifies, and generated proof binds the current repository snapshot with Architect's version as `scope_version` and the effective evidence root. Never edit the validated draft or finalized artifact. Pass the receipt-valid file to `blueprint`; Architect does not author Blueprint workspace files, route directly to `construct`, or bypass Blueprint's seal-and-stop boundary.
+Complete only when generated proof binds the snapshot with Architect's version as `scope_version` and the effective evidence root. Never edit the validated draft or finalized artifact. Pass the receipt-valid file to `blueprint`; Architect does not author Blueprint workspace files, route directly to `construct`, or bypass Blueprint's seal-and-stop boundary.
 
-Snapshots exclude only safe canonical .first-four-hours/blueprints/ planning files and sealed .first-four-hours/architectures/<slug>/architecture.md handoffs; neither can be architecture evidence. Foreign, tracked or symlinked namespace content fails closed. Older snapshots that included planning files need resealing, without reopening settled decisions unless current evidence contradicts them. Fresh intake rejects snapshots whose `scope_version` has another major or whose project root is ambiguous; reseal from current evidence at the intended root. Frozen Construct resume checks only the outer receipt/proof envelope and never reinterprets snapshot scope.
+Snapshots skip safe .first-four-hours/blueprints/ planning files and sealed .first-four-hours/architectures/<slug>/architecture.md handoffs, neither ever evidence; in a Git worktree they also skip Git-ignored files outside nested repositories. Foreign, tracked or symlinked namespace content fails closed. Fresh intake rejects another major's `scope_version` or an ambiguous project root; reseal those and older-scope snapshots from current evidence at the intended root, reopening only contradicted decisions. Frozen Construct resume checks only the outer receipt/proof envelope and never reinterprets snapshot scope.

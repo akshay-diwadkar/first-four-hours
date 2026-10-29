@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -13,6 +14,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "skills" / "workben
 from tools.validation.git_test_support import seed_git
 
 from tools.validation.python_test_support import run_python
+
+import pytest
+
+from architecture_handoff import ARCHITECT_VERSION, _snapshot
 
 ROOT = Path(__file__).resolve().parents[3]
 SKILL = ROOT / "skills" / "workbench" / "architect"
@@ -130,7 +135,7 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     # The decision opens the handoff; a handoff whose receipt and proof still lead it is refused, never read as generic.
     sealed_lines = handoff.read_text(encoding="utf-8").splitlines()
     assert sealed_lines[0].startswith("# Architecture Decision: ")
-    assert sealed_lines[-1].startswith("<!-- architecture: 1.0.0; sha256: ")
+    assert sealed_lines[-1].startswith(f"<!-- architecture: {ARCHITECT_VERSION}; sha256: ")
     legacy = repo / ".first-four-hours" / "architectures" / "legacy" / "architecture.md"
     legacy.parent.mkdir()
     legacy.write_text("\n".join([sealed_lines[-1], sealed_lines[-2], *sealed_lines[:-2]]) + "\n", encoding="utf-8")
@@ -177,6 +182,60 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     assert proof_snapshot(plain_handoff)["kind"] == "filesystem"
     accepted_plain = run_python(prepare_command(plain, plain_handoff, "payment-boundary"), capture_output=True, text=True)
     assert accepted_plain.returncode == 0, accepted_plain.stdout
+
+    # Without a HEAD commit the snapshot binds only tracked and non-ignored untracked files.
+    unborn = make_repo(tmp_path / "unborn")
+    run_python(["git", "init", "-q", "-b", "main"], cwd=unborn, capture_output=True, text=True, check=True)
+    (unborn / ".gitignore").write_text("node_modules/\n", encoding="utf-8")
+    run_python(seal_command(unborn, "payment-boundary", draft, json_output=True), capture_output=True, text=True, check=True)
+    unborn_handoff = unborn / ".first-four-hours" / "architectures" / "payment-boundary" / "architecture.md"
+    unborn_snapshot = proof_snapshot(unborn_handoff)
+    assert unborn_snapshot["kind"] == "filesystem"
+    cache = unborn / "node_modules" / ".vite" / "results.json"
+    cache.parent.mkdir(parents=True)
+    cache.write_text("{}\n", encoding="utf-8")
+    cached = run_python(prepare_command(unborn, unborn_handoff, "cached"), capture_output=True, text=True)
+    assert cached.returncode == 0, cached.stdout
+
+    # The no-HEAD snapshot neither walks the tree nor reads ignored output.
+    walked: list[Path] = []
+    read: list[Path] = []
+    real_rglob, real_read_bytes = Path.rglob, Path.read_bytes
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(Path, "rglob", lambda self, pattern, *args, **kwargs: walked.append(self) or real_rglob(self, pattern, *args, **kwargs))
+        patch.setattr(Path, "read_bytes", lambda self: read.append(self) or real_read_bytes(self))
+        assert _snapshot(unborn)["fingerprint"] == unborn_snapshot["fingerprint"]
+    assert walked == []
+    assert [path for path in read if "node_modules" in path.parts] == []
+
+    def forge_pre_scope(handoff: Path) -> Path:
+        lines = handoff.read_text(encoding="utf-8").splitlines()
+        snapshot = {**proof_snapshot(handoff), "scope_version": "1.0.0", "fingerprint": "0" * 64}
+        proof = json.dumps({"snapshot": snapshot}, sort_keys=True, separators=(",", ":"))
+        with_proof = "\n".join(lines[:-2]) + f"\n<!-- architecture-proof: {proof} -->\n"
+        digest = hashlib.sha256(with_proof.encode("utf-8")).hexdigest()
+        forged = handoff.parent.parent / "pre-scope" / "architecture.md"
+        forged.parent.mkdir()
+        forged.write_bytes((with_proof + f"<!-- architecture: 1.0.0; sha256: {digest} -->\n").encode("utf-8"))
+        return forged
+
+    # A stale pre-1.0.1 handoff in a Git worktree names its older scope and the reseal step; outside Git it stays generic.
+    refused_old = run_python(prepare_command(unborn, forge_pre_scope(unborn_handoff), "pre-scope"), capture_output=True, text=True)
+    assert refused_old.returncode == 1
+    old_diagnostic = json.loads(refused_old.stdout)["diagnostics"][0]
+    assert old_diagnostic["code"] == "handoff.architecture.invalid"
+    assert "sealed before Architect 1.0.1" in old_diagnostic["message"]
+    refused_plain = run_python(prepare_command(plain, forge_pre_scope(plain_handoff), "pre-scope"), capture_output=True, text=True)
+    assert refused_plain.returncode == 1
+    assert json.loads(refused_plain.stdout)["diagnostics"][0]["message"] == "architecture proof snapshot does not match the current repository"
+
+    # A non-ignored file written after sealing, even with a non-ASCII name, still stales the no-HEAD handoff.
+    (unborn / "scaffold-é.txt").write_text("new source\n", encoding="utf-8")
+    scaffolded = run_python(prepare_command(unborn, unborn_handoff, "scaffolded"), capture_output=True, text=True)
+    assert scaffolded.returncode == 1
+    scaffold_diagnostic = json.loads(scaffolded.stdout)["diagnostics"][0]
+    assert scaffold_diagnostic["code"] == "handoff.architecture.invalid"
+    assert scaffold_diagnostic["message"] == "architecture proof snapshot does not match the current repository"
 
 
 def test_git_status_failure_never_seals_a_clean_snapshot(tmp_path: Path) -> None:

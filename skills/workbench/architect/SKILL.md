@@ -2,7 +2,7 @@
 name: architect
 description: Decide repository-grounded architecture before blueprint planning; use for boundary, dependency-direction, state ownership, abstraction, consolidation, module or class structure, subsystems, or no-targets.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Architect

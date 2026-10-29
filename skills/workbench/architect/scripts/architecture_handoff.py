@@ -15,7 +15,9 @@ from architecture_contract import BLUEPRINT_WORKSPACE_PARTS, WORKSPACE_DIR, WORK
 
 BLUEPRINT_WORKSPACE_DIR = "/".join(BLUEPRINT_WORKSPACE_PARTS)
 
-ARCHITECT_VERSION = "1.0.0"
+ARCHITECT_VERSION = "1.0.1"
+# First Architect version whose no-HEAD Git snapshot skips Git-ignored files.
+NO_HEAD_GIT_SCOPE_SINCE = (1, 0, 1)
 RECEIPT_RE = re.compile(rf"^<!-- architecture: {compatible_version_pattern(ARCHITECT_VERSION)}; sha256: ([0-9a-f]{{64}}) -->$")
 PROOF_RE = re.compile(r"^<!-- architecture-proof: (?P<json>.+) -->$")
 LEADING_HANDOFF_RECEIPT_RE = re.compile(
@@ -91,19 +93,66 @@ def _dirty_fingerprint(repo_root: Path, *, git_root: Path | None = None) -> str 
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
+def _snapshot_excluded(relative: Path) -> bool:
+    return (
+        ".git" in relative.parts
+        or relative.parts[:2] == BLUEPRINT_WORKSPACE_PARTS
+        or len(relative.parts) == 4 and relative.parts[:2] == WORKSPACE_PARTS and relative.parts[3] == "architecture.md"
+    )
+
+
+def _entries_digest(entries: list[tuple[str, str]]) -> str:
+    return hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
 def _filesystem_fingerprint(repo_root: Path) -> str:
     entries: list[tuple[str, str]] = []
     for path in sorted(repo_root.rglob("*")):
         relative = path.absolute().relative_to(repo_root)
-        if (
-            ".git" in relative.parts
-            or relative.parts[:2] == BLUEPRINT_WORKSPACE_PARTS
-            or len(relative.parts) == 4 and relative.parts[:2] == WORKSPACE_PARTS and relative.parts[3] == "architecture.md"
-            or not path.is_file()
-        ):
+        if _snapshot_excluded(relative) or not path.is_file():
             continue
         entries.append((relative.as_posix(), _sha256_bytes(path.read_bytes())))
-    return hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return _entries_digest(entries)
+
+
+def _git_scoped_fingerprint(repo_root: Path) -> str:
+    # Bytes mode: _git's locale text decoding would corrupt non-ASCII names on Windows.
+    listed = subprocess.run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ".", f":(exclude){BLUEPRINT_WORKSPACE_DIR}"],
+        cwd=repo_root,
+        capture_output=True,
+        check=False,
+    )
+    if listed.returncode != 0:
+        raise ValueError(
+            "cannot establish Git file list for architecture snapshot: "
+            + listed.stderr.decode("utf-8", errors="replace").strip()
+        )
+    entries: dict[str, str] = {}
+    for raw in listed.stdout.split(b"\0"):
+        if not raw:
+            continue
+        name = os.fsdecode(raw)
+        if name.endswith("/"):
+            name = name[:-1]
+        relative = Path(name)
+        path = repo_root / relative
+        if _snapshot_excluded(relative):
+            continue
+        if path.is_dir() and not path.is_symlink():
+            # An untracked nested repository or a submodule: hash its files as the full-tree rule does.
+            for child in sorted(path.rglob("*")):
+                child_relative = child.relative_to(repo_root)
+                if child.is_file() and not _snapshot_excluded(child_relative):
+                    entries[child_relative.as_posix()] = _sha256_bytes(child.read_bytes())
+        elif path.is_file():
+            entries[relative.as_posix()] = _sha256_bytes(path.read_bytes())
+    return _entries_digest(sorted(entries.items()))
+
+
+def _inside_git_worktree(root: Path) -> bool:
+    inside = _git(root, "rev-parse", "--is-inside-work-tree")
+    return inside.returncode == 0 and inside.stdout.strip() == "true"
 
 
 def _snapshot(repo_root: Path) -> dict[str, Any]:
@@ -129,8 +178,7 @@ def _snapshot(repo_root: Path) -> dict[str, Any]:
             "dirty": dirty is not None,
             "dirty_fingerprint": dirty,
         }
-    inside = _git(root, "rev-parse", "--is-inside-work-tree")
-    if inside.returncode == 0 and inside.stdout.strip() == "true":
+    if _inside_git_worktree(root):
         tracked = _git(root, "ls-files", "-z", "--", BLUEPRINT_WORKSPACE_DIR)
         if tracked.returncode or tracked.stdout:
             raise ValueError("architecture snapshot cannot exclude tracked Blueprint content")
@@ -141,7 +189,7 @@ def _snapshot(repo_root: Path) -> dict[str, Any]:
                 "kind": "filesystem",
                 "scope_version": ARCHITECT_VERSION,
                 "project_root": str(root),
-                "fingerprint": _filesystem_fingerprint(root),
+                "fingerprint": _git_scoped_fingerprint(root),
             }
         common_path = Path(common)
         if not common_path.is_absolute():
@@ -203,6 +251,17 @@ def _receipt_free(text: str, repo_root: Path | None = None) -> str:
     recorded = {key: item for key, item in proof["snapshot"].items() if key != "scope_version"}
     current = {key: item for key, item in _snapshot(repo_root).items() if key != "scope_version"}
     if recorded != current:
+        if (
+            recorded.get("kind") == "filesystem"
+            and current.get("kind") == "filesystem"
+            and tuple(int(part) for part in proof["snapshot"]["scope_version"].split(".")) < NO_HEAD_GIT_SCOPE_SINCE
+            and _inside_git_worktree(repo_root.resolve())
+        ):
+            raise ValueError(
+                "architecture proof snapshot does not match the current repository and was sealed before "
+                "Architect 1.0.1 limited no-HEAD Git snapshots to tracked and non-ignored untracked files; "
+                "reseal the receipt-free decision with Architect"
+            )
         raise ValueError("architecture proof snapshot does not match the current repository")
     return decision
 

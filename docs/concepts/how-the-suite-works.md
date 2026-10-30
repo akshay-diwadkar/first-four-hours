@@ -13,7 +13,7 @@ Start from the task or the problem in front of you, not from how the suite is or
 For example:
 
 - a defect whose cause you don't know: `diagnose`;
-- a change that has to be right the first time: `blueprint` to plan it, then `construct` to carry out the plan;
+- a change another session or a cheaper model will carry out, whose mistakes would show up late, or whose decisions must outlast the session: `blueprint` to plan it, then `construct` to carry out the plan ([Blueprint](../skills/blueprint.md) explains when plan mode is enough);
 - a finished change you need to trust before merging: `assess`;
 - a decision that is stuck or rests on a doubtful assumption: `reason`.
 

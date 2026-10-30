@@ -63,19 +63,23 @@ Add `rate_limit` to `build_chain` immediately after `authenticate`. Allow 60 req
 
 **Why it's there.** Every step names the files it touches and whether each one exists or is new. Sealing refuses a `new` file that already exists and an `existing` one that does not, so a mistyped path cannot quietly create a second module.
 
-The instruction is prose, not code. It settles every choice a mediocre executor could get wrong: where in the chain, the limit, which key, the partner exemption, the exact response. It leaves the typing to the executor. Blueprint never builds or runs the planned change, so code written into the plan would be untested code the executor copies. Prose is the default; short pseudocode appears only where prose cannot settle control flow, and exact text only where the bytes themselves are the decision, such as an error message.
+The instruction is prose, not code. It settles every choice a faithful executor with no design authority could get wrong: where in the chain, the limit, which key, the partner exemption, the exact response. It leaves the typing to the executor. Blueprint never builds or runs the planned change, so code written into the plan would be untested code the executor copies. Prose is the default; short pseudocode appears only where prose cannot settle control flow, and exact text only where the bytes themselves are the decision, such as an error message.
 
 ## Proof that would catch a wrong implementation
 
 ```markdown
-**Frozen:** `tests/api/test_rate_limit.py`
-(the test file follows here, written by the planner)
+Write `tests/api/test_rate_limit.py` with four cases, each through the real middleware chain:
+- the 61st search request in one minute from one key gets 429 with Retry-After set to the whole seconds until the next token, and the handler is not called (rejects a limiter that never fires or still calls the handler);
+- two keys each sending 60 requests in a minute get no 429 (rejects one bucket shared by every client);
+- a request with no API key is limited by `client_address(request)` even when it sends a forwarded header (rejects a limiter keyed on the spoofable header);
+- a key in `settings.PARTNER_KEYS` sending 100 requests in a minute gets no 429 (rejects a limiter that ignores the exemption).
+
 **Proof run:** `python -m pytest -p no:cacheprovider tests/api/test_rate_limit.py -q`
 Red: today a client can send any number of search requests; the request after the limit returns 200 instead of 429.
 Expect: exits 0 and reports 4 passed.
 ```
 
-**Why it's there.** The planner writes the tests that decide whether the step is right, and Construct writes them exactly as given and never edits them. An executor that could adjust its own tests could make any implementation pass.
+**Why it's there.** The plan decides what the tests must catch: each case, its input, the result it expects, and the wrong implementation it rejects. Construct writes the test code from those cases; a test that skips a case is a defect it repairs, never a reason to change the plan. The planner never runs its own code, so the plan freezes exact bytes only for test data, such as expected output, never for the tests themselves.
 
 `Red:` names the defect the new test must show before the change. A test that already passes on today's code proves nothing about the change, so Construct checks that the test fails for that reason first, then passes after the step.
 
@@ -104,7 +108,7 @@ Completion conditions state outcomes, not tasks. The Goal summarizes the approac
 
 Line 1 of the file is an HTML comment naming the contract version. Sealing appends two generated receipts as the last two lines: `blueprint-proof` records the hash of every cited source and every existing target, and `blueprint-validation` binds the plan's text to that proof. A sealed plan never changes. If the request changes, Blueprint writes a new plan in a fresh folder.
 
-The seal proves shape and binding: the sections are in order, each target exists or is absent as declared, and the cited files are the ones the planner read. It does not prove the plan is good. That was the challenger's job. Before sealing, a separate fresh-context agent read the draft the way a mediocre executor would follow it. In this plan it noticed that step 2 never mentioned `/search/suggest`, which shares the search handler: a faithful executor would have limited it without anyone deciding to. The planner made it explicit in the Goal and the completion conditions, and only then sealed.
+The seal proves shape and binding: the sections are in order, each target exists or is absent as declared, and the cited files are the ones the planner read. It does not prove the plan is good. That was the challenger's job. Before sealing, a separate fresh-context agent read the draft the way a faithful executor with no design authority would follow it. In this plan it noticed that step 2 never mentioned `/search/suggest`, which shares the search handler: a faithful executor would have limited it without anyone deciding to. The planner made it explicit in the Goal and the completion conditions, and only then sealed.
 
 ## Read next
 

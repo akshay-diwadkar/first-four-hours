@@ -19,7 +19,7 @@
     {
       "name": "blueprint",
       "invocation": "both",
-      "description": "Plan before editing: close user intent, ground repository facts, decide the implementation, and seal an implementation-complete `blueprint.md` a weak executor applies without engineering judgment. Use when a repository change should be planned before anyone implements it, including work Construct or another agent will build; skip execution."
+      "description": "Plan before editing: close user intent, ground repository facts, decide the implementation, and seal an implementation-complete `blueprint.md` that leaves the executor no design decision. Use when a repository change should be planned before anyone implements it, including work Construct or another agent will build; skip execution."
     },
     {
       "name": "charter",

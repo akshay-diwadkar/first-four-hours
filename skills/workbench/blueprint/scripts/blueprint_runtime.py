@@ -19,7 +19,7 @@ import sys
 import tempfile
 import unicodedata
 from importlib import import_module
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, NoReturn
 
 from _diagnostic_contract import normalize_diagnostic
@@ -41,8 +41,15 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.0.4"
+CONTRACT_VERSION = "1.1.0"
 STEP_ATTEMPT_LIMIT = 3
+EXECUTABLE_SUFFIXES = frozenset({
+    ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
+    ".groovy", ".h", ".hpp", ".java", ".js", ".jsx", ".kt", ".kts", ".lua", ".mjs", ".php", ".pl", ".ps1", ".psm1",
+    ".py", ".pyi", ".pyw", ".rb", ".rs", ".scala", ".sh", ".svelte", ".swift", ".ts", ".tsx", ".vue", ".zsh",
+})
+# One decision-bearing line (a pattern, format string, key, or diagnostic code) plus one wrapped continuation; a function body or a test does not fit.
+CODE_EDIT_LINE_LIMIT = 2
 BLUEPRINT_FILENAME = "blueprint.md"
 REQUEST_FILENAME = "request.md"
 ARTIFACT_ROOT = ".first-four-hours"
@@ -3461,6 +3468,40 @@ def _deletion_diagnostics(blueprint: Blueprint, view: RepositoryView) -> list[Di
     return diagnostics
 
 
+def _executable_text_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
+    """Refuse declared text on an executable file beyond a bounded anchored replacement."""
+    diagnostics: list[Diagnostic] = []
+    for step in blueprint.steps:
+        for block in step.blocks:
+            if PurePosixPath(block.path).suffix.casefold() not in EXECUTABLE_SUFFIXES:
+                continue
+            if block.old is None:
+                extent = "is a whole file"
+            else:
+                old, new = block.old.splitlines(keepends=True), block.text.splitlines(keepends=True)
+                shorter = min(len(old), len(new))
+                leading = 0
+                while leading < shorter and old[leading] == new[leading]:
+                    leading += 1
+                trailing = 0
+                while leading + trailing < shorter and old[-1 - trailing] == new[-1 - trailing]:
+                    trailing += 1
+                changed = len(new) - leading - trailing
+                if changed <= CODE_EDIT_LINE_LIMIT:
+                    continue
+                extent = f"changes {changed} lines"
+            diagnostics.append(_error(
+                "block.code",
+                f"Instruction {step.number}: {block.kind.title()} text on executable file {block.path!r} {extent}; "
+                "plans give code as prose or pseudocode, and declared text on an executable file is limited to an "
+                f"anchored replacement changing at most {CODE_EDIT_LINE_LIMIT} lines.",
+                "Specify the behavior or test cases in prose, move test data into a data file, or narrow the block to an anchored edit.",
+                path=block.path,
+                line=block.line,
+            ))
+    return diagnostics
+
+
 def validate_draft(
     text: str, repo_root: Path, *, view: RepositoryView | None = None, **_kwargs: Any
 ) -> ValidationResult:
@@ -3474,6 +3515,7 @@ def validate_draft(
     diagnostics.extend(source_diagnostics)
     diagnostics.extend(_deletion_diagnostics(blueprint, repository))
     diagnostics.extend(_block_sequence_diagnostics(blueprint, repository))
+    diagnostics.extend(_executable_text_diagnostics(blueprint))
     return ValidationResult(blueprint if not diagnostics else None, tuple(diagnostics), repository)
 
 
@@ -3518,6 +3560,7 @@ def build_proof(
     diagnostics.extend(source_diagnostics)
     diagnostics.extend(_deletion_diagnostics(blueprint, view))
     diagnostics.extend(_block_sequence_diagnostics(blueprint, view))
+    diagnostics.extend(_executable_text_diagnostics(blueprint))
     if diagnostics:
         _raise(diagnostics)
     source = request_source or detect_request_source(request_bytes, repo_root=view.repo_root)

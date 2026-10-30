@@ -35,7 +35,7 @@ Someone is scraping Larder's public search endpoint. You want rate limiting with
 
 Blueprint asks one question: should partner API keys be exempt? That is a product choice, and the answer changes the plan, so it is yours. Blueprint does not ask where the limiter should go or how to test it; it reads the middleware chain and decides. While grounding, it finds that Larder already has a trusted helper for the client address, and plans to reuse it instead of reading a header any client could forge.
 
-Before sealing, the challenger reads the draft the way a mediocre executor would follow it, and notices that `/search/suggest` shares the search handler. A faithful executor would have limited it too, without anyone deciding to. The planner makes that explicit, then seals the plan in `.first-four-hours/blueprints/search-rate-limit/`. [Anatomy of a sealed blueprint](../concepts/anatomy-of-a-blueprint.md) walks through this plan section by section.
+Before sealing, the challenger reads the draft the way a faithful executor with no design authority would follow it, and notices that `/search/suggest` shares the search handler. A faithful executor would have limited it too, without anyone deciding to. The planner makes that explicit, then seals the plan in `.first-four-hours/blueprints/search-rate-limit/`. [Anatomy of a sealed blueprint](../concepts/anatomy-of-a-blueprint.md) walks through this plan section by section.
 
 ```text
 /construct : Implement the sealed blueprint in .first-four-hours/blueprints/search-rate-limit/blueprint.md.

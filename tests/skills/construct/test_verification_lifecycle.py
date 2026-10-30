@@ -72,27 +72,14 @@ TEST_HEAD = "import sys\nsys.path.insert(0, 'src')\nfrom names import normalize\
 FROZEN_OLD = "print('ready')\n"
 FROZEN_NEW = "assert normalize(None) == '', repr(normalize(None))\nprint('absent ok')\n"
 FROZEN_TEST = TEST_HEAD + FROZEN_NEW
-# Planned break-the-code check on temporary copies, never the worktree: the unmutated copy passes and the mutant fails as named.
-BREAK_CHECK = (
-    "import pathlib, subprocess, sys, tempfile\n"
-    "source = pathlib.Path('src/names.py').read_text(encoding='utf-8')\n"
-    "test = pathlib.Path('tests/test_names.py').read_text(encoding='utf-8')\n"
-    "mutant = source.replace(\"return value if value is not None else ''\", 'return value', 1)\n"
-    "assert mutant != source, 'mutation anchor missing'\n"
-    "def run(names):\n"
-    "    with tempfile.TemporaryDirectory() as tmp:\n"
-    "        for relative, text in (('src/names.py', names), ('tests/test_names.py', test)):\n"
-    "            target = pathlib.Path(tmp, relative)\n"
-    "            target.parent.mkdir(parents=True, exist_ok=True)\n"
-    "            target.write_text(text, encoding='utf-8')\n"
-    "        return subprocess.run([sys.executable, '-B', 'tests/test_names.py'], cwd=tmp, capture_output=True, text=True)\n"
-    "assert run(source).returncode == 0, 'the regression fails on the unmutated copy'\n"
-    "caught = run(mutant)\n"
-    "assert caught.returncode != 0 and 'AssertionError' in caught.stderr, 'the regression missed the mutant'\n"
-    "print('mutant caught')\n"
+TEST_CHECK = (
+    "import subprocess, sys\n"
+    "done = subprocess.run([sys.executable, '-B', 'tools/check.py'], capture_output=True, text=True)\n"
+    "print(done.stdout, end='')\n"
+    "assert 'checking' in done.stderr, done.stderr\n"
 )
 GREETING_TEXT = 'GREETING = "hello"\nPAYLOAD = """left\vtab\fform\x85nel\u2028line\u2029paragraph\rreturn"""\n'
-STEP_PLAN = """<!-- blueprint-contract: 1.0.4 -->
+STEP_PLAN = """<!-- blueprint-contract: 1.1.0 -->
 # Blueprint: specified steps
 
 ## Goal
@@ -110,8 +97,6 @@ Absent names normalize to the empty string, the greeting module exists, and ever
 **State:** existing
 **Location:** `tests/test_names.py`
 **State:** existing
-**Location:** `tests/break_names.py`
-**State:** new
 
 **Frozen:** `tests/test_names.py`
 ```python
@@ -129,10 +114,6 @@ Absent names normalize to the empty string, the greeting module exists, and ever
     return value if value is not None else ''
 ```
 
-**Frozen:** `tests/break_names.py`
-```python
-""" + BREAK_CHECK + """```
-
 **Proof run:** `python tests/test_names.py`
 Red: AssertionError showing None returned for an absent name
 Expect: prints absent ok.
@@ -140,14 +121,17 @@ Expect: prints absent ok.
 ### 2. Log every repository check invocation
 **Location:** `tools/check.py`
 **State:** existing
+**Location:** `tests/test_check.py`
+**State:** new
 
-Print checking to stderr before emitting the existing records; preserve their fields.
+Print checking to stderr before emitting the existing records; preserve their fields. Write `tests/test_check.py` as the regression: it runs `tools/check.py` with `-B`, reprints its stdout unchanged, and asserts its stderr contains checking, so a check that never logs fails it.
 
-**Proof run:** `python -B tools/check.py`
+**Proof run:** `python -B tests/test_check.py`
+Red: tools/check.py prints nothing to stderr, so the regression's checking assertion fails
 Expect: the final record reports an empty errors list.
 
 ### 3. Add the greeting module
-**Location:** `src/greet.py`
+**Location:** `src/greeting.txt`
 **State:** new
 **Location:** `./src/names.py`
 **State:** existing
@@ -162,8 +146,8 @@ Expect: the final record reports an empty errors list.
     # greeting enabled
 ```
 
-**Exact:** `src/greet.py`
-```python
+**Exact:** `src/greeting.txt`
+```text
 """ + GREETING_TEXT + """```
 
 ## Verification
@@ -171,15 +155,13 @@ Expect: the final record reports an empty errors list.
 ### After implementation
 Run: `python -B tools/check.py`
 Expect: the final record reports an empty errors list.
-Run: `python -B tests/break_names.py`
-Expect: prints mutant caught.
 
 ## Completion Conditions
 - Absent names normalize to the empty string.
 - The greeting module exists.
 - Every repository check invocation prints checking to stderr.
 """
-UNAVAILABLE_PLAN = """<!-- blueprint-contract: 1.0.4 -->
+UNAVAILABLE_PLAN = """<!-- blueprint-contract: 1.1.0 -->
 # Blueprint: unavailable proof
 
 ## Goal
@@ -266,21 +248,18 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     (repo / "tests/test_names.py").write_bytes((TEST_HEAD + FROZEN_OLD).encode("utf-8"))
     code, payload = _apply(capsys, repo, blueprint, 3)
     assert (code, payload["diagnostics"][0]["code"]) == (3, "step.earlier_unproven")
-    assert not (repo / "src/greet.py").exists()
+    assert not (repo / "src/greeting.txt").exists()
     code, payload = _apply(capsys, repo, blueprint, 1)
     assert (code, payload["diagnostics"][0]["code"]) == (3, "apply.red_split_required")
     code, payload = _apply(capsys, repo, blueprint, 1, "exact")
     assert (code, payload["diagnostics"][0]["code"]) == (3, "apply.frozen_unrealized")
     assert (repo / "tests/test_names.py").read_bytes() == (TEST_HEAD + FROZEN_OLD).encode("utf-8")
-    assert not (repo / "tests/break_names.py").exists()
     # Frozen-only apply keeps an LF file's endings and routes to red, then refuses already-applied text.
     code, payload = _apply(capsys, repo, blueprint, 1, "frozen")
     assert code == 0, payload
-    assert [(item["path"], item["kind"]) for item in payload["apply"]["applied"]] == [
-        ("tests/test_names.py", "frozen"), ("tests/break_names.py", "frozen")]
+    assert [(item["path"], item["kind"]) for item in payload["apply"]["applied"]] == [("tests/test_names.py", "frozen")]
     assert "check=red" in payload["apply"]["required_action"]
     assert (repo / "tests/test_names.py").read_bytes() == FROZEN_TEST.encode("utf-8")
-    assert (repo / "tests/break_names.py").read_bytes() == BREAK_CHECK.encode("utf-8")
     assert (repo / "src/names.py").read_text(encoding="utf-8") == "def normalize(value):\n    return value\n"
     code, payload = _apply(capsys, repo, blueprint, 1, "frozen")
     assert (code, payload["diagnostics"][0]["code"]) == (3, "apply.block_refused")
@@ -353,6 +332,7 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert forward["next_instruction"] == 2 and forward["next_command"] is None
     assert "instruction=2" in forward["required_action"] and "check=green" in forward["required_action"]
     assert "caller-held next unused attempt" in forward["required_action"]
+    assert "check=red" in forward["required_action"] and "Write any test instruction 2 specifies in prose" in forward["required_action"]
     # The sealed baseline no longer holds; intake names the drift and the resume path, never auto-routes.
     code, payload = _run_phase(capsys, repo, blueprint, "before")
     diagnostic = payload["diagnostics"][0]
@@ -360,15 +340,25 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     evidence = "\n".join(diagnostic["supporting_evidence"])
     assert "src/names.py" in evidence and "run status instead" in evidence
 
-    # Resume still stops at a specified obligation, without skipping to the exact instruction.
+    # Resume reaches the pending prose regression, without skipping to the exact instruction.
     code, payload = _invoke(capsys, repo, blueprint, "--phase", "status")
-    diagnostic = payload["diagnostics"][0]
-    assert (code, diagnostic["code"], diagnostic["next_command"]) == (3, "status.progress_unverifiable", None)
-    progress = payload["result"]["status"]
-    assert [item["state"] for item in progress["instructions"]] == ["satisfied", "unverifiable", "not_checked"]
+    assert code == 0, payload
+    progress = payload["status"]
+    assert [item["state"] for item in progress["instructions"]] == ["satisfied", "pending", "not_checked"]
     assert progress["instructions"][0]["red"] == "unrecoverable"
-    assert progress["next_command"] is None and progress["notices"][0]["slow"] is True
+    assert progress["next_command"] is None and "instruction=2" in progress["required_action"]
     assert (repo / "tools/check.py").read_text(encoding="utf-8") == check
+
+    # A prose-specified test that implements no stated case passes red: the executor repairs its own test.
+    _write(repo, "tests/test_check.py", "print('ok')\n")
+    code, payload = _prove(capsys, repo, blueprint, 2, "red")
+    diagnostic = payload["diagnostics"][0]
+    assert (code, diagnostic["code"], diagnostic["details"]["owner"]) == (3, "step.red_passed", "construct")
+    assert "instruction=2" in diagnostic["next_command"]["argv"] and "check=red" in diagnostic["next_command"]["argv"]
+    _write(repo, "tests/test_check.py", TEST_CHECK)
+    code, payload = _prove(capsys, repo, blueprint, 2, "red")
+    assert code == 0 and payload["proof"]["result"]["passed"] is False
+    assert "AssertionError" in payload["proof"]["result"]["stderr"]
 
     # Implemented logging advances in-session even though status cannot recover its progress.
     logged_check = "import sys\nprint('checking', file=sys.stderr)\n" + check
@@ -391,12 +381,12 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert diagnostic["details"]["instructions"] == [2]
 
     # Final diff proof still names the transcription mismatch.
-    _write(repo, "src/greet.py", GREETING_TEXT.replace('"hello"', "'hello'", 1))
+    _write(repo, "src/greeting.txt", GREETING_TEXT.replace('"hello"', "'hello'", 1))
     code, payload = _prove(capsys, repo, blueprint, 3, "green", 1)
     diagnostic = payload["diagnostics"][0]
     assert (code, diagnostic["code"]) == (3, "step.attempt_failed")
     assert "attempt=2" in diagnostic["next_command"]["argv"]
-    greeting = next(item for item in diagnostic["details"]["mismatches"] if item["path"] == "src/greet.py")
+    greeting = next(item for item in diagnostic["details"]["mismatches"] if item["path"] == "src/greeting.txt")
     assert "-GREETING = \"hello\"" in greeting["diff"]
 
     # A diverged block refuses the whole instruction without writes, even its unapplied alias block.
@@ -405,12 +395,12 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert (code, payload["diagnostics"][0]["code"]) == (3, "apply.block_refused")
     assert (repo / "src/names.py").read_bytes() == names_before
     # The final faithful green returns authored after-verification directly.
-    (repo / "src/greet.py").unlink()
+    (repo / "src/greeting.txt").unlink()
     code, payload = _apply(capsys, repo, blueprint, 3)
     assert code == 0, payload
-    assert payload["apply"]["files"] == ["./src/names.py", "src/greet.py"]
+    assert payload["apply"]["files"] == ["./src/names.py", "src/greeting.txt"]
     assert (repo / "src/names.py").read_bytes() == b"def normalize(value):\n    return value if value is not None else ''\r\n    # greeting enabled\r\n"
-    assert (repo / "src/greet.py").read_bytes() == GREETING_TEXT.encode("utf-8")
+    assert (repo / "src/greeting.txt").read_bytes() == GREETING_TEXT.encode("utf-8")
     code, payload = _prove(capsys, repo, blueprint, 3, "green", 2)
     assert code == 0 and payload["proof"]["passed"] is True and payload["proof"]["next_instruction"] is None
     after_command = payload["proof"]["next_command"]
@@ -423,7 +413,6 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert verification["results"][0]["stdout_json"][-1]["errors"] == []
     assert verification["notices"][0]["slow"] is True
     assert verification["results"][0]["stderr"].strip() == "checking"
-    assert verification["results"][1]["stdout"].strip() == "mutant caught"
     # An undeclared failure keeps the local-repair reverify route.
     _write(repo, "tools/check.py", "import sys\nsys.exit(1)\n")
     code, payload = _run_phase(capsys, repo, blueprint, "after")
@@ -481,6 +470,7 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
 
     # Expose the diverged-step route rather than the specified-target drift guard.
     _write(repo, "tools/check.py", check)
+    (repo / "tests/test_check.py").unlink()
     # The final unused attempt fails with full output and diff; this run never restarts.
     _write(repo, "src/names.py", "def normalize(value):\n    return value or None\n")
     code, payload = _prove(capsys, repo, blueprint, 1, "green", 3)
@@ -519,7 +509,7 @@ RED_DELETION_PLAN = (
 
 
 def _overwrite_draft() -> str:
-    return """<!-- blueprint-contract: 1.0.4 -->
+    return """<!-- blueprint-contract: 1.1.0 -->
 # Blueprint: ignored overwrite proof
 
 ## Goal

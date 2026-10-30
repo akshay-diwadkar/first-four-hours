@@ -766,9 +766,10 @@
       "owner": "repository-contract"
     },
     {
-      "id": "wiki-publishing-workflow",
+      "id": "documentation-publishing",
       "path_prefixes": [
-        ".github/workflows/publish-wiki.yml"
+        ".github/workflows/publish-wiki.yml",
+        ".gitbook.yaml"
       ],
       "owner": "documentation-contract"
     },
@@ -842,7 +843,8 @@
     ".mapignore",
     ".map",
     "docs",
-    ".github"
+    ".github",
+    ".gitbook.yaml"
   ],
   "inventory": {
     "restricted_roots": [],

@@ -57,4 +57,4 @@ Tutor works alone. It can take conceptual gaps that [Examiner](examiner.md) foun
 
 ## Source
 
-[Tutor's contract](../../skills/learning/tutor/SKILL.md)
+[Tutor's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/learning/tutor/SKILL.md)

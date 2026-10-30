@@ -32,7 +32,6 @@ from test_ownership import validate as validate_test_ownership  # noqa: E402
 
 from tools.skill_protocol import validate_manifest  # noqa: E402
 from tools.skill_protocol.runtime import compatible_version  # noqa: E402
-from tools.wiki.publish_wiki import MARKDOWN_LINK_RE, wiki_errors  # noqa: E402
 
 SKILLS_ROOT = ROOT / "skills"
 ATLAS_STRUCTURE_SCRIPT = SKILLS_ROOT / "workbench" / "atlas" / "scripts" / "structure_state.py"
@@ -157,6 +156,11 @@ CONSTRUCT_INPUT_WIRING = {
 }
 LATEST_RELEASE_BADGE_RE = re.compile(r"\[!\[Latest Release\]\((?P<badge_url>[^)]+)\)\]\((?P<target_url>[^)]+)\)")
 LATEST_RELEASE_URL = "https://github.com/akshay-diwadkar/first-four-hours/releases/latest"
+MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\((?:<(?P<bracketed>[^>]+)>|(?P<plain>[^)\s]+))(?:\s+['\"][^)]*['\"])?\)")
+REPOSITORY_FILE_URL_PREFIXES = (
+    "https://github.com/akshay-diwadkar/first-four-hours/blob/main/",
+    "https://github.com/akshay-diwadkar/first-four-hours/tree/main/",
+)
 LEGACY_SCOPE_NAME = "scope" + "-issue"
 LEGACY_SCOPE_ALLOWED = {
     "skills/workbench/ticket/references/issue-plan-contract.json",
@@ -1243,9 +1247,10 @@ def validate_markdown_references(skill_dir: Path) -> list[str]:
 
 
 def validate_documentation_links() -> list[str]:
-    """Validate local Markdown links in the repository README and user documentation."""
+    """Validate local and repository GitHub links in the README and user documentation."""
     errors: list[str] = []
     repository_root = ROOT.resolve()
+    docs_root = (ROOT / "docs").resolve()
     documents: list[Path] = []
     if (ROOT / "README.md").is_file():
         documents.append(ROOT / "README.md")
@@ -1253,19 +1258,43 @@ def validate_documentation_links() -> list[str]:
         documents.extend(sorted((ROOT / "docs").rglob("*.md")))
     for document in documents:
         label = document.relative_to(ROOT).as_posix()
+        in_docs = document.resolve().is_relative_to(docs_root)
         for raw_target, target in _local_link_targets(document):
             if not target.is_relative_to(repository_root):
                 errors.append(f"{label}: local Markdown link escapes the repository: {raw_target}")
+            elif in_docs and not target.is_relative_to(docs_root):
+                errors.append(
+                    f"{label}: local Markdown link leaves docs/, which GitBook cannot follow; "
+                    f"link the file by its GitHub URL on main: {raw_target}"
+                )
             elif not target.exists():
                 errors.append(f"{label}: local Markdown link target does not exist: {raw_target}")
+        for match in MARKDOWN_LINK_RE.finditer(document.read_text(encoding="utf-8")):
+            raw_target = match.group("bracketed") or match.group("plain")
+            prefix = next((p for p in REPOSITORY_FILE_URL_PREFIXES if raw_target.startswith(p)), None)
+            if prefix is None:
+                continue
+            target = (repository_root / unquote(urlsplit(raw_target[len(prefix):]).path)).resolve()
+            if not target.is_relative_to(repository_root) or not target.exists():
+                errors.append(f"{label}: GitHub link target does not exist in this repository: {raw_target}")
     return errors
 
 
-def validate_wiki_publication() -> list[str]:
-    """Keep the user documentation publishable to the flat GitHub wiki."""
-    if not (ROOT / "docs").is_dir():
+def validate_gitbook_navigation() -> list[str]:
+    """Keep every documentation page listed in the GitBook table of contents."""
+    docs = ROOT / "docs"
+    if not docs.is_dir():
         return []
-    return [f"GitHub wiki: {error}" for error in wiki_errors(ROOT)]
+    summary = docs / "SUMMARY.md"
+    if not summary.is_file():
+        return ["docs/SUMMARY.md: missing, so GitBook would infer its own navigation"]
+    listed = {target for _, target in _local_link_targets(summary)}
+    errors: list[str] = []
+    for page in sorted(docs.rglob("*.md"), key=lambda path: path.relative_to(docs).as_posix()):
+        relative = page.relative_to(docs).as_posix()
+        if relative != "SUMMARY.md" and page.resolve() not in listed:
+            errors.append(f"docs/SUMMARY.md: does not list docs/{relative}, so it will not appear on GitBook")
+    return errors
 
 
 def validate_skill_protocol(skill_dir: Path) -> list[str]:
@@ -1568,7 +1597,7 @@ def main() -> int:
     errors.extend(validate_changelog())
     errors.extend(validate_readme_release_link())
     errors.extend(validate_documentation_links())
-    errors.extend(validate_wiki_publication())
+    errors.extend(validate_gitbook_navigation())
     errors.extend(validate_marketplace())
     errors.extend(validate_invocation_policy(skill_dirs=skills))
     errors.extend(validate_certified_platform_coverage())

@@ -50,4 +50,4 @@ Examiner works alone. When marking shows conceptual gaps, it may offer to contin
 
 ## Source
 
-[Examiner's contract](../../skills/learning/examiner/SKILL.md)
+[Examiner's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/learning/examiner/SKILL.md)

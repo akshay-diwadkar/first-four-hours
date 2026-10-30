@@ -37,6 +37,6 @@ These pages are for people who use First Four Hours. The skills themselves are i
 
 ## Other sources
 
-- The [repository README](../README.md) lists every skill by domain and shows how to install them.
+- The [repository README](https://github.com/akshay-diwadkar/first-four-hours/blob/main/README.md) lists every skill by domain and shows how to install them.
 - Each skill's `SKILL.md`, under `skills/<domain>/<skill>/`, is the contract its agent follows.
 - [Writing the documentation](contributing/documentation.md) explains how these pages are organized and the rules for changing them.

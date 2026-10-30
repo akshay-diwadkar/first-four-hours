@@ -48,4 +48,4 @@ If a check fails, PR repairs the draft or records the missing run and checks aga
 
 ## Source
 
-[PR's contract](../../skills/workbench/pr/SKILL.md)
+[PR's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/pr/SKILL.md)

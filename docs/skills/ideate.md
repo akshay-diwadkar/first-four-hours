@@ -53,4 +53,4 @@ Inside a Blueprint run, Ideate returns its result to the planner, who asks for y
 
 ## Source
 
-[Ideate's contract](../../skills/sensemaking/ideate/SKILL.md)
+[Ideate's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/ideate/SKILL.md)

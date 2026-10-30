@@ -27,6 +27,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Construct 1.1.1: ships the Blueprint 1.1.1 runtime copy, so it reports contract version 1.1.1. It still accepts every sealed 1.x plan.
 - Blueprint 1.1.2: when a plan changes a value that other files compare against, such as a version, constant, or identifier, Blueprint's guidance has the planner search the whole repository for the old value and read the last commit that changed it, so files that depend on the value are found before the plan is sealed. Before, only the edited paths and the tools that write derived records were searched.
 - Construct 1.1.2: ships the Blueprint 1.1.2 runtime copy, so it reports contract version 1.1.2. It still accepts every sealed 1.x plan.
+- Blueprint 1.1.3: a plan premise about an external service, such as a hosted platform, must rest on that service's current official documentation, including its recent changes, and the user is asked which of the service's modes they will use. A premise that no source settles goes to the user as a question instead of becoming an owner check after merge. Before, a plan could rely on older documentation for a setup the user did not choose.
+- Construct 1.1.3: ships the Blueprint 1.1.3 runtime copy, so it reports contract version 1.1.3. It still accepts every sealed 1.x plan.
 
 ## [1.0.0] - 2026-10-25
 

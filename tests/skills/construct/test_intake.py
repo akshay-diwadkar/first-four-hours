@@ -15,7 +15,7 @@ sys.path.insert(0, str(SCRIPTS))
 import blueprint_runtime  # noqa: E402
 import run_verification as runner  # noqa: E402
 
-DRAFT = """<!-- blueprint-contract: 1.1.1 -->
+DRAFT = blueprint_runtime.CONTRACT_MARKER + """
 # Blueprint: {name}
 
 ## Goal
@@ -106,26 +106,32 @@ def test_tampered_seal_receipt_fails_closed(tmp_path: Path, capsys: pytest.Captu
     code, payload = _run_phase(capsys, repo, blueprint, "after")
     assert (code, payload["diagnostics"][0]["code"]) == (3, "contract.unsupported")
     assert "contract 5" in payload["diagnostics"][0]["message"]
+    # Versions derive from the runtime, so a contract bump cannot collapse these cases.
+    current = blueprint_runtime.CONTRACT_VERSION
+    major, minor_number = (int(part) for part in current.split(".")[:2])
+    newer = f"{major}.{minor_number + 1}.0"
+    foreign = f"{major + 1}.0.0"
+    newer_marker = blueprint_runtime.CONTRACT_MARKER.replace(current, newer, 1)
     # A sealed contract of another major is named the same way.
-    blueprint.write_text("\n".join(["<!-- " "blueprint-contract: 2.0.0 -->", *lines[1:]]), encoding="utf-8")
+    blueprint.write_text("\n".join([blueprint_runtime.CONTRACT_MARKER.replace(current, foreign, 1), *lines[1:]]), encoding="utf-8")
     code, payload = _run_phase(capsys, repo, blueprint, "after")
     assert (code, payload["diagnostics"][0]["code"]) == (3, "contract.unsupported")
-    assert "contract 2.0.0 " in payload["diagnostics"][0]["message"]
+    assert f"contract {foreign} " in payload["diagnostics"][0]["message"]
     # A sealed plan from another minor of the same Blueprint major passes Construct verification, but a draft must carry exactly this runtime's marker.
     minor_repo = _repo(tmp_path, "minor")
-    minor_draft = DRAFT.format(name="minor").replace("blueprint-contract: 1.1.1 -->", "blueprint-contract: 1.4.0 -->", 1)
+    minor_draft = DRAFT.format(name="minor").replace(blueprint_runtime.CONTRACT_MARKER, newer_marker, 1)
     with monkeypatch.context() as producer:
-        producer.setattr(blueprint_runtime, "CONTRACT_VERSION", "1.4.0")
-        producer.setattr(blueprint_runtime, "CONTRACT_MARKER", "<!-- " "blueprint-contract: 1.4.0 -->")
+        producer.setattr(blueprint_runtime, "CONTRACT_VERSION", newer)
+        producer.setattr(blueprint_runtime, "CONTRACT_MARKER", newer_marker)
         minor = _seal(minor_repo, "minor", minor_draft)
-    assert blueprint_runtime.CONTRACT_VERSION == "1.1.1"
+    assert blueprint_runtime.CONTRACT_VERSION == current
     minor_lines = minor.read_text(encoding="utf-8").splitlines()
-    assert minor_lines[0] == "<!-- " "blueprint-contract: 1.4.0 -->"
-    assert json.loads(minor_lines[-2].removeprefix("<!-- " "blueprint-proof: ").removesuffix(" -->"))["version"] == "1.4.0"
-    assert minor_lines[-1].startswith("<!-- " "blueprint-validation: 1.4.0; ")
+    assert minor_lines[0] == newer_marker
+    assert json.loads(minor_lines[-2].removeprefix("<!-- " "blueprint-proof: ").removesuffix(" -->"))["version"] == newer
+    assert minor_lines[-1].startswith("<!-- " "blueprint-validation: " f"{newer}; ")
     code, payload = _run_phase(capsys, minor_repo, minor, "before")
     assert (code, payload["verification"]["results"]) == (0, []), payload
-    future = DRAFT.format(name="future").replace("blueprint-contract: 1.1.1 -->", "blueprint-contract: 1.4.0 -->", 1)
+    future = DRAFT.format(name="future").replace(blueprint_runtime.CONTRACT_MARKER, newer_marker, 1)
     assert future != DRAFT.format(name="future")
     with pytest.raises(ValueError):
         _seal(repo, "future", future)

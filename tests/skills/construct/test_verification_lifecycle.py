@@ -79,7 +79,7 @@ TEST_CHECK = (
     "assert 'checking' in done.stderr, done.stderr\n"
 )
 GREETING_TEXT = 'GREETING = "hello"\nPAYLOAD = """left\vtab\fform\x85nel\u2028line\u2029paragraph\rreturn"""\n'
-STEP_PLAN = """<!-- blueprint-contract: 1.1.1 -->
+STEP_PLAN = blueprint_runtime.CONTRACT_MARKER + """
 # Blueprint: specified steps
 
 ## Goal
@@ -161,7 +161,7 @@ Expect: the final record reports an empty errors list.
 - The greeting module exists.
 - Every repository check invocation prints checking to stderr.
 """
-UNAVAILABLE_PLAN = """<!-- blueprint-contract: 1.1.1 -->
+UNAVAILABLE_PLAN = blueprint_runtime.CONTRACT_MARKER + """
 # Blueprint: unavailable proof
 
 ## Goal
@@ -509,7 +509,7 @@ RED_DELETION_PLAN = (
 
 
 def _overwrite_draft() -> str:
-    return """<!-- blueprint-contract: 1.1.1 -->
+    return blueprint_runtime.CONTRACT_MARKER + """
 # Blueprint: ignored overwrite proof
 
 ## Goal

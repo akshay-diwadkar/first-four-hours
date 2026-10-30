@@ -44,7 +44,7 @@ Before sealing, the challenger reads the draft the way a faithful executor with 
 /construct : Implement the sealed blueprint in .first-four-hours/blueprints/search-rate-limit/blueprint.md.
 ```
 
-Construct checks that the cited files have not changed since planning, then applies the steps in order. It writes the planner's test exactly as given, sees it fail on today's code and pass after the change, runs the plan's verification, and compares the final diff with the plan. Its report ends with one pending item, the owner gate: the operations lead must confirm the limit suits production traffic. Nothing is committed until you decide.
+Construct checks that the cited files have not changed since planning, then applies the steps in order. It writes the test from the cases the plan describes, each with its input, expected result, and the wrong implementation it rejects, sees it fail on today's code and pass after the change, runs the plan's verification, and compares the final diff with the plan. Its report ends with one pending item, the owner gate: the operations lead must confirm the limit suits production traffic. Nothing is committed until you decide.
 
 ## You are done when
 

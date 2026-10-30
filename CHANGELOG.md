@@ -20,6 +20,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Architect 1.0.1: in a Git worktree with no commits, the architecture snapshot now covers only tracked and non-ignored untracked files (plus the contents of nested repositories and submodules), so dependency installs, tool caches, and build output that Git ignores no longer stale a sealed handoff, and checks no longer walk them. A handoff sealed by Architect 1.0.0 in such a worktree that no longer matches is refused with a message to reseal it with Architect.
 - Blueprint 1.0.2: ships the Architect 1.0.1 handoff verifier, so a no-HEAD architecture handoff stays current across Git-ignored output.
 - Construct 1.0.2: ships the Blueprint 1.0.2 runtime copy, so it reports contract version 1.0.2. It still accepts every sealed 1.x plan.
+- Diagnose 1.0.2: seals in a Git worktree whose branch has no commit yet. Such a snapshot keeps its Git identity and declares `revision: null`, which is accepted only when the worktree has no HEAD commit; `history` evidence is refused there because it needs a commit. Its diagnosis contract version is now 1.0.2; Blueprint and Construct still accept every 1.x diagnosis.
 
 ## [1.0.0] - 2026-10-25
 

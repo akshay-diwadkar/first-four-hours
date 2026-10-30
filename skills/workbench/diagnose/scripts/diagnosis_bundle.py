@@ -82,7 +82,7 @@ class DiagnosisBundleError(Exception):
 class BindingProof:
     """Captured objective facts used for the final pre-publication recheck."""
 
-    snapshot: dict[str, str]
+    snapshot: dict[str, str | None]
     bindings: tuple[tuple[str, str], ...]
     opened_paths: tuple[str, ...]
     git_commands: tuple[tuple[str, ...], ...]
@@ -346,7 +346,9 @@ def validate_diagnosis_bundle(raw: Any) -> list[str]:
     _string(snapshot, "project_root", "diagnosis_context.snapshot", errors, single_line=True)
     if snapshot_kind == "git":
         _string(snapshot, "repository_id", "diagnosis_context.snapshot", errors, single_line=True)
-        _git_object(snapshot.get("revision"), "diagnosis_context.snapshot.revision", errors)
+        revision = snapshot.get("revision")
+        if "revision" not in snapshot or (revision is not None and (not isinstance(revision, str) or GIT_OBJECT_RE.fullmatch(revision) is None)):
+            errors.append("diagnosis_context.snapshot.revision must be a full lowercase Git object ID, or null without a HEAD commit")
     material_surfaces = _objects(context.get("material_surfaces"), "diagnosis_context.material_surfaces", errors)
     material_key_owners: dict[tuple[str, int, int], int] = {}
     for index, surface in enumerate(material_surfaces):
@@ -448,7 +450,7 @@ class _RepositoryView:
         self.opened_paths: list[str] = []
         self.git_commands: list[tuple[str, ...]] = []
         self.is_git = False
-        self.actual_snapshot: dict[str, str] = {}
+        self.actual_snapshot: dict[str, str | None] = {}
 
     def _git(self, *args: str) -> subprocess.CompletedProcess[bytes]:
         self.git_commands.append(tuple(args))
@@ -475,15 +477,22 @@ class _RepositoryView:
         if inside.returncode == 0 and inside.stdout.strip() == b"true":
             self.is_git = True
             values: list[str] = []
-            for args in (("rev-parse", "--show-toplevel"), ("rev-parse", "--git-common-dir"), ("rev-parse", "HEAD")):
+            for args in (("rev-parse", "--show-toplevel"), ("rev-parse", "--git-common-dir")):
                 result = self._git(*args)
                 if result.returncode != 0:
                     return [f"diagnosis_context.snapshot could not inspect Git {' '.join(args)}"]
                 values.append(result.stdout.decode("utf-8", errors="strict").strip())
+            # An unborn branch has no HEAD commit; only a symbolic HEAD distinguishes it from a broken one.
+            revision: str | None = None
+            head = self._git("rev-parse", "--verify", "--quiet", "HEAD")
+            if head.returncode == 0:
+                revision = head.stdout.decode("utf-8", errors="strict").strip()
+            elif head.returncode != 1 or self._git("symbolic-ref", "--quiet", "HEAD").returncode != 0:
+                return ["diagnosis_context.snapshot could not inspect Git HEAD"]
             common = Path(values[1])
             if not common.is_absolute():
                 common = self.root / common
-            self.actual_snapshot = {"kind": "git", "project_root": str(Path(values[0]).resolve()), "repository_id": str(common.resolve()), "revision": values[2]}
+            self.actual_snapshot = {"kind": "git", "project_root": str(Path(values[0]).resolve()), "repository_id": str(common.resolve()), "revision": revision}
         else:
             if self._has_git_marker():
                 return ["diagnosis_context.snapshot has a Git marker but Git identity is unavailable"]
@@ -552,6 +561,8 @@ class _RepositoryView:
     def read_history(self, revision: str, raw: str, label: str) -> tuple[bytes | None, str | None]:
         if not self.is_git:
             return None, f"{label} requires a Git snapshot"
+        if self.actual_snapshot.get("revision") is None:
+            return None, f"{label} cannot cite Git history: the worktree has no HEAD commit"
         reserved = self.workspace_error(raw, label)
         if reserved:
             return None, reserved

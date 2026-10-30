@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -40,7 +41,7 @@ def _snapshot(repo: Path) -> dict[str, str]:
     return {"kind": "filesystem", "project_root": str(repo.resolve())}
 
 
-def _bundle(repo: Path, *, snapshot: dict[str, str] | None = None) -> dict[str, Any]:
+def _bundle(repo: Path, *, snapshot: dict[str, Any] | None = None) -> dict[str, Any]:
     source = (repo / "src" / "service.py").read_bytes()
     return {
         "schema_version": "1.0.0",
@@ -74,6 +75,16 @@ def _bundle(repo: Path, *, snapshot: dict[str, str] | None = None) -> dict[str, 
             }
         ],
     }
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=Diagnose Test", "-c", "user.email=diagnose@example.invalid", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", "-c", "init.defaultRefFormat=files", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
 
 
 def _bind(bundle: dict[str, Any], repo: Path):
@@ -137,3 +148,67 @@ def test_authored_digest_drift_is_rejected(tmp_path: Path) -> None:
     assert errors == [
         "findings[0].evidence[1].sha256 does not match the declared capture bytes"
     ]
+
+    # A Git worktree whose branch has no commit keeps Git identity with a null revision.
+    _git(repo, "init", "-q", "-b", "main")
+    unborn = {
+        "kind": "git",
+        "project_root": str(repo.resolve()),
+        "repository_id": str((repo / ".git").resolve()),
+        "revision": None,
+    }
+    git_bundle = _bundle(repo, snapshot=dict(unborn))
+    errors, proof = _bind(git_bundle, repo)
+    assert errors == []
+    assert proof is not None and proof.snapshot == unborn
+    # The revision stays required: an omitted key is not a null revision.
+    del git_bundle["diagnosis_context"]["snapshot"]["revision"]
+    errors, _proof = _bind(git_bundle, repo)
+    assert errors == [
+        "diagnosis_context.snapshot.revision must be a full lowercase Git object ID, or null without a HEAD commit"
+    ]
+    # History needs a commit; the current-file evidence beside it still binds.
+    git_bundle["diagnosis_context"]["snapshot"]["revision"] = None
+    git_bundle["findings"][0]["evidence"].append(
+        {
+            "kind": "history",
+            "path": "src/service.py",
+            "start_line": 2,
+            "end_line": 2,
+            "revision": None,
+            "observation": "History is cited before any commit exists.",
+        }
+    )
+    errors, _proof = _bind(git_bundle, repo)
+    assert errors == ["findings[0].evidence[1].revision must be a full lowercase Git object ID"]
+    git_bundle["findings"][0]["evidence"][1]["revision"] = "0" * 40
+    errors, _proof = _bind(git_bundle, repo)
+    assert errors == ["findings[0].evidence[1] cannot cite Git history: the worktree has no HEAD commit"]
+    git_bundle["findings"][0]["evidence"].pop()
+
+    # Once HEAD has a commit, null or another revision cannot stand in for it.
+    _git(repo, "add", "src/service.py")
+    _git(repo, "commit", "-q", "--no-verify", "-m", "fixture")
+    head = _git(repo, "rev-parse", "HEAD")
+    mismatch = f"diagnosis_context.snapshot.revision does not match the inspected project (expected {head!r})"
+    errors, _proof = _bind(git_bundle, repo)
+    assert errors == [mismatch]
+    git_bundle["diagnosis_context"]["snapshot"]["revision"] = "0" * 40
+    errors, _proof = _bind(git_bundle, repo)
+    assert errors == [mismatch]
+    git_bundle["diagnosis_context"]["snapshot"]["revision"] = head
+    errors, _proof = _bind(git_bundle, repo)
+    assert errors == []
+
+    # A HEAD that Git cannot resolve is an identity failure, not an unborn branch.
+    broken = tmp_path / "broken"
+    _fixture_repo(broken)
+    _git(broken, "init", "-q", "-b", "main")
+    (broken / ".git" / "refs" / "heads" / "main").write_text("notasha\n", encoding="utf-8")
+    broken_snapshot = {
+        **unborn,
+        "project_root": str(broken.resolve()),
+        "repository_id": str((broken / ".git").resolve()),
+    }
+    errors, _proof = _bind(_bundle(broken, snapshot=broken_snapshot), broken)
+    assert errors == ["diagnosis_context.snapshot could not inspect Git HEAD"]

@@ -105,4 +105,4 @@ Blueprint can plan from a [Diagnose](diagnose.md) finding, an [Architect](archit
 
 ## Source
 
-[Blueprint's contract](../../skills/workbench/blueprint/SKILL.md)
+[Blueprint's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/blueprint/SKILL.md)

@@ -46,4 +46,4 @@ Only your later yes starts a step. You run the prompt for a user-invoked skill, 
 
 ## Source
 
-[Router's contract](../../skills/sensemaking/router/SKILL.md)
+[Router's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/router/SKILL.md)

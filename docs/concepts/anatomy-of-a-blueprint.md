@@ -2,7 +2,7 @@
 
 A sealed `blueprint.md` is the file a weaker agent will carry out without making engineering decisions of its own, so every part of it has a job. This page walks through one plan, section by section, and says why each part is there.
 
-The plan is illustrative. It belongs to Larder, the made-up online grocery service the [recipes](../recipes/README.md) follow, and it is shortened. The format is real; [Blueprint's README](../../skills/workbench/blueprint/README.md) owns its exact rules.
+The plan is illustrative. It belongs to Larder, the made-up online grocery service the [recipes](../recipes/README.md) follow, and it is shortened. The format is real; [Blueprint's README](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/blueprint/README.md) owns its exact rules.
 
 ## The request
 

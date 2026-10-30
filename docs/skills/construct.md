@@ -52,4 +52,4 @@ Fix review findings the same way: plan the fix with a new Blueprint and apply it
 
 ## Source
 
-[Construct's contract](../../skills/workbench/construct/SKILL.md)
+[Construct's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/construct/SKILL.md)

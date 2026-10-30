@@ -47,4 +47,4 @@ You decide what comes next: [Ideate](ideate.md) to explore options, [Blueprint](
 
 ## Source
 
-[Diagnose's contract](../../skills/workbench/diagnose/SKILL.md)
+[Diagnose's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/diagnose/SKILL.md)

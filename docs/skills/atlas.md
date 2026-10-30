@@ -46,4 +46,4 @@ When work moves, renames, deletes, or changes the meaning of a file that a point
 
 ## Source
 
-[Atlas's contract](../../skills/workbench/atlas/SKILL.md)
+[Atlas's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/atlas/SKILL.md)

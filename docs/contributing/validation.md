@@ -1,6 +1,6 @@
 # Validate a repository change
 
-Return to the [contributor guide](README.md) for the change workflow. The [versioning and validation policy](../../REPO_VERSIONING.md) owns required proof and its limits. The [ownership manifest](../../tools/validation/test-ownership.json) maps paths to finite profiles, the [runner](../../tools/validation/test_ownership.py) executes them, and the [budget supervisor](../../tools/validation/validation_budget.py) enforces the public deadline and cleanup.
+Return to the [contributor guide](README.md) for the change workflow. The [versioning and validation policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) owns required proof and its limits. The [ownership manifest](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/test-ownership.json) maps paths to finite profiles, the [runner](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/test_ownership.py) executes them, and the [budget supervisor](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/validation_budget.py) enforces the public deadline and cleanup.
 
 Select validation from the changed surfaces and affected behavior. Domain membership alone never broadens testing.
 
@@ -8,13 +8,13 @@ Select validation from the changed surfaces and affected behavior. Domain member
 
 Inspect existing tests and owner profiles first. Reuse sufficient deterministic proof. Add a test only for a named realistic defect or uncovered acceptance behavior, and briefly explain the gap and the wrong result it catches in the PR description.
 
-Skill-specific tests, including integrations, belong under `tests/skills/<skill>/`. Shared tests under `tests/repository/` or `tests/skill_protocol/` protect genuinely common mechanisms. The [testing policy](../../REPO_VERSIONING.md) defines the collected-case ceilings per skill, for shared coverage, and for the complete suite, including parametrized rows, as well as the runtime bounds.
+Skill-specific tests, including integrations, belong under `tests/skills/<skill>/`. Shared tests under `tests/repository/` or `tests/skill_protocol/` protect genuinely common mechanisms. The [testing policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) defines the collected-case ceilings per skill, for shared coverage, and for the complete suite, including parametrized rows, as well as the runtime bounds.
 
 A ceiling is not a quota. When slots are full, strengthen an existing coherent scenario or replace lower-value coverage while preserving essential proof. Do not hide independent cases in loops or move skill-specific coverage into the shared allowance. Reason is instruction-only; shared metadata, reference, and authority checks cover it without artificial runtime tests.
 
 ## Select, then run
 
-Run the examples below from the repository root after the setup in [Contributing](../../CONTRIBUTING.md). They illustrate command syntax, not recorded results. The `origin/main` examples assume that it is the intended, freshly updated comparison base; use the actual base for your branch.
+Run the examples below from the repository root after the setup in [Contributing](https://github.com/akshay-diwadkar/first-four-hours/blob/main/CONTRIBUTING.md). They illustrate command syntax, not recorded results. The `origin/main` examples assume that it is the intended, freshly updated comparison base; use the actual base for your branch.
 
 Inspect selection before running the affected profiles:
 
@@ -46,7 +46,7 @@ python tools/validation/test_ownership.py run --base-ref origin/main --test test
 
 ## Finish required verification
 
-The required run combines the selected owner profiles with the complete repository validator and critical instruction-rule checks. Each live pytest module needs a whole-module owner target, so new cases enter the full gate. The runner collects the selected union once to enforce case limits, then executes it under the supervisor. The [runner source](../../tools/validation/test_ownership.py) owns execution details.
+The required run combines the selected owner profiles with the complete repository validator and critical instruction-rule checks. Each live pytest module needs a whole-module owner target, so new cases enter the full gate. The runner collects the selected union once to enforce case limits, then executes it under the supervisor. The [runner source](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/test_ownership.py) owns execution details.
 
 Use the complete union for the final-revision full proof required by policy:
 
@@ -62,7 +62,7 @@ After a failure or repair, automatically run only invalidated checks and previou
 
 A dry run's `plan.valid: true` and empty selection errors establish that the selection is accepted. They do not mean the tests ran.
 
-A passing execution requires successful executed checks and a final `validation-budget` record with `status: passed`, `complete: true`, and a successful worker. A completed pass with `slow: true` remains passing; it exceeded the advisory target. The [policy](../../REPO_VERSIONING.md) owns the advisory target and hard deadline, and the [supervisor](../../tools/validation/validation_budget.py) owns enforcement.
+A passing execution requires successful executed checks and a final `validation-budget` record with `status: passed`, `complete: true`, and a successful worker. A completed pass with `slow: true` remains passing; it exceeded the advisory target. The [policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) owns the advisory target and hard deadline, and the [supervisor](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/validation_budget.py) owns enforcement.
 
 Failed, skipped, unexecuted, deadline-exhausted, or cleanup-incomplete work never counts as passing. Keep the actual result and any missing proof in the report. Unknown, deferred, overlapping, unsafe, or policy-drift paths fail closed: repair the actual ownership or policy mismatch before rerunning. Do not use fallback selection.
 
@@ -72,7 +72,7 @@ Run only one bounded validation command in a checkout at a time. A `verification
 
 Use the measured cost of fixtures, subprocesses, and repeated setup to choose a repair. Reduce that work, reuse immutable setup with isolated case copies, or remove or replace demonstrably redundant proof. Preserve essential operations, refusals, installed and integration behavior, and the current supervised runner. A permanent telemetry or benchmark framework is not part of routine validation.
 
-Keep the [maintained ceilings](../../REPO_VERSIONING.md). Do not raise deadlines, weaken required proof, or append another broad suite to accommodate growth. Parametrization alone does not save runtime unless setup work is reduced. A `pytest.raises` check protects behavior even without a literal `assert`; blanket documentation-test deletion is likewise unjustified.
+Keep the [maintained ceilings](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md). Do not raise deadlines, weaken required proof, or append another broad suite to accommodate growth. Parametrization alone does not save runtime unless setup work is reduced. A `pytest.raises` check protects behavior even without a literal `assert`; blanket documentation-test deletion is likewise unjustified.
 
 The repository uses no live model, provider, or agent harness. Deterministic tests establish the mechanics and evidence they exercise, not semantic scores or universal agent performance.
 
@@ -90,8 +90,8 @@ Read each affected skill's `top_level` and `references` metrics from the first s
 python tools/validation/measure_context_load.py --check
 ```
 
-The [measurement source](../../tools/validation/measure_context_load.py) and [recorded budgets](../../tools/validation/context-load-budgets.json) own these facts. Planning traps in the [versioning policy](../../REPO_VERSIONING.md) explain draft `--blueprint` estimation, its Exact-only coverage, and the headroom required before execution. Estimate from the draft without applying it to a copy of the tree.
+The [measurement source](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/measure_context_load.py) and [recorded budgets](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/context-load-budgets.json) own these facts. Planning traps in the [versioning policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) explain draft `--blueprint` estimation, its Exact-only coverage, and the headroom required before execution. Estimate from the draft without applying it to a copy of the tree.
 
-Remove sediment, consolidate meaning, and move exceptional detail behind precise references. Preserve required meaning and the [pinned instruction clauses](../../tests/repository/mandatory_skill_rules.json); do not raise budgets or compress away behavior to fit. The [instruction checker](../../tools/validation/instruction_rules.py) already runs through required validation.
+Remove sediment, consolidate meaning, and move exceptional detail behind precise references. Preserve required meaning and the [pinned instruction clauses](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tests/repository/mandatory_skill_rules.json); do not raise budgets or compress away behavior to fit. The [instruction checker](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/instruction_rules.py) already runs through required validation.
 
 A PR is ready for review only with complete required proof, policy-correct versions, affected projections and documentation updated, and remaining owner judgments or limitations disclosed. A machine pass cannot settle the usefulness or factual meaning of authored guidance. Report that distinction honestly.

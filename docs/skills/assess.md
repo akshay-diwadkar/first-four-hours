@@ -55,4 +55,4 @@ Findings usually lead to a new Blueprint and a fresh Construct run. See [How ski
 
 ## Source
 
-[Assess's contract](../../skills/workbench/assess/SKILL.md)
+[Assess's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/assess/SKILL.md)

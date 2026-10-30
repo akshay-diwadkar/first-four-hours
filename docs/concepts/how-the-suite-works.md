@@ -35,13 +35,13 @@ Every skill belongs to one of three domains. The domains help you understand the
 | Sensemaking | Getting ready to decide: reasoning, exploring options, writing technical documents, and coordinating which skill comes next. |
 | Learning | Building a person's own knowledge and ability in any subject, technical or not. |
 
-Domains are not a pipeline, and they do not decide routing: `router` works with the individual skills. A skill's folder, `skills/<domain>/<skill>/`, records its domain. The [skill index](../skills/README.md) and the [repository README](../../README.md) list current membership.
+Domains are not a pipeline, and they do not decide routing: `router` works with the individual skills. A skill's folder, `skills/<domain>/<skill>/`, records its domain. The [skill index](../skills/README.md) and the [repository README](https://github.com/akshay-diwadkar/first-four-hours/blob/main/README.md) list current membership.
 
 ## Where the truth lives
 
 This documentation explains; it does not define behavior. When a page here disagrees with one of these sources, the source wins and the page needs fixing:
 
 - a skill's `SKILL.md` and its `references/` are the contract its agent follows;
-- [the skill design philosophy](../../SKILL_PHILOSOPHY.md) is the doctrine every skill is designed against;
-- [the versioning and validation policy](../../REPO_VERSIONING.md) owns versions, tests, and validation;
+- [the skill design philosophy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/SKILL_PHILOSOPHY.md) is the doctrine every skill is designed against;
+- [the versioning and validation policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) owns versions, tests, and validation;
 - in your own project, the current files are the truth, and the skills tell the agent to read them rather than rely on memory.

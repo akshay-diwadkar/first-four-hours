@@ -62,7 +62,7 @@ These results are correct answers, not failures:
 
 ## Repository validation did not pass
 
-This entry is for contributors running the repository's required validation. [The versioning and validation policy](../../REPO_VERSIONING.md) owns the command, its limits, and how to repair, rerun, and handle a slow run. Read the verdict from the final `validation-budget` record the command prints, not from earlier output.
+This entry is for contributors running the repository's required validation. [The versioning and validation policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) owns the command, its limits, and how to repair, rerun, and handle a slow run. Read the verdict from the final `validation-budget` record the command prints, not from earlier output.
 
 | Record | Meaning |
 | :--- | :--- |

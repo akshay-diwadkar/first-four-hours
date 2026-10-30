@@ -53,71 +53,34 @@ def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
     assert len(errors) == 1
     assert "does not exist: skills/README.md" in errors[0]
 
-    # The documentation stays publishable to the flat GitHub wiki: every page has
-    # one H1 title naming a unique wiki page, and links are rewritten for the wiki.
-    from tools.wiki import publish_wiki
-
+    # GitBook reads only docs/: links to other repository files use their GitHub URL on
+    # main, which must name an existing path, and docs/SUMMARY.md lists every page.
+    repository_url = "https://github.com/akshay-diwadkar/first-four-hours"
     (tmp_path / "REPO_VERSIONING.md").write_text("# Policy\n", encoding="utf-8")
-    pages = {
-        "README.md": "# Docs\n\n[Install](guide/install.md#cursor), [rules](../REPO_VERSIONING.md \"Policy\"), "
-        "[top](#docs), [site](https://example.com/x.md), [gone](guide/gone.md)\n",
-        "guide/install.md": "```text\n# Not a title\n```\n\n# Install it\n",
-        "skills/README.md": "# install  it\n",
-        "notes.md": "No title here.\n",
-        "bad.md": "# A/B\n",
-    }
-    for relative, text in pages.items():
-        page = tmp_path / "docs" / relative
-        page.parent.mkdir(parents=True, exist_ok=True)
-        page.write_text(text, encoding="utf-8")
-    assert sorted(validator.validate_wiki_publication()) == [
-        "GitHub wiki: docs/bad.md: title 'A/B' cannot name a wiki page",
-        "GitHub wiki: docs/notes.md: has no H1 title",
-        "GitHub wiki: docs/skills/README.md: wiki page name 'install-it' is also used by docs/guide/install.md",
-    ]
-    built, errors = publish_wiki.build_pages(tmp_path, "owner/repo", "main")
-    assert built == {}
-    assert "docs/README.md: link target does not exist: guide/gone.md" in errors
-    for relative in ("skills/README.md", "notes.md", "bad.md"):
-        (tmp_path / "docs" / relative).unlink()
-    # A link error alone still blocks publication.
-    assert validator.validate_wiki_publication() == []
-    built, errors = publish_wiki.build_pages(tmp_path, "owner/repo", "main")
-    assert built == {}
-    assert errors == ["docs/README.md: link target does not exist: guide/gone.md"]
-    # Without docs/README.md the wiki would have no Home page.
-    (tmp_path / "docs" / "README.md").unlink()
-    assert validator.validate_wiki_publication() == [
-        "GitHub wiki: docs/README.md: missing, so the wiki has no Home page"
-    ]
+    (tmp_path / "docs" / "guide").mkdir()
+    (tmp_path / "docs" / "guide" / "install.md").write_text("# Install it\n", encoding="utf-8")
     (tmp_path / "docs" / "README.md").write_text(
-        pages["README.md"].replace(", [gone](guide/gone.md)", ""), encoding="utf-8"
+        "# Docs\n\n[Install](guide/install.md#cursor), [rules](../REPO_VERSIONING.md), "
+        f"[page]({repository_url}/blob/main/docs/guide/install.md#x), [folder]({repository_url}/tree/main/docs/guide), "
+        f"[gone]({repository_url}/blob/main/GONE.md), [site](https://example.com/x.md)\n",
+        encoding="utf-8",
     )
-    assert validator.validate_wiki_publication() == []
-    built, errors = publish_wiki.build_pages(tmp_path, "owner/repo", "main")
-    assert errors == []
-    assert sorted(built) == ["Home", "Install-it"]
-    assert built["Home"] == (
-        "<!-- Generated from docs/README.md by tools/wiki/publish_wiki.py. Edit that file in the repository; "
-        "changes made on the wiki are overwritten. -->\n"
-        "# Docs\n\n[Install](https://github.com/owner/repo/wiki/Install-it#cursor), "
-        "[rules](https://github.com/owner/repo/blob/main/REPO_VERSIONING.md \"Policy\"), "
-        "[top](#docs), [site](https://example.com/x.md)\n"
-    )
-
-    # The command writes exactly the built live pages, LF-only, and never into an existing folder.
-    live, errors = publish_wiki.build_pages(ROOT, "owner/repo", "main")
-    assert errors == []
-    output = tmp_path / "wiki-pages"
-    arguments = ["--repository", "owner/repo", "--branch", "main", "--output", str(output)]
-    assert publish_wiki.main(arguments) == 0
-    assert sorted(path.name for path in output.iterdir()) == sorted(f"{name}.md" for name in live)
-    assert "Home" in live
-    for name, text in live.items():
-        assert (output / f"{name}.md").read_bytes() == text.encode("utf-8")
-    (output / "Home.md").unlink()
-    assert publish_wiki.main(arguments) == 1
-    assert not (output / "Home.md").exists()
+    assert validator.validate_documentation_links() == [
+        "docs/README.md: local Markdown link leaves docs/, which GitBook cannot follow; "
+        "link the file by its GitHub URL on main: ../REPO_VERSIONING.md",
+        f"docs/README.md: GitHub link target does not exist in this repository: {repository_url}/blob/main/GONE.md",
+    ]
+    summary = tmp_path / "docs" / "SUMMARY.md"
+    summary.write_text("# Table of contents\n\n* [Docs](README.md)\n", encoding="utf-8")
+    assert validator.validate_gitbook_navigation() == [
+        "docs/SUMMARY.md: does not list docs/guide/install.md, so it will not appear on GitBook"
+    ]
+    summary.write_text(summary.read_text(encoding="utf-8") + "* [Install it](guide/install.md)\n", encoding="utf-8")
+    assert validator.validate_gitbook_navigation() == []
+    summary.unlink()
+    assert validator.validate_gitbook_navigation() == [
+        "docs/SUMMARY.md: missing, so GitBook would infer its own navigation"
+    ]
 
     # Documentation names only declared handoff folders and active skill paths,
     # and the handoff page names every declared folder.

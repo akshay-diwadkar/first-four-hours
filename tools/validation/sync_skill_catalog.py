@@ -179,13 +179,13 @@ def skill_facts_table() -> str:
                 else "none"
             )
             packages = (
-                f"[`requirements.txt`](../../{rel}/requirements.txt)"
+                f"[`requirements.txt`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/{rel}/requirements.txt)"
                 if (ROOT / rel / "requirements.txt").is_file()
                 else "none"
             )
             mode = policy.get(name, "unknown")
             lines.append(
-                f"| [`{name}`](../skills/{name}.md) | {domain} | [`{rel}/`](../../{rel}/SKILL.md) | `{mode}` | {python} | {packages} |"
+                f"| [`{name}`](../skills/{name}.md) | {domain} | [`{rel}/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/{rel}/SKILL.md) | `{mode}` | {python} | {packages} |"
             )
     return "\n".join(lines) + "\n"
 

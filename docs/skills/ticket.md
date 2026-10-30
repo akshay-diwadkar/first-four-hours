@@ -51,4 +51,4 @@ Blueprint plans from a `plan-ready` ticket scope. See [How skills hand work to e
 
 ## Source
 
-[Ticket's contract](../../skills/workbench/ticket/SKILL.md)
+[Ticket's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/ticket/SKILL.md)

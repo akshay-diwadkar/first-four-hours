@@ -54,4 +54,4 @@ Reason is an internal checkpoint of the skills that consult it, not a stage you 
 
 ## Source
 
-[Reason's contract](../../skills/sensemaking/reason/SKILL.md)
+[Reason's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/reason/SKILL.md)

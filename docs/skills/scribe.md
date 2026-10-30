@@ -49,4 +49,4 @@ See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 
-[Scribe's contract](../../skills/sensemaking/scribe/SKILL.md)
+[Scribe's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/scribe/SKILL.md)

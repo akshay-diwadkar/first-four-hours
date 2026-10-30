@@ -53,4 +53,4 @@ Charter stops in `settling` when the purpose has no observable success yet, or w
 
 ## Source
 
-[Charter's contract](../../skills/workbench/charter/SKILL.md)
+[Charter's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/charter/SKILL.md)

@@ -47,7 +47,7 @@ If you want to learn a subject rather than change code, start with [Tutor](../sk
 
 ## How skills start
 
-Each skill has a mode that controls whether the agent may start it, recorded in [the invocation policy](../../invocation-policy.json).
+Each skill has a mode that controls whether the agent may start it, recorded in [the invocation policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/invocation-policy.json).
 
 | Mode | Skills | How it starts |
 | :--- | :--- | :--- |

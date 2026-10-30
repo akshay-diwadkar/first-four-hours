@@ -47,4 +47,4 @@ Blueprint plans around the direction in `architecture.md`; starting Blueprint is
 
 ## Source
 
-[Architect's contract](../../skills/workbench/architect/SKILL.md)
+[Architect's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/architect/SKILL.md)

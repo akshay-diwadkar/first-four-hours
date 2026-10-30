@@ -4,7 +4,7 @@ Use this guide to locate the owner of a change, update its affected surfaces, an
 
 ## Start here
 
-Set up the validation environment through [Contributing](../../CONTRIBUTING.md). Read the [agent working rules](../../AGENTS.md) when an agent makes the change, the [skill design philosophy](../../SKILL_PHILOSOPHY.md) before designing or reviewing a skill, and the [versioning and validation policy](../../REPO_VERSIONING.md) for branches, versions, tests, and required proof.
+Set up the validation environment through [Contributing](https://github.com/akshay-diwadkar/first-four-hours/blob/main/CONTRIBUTING.md). Read the [agent working rules](https://github.com/akshay-diwadkar/first-four-hours/blob/main/AGENTS.md) when an agent makes the change, the [skill design philosophy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/SKILL_PHILOSOPHY.md) before designing or reviewing a skill, and the [versioning and validation policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) for branches, versions, tests, and required proof.
 
 These sources and the affected skill contract provide the contribution requirements. You do not need to reconstruct issue history.
 
@@ -33,7 +33,7 @@ Domains organize the source and catalog. Invocation authority stays with each ca
 | Tests of genuinely common mechanisms | `tests/repository/` or `tests/skill_protocol/`. |
 | Human documentation | The reader-job section under `docs/`. |
 
-Use only the resources a package needs; this table is not mandatory scaffolding. The [CLI protocol](../../tools/skill_protocol/README.md) explains manifests and adapters. [Validation](validation.md) explains proof ownership, and [packages and releases](packages-and-releases.md) explains shared sources and standalone distribution.
+Use only the resources a package needs; this table is not mandatory scaffolding. The [CLI protocol](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/skill_protocol/README.md) explains manifests and adapters. [Validation](validation.md) explains proof ownership, and [packages and releases](packages-and-releases.md) explains shared sources and standalone distribution.
 
 ## Make a normal capability change
 
@@ -56,6 +56,6 @@ Skill contracts remain authoritative for implemented behavior. If intended behav
 
 ## Prepare the pull request
 
-Check the readiness guidance in [validation](validation.md), the governing [versioning policy](../../REPO_VERSIONING.md), and the [documentation rules](documentation.md). Explain the concrete problem and resulting behavior, report the validation actually completed, and disclose remaining limitations or owner review. If tests were added, briefly identify the uncovered behavior and the incorrect result they catch.
+Check the readiness guidance in [validation](validation.md), the governing [versioning policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md), and the [documentation rules](documentation.md). Explain the concrete problem and resulting behavior, report the validation actually completed, and disclose remaining limitations or owner review. If tests were added, briefly identify the uncovered behavior and the incorrect result they catch.
 
 Review must assess meaning and preserved behavior as well as mechanical checks. Tests establish only the mechanics and evidence they exercise; they do not establish universal agent quality or quantified time savings. Never merge a pull request.

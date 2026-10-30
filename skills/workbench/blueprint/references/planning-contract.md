@@ -20,7 +20,7 @@ YAGNI is **not** smallest diff, fewest files, fewest lines, or least detail. It 
 
 ## Intent closure
 
-`SKILL.md` step 1 owns which choices are the user's. Repository-derived engineering details are always Blueprint's: the implementation seam, owner, file, helper, data flow, representation, ordering, test structure, and verification shape. Asking the user to choose one is a planning failure, not clarification.
+Repository-derived engineering details are always Blueprint's: the implementation seam, owner, file, helper, data flow, representation, ordering, test structure, and verification shape. For a child of a parent or epic issue, copy each constraint the parent sets for its children verbatim into the request before preparing and give the challenger the parent's text.
 
 ## Approach and scope
 

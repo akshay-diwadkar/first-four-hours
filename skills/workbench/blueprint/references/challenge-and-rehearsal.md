@@ -40,7 +40,7 @@ Re-verify every finding against the authoritative request and current source, an
 
 ## Requirement trace
 
-Before sealing, trace every clause of the authoritative request, and every imported architecture invariant, constraint, and policy. A change obligation traces to the instruction that realizes it and the Completion Condition that states it, whose `Shown by` proof would fail without it, or whose named owner settles it when the condition starts `Owner gate:`. A clause that is itself an owner or human acceptance, such as a cold read after implementation, traces only to an `Owner gate:` Completion Condition naming that owner and needs no instruction; any change such a clause also requires is a change obligation with its own instruction. A keep obligation traces to an explicit preservation disposition (a preservation rule in the instruction that touches its surface, or a Completion Condition), plus a discriminating Run only when a plausible compliant implementation could break it. Any other clause with no realizing instruction or preservation disposition is under-scoped; a clause outside an `Owner gate:` that a plausible implementation could violate without failing its `Shown by` proof or another authored Run is unproven; both block seal. Beyond each condition's `Shown by` proof, keep the trace in working context, never in the artifact.
+Before sealing, trace every clause of the authoritative request, and every imported architecture invariant, constraint, and policy. A change obligation traces to the instruction that realizes it and the Completion Condition that states it, whose `Shown by` proof would fail without it, or whose named owner settles it when the condition starts `Owner gate:`. A clause that is itself an owner or human acceptance traces only to an `Owner gate:` Completion Condition naming that owner and needs no instruction; any change such a clause also requires is a change obligation with its own instruction. A keep obligation traces to an explicit preservation disposition (a preservation rule in the instruction that touches its surface, or a Completion Condition), plus a discriminating Run only when a plausible compliant implementation could break it. Any other clause with no realizing instruction or preservation disposition is under-scoped; a clause outside an `Owner gate:` that a plausible implementation could violate without failing its `Shown by` proof or another authored Run is unproven; both block seal. Planner and challenger judge every wording deliverable and Completion Condition, with its proof, against what each clause it carries requires, read from the request itself, never the plan's restatement: Exact text and pins prove bytes, not meaning, so one narrowing or dropping a clause, even if changed or trimmed after the challenge, is under-scoped.
 
 ## Seal gate
 
@@ -48,17 +48,15 @@ Seal only when all are true:
 
 - user-owned ambiguity is closed;
 - decision-critical repository claims are grounded;
-- all material engineering and design decisions are settled;
 - every request clause and imported invariant traces completely, as the requirement trace defines;
 - every producible input state, exit path, and invariant-violation path of changed behavior is decided;
 - no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance;
 - where completion or a resume relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source, and proof fails an implementation that trusts a stale record or a missing relationship;
 - current consumers, preservation, and safety boundaries are accounted for;
 - the plan is minimum-sufficient;
-- implementation instructions leave the executor no design decision;
 - every decision takes the planning contract's required form;
 - every acceptance condition not marked `Owner gate:` has an executable path;
-- supported adversarial findings have evidence-backed closure in the repaired plan; unresolved load-bearing uncertainty blocks seal;
+- supported adversarial findings have evidence-backed closure in the repaired plan;
 - the separate fresh-context challenge ran at the draft's tier;
 - every authored Run and Proof run meets the planning contract's Verification purity, so Construct cannot stop on its writes;
 - no step or Run forces the executor to discover or choose an additional repair, scope, policy or authority, ownership, validation or typing scope, exception or budget override, compatibility, or other semantic decision;

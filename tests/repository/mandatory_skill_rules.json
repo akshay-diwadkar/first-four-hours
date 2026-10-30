@@ -495,5 +495,19 @@
     "source": "references/execution-contract.md",
     "surface": "doctor",
     "text": "After that mutation stop, once the caller establishes a trusted state, it takes the stopped command, `changed_paths`, and `index_changed` to a Blueprint amendment as for a `plan-contradiction`, never rerunning that sealed plan unchanged"
+  },
+  {
+    "id": "plan.parent-constraints",
+    "skill": "blueprint",
+    "source": "references/planning-contract.md",
+    "surface": "doctor",
+    "text": "For a child of a parent or epic issue, copy each constraint the parent sets for its children verbatim into the request before preparing and give the challenger the parent's text"
+  },
+  {
+    "id": "plan.wording-fidelity",
+    "skill": "blueprint",
+    "source": "references/challenge-and-rehearsal.md",
+    "surface": "doctor",
+    "text": "Planner and challenger judge every wording deliverable and Completion Condition, with its proof, against what each clause it carries requires, read from the request itself, never the plan's restatement: Exact text and pins prove bytes, not meaning, so one narrowing or dropping a clause, even if changed or trimmed after the challenge, is under-scoped."
   }
 ]

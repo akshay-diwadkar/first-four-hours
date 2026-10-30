@@ -23,6 +23,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Blueprint 1.0.2: ships the Architect 1.0.1 handoff verifier, so a no-HEAD architecture handoff stays current across Git-ignored output.
 - Construct 1.0.2: ships the Blueprint 1.0.2 runtime copy, so it reports contract version 1.0.2. It still accepts every sealed 1.x plan.
 - Diagnose 1.0.2: seals in a Git worktree whose branch has no commit yet. Such a snapshot keeps its Git identity and declares `revision: null`, which is accepted only when the worktree has no HEAD commit; `history` evidence is refused there because it needs a commit. Its diagnosis contract version is now 1.0.2; Blueprint and Construct still accept every 1.x diagnosis.
+- Blueprint 1.1.1: when you plan a child of a parent or epic issue, Blueprint's guidance has the planner copy the parent's constraints for its children word for word into the request and give the fresh challenger the parent's text, so both check the plan against them. Planner and challenger judge wording the plan delivers, such as skill guidance, and each completion condition with its proof, against what each request clause requires rather than the plan's restatement, including wording changed or trimmed after the challenge; a plan that narrows or drops a clause counts as under-scoped and must not be sealed. This is planning guidance, not a mechanical seal check, and Assess still reviews the result independently.
+- Construct 1.1.1: ships the Blueprint 1.1.1 runtime copy, so it reports contract version 1.1.1. It still accepts every sealed 1.x plan.
 
 ## [1.0.0] - 2026-10-25
 

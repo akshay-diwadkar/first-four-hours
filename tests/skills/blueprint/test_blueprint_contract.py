@@ -136,7 +136,8 @@ EXACT_REPLACE = (
     '**With:**\n```python\n    return value.strip() if value else ""\n```\n'
 )
 FROZEN_PROOF = (
-    '**State:** new\n\n**Frozen:** `tests/test_names.py`\n```python\nassert normalize(None) == ""\n```\n\n'
+    '**State:** new\n**Location:** `tests/names_cases.txt`\n**State:** new\n\n'
+    '**Frozen:** `tests/names_cases.txt`\n```text\nabsent -> ""\n```\n\n'
     "**Proof run:** `python -m pytest -q tests/test_names.py`\n"
     "Red: AssertionError for the absent name\nExpect: 1 passed.\n"
 )
@@ -187,6 +188,17 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     assert "proof.duplicate" in codes(second, tmp_path)
     assert "proof.duplicate" in codes(proved.replace("Red: AssertionError", "Timeout: 5\nTimeout: 9\nRed: AssertionError", 1), tmp_path)
     assert "proof.duplicate" in codes(proved.replace("Red: AssertionError", "Red: first defect\nRed: AssertionError", 1), tmp_path)
+    # Plans carry decisions, not code: declared text on an executable file is refused unless it is an anchored replacement changing at most two lines.
+    assert runtime.validate_draft(proved, tmp_path).valid
+    replacement = '**With:**\n```python\n    return value.strip() if value else ""\n```'
+    at_limit = proved.replace(replacement, '**With:**\n```python\n    if value:\n        return value.strip()\n```', 1)
+    assert runtime.validate_draft(at_limit, tmp_path).valid
+    over_limit = proved.replace(replacement, '**With:**\n```python\n    if value:\n        return value.strip()\n    return ""\n```', 1)
+    assert "block.code" in codes(over_limit, tmp_path)
+    whole_test = draft().replace("**State:** new\n", "**State:** new\n\n**Frozen:** `tests/test_names.py`\n```python\nassert normalize(None) == \"\"\n```\n\n"
+                                 "**Proof run:** `python -m pytest -q tests/test_names.py`\nExpect: 1 passed.\n", 1)
+    assert codes(whole_test, tmp_path) == {"block.code"}
+    assert "block.code" not in {item.code for item in runtime.parse_blueprint(whole_test)[1]}
     # Frozen proof needs a Proof run, and a Proof run passes only on exit 0.
     frozen_only = draft().replace("**State:** new\n", "**State:** new\n\n**Frozen:** `tests/test_names.py`\n```python\nassert 1\n```\n", 1)
     assert "frozen.proof_missing" in codes(frozen_only, tmp_path)
@@ -294,7 +306,7 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
     # The deletion idiom keeps a neighbouring line in both blocks and must seal.
     plain = with_step_proof(_expecting("exit 0 and the absent-name case passes.\nIncomplete: the final record reports complete false"), DELETION)
     literal = 'PAYLOAD = """left\vtab\fform\x85nel\u2028line\u2029paragraph\rreturn\n### 7. Literal heading\n**Exact:** `example.txt`\n```text\nexample\n```\n"""\nassert normalize(None) == ""\n'
-    plain = plain.replace('```python\nassert normalize(None) == ""\n```', '````python\n' + literal + '````')
+    plain = plain.replace('```text\nabsent -> ""\n```', '````text\n' + literal + '````')
     # A corrected authoring operation still refuses an empty replacement.
     assert "block.empty" in codes(plain.replace('**With:**\n```python\n    return value.strip()\n```', '**With:**\n```python\n```', 1), tmp_path)
     assert "Expect: exit 0" in plain

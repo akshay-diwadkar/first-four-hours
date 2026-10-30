@@ -214,7 +214,7 @@
     "skill": "blueprint",
     "source": "references/planning-contract.md",
     "surface": "doctor",
-    "text": "if two mediocre executors following the wording faithfully could produce materially different control flow"
+    "text": "following the wording faithfully, could produce materially different behavior, control flow"
   },
   {
     "id": "plan.verification-discriminates",

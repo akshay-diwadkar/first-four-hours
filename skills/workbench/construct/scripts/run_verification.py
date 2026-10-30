@@ -518,7 +518,8 @@ def _forward_action(root: Path, path: Path, blueprint: blueprint_runtime.Bluepri
         frozen = f"Run apply with instruction={following.number} and blocks=frozen. " if "frozen" in kinds else ""
         exact = "Run apply with blocks=exact. " if "exact" in kinds else ""
         action = (
-            f"{frozen}Run prove with instruction={following.number}, check=red, and its caller-held next unused "
+            f"{frozen}Write any test instruction {following.number} specifies in prose, implementing none of the change. "
+            f"Run prove with instruction={following.number}, check=red, and its caller-held next unused "
             f"attempt. Confirm the declared Red defect. {exact}Implement the rest, then run prove with "
             f"instruction={following.number}, check=green, and its caller-held next unused attempt."
         )
@@ -1121,6 +1122,22 @@ def prove(repo_root: Path, blueprint_path: Path, number: int, check: str, attemp
         proof["result"] = results[-1]
         proof["notices"] = _notices(results)
         outcome = _outcome(summary)
+        declared = {view.declared_path_key(block.path) for block in step.blocks}
+        executor_written = any(location.state != "deleted" and view.declared_path_key(location.path) not in declared
+                               for location in step.locations)
+        if outcome == "passed" and executor_written:
+            raise ConstructError(
+                "step.red_passed",
+                f"instruction {number} Proof run already passes before implementation, so it cannot demonstrate the declared defect: {step.red}",
+                evidence=[json.dumps(summary["step"], sort_keys=True)],
+                result={"proof": proof},
+                valid_repairs=(
+                    "If this instruction's change is already implemented, report the red observation as an unrecoverable gap and run the green check.",
+                    "Otherwise make any test this instruction specifies in prose implement every stated case, never editing Frozen proof, then rerun the red check.",
+                    "If the instruction's tests then implement every stated case and still pass before the change, stop with plan-contradiction evidence.",
+                ),
+                next_command=_prove_command(root, path, number, "red", attempt),
+            )
         if outcome == "passed":
             raise ConstructError(
                 "step.red_passed",
@@ -1153,8 +1170,8 @@ def prove(repo_root: Path, blueprint_path: Path, number: int, check: str, attemp
                     "the wrong behavior Red names. If the runner reports it blocked by its environment (such as lock "
                     "contention or an exhausted deadline) with no failed case, it is incomplete: stop without rerunning "
                     "and report that block, never as the red. Any other failure, including an import, collection, or "
-                    "tooling failure, or a regression left unexecuted because another case failed first, stops as "
-                    "plan-contradiction."
+                    "tooling failure, or a regression left unexecuted because another case failed first, is not the red: "
+                    "repair a test this instruction specifies in prose and rerun red; otherwise stop as plan-contradiction."
                 )
                 + then,
                 "next_command": following,
@@ -1387,6 +1404,7 @@ def apply_blocks(repo_root: Path, blueprint_path: Path, number: int, kind: str |
     if step.red is not None and kind != "exact":
         then = f"run apply with instruction={number} and blocks=exact" if "exact" in kinds else "implement the instruction"
         action = (
+            f"Write any test instruction {number} specifies in prose, implementing none of the change. "
             f"Run prove with instruction={number}, check=red, and its caller-held next unused attempt. "
             f"Confirm the declared Red defect, then {then}."
         )

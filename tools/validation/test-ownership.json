@@ -769,7 +769,8 @@
       "id": "documentation-publishing",
       "path_prefixes": [
         ".github/workflows/publish-wiki.yml",
-        ".gitbook.yaml"
+        ".gitbook.yaml",
+        "gitbook-docs.yaml"
       ],
       "owner": "documentation-contract"
     },
@@ -844,7 +845,8 @@
     ".map",
     "docs",
     ".github",
-    ".gitbook.yaml"
+    ".gitbook.yaml",
+    "gitbook-docs.yaml"
   ],
   "inventory": {
     "restricted_roots": [],

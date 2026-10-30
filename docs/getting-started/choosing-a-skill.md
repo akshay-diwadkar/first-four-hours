@@ -7,7 +7,7 @@ Start from the problem in front of you, not from how the suite is organized. Pic
 | You are dealing with | Start with |
 | :--- | :--- |
 | Something is wrong and you do not know why | [Diagnose](../skills/diagnose.md) |
-| A change that should be planned before anyone edits code | [Blueprint](../skills/blueprint.md) |
+| A change another session, agent, or cheaper model will carry out, whose mistakes would show up late, or whose decisions must outlast the session | [Blueprint](../skills/blueprint.md) |
 | A sealed Blueprint plan that is ready to carry out | [Construct](../skills/construct.md) |
 | A structural question, such as a boundary, dependency direction, or module structure | [Architect](../skills/architect.md) |
 | A finished change you need to trust before merging | [Assess](../skills/assess.md) |

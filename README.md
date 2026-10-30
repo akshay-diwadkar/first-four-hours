@@ -49,7 +49,7 @@ Start a skill on a real problem by naming it in your agent's chat. For example (
 | You are dealing with | Start with |
 | :--- | :--- |
 | Something is wrong and you do not know why | `diagnose` |
-| A change that should be planned before anyone edits code | `blueprint`, then `construct` to carry out the plan |
+| A change another session, agent, or cheaper model will carry out, whose mistakes would show up late, or whose decisions must outlast the session | `blueprint`, then `construct` to carry out the plan |
 | A finished change you need to trust before merging | `assess` |
 | A decision that is stuck, or rests on an assumption you doubt | `reason` |
 | Not knowing which skill comes next | `router` (ask in plain words) |
@@ -94,7 +94,7 @@ Building your own knowledge and ability in any subject.
 ## Common workflows
 
 - **Fix a bug at its cause.** Diagnose finds the evidence-backed cause, Blueprint plans the fix for one finding, and Construct carries out the plan. See [Fix the bug without patching the symptom](docs/recipes/fix-a-bug.md).
-- **Plan before editing.** Blueprint settles every decision and seals a plan, and Construct carries it out without reopening it, possibly with a cheaper model. See [Plan a change before your agent starts editing](docs/recipes/plan-a-change.md).
+- **Plan before editing.** Blueprint settles every decision and seals a plan, and Construct carries it out without reopening it, possibly with a cheaper model. Reach for it when someone else will carry the change out, a mistake would show up late, or the decisions must outlast the session, not because the change looks big; [Blueprint](docs/skills/blueprint.md) explains when your agent's plan mode is enough. See [Plan a change before your agent starts editing](docs/recipes/plan-a-change.md).
 - **Trust a change before merging.** Assess reviews the exact change, and its findings go to a new Blueprint run rather than a direct edit. See [Trust a change before you merge it](docs/recipes/review-before-merge.md).
 
 Each skill works alone. A skill hands work on through a file, and you decide when the next skill starts; see [How skills hand work to each other](docs/concepts/handoffs.md). [Recipes](docs/recipes/README.md) cover more recurring problems.

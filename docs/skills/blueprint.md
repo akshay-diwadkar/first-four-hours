@@ -4,8 +4,14 @@ Blueprint plans a repository change before anyone edits code. It settles every d
 
 ## When to use it
 
-- A change has to be right the first time, touches several files, or will be carried out by another agent or session.
+- Someone other than the agent planning it will carry the change out: another session, a cheaper model, a headless or overnight run, a parallel agent, or a person.
+- The context will not survive the work, such as a long change or one you expect to resume later.
+- A mistake would show up late or silently: a migration, a compatibility promise, a public interface, an auth or security boundary, or a change that ripples across many consumers.
+- The happy path is easy but the edges are not: corrupt state, cancelled processes, stale caches, partial failure.
+- You want to review the decisions separately from the code, or plan mode already drifted from the plan you approved.
 - You want a cheaper model to do the implementation. Comparable quality at lower cost is an aim of this design, not a measured guarantee.
+
+Size and stakes alone do not decide it. Blueprint or plan mode, below, explains when your agent's built-in plan mode is enough.
 
 ## When to use something else
 
@@ -13,6 +19,40 @@ Blueprint plans a repository change before anyone edits code. It settles every d
 - If the right structure is the open question, decide it first with [Architect](architect.md).
 - If the cause of a problem is unknown, find it first with [Diagnose](diagnose.md).
 - A small, clear edit may need no plan at all.
+
+## Blueprint or plan mode
+
+Many coding agents have a built-in plan mode: the agent proposes a plan, you approve it, and the same agent carries it out. Blueprint is not a more careful plan mode. Plan mode gets your consent before the work starts. Blueprint hands the work over, so that someone else, later, in another context, can carry it out without making engineering decisions.
+
+**An itinerary and a schematic.** A plan-mode plan is an itinerary. The same agent carries it out in the same session and improvises around obstacles as it goes, and that is by design. A blueprint is a schematic. Every decision is settled before editing, a fresh-context challenger attacks it against the code, and it is sealed with the proof of completion fixed in advance: verification commands with their expected results, and a named check, or a named owner, behind each completion condition. Construct does not improvise. When the code disagrees with the plan, it stops with `plan-contradiction`.
+
+**Where judgment lives.** In plan mode, judgment happens during execution, hidden in the edits. "Update the callers" is enough of a plan, because the agent finds the callers and decides each one as it goes. In Blueprint, judgment happens before execution, and an adversary checks it rather than you only approving it: the challenger hunts for the input, exit path, or consumer the plan missed.
+
+**What the cost buys.** Plan mode does not avoid the cost of judgment. It defers it and hides it inside the work, where a wrong turn costs the most. Blueprint pays that cost up front and makes it visible, even when the change would have gone fine. It can be cheaper overall when execution is delegated, repeated, or resumed, because the judgment is paid once and the execution can use a cheaper model; like the cheaper-model aim above, that is not a measured result. Stakes alone do not decide it: a low-stakes change handed to a cheaper model still benefits from a schematic, and a high-stakes change you steer live, diff by diff, may be well served by an itinerary.
+
+**Blueprint's limits.**
+
+- A seal is mechanical. It proves the plan's shape and its binding to the files it read; whether the plan is ready is still a judgment, and Blueprint reports the two separately.
+- Decisions are fixed once the plan is sealed. That hurts work where building is how you learn, such as UI tuning, spikes, or exploratory refactors: each surprise becomes a stop and a new plan instead of a quick detour.
+- The planner only probes the code as it is now and never runs the planned change, so it cannot learn what only building reveals.
+- Unsettled structure belongs in [Architect](architect.md) first, and an unsettled choice of solution in [Ideate](ideate.md) first. Blueprint asks Ideate itself when it finds no viable direction, but a plan cannot settle a choice you have not framed yet.
+- For a small, clear edit, the formality is pure overhead.
+
+**When plan mode is enough.** Stay in plan mode when these hold and none of the reasons under When to use it applies:
+
+- The same agent will carry out the plan in the same session, with you watching.
+- The path is obvious, and the risk is in the typing, not the decisions.
+- Mistakes surface within minutes.
+- The change is local and easy to reverse.
+- Building is how you learn.
+
+**Questions to ask before you start.** The choice comes before the work, so ask questions that predict rather than judge in hindsight:
+
+1. "If the executor hits a fork halfway, who decides?" If the agent can decide while you watch, plan mode is enough. If nobody should have to, use Blueprint.
+2. "If this is wrong, when will I find out?" Within minutes points to plan mode. In review, in production, or never points to Blueprint.
+3. "Will whoever builds this remember why?" The same agent in the same session will. Anyone else, or any later session, needs the decisions written down.
+
+There is also a middle path: start in plan mode, and switch to Blueprint when the plan grows "I'll check whether…" clauses, touches consumers you had not counted, or reaches a choice that is yours rather than an engineering detail.
 
 ## How to start it
 

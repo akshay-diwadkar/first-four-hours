@@ -10,11 +10,11 @@ import re
 import stat
 import tempfile
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Iterable
+from pathlib import Path, PurePosixPath
+from typing import Any, Iterable, Mapping
 
 from _diagnostic_contract import normalize_diagnostic
-from structure_state import validate
+from structure_state import Page, analyze
 
 MANAGED_BEGIN = b"<!-- ATLAS"
 MANAGED_END = b"<!-- /ATLAS -->"
@@ -40,12 +40,16 @@ LEGACY_BREAKS = {b"none": 0, b"lf": 1, b"crlf": 1, b"lf2": 2, b"crlf2": 2}
 LEGACY_BEGIN_RE = re.compile(rb"<!-- BEGIN ATLAS(?: prefix=(none|lf|crlf|lf2|crlf2))?(?: suffix=(none|lf|crlf))? -->")
 MARKERLESS_LEGACY_HEADING = b"## Repository Knowledge"
 
-GUIDANCE_LINES = (
-    "## Atlas",
-    "",
-    "Before project work, read `MAP.md` and follow only relevant links; project files are "
-    "authoritative, so search directly when no link fits. Update affected map pointers when files "
-    "move or change meaning; run Atlas `check`/`baseline` only for drift audits.",
+MAP_LEAD = (
+    "Atlas `setup-guidance` writes this section from each top-level Landmark's title and opening "
+    "paragraph; never edit it by hand, and rerun `setup-guidance` after changing them. Follow only "
+    "links whose cue fits the task, and search project files directly when none fits. Update "
+    "affected `.map/` pointers when files move or change meaning; run Atlas `check`/`baseline` only "
+    "for drift audits."
+)
+MAP_AUTHORITY = (
+    "Project files are authoritative. This map offers selective orientation, not exhaustive "
+    "coverage; inspect current sources before deciding or changing anything."
 )
 
 
@@ -68,6 +72,8 @@ class OwnedBlock:
     prefix_breaks: int
     suffix_breaks: int
     newline: bytes
+    body_start: int
+    body_end: int
 
 
 @dataclass(frozen=True)
@@ -79,10 +85,28 @@ class PlannedWrite:
     mode: int | None
 
 
-def managed_block(newline: bytes = b"\n", prefix_breaks: int = 0, suffix_breaks: int = 0) -> bytes:
+def map_lines(pages: Mapping[PurePosixPath, Page]) -> tuple[str, ...]:
+    """Derive the Map block's lines from the top-level Landmarks of a diagnostic-free wiki."""
+    entries: list[str] = []
+    for path, page in sorted(pages.items()):
+        if page.role != "landmark" or page.parent is not None:
+            continue
+        if page.map_entry is None:
+            raise ValueError(f"top-level Landmark has no Map entry: {path.as_posix()}")
+        title, cue = page.map_entry
+        entries.append(f"- [{title}]({path.as_posix()}): {cue}")
+    return ("## Atlas", "", MAP_LEAD, "", MAP_AUTHORITY, "", *entries)
+
+
+def managed_block(
+    newline: bytes,
+    prefix_breaks: int,
+    suffix_breaks: int,
+    lines: tuple[str, ...],
+) -> bytes:
     if prefix_breaks not in (0, 1, 2) or suffix_breaks not in (0, 1):
         raise ValueError(f"unsupported managed spacing: {prefix_breaks} {suffix_breaks}")
-    body = newline.join(line.encode("utf-8") for line in GUIDANCE_LINES)
+    body = newline.join(line.encode("utf-8") for line in lines)
     counts = (prefix_breaks, suffix_breaks) if suffix_breaks else (prefix_breaks,) if prefix_breaks else ()
     begin = b" ".join((MANAGED_BEGIN, *(str(count).encode("ascii") for count in counts), b"-->"))
     return newline.join((begin, body, MANAGED_END, b"")) + newline * suffix_breaks
@@ -140,7 +164,7 @@ def _owned_block(payload: bytes, filename: str) -> OwnedBlock | None:
     suffix = newline * suffix_breaks
     if suffix and payload[end : end + len(suffix)] == suffix:
         end += len(suffix)
-    return OwnedBlock(start, end, prefix_breaks, suffix_breaks, newline)
+    return OwnedBlock(start, end, prefix_breaks, suffix_breaks, newline, match.end(), ends[0])
 
 
 def _newline(payload: bytes) -> bytes:
@@ -207,26 +231,33 @@ def _read_target(path: Path) -> tuple[bytes | None, int | None]:
     return payload, stat.S_IMODE(path.stat().st_mode)
 
 
-def _plan_setup(path: Path) -> PlannedWrite:
-    payload, mode = _read_target(path)
-    if payload is None:
-        return PlannedWrite(path, None, _created_heading(path.name, b"\n") + managed_block(), "created", None)
-
-    _reject_obsolete_markers(payload, path.name)
-    _reject_markerless_legacy(payload, path.name)
-    _reject_retired_managed_block(payload, path.name)
-    _reject_retired_opt_out(payload, path.name)
-    located = _owned_block(payload, path.name)
+def _inspect(payload: bytes, filename: str) -> tuple[OwnedBlock | None, bool]:
+    _reject_obsolete_markers(payload, filename)
+    _reject_markerless_legacy(payload, filename)
+    _reject_retired_managed_block(payload, filename)
+    _reject_retired_opt_out(payload, filename)
+    located = _owned_block(payload, filename)
     opt_outs = _positions(payload, OPT_OUT)
     if len(opt_outs) > 1:
-        raise GuidanceError(f"duplicate ATLAS opt-out markers in {path.name}")
+        raise GuidanceError(f"duplicate ATLAS opt-out markers in {filename}")
     if (
         opt_outs
         and located is not None
         and located.start <= opt_outs[0] < located.end
     ):
-        raise GuidanceError(f"ATLAS opt-out marker is inside the managed block in {path.name}")
-    if opt_outs:
+        raise GuidanceError(f"ATLAS opt-out marker is inside the managed block in {filename}")
+    return located, bool(opt_outs)
+
+
+def _plan_setup(path: Path, lines: tuple[str, ...]) -> PlannedWrite:
+    payload, mode = _read_target(path)
+    if payload is None:
+        return PlannedWrite(
+            path, None, _created_heading(path.name, b"\n") + managed_block(b"\n", 0, 0, lines), "created", None
+        )
+
+    located, opted_out = _inspect(payload, path.name)
+    if opted_out:
         desired = (
             _without_block(payload, located)
             if located is not None
@@ -242,11 +273,66 @@ def _plan_setup(path: Path) -> PlannedWrite:
     desired = (
         before
         + newline * prefix_breaks
-        + managed_block(newline, prefix_breaks, suffix_breaks)
+        + managed_block(newline, prefix_breaks, suffix_breaks, lines)
         + after
     )
     action = "unchanged" if desired == payload else "updated"
     return PlannedWrite(path, payload, desired, action, mode)
+
+
+def map_diagnostics(root: Path, pages: Mapping[PurePosixPath, Page]) -> list[dict[str, Any]]:
+    """Validate each root file's managed block as the Map derived from the top-level Landmarks."""
+    lines = ["", *map_lines(pages)]
+    diagnostics: list[dict[str, Any]] = []
+    for name in TARGETS:
+        try:
+            payload, _mode = _read_target(root / name)
+            if payload is None:
+                diagnostics.append(_map_missing(name, "does not exist"))
+                continue
+            located, opted_out = _inspect(payload, name)
+            if opted_out:
+                continue
+            if located is None:
+                diagnostics.append(_map_missing(name, "has no Atlas Map block"))
+                continue
+            body = payload[located.body_start : located.body_end].decode("utf-8")
+        except (GuidanceError, OSError) as exc:
+            diagnostics.append(
+                _diagnostic(
+                    "map.map_unreadable",
+                    f"The Atlas Map block in {name} cannot be read: {exc}",
+                    name,
+                    "Report this diagnostic without editing the named instruction file; the user repairs the "
+                    "reported marker, encoding, or path before `setup-guidance` and `run` are rerun.",
+                    phase="run",
+                )
+            )
+            continue
+        # Only the lines between the markers count: spacing around the block and newline style never do.
+        if body.splitlines() != lines:
+            diagnostics.append(
+                _diagnostic(
+                    "map.map_stale",
+                    f"The Atlas Map block in {name} differs from what setup-guidance writes from the top-level Landmarks.",
+                    name,
+                    "Rerun Atlas `setup-guidance` to rewrite the block from the Landmarks; never hand-edit the block.",
+                    phase="run",
+                )
+            )
+    return diagnostics
+
+
+def _map_missing(name: str, reason: str) -> dict[str, Any]:
+    return _diagnostic(
+        "map.map_missing",
+        f"{name} {reason}, so agents reading it never see the Atlas Map.",
+        name,
+        "Run Atlas `setup-guidance` to write the Map block, unless the user removed or declined root guidance; "
+        "then report this diagnostic and ask the user to add `<!-- OPT-OUT ATLAS -->` to that file, which only "
+        "the user adds.",
+        phase="run",
+    )
 
 
 def _plan_remove(path: Path) -> PlannedWrite:
@@ -423,12 +509,12 @@ def apply_guidance(root: Path, operation: str) -> tuple[dict[str, Any], list[dic
     root = root.resolve()
     if operation == "setup":
         try:
-            _report, topology_diagnostics = validate(root)
+            _report, pages, topology_diagnostics = analyze(root)
         except (OSError, UnicodeError) as exc:
             filename = getattr(exc, "filename", None)
-            path = Path(filename).name if filename else "MAP.md"
+            path = Path(filename).name if filename else ".map"
             message = (
-                "Repository guidance requires a readable UTF-8 MAP.md hierarchy; direct project-file "
+                "Repository guidance requires a readable UTF-8 `.map/` hierarchy; direct project-file "
                 f"exploration remains allowed while Atlas is repaired: {exc}"
             )
             return {}, [
@@ -436,25 +522,28 @@ def apply_guidance(root: Path, operation: str) -> tuple[dict[str, Any], list[dic
                     "map.guidance_map_unreadable",
                     message,
                     path,
-                    "Repair or rebuild the unreadable Map/Landmark/Satellite Markdown, run Atlas `run`, then retry setup-guidance.",
+                    "Repair or rebuild the unreadable Landmark/Satellite Markdown, run Atlas `run`, then retry setup-guidance.",
                 )
             ]
         if topology_diagnostics:
             message = (
-                "Repository guidance requires a valid MAP.md hierarchy; direct project-file exploration "
+                "Repository guidance requires a valid `.map/` hierarchy; direct project-file exploration "
                 "remains allowed while Atlas is repaired."
             )
             return {}, [
                 _diagnostic(
                     "map.guidance_setup_requires_valid_map",
                     message,
-                    "MAP.md",
-                    "Build or repair MAP.md and its Landmark/Satellite indexes, run Atlas `run` to review exact topology diagnostics, then retry setup-guidance.",
+                    ".map",
+                    "Build or repair the `.map/` Landmark and Satellite pages, run Atlas `run` to review exact diagnostics, then retry setup-guidance.",
                 )
             ]
-    planner = _plan_setup if operation == "setup" else _plan_remove
     try:
-        plan = [planner(root / name) for name in TARGETS]
+        if operation == "setup":
+            lines = map_lines(pages)
+            plan = [_plan_setup(root / name, lines) for name in TARGETS]
+        else:
+            plan = [_plan_remove(root / name) for name in TARGETS]
         _apply(plan)
     except (GuidanceError, OSError) as exc:
         message = str(exc)

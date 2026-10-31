@@ -49,7 +49,7 @@ def test_first_baseline_cycle_and_delta(tmp_path: Path) -> None:
         {
             "docs/one.txt": "one\n",
             "docs/two.txt": "two\n",
-            ".map/auth/LANDMARK.md": "# Authentication\n\n- [Request authentication](request-auth.md) — read when a request establishes a principal.\n- [Sessions](session.md) — read for session lifecycle.\n",
+            ".map/auth/LANDMARK.md": "# Authentication\n\nRoute through request identity and authorization concepts.\n\n- [Request authentication](request-auth.md) — read when a request establishes a principal.\n- [Sessions](session.md) — read for session lifecycle.\n",
             ".map/auth/session.md": "# Sessions\n\n- [Authentication middleware](../../src/auth.py) — sessions reuse the request principal.\n",
         },
     )
@@ -65,6 +65,8 @@ def test_first_baseline_cycle_and_delta(tmp_path: Path) -> None:
         assert len(codes) == len(set(codes)), codes
         return next(item for item in diagnostics if item["code"] == code)
 
+    setup = cli("setup-guidance")
+    assert setup.returncode == 0, setup.stdout + setup.stderr
     checked = cli("run")
     assert checked.returncode == 0, checked.stdout + checked.stderr
     assert not state_path.exists()
@@ -74,7 +76,7 @@ def test_first_baseline_cycle_and_delta(tmp_path: Path) -> None:
     assert (report["state_status"], report["status"]) == ("missing", "review-required")
     satellites = report["obligations"]["satellites"]
     assert satellites == [".map/auth/request-auth.md", ".map/auth/session.md"]
-    assert report["obligations"]["unmapped_paths"] == ["docs/one.txt", "docs/two.txt"]
+    assert report["obligations"]["unmapped_paths"] == ["AGENTS.md", "CLAUDE.md", "docs/one.txt", "docs/two.txt"]
     cycle = report["cycle_fingerprint"]
 
     _, diagnostics = baseline(root, cycle, satellites, ["docs/one.txt\r", "docs/two.txt"])
@@ -104,7 +106,7 @@ def test_first_baseline_cycle_and_delta(tmp_path: Path) -> None:
     )
     assert accepted.returncode == 0, accepted.stdout + accepted.stderr
     state = json.loads(state_path.read_text(encoding="utf-8"))
-    assert state["receipts"]["acknowledged_unmapped"] == ["docs/one.txt", "docs/two.txt"]
+    assert state["receipts"]["acknowledged_unmapped"] == ["AGENTS.md", "CLAUDE.md", "docs/one.txt", "docs/two.txt"]
     current = cli("check")
     assert current.returncode == 0, current.stdout + current.stderr
     assert json.loads(current.stdout)["result"]["status"] == "current"
@@ -124,4 +126,4 @@ def test_first_baseline_cycle_and_delta(tmp_path: Path) -> None:
     assert diagnostics == []
     assert (recovered["state_status"], recovered["status"]) == ("incompatible", "review-required")
     assert recovered["obligations"]["satellites"] == satellites
-    assert recovered["obligations"]["unmapped_paths"] == ["docs/one.txt", "docs/two.txt"]
+    assert recovered["obligations"]["unmapped_paths"] == ["AGENTS.md", "CLAUDE.md", "docs/one.txt", "docs/two.txt"]

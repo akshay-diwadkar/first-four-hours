@@ -17,7 +17,7 @@ from _diagnostic_contract import normalize_diagnostic, sorted_diagnostics
 from _skill_protocol_runtime import compatible_version
 from structure_state import Page, analyze
 
-STATE_VERSION = "1.0.0"
+STATE_VERSION = "2.0.0"
 STATE_PATH = PurePosixPath(".map/.state/freshness.json")
 IGNORE_PATH = PurePosixPath(".mapignore")
 DEFAULT_EXCLUDED_DIRS = frozenset(
@@ -143,7 +143,7 @@ def _matches_ignore(path: PurePosixPath, patterns: Iterable[str]) -> bool:
 def _excluded(path: PurePosixPath, patterns: Iterable[str], *, directory: bool) -> str | None:
     if path == IGNORE_PATH:
         return "map-ignore-policy"
-    if path == PurePosixPath("MAP.md") or (path.parts and path.parts[0] == ".map"):
+    if path.parts and path.parts[0] == ".map":
         return "map-wiki-or-state"
     if any(part in DEFAULT_EXCLUDED_DIRS for part in path.parts[:-1]) or (
         directory and path.name in DEFAULT_EXCLUDED_DIRS

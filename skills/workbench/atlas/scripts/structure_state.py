@@ -9,6 +9,7 @@ import json
 import os
 import re
 import string
+import urllib.parse
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
@@ -16,8 +17,9 @@ from typing import Iterable
 
 from _diagnostic_contract import normalize_diagnostic, sorted_diagnostics
 
-MAP_PATH = PurePosixPath("MAP.md")
 WIKI_ROOT = ".map"
+MAP_PARENT = "<!-- ATLAS -->"
+RESERVED_GUIDANCE_TEXT = ("<!--", "## Repository Knowledge")
 LEGACY_STATE_ROOT = PurePosixPath(".agent", "knowledge")
 LEGACY_STATE_MARKERS = (
     "KNOWLEDGE.md",
@@ -53,14 +55,14 @@ class Page:
     byte_count: int
     line_count: int
     links: list[str] = field(default_factory=list)
+    link_cues: list[str] = field(default_factory=list)
     indexed_children: set[PurePosixPath] = field(default_factory=set)
     cross_links: set[PurePosixPath] = field(default_factory=set)
     source_links: set[PurePosixPath] = field(default_factory=set)
+    map_entry: tuple[str, str] | None = None
 
     @property
     def depth(self) -> int:
-        if self.role == "map":
-            return 0
         return max(1, len(self.path.parts) - 2)
 
 
@@ -68,6 +70,7 @@ class Page:
 class MarkdownScan:
     links: list[str]
     unsupported_html_anchor: bool = False
+    cues: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -106,8 +109,6 @@ def _has_unsupported_html_anchor(text: str) -> bool:
 
 
 def role_for(path: PurePosixPath) -> str | None:
-    if path == MAP_PATH:
-        return "map"
     if len(path.parts) < 2 or path.parts[0] != WIKI_ROOT or path.suffix != ".md":
         return None
     return "landmark" if path.name == "LANDMARK.md" else "satellite"
@@ -118,12 +119,10 @@ def parent_for(
     role: str,
     landmarks: set[PurePosixPath] | None = None,
 ) -> PurePosixPath | None:
-    if role == "map":
-        return None
     if role == "satellite":
         return path.parent / "LANDMARK.md"
     if len(path.parts) == 3:
-        return MAP_PATH
+        return None
     candidates = landmarks or set()
     directory = path.parent.parent
     cluster_root = PurePosixPath(WIKI_ROOT, path.parts[1])
@@ -713,6 +712,7 @@ def _scan_markdown(text: str) -> MarkdownScan:
     body, _ = _mask_inline_html(body)
     definitions, body = _reference_definitions(body)
     links: list[str] = []
+    starts: list[int] = []
     position = 0
     while position < len(body):
         if body[position] != "[" or _escaped_character(body, position):
@@ -735,6 +735,7 @@ def _scan_markdown(text: str) -> MarkdownScan:
             if parsed is not None:
                 if not is_image:
                     links.append(parsed[0])
+                    starts.append(position)
                 position = parsed[1]
                 continue
         if after_label < len(body) and body[after_label] == "[":
@@ -743,13 +744,123 @@ def _scan_markdown(text: str) -> MarkdownScan:
                 key = _reference_key(reference[0] or label_text)
                 if not is_image and key in definitions:
                     links.append(definitions[key])
+                    starts.append(position)
                 position = reference[1]
                 continue
         key = _reference_key(label_text)
         if not is_image and key in definitions:
             links.append(definitions[key])
+            starts.append(position)
         position = after_label
-    return MarkdownScan(links, block_anchor or inline_anchor)
+    cues: list[str] = []
+    for index, start in enumerate(starts):
+        line_end = text.find("\n", start)
+        end = len(text) if line_end < 0 else line_end
+        if index + 1 < len(starts) and starts[index + 1] < end:
+            end = starts[index + 1]
+        cues.append(text[start:end])
+    return MarkdownScan(links, block_anchor or inline_anchor, cues)
+
+
+ATX_HEADING_RE = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+(.*?))?[ \t]*$")
+CLOSING_HASHES_RE = re.compile(r"(?:^|[ \t]+)#+$")
+INLINE_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+CODE_SPAN_RE = re.compile(r"(`+)(.+?)(?<!`)\1(?!`)", re.DOTALL)
+SYMBOL_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
+
+
+def _render_heading(content: str) -> str:
+    content = INLINE_LINK_RE.sub(lambda match: match.group(1), content)
+    rendered: list[str] = []
+    position = 0
+    for match in CODE_SPAN_RE.finditer(content):
+        rendered.append(_strip_emphasis(content[position : match.start()]))
+        rendered.append(match.group(2))
+        position = match.end()
+    rendered.append(_strip_emphasis(content[position:]))
+    return "".join(rendered)
+
+
+def _strip_emphasis(text: str) -> str:
+    return "".join(
+        character
+        for index, character in enumerate(text)
+        if character != "_"
+        or 0 < index < len(text) - 1
+        and text[index - 1].isalnum()
+        and text[index + 1].isalnum()
+    )
+
+
+def _heading_slugs(text: str) -> set[str]:
+    # GitHub's slugger: a repeated slug takes the next unused numeric suffix.
+    issued: dict[str, int] = {}
+    for line in _mask_blocks(text)[0].splitlines():
+        match = ATX_HEADING_RE.match(line)
+        if match is None:
+            continue
+        content = CLOSING_HASHES_RE.sub("", (match.group(1) or "").strip()).strip()
+        rendered = _render_heading(content).lower()
+        slug = "".join(
+            character for character in rendered if character.isalnum() or character in "-_ "
+        ).replace(" ", "-")
+        result = slug
+        while result in issued:
+            issued[slug] += 1
+            result = f"{slug}-{issued[slug]}"
+        issued[result] = 0
+    return set(issued)
+
+
+H1_RE = re.compile(r"^ {0,3}#(?:[ \t]+(.*?))?[ \t]*$")
+BLOCK_START_RE = re.compile(
+    r"^(?:\t| {4}| {0,3}(?:[*+-](?:[ \t]|$)|\d{1,9}[.)](?:[ \t]|$)|#|>|\||`{3}|~{3}"
+    r"|=+[ \t]*$|-+[ \t]*$|(?:[*_][ \t]*){3,}$))"
+)
+UNSAFE_CLUSTER_RE = re.compile(r"[\s()<>\[\]#%?\\]")
+
+
+def _landmark_entry(text: str) -> tuple[str, str] | str:
+    """Return a top-level Landmark's Map title and cue, or why it cannot be listed."""
+    lines = text.splitlines()
+    position = 0
+    while position < len(lines) and not lines[position].strip():
+        position += 1
+    heading = H1_RE.match(lines[position]) if position < len(lines) else None
+    title = CLOSING_HASHES_RE.sub("", (heading.group(1) or "").strip()).strip() if heading else ""
+    if not title:
+        return "it does not open with a `# Title` line"
+    position += 1
+    while position < len(lines) and not lines[position].strip():
+        position += 1
+    paragraph: list[str] = []
+    while position < len(lines) and lines[position].strip():
+        paragraph.append(lines[position])
+        position += 1
+    if not paragraph:
+        return "it has no opening paragraph after its title"
+    if any(BLOCK_START_RE.match(line) for line in paragraph):
+        return "its opening paragraph must be plain text, not a list, heading, quote, table, fence, or indented block"
+    cue = " ".join(line.strip() for line in paragraph)
+    for value in (title, cue):
+        visible = _strip_code_spans(value)
+        if any(token in visible for token in ("[", "]", "<", "://")):
+            return "its title or opening paragraph holds a link, image, HTML, or URL outside code spans"
+        if any(token in value for token in RESERVED_GUIDANCE_TEXT):
+            return "its title or opening paragraph holds `<!--` or `## Repository Knowledge`, which root guidance reserves"
+    return title, cue
+
+
+def _cue_symbols(cue: str) -> list[str]:
+    return [
+        content
+        for match in CODE_SPAN_RE.finditer(cue)
+        if SYMBOL_RE.fullmatch(content := match.group(2).strip())
+    ]
+
+
+def _contains_word(text: str, symbol: str) -> bool:
+    return re.search(rf"(?<![A-Za-z0-9_]){re.escape(symbol)}(?![A-Za-z0-9_])", text) is not None
 
 
 def _path_collision_groups(paths: Iterable[PurePosixPath]) -> list[list[PurePosixPath]]:
@@ -846,8 +957,8 @@ def _legacy_state_diagnostics(root: Path) -> list[dict[str, object]]:
         return []
     action = (
         "Delete only the reported legacy files; leave any other .agent/knowledge content in place "
-        "and report it to the user for review; then author MAP.md and .map/ from current source "
-        "without translating legacy artifacts into wiki authority."
+        "and report it to the user for review; then author `.map/` from current source and run "
+        "`setup-guidance`, without translating legacy artifacts into wiki authority."
     )
     rendered = ", ".join(path.as_posix() for path in matches)
     return [
@@ -912,16 +1023,6 @@ def _discover(root: Path) -> tuple[dict[PurePosixPath, Page], list[dict[str, obj
     diagnostics = _legacy_state_diagnostics(root)
     candidates: list[Path] = []
     for entry in root.iterdir():
-        if entry.name.casefold() == "map.md":
-            if entry.name != "MAP.md":
-                diagnostics.append(_diagnostic(
-                    "map.path_case_mismatch",
-                    f"Repository Map path must be exactly MAP.md, not {entry.name}.",
-                    PurePosixPath(entry.name),
-                    "Rename the repository Map to MAP.md with exact casing.",
-                ))
-            elif entry.is_file():
-                candidates.append(entry)
         if entry.name.casefold() == WIKI_ROOT and entry.name != WIKI_ROOT:
             diagnostics.append(_diagnostic(
                 "map.path_case_mismatch",
@@ -973,7 +1074,7 @@ def _discover(root: Path) -> tuple[dict[PurePosixPath, Page], list[dict[str, obj
                 "map.layout_unsupported",
                 f"Markdown page has an unsupported wiki path: {relative.as_posix()}.",
                 relative,
-                "Move the page to MAP.md or a path under .map using the documented role layout.",
+                "Move the page to a path under .map using the documented role layout.",
             ))
             continue
         if relative == PurePosixPath(WIKI_ROOT, "LANDMARK.md") or (
@@ -993,6 +1094,25 @@ def _discover(root: Path) -> tuple[dict[PurePosixPath, Page], list[dict[str, obj
                 relative,
                 "Remove the page front matter and retain the path-derived role.",
             ))
+        map_entry: tuple[str, str] | None = None
+        if role == "landmark" and len(relative.parts) == 3:
+            entry = (
+                "its cluster directory name cannot appear in a Map link"
+                if UNSAFE_CLUSTER_RE.search(relative.parts[1])
+                else _landmark_entry(text)
+            )
+            if isinstance(entry, str):
+                diagnostics.append(_diagnostic(
+                    "map.landmark_entry_invalid",
+                    f"Top-level Landmark {relative.as_posix()} cannot be listed in the Map: {entry}.",
+                    relative,
+                    "Open the Landmark with one `# Title` line, then a blank line and a plain opening paragraph "
+                    "that says when to follow it, keeping links, HTML, and URLs inside code spans or after that "
+                    "paragraph and `<!--` and `## Repository Knowledge` out of both, and name its cluster directory "
+                    "without whitespace or ()<>[]#%?\\; then rerun `run` and `setup-guidance`.",
+                ))
+            else:
+                map_entry = entry
         markdown = _scan_markdown(text)
         if markdown.unsupported_html_anchor:
             diagnostics.append(_diagnostic(
@@ -1010,16 +1130,18 @@ def _discover(root: Path) -> tuple[dict[PurePosixPath, Page], list[dict[str, obj
             byte_count=byte_count,
             line_count=line_count,
             links=markdown.links,
+            link_cues=markdown.cues,
+            map_entry=map_entry,
         )
     landmarks = {path for path, page in pages.items() if page.role == "landmark"}
     for page in pages.values():
         page.parent = parent_for(page.path, page.role, landmarks)
-    if MAP_PATH not in pages:
+    if not any(page.role == "landmark" and page.parent is None for page in pages.values()):
         diagnostics.append(_diagnostic(
-            "map.map_missing",
-            "The repository does not contain the required MAP.md.",
-            MAP_PATH,
-            "Create MAP.md and index every top-level Landmark.",
+            "map.landmark_missing",
+            "The wiki has no top-level Landmark (.map/<cluster>/LANDMARK.md), so there is no Map to write.",
+            PurePosixPath(WIKI_ROOT),
+            "Create at least one top-level Landmark under .map/, then rerun `run` and `setup-guidance`.",
         ))
     return pages, diagnostics
 
@@ -1043,8 +1165,16 @@ def analyze(
                     f"Create {page.parent.as_posix()} or move the child beneath an existing Landmark.",
                 ))
 
+    target_texts: dict[PurePosixPath, str] = {}
+    target_slugs: dict[PurePosixPath, set[str]] = {}
+
+    def target_text(resolved: PurePosixPath) -> str:
+        if resolved not in target_texts:
+            target_texts[resolved] = (root / resolved).read_text(encoding="utf-8", errors="replace")
+        return target_texts[resolved]
+
     for page in pages.values():
-        for target in page.links:
+        for target, cue in zip(page.links, page.link_cues):
             state, resolved = _resolve(page.path, target)
             if state == "fragment":
                 continue
@@ -1068,24 +1198,16 @@ def analyze(
                     continue
                 if resolved in children.get(page.path, set()):
                     page.indexed_children.add(resolved)
-                elif page.role == "map":
-                    diagnostics.append(_diagnostic(
-                        "map.map_link_invalid",
-                        f"MAP.md may link only its top-level Landmark children, not {resolved.as_posix()}.",
-                        page.path,
-                        "Remove the link from MAP.md and route to the page through its structural Landmark chain.",
-                    ))
                 else:
                     page.cross_links.add(resolved)
                 continue
 
             looks_like_wiki = (
-                resolved == MAP_PATH
-                or bool(resolved.parts)
+                bool(resolved.parts)
                 and resolved.parts[0] == WIKI_ROOT
                 and resolved.suffix.casefold() == ".md"
             )
-            if page.role in {"map", "landmark"} and not looks_like_wiki:
+            if page.role == "landmark" and not looks_like_wiki:
                 diagnostics.append(_diagnostic(
                     "map.source_link_forbidden",
                     f"{page.role.title()} page links directly to a repository location: {page.path.as_posix()} -> {resolved.as_posix()}.",
@@ -1124,10 +1246,31 @@ def analyze(
                 ))
             else:
                 page.source_links.add(resolved)
+                if resolved.suffix.casefold() == ".md":
+                    fragment = target.strip().partition("#")[2]
+                    if fragment:
+                        if resolved not in target_slugs:
+                            target_slugs[resolved] = _heading_slugs(target_text(resolved))
+                        if urllib.parse.unquote(fragment).casefold() not in target_slugs[resolved]:
+                            diagnostics.append(_diagnostic(
+                                "map.link_fragment_missing",
+                                f"Link fragment #{fragment} matches no heading in {resolved.as_posix()} from {page.path.as_posix()}.",
+                                page.path,
+                                "Point the fragment at an existing ATX heading's GitHub-style slug in the target, or drop it and say in the cue why the whole file is read.",
+                            ))
+                else:
+                    for symbol in _cue_symbols(cue):
+                        if not _contains_word(target_text(resolved), symbol):
+                            diagnostics.append(_diagnostic(
+                                "map.cue_symbol_missing",
+                                f"Cue symbol `{symbol}` does not occur in {resolved.as_posix()} linked from {page.path.as_posix()}.",
+                                page.path,
+                                "Rename the backticked symbol in the cue to one the target contains, or remove it and say in the cue why the whole file is read.",
+                            ))
 
     for parent, expected in children.items():
         page = pages[parent]
-        if page.role not in {"map", "landmark"}:
+        if page.role != "landmark":
             continue
         for child in sorted(expected - page.indexed_children):
             diagnostics.append(_diagnostic(
@@ -1138,7 +1281,10 @@ def analyze(
             ))
 
     reachable: set[PurePosixPath] = set()
-    pending = [MAP_PATH] if MAP_PATH in pages else []
+    pending = sorted(
+        (path for path, page in pages.items() if page.role == "landmark" and page.parent is None),
+        reverse=True,
+    )
     while pending:
         current = pending.pop()
         if current in reachable:
@@ -1150,7 +1296,7 @@ def analyze(
             "map.page_unreachable",
             f"Wiki page is not reachable through structural indexes: {path.as_posix()}.",
             path,
-            "Repair every structural parent link from MAP.md down to this page.",
+            "Repair every structural parent link from the top-level Landmark down to this page.",
         ))
 
     page_rows = []
@@ -1159,7 +1305,7 @@ def analyze(
             {
                 "path": path.as_posix(),
                 "role": page.role,
-                "parent": page.parent.as_posix() if page.parent else None,
+                "parent": page.parent.as_posix() if page.parent else MAP_PARENT,
                 "depth": page.depth,
                 "bytes": page.byte_count,
                 "lines": page.line_count,
@@ -1170,7 +1316,6 @@ def analyze(
         )
     report: dict[str, object] = {
         "summary": {
-            "maps": sum(page.role == "map" for page in pages.values()),
             "landmarks": sum(page.role == "landmark" for page in pages.values()),
             "satellites": sum(page.role == "satellite" for page in pages.values()),
             "source_links": sum(len(page.source_links) for page in pages.values()),
@@ -1186,6 +1331,16 @@ def validate(root: Path) -> tuple[dict[str, object], list[dict[str, object]]]:
     return report, diagnostics
 
 
+def run_checks(root: Path) -> tuple[dict[str, object], list[dict[str, object]]]:
+    """Validate the hierarchy, then the root Map blocks once a Map can be derived from it."""
+    report, pages, diagnostics = analyze(root)
+    if diagnostics:
+        return report, diagnostics
+    from repository_guidance import map_diagnostics
+
+    return report, sorted_diagnostics(map_diagnostics(root, pages))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
@@ -1193,7 +1348,7 @@ def main() -> int:
     root = args.repo_root.resolve()
     if not root.is_dir():
         parser.error(f"repository root is not a directory: {root}")
-    report, diagnostics = validate(root)
+    report, diagnostics = run_checks(root)
     payload = {"diagnostics": diagnostics} if diagnostics else report
     print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
     return 3 if diagnostics else 0

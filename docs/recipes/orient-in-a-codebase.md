@@ -15,9 +15,9 @@ In an unfamiliar project, every session searches for the same files from scratch
 ## Steps
 
 1. Start Atlas with `/atlas`, or ask for the map in plain words and the agent starts it.
-2. Atlas writes `MAP.md` and pages under `.map/`, checks the hierarchy, and adds a short guidance block to the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing. Adding `<!-- OPT-OUT ATLAS -->` to a root file keeps the block out of it.
+2. Atlas writes pages under `.map/`, checks the hierarchy, and writes the Map, a short block listing each top-level Landmark, into the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing. Adding `<!-- OPT-OUT ATLAS -->` to a root file keeps the block out of it.
 3. Review and commit the pages. The map is a deliverable, not a handoff.
-4. In later sessions, the agent reads `MAP.md`, follows only the relevant branches, and reads the current files before deciding.
+4. In later sessions, the agent starts from the Map in its root guidance, follows only the relevant branches, reads the part of a large file that a pointer names, and reads the current files before deciding.
 5. Whoever changes a file that a pointer cites updates that pointer in the same work.
 
 ## A worked scenario
@@ -30,18 +30,18 @@ Every new session on Larder starts the same way: the agent searches for "checkou
 Map the Larder repository so agents can find the ordering, payment, and customer-message code quickly.
 ```
 
-Atlas writes a small `MAP.md` with one line per area of the project. The line for ordering says to follow it for checkout, order state, payment calls, and the payment webhook, and leads to the ordering Landmark, a short index of Satellites. From there, the checkout Satellite gives a starting file and a stopping point:
+Atlas writes a small Map into the root guidance files, with one line per area of the project. The line for ordering says to follow it for checkout, order state, payment calls, and the payment webhook, and leads to the ordering Landmark, a short index of Satellites. From there, the checkout Satellite gives a starting file and a stopping point:
 
 - start with `larder/orders/checkout.py`;
 - for payment failures, also read `larder/payments/client.py`;
 - for missing or duplicate confirmations, read `larder/payments/webhooks.py`, where the event ID is stored;
 - for a checkout fix, these are usually enough.
 
-The pages are short pointers, not explanations of the code, so there is little in them to go stale. In the next session, the agent asked about duplicate confirmations reads `MAP.md`, follows the ordering line to its Landmark and the checkout Satellite, and opens the webhook handler, then reads the current code before deciding anything. When a later change moves that handler, the same change updates the pointer.
+The pages are short pointers, not explanations of the code, so there is little in them to go stale. In the next session, the agent asked about duplicate confirmations starts from the Map, follows the ordering line to its Landmark and the checkout Satellite, and opens the webhook handler, then reads the current code before deciding anything. When a later change moves that handler, the same change updates the pointer.
 
 ## You are done when
 
-`MAP.md` and the `.map/` pages are committed, the hierarchy check reports no problems, and an agent in a new session reaches the files you care about by following the map.
+The `.map/` pages and the root guidance files holding the Map are committed, the hierarchy check reports no problems, and an agent in a new session reaches the files you care about by following the map.
 
 ## If it goes wrong
 

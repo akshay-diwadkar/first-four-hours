@@ -27,11 +27,12 @@ def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
     assert any("escapes the repository" in error for error in errors)
     assert any("reference is not linked directly" in error for error in errors)
 
-    # Without a root MAP.md the repository validator runs no Atlas check.
+    # Without a .map directory the repository validator runs no Atlas check.
     assert validator.validate_atlas_wiki() == []
     wiki = {
-        "MAP.md": "# Repository Map\n\n- [Validation](.map/validation/LANDMARK.md) — read for the runner.\n",
-        ".map/validation/LANDMARK.md": "# Validation\n\n- [Runner](runner.md) — read when changing the runner.\n",
+        "AGENTS.md": "# Rules\n<!-- OPT-OUT ATLAS -->\n",
+        "CLAUDE.md": "# Rules\n<!-- OPT-OUT ATLAS -->\n",
+        ".map/validation/LANDMARK.md": "# Validation\n\nFollow for the runner.\n\n- [Runner](runner.md) — read when changing the runner.\n",
         ".map/validation/runner.md": "# Runner\n\n- [Runner entrypoint](../../tools/runner.py) — productive entrypoint.\n",
         "tools/runner.py": "",
     }

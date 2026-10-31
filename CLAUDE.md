@@ -15,5 +15,12 @@ Before changing tests, read [Adding or changing tests](REPO_VERSIONING.md#adding
 <!-- ATLAS 1 -->
 ## Atlas
 
-Before project work, read `MAP.md` and follow only relevant links; project files are authoritative, so search directly when no link fits. Update affected map pointers when files move or change meaning; run Atlas `check`/`baseline` only for drift audits.
+Atlas `setup-guidance` writes this section from each top-level Landmark's title and opening paragraph; never edit it by hand, and rerun `setup-guidance` after changing them. Follow only links whose cue fits the task, and search project files directly when none fits. Update affected `.map/` pointers when files move or change meaning; run Atlas `check`/`baseline` only for drift audits.
+
+Project files are authoritative. This map offers selective orientation, not exhaustive coverage; inspect current sources before deciding or changing anything.
+
+- [Learning](.map/learning/LANDMARK.md): Follow for teaching a person any subject, written-examination practice and marking, and the `.learning/` records and study plan learning skills share.
+- [Repository maintenance](.map/maintenance/LANDMARK.md): Follow for contribution rules, standalone runtime contracts, validation, and distribution, including what a skill-guidance edit must fit or change with it.
+- [Reasoning and communication](.map/sensemaking/LANDMARK.md): Follow for capability routing, decision support, research, and technical documents.
+- [Project workflows](.map/workbench/LANDMARK.md): Follow for project definition, investigation, architecture, planning, execution, review, tickets, and project orientation.
 <!-- /ATLAS -->

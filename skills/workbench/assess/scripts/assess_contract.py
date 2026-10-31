@@ -16,7 +16,7 @@ from typing import Any
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.0.1"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")

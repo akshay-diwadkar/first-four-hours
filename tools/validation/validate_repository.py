@@ -1496,8 +1496,8 @@ def validate_ticket_rename(source_files: list[Path] | None = None) -> list[str]:
 
 def validate_atlas_wiki() -> list[str]:
     """Check a committed root Atlas wiki's structure; freshness state is never consulted."""
-    map_path = ROOT / "MAP.md"
-    if not (map_path.exists() or map_path.is_symlink()):
+    wiki_path = ROOT / ".map"
+    if not (wiki_path.exists() or wiki_path.is_symlink()):
         return []
     result = run_capture(
         [sys.executable, "-B", str(ATLAS_STRUCTURE_SCRIPT), "--repo-root", str(ROOT)],

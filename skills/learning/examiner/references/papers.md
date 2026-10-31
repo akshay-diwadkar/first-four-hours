@@ -2,7 +2,7 @@
 
 Read this before writing a paper.
 
-When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. An on-screen paper always counts down, so time options are the real allowance or a named shorter or longer departure, never untimed.
+When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time and which it is.
 
 ## Fidelity
 

@@ -22,7 +22,7 @@ Start it yourself with `/examiner`, or the agent may start it when your request 
 
 ## What happens
 
-Examiner researches the official syllabus, examination scheme, specimen and past papers, and marking guidance, and keeps official requirements, patterns inferred from past papers, and your own changes distinct. When official requirements cannot be verified, it offers a clearly labelled approximation with its assumptions; an inferred format is never presented as official. It writes original questions, never copies past papers, and solves and audits every question before delivery. It consults [Reason](reason.md) only at decisions that matter.
+Examiner researches the official syllabus, examination scheme, specimen and past papers, and marking guidance, and keeps official requirements, patterns inferred from past papers, and your own changes distinct. When official requirements cannot be verified, it offers a clearly labelled approximation with its assumptions; an inferred format is never presented as official. When your request leaves the kind of practice, the sections or topics, the number of questions, or the time allowed open, it lets you choose once before writing; an on-screen paper always counts down, so a time other than the real one is labelled as a departure. It offers every choice through your agent's choice prompt when it has one, else as a short numbered list, and writes every file as HTML, never Markdown. It writes original questions, never copies past papers, and solves and audits every question before delivery. It consults [Reason](reason.md) only at decisions that matter.
 
 ## What you get
 

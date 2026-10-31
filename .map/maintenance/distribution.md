@@ -7,7 +7,7 @@
 - [Invocation policy](../../invocation-policy.json): inspect suite invocation policy alongside the affected package's metadata.
 - [Installation validation](../../tools/validation/validate_skills_cli_install.py): investigate Skills CLI listing groups, collection installation, and isolated selection for the active checkout, plus collection-only checks for alternate roots.
 - [Claude Code plugin validation](../../tools/validation/validate_claude_plugin_install.py): investigate the single native plugin's installation, Claude Code skill discovery, and installed-copy parity in a temporary Claude Code configuration.
-- [Release policy](../../REPO_VERSIONING.md): follow the authoritative coupling between affected skill versions, repository release metadata, dependency inputs, and required verification.
+- [Release policy](../../REPO_VERSIONING.md#skill-versions): start at Skill Versions and read through Release Metadata for the authoritative coupling between affected skill versions, repository release metadata, dependency inputs, and required verification.
 - [Release history](../../CHANGELOG.md): read released and unreleased user-visible changes; release policy says when to add an entry.
 
 Domain membership comes from the skill tree; catalog metadata is derived from it. Use the synchronization entrypoint when that membership changes, and consult release policy before treating a repository-only edit as a distributed behavior change.

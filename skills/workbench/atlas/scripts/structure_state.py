@@ -9,6 +9,7 @@ import json
 import os
 import re
 import string
+import urllib.parse
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
@@ -53,6 +54,7 @@ class Page:
     byte_count: int
     line_count: int
     links: list[str] = field(default_factory=list)
+    link_cues: list[str] = field(default_factory=list)
     indexed_children: set[PurePosixPath] = field(default_factory=set)
     cross_links: set[PurePosixPath] = field(default_factory=set)
     source_links: set[PurePosixPath] = field(default_factory=set)
@@ -68,6 +70,7 @@ class Page:
 class MarkdownScan:
     links: list[str]
     unsupported_html_anchor: bool = False
+    cues: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -713,6 +716,7 @@ def _scan_markdown(text: str) -> MarkdownScan:
     body, _ = _mask_inline_html(body)
     definitions, body = _reference_definitions(body)
     links: list[str] = []
+    starts: list[int] = []
     position = 0
     while position < len(body):
         if body[position] != "[" or _escaped_character(body, position):
@@ -735,6 +739,7 @@ def _scan_markdown(text: str) -> MarkdownScan:
             if parsed is not None:
                 if not is_image:
                     links.append(parsed[0])
+                    starts.append(position)
                 position = parsed[1]
                 continue
         if after_label < len(body) and body[after_label] == "[":
@@ -743,13 +748,82 @@ def _scan_markdown(text: str) -> MarkdownScan:
                 key = _reference_key(reference[0] or label_text)
                 if not is_image and key in definitions:
                     links.append(definitions[key])
+                    starts.append(position)
                 position = reference[1]
                 continue
         key = _reference_key(label_text)
         if not is_image and key in definitions:
             links.append(definitions[key])
+            starts.append(position)
         position = after_label
-    return MarkdownScan(links, block_anchor or inline_anchor)
+    cues: list[str] = []
+    for index, start in enumerate(starts):
+        line_end = text.find("\n", start)
+        end = len(text) if line_end < 0 else line_end
+        if index + 1 < len(starts) and starts[index + 1] < end:
+            end = starts[index + 1]
+        cues.append(text[start:end])
+    return MarkdownScan(links, block_anchor or inline_anchor, cues)
+
+
+ATX_HEADING_RE = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+(.*?))?[ \t]*$")
+CLOSING_HASHES_RE = re.compile(r"(?:^|[ \t]+)#+$")
+INLINE_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+CODE_SPAN_RE = re.compile(r"(`+)(.+?)(?<!`)\1(?!`)", re.DOTALL)
+SYMBOL_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
+
+
+def _render_heading(content: str) -> str:
+    content = INLINE_LINK_RE.sub(lambda match: match.group(1), content)
+    rendered: list[str] = []
+    position = 0
+    for match in CODE_SPAN_RE.finditer(content):
+        rendered.append(_strip_emphasis(content[position : match.start()]))
+        rendered.append(match.group(2))
+        position = match.end()
+    rendered.append(_strip_emphasis(content[position:]))
+    return "".join(rendered)
+
+
+def _strip_emphasis(text: str) -> str:
+    return "".join(
+        character
+        for index, character in enumerate(text)
+        if character != "_"
+        or 0 < index < len(text) - 1
+        and text[index - 1].isalnum()
+        and text[index + 1].isalnum()
+    )
+
+
+def _heading_slugs(text: str) -> set[str]:
+    slugs: set[str] = set()
+    counts: dict[str, int] = {}
+    for line in _mask_blocks(text)[0].splitlines():
+        match = ATX_HEADING_RE.match(line)
+        if match is None:
+            continue
+        content = CLOSING_HASHES_RE.sub("", (match.group(1) or "").strip()).strip()
+        rendered = _render_heading(content).lower()
+        slug = "".join(
+            character for character in rendered if character.isalnum() or character in "-_ "
+        ).replace(" ", "-")
+        repeat = counts.get(slug, 0)
+        counts[slug] = repeat + 1
+        slugs.add(slug if repeat == 0 else f"{slug}-{repeat}")
+    return slugs
+
+
+def _cue_symbols(cue: str) -> list[str]:
+    return [
+        content
+        for match in CODE_SPAN_RE.finditer(cue)
+        if SYMBOL_RE.fullmatch(content := match.group(2).strip())
+    ]
+
+
+def _contains_word(text: str, symbol: str) -> bool:
+    return re.search(rf"(?<![A-Za-z0-9_]){re.escape(symbol)}(?![A-Za-z0-9_])", text) is not None
 
 
 def _path_collision_groups(paths: Iterable[PurePosixPath]) -> list[list[PurePosixPath]]:
@@ -1010,6 +1084,7 @@ def _discover(root: Path) -> tuple[dict[PurePosixPath, Page], list[dict[str, obj
             byte_count=byte_count,
             line_count=line_count,
             links=markdown.links,
+            link_cues=markdown.cues,
         )
     landmarks = {path for path, page in pages.items() if page.role == "landmark"}
     for page in pages.values():
@@ -1043,8 +1118,16 @@ def analyze(
                     f"Create {page.parent.as_posix()} or move the child beneath an existing Landmark.",
                 ))
 
+    target_texts: dict[PurePosixPath, str] = {}
+    target_slugs: dict[PurePosixPath, set[str]] = {}
+
+    def target_text(resolved: PurePosixPath) -> str:
+        if resolved not in target_texts:
+            target_texts[resolved] = (root / resolved).read_text(encoding="utf-8", errors="replace")
+        return target_texts[resolved]
+
     for page in pages.values():
-        for target in page.links:
+        for target, cue in zip(page.links, page.link_cues):
             state, resolved = _resolve(page.path, target)
             if state == "fragment":
                 continue
@@ -1124,6 +1207,27 @@ def analyze(
                 ))
             else:
                 page.source_links.add(resolved)
+                if resolved.suffix.casefold() == ".md":
+                    fragment = target.strip().partition("#")[2]
+                    if fragment:
+                        if resolved not in target_slugs:
+                            target_slugs[resolved] = _heading_slugs(target_text(resolved))
+                        if urllib.parse.unquote(fragment).casefold() not in target_slugs[resolved]:
+                            diagnostics.append(_diagnostic(
+                                "map.link_fragment_missing",
+                                f"Link fragment #{fragment} matches no heading in {resolved.as_posix()} from {page.path.as_posix()}.",
+                                page.path,
+                                "Point the fragment at an existing ATX heading's GitHub-style slug in the target, or drop it and say in the cue why the whole file is read.",
+                            ))
+                else:
+                    for symbol in _cue_symbols(cue):
+                        if not _contains_word(target_text(resolved), symbol):
+                            diagnostics.append(_diagnostic(
+                                "map.cue_symbol_missing",
+                                f"Cue symbol `{symbol}` does not occur in {resolved.as_posix()} linked from {page.path.as_posix()}.",
+                                page.path,
+                                "Rename the backticked symbol in the cue to one the target contains, or remove it and say in the cue why the whole file is read.",
+                            ))
 
     for parent, expected in children.items():
         page = pages[parent]
@@ -1194,6 +1298,9 @@ def main() -> int:
     if not root.is_dir():
         parser.error(f"repository root is not a directory: {root}")
     report, diagnostics = validate(root)
+    from repository_guidance import guidance_drift
+
+    diagnostics = sorted_diagnostics([*diagnostics, *guidance_drift(root)])
     payload = {"diagnostics": diagnostics} if diagnostics else report
     print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
     return 3 if diagnostics else 0

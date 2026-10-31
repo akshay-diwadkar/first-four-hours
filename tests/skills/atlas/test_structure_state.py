@@ -61,3 +61,34 @@ def test_project_boundaries_are_refused(tmp_path: Path) -> None:
     assert "map.freshness_directory_symlink_unsupported" in [str(item["code"]) for item in diagnostics]
     _report, diagnostics = assess(root)
     assert "map.source_link_directory_unsupported" in [str(item["code"]) for item in diagnostics]
+
+    entry = _write(
+        tmp_path / "entry",
+        {
+            "MAP.md": "[Docs](.map/docs/LANDMARK.md)\n",
+            ".map/docs/LANDMARK.md": "# Docs\n\n- [Entry](entry.md) — read for entry points.\n",
+            ".map/docs/entry.md": (
+                "# Entry\n\n"
+                "- [Start](../../docs/guide.md#start-here) — emphasized heading.\n"
+                "- [Steps](../../docs/guide.md#steps-1) — repeated heading.\n"
+                "- [Owned](../../docs/guide.md#_owned) — code-span heading.\n"
+                "- [Fenced](../../docs/guide.md#fenced) — heading only inside a fence.\n"
+                "- [`authenticate` entry](../../src/app.py) — present symbol.\n"
+                "- [`authorize` check](../../src/app.py) — substring only.\n"
+                "- [App](../../src/app.py) — starts at `authorise_all`.\n"
+                "- [App again](../../src/app.py) and [guide](../../docs/guide.md) mention `absent_name`.\n"
+            ),
+            "docs/guide.md": (
+                "# Guide\n\n## Start _here_\n\n## Steps\n\n## Steps\n\n## `_owned`\n\n"
+                "```text\n## Fenced\n```\n"
+            ),
+            "src/app.py": "def authenticate():\n    return 'authorized'\n",
+        },
+    )
+    diagnostics = validate(entry)[1]
+    fragments = [str(item["message"]) for item in diagnostics if item["code"] == "map.link_fragment_missing"]
+    symbols = [str(item["message"]) for item in diagnostics if item["code"] == "map.cue_symbol_missing"]
+    assert len(fragments) == 1 and "#fenced" in fragments[0], diagnostics
+    assert len(symbols) == 2, diagnostics
+    assert any("`authorize`" in message for message in symbols), symbols
+    assert any("`authorise_all`" in message for message in symbols), symbols

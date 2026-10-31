@@ -17,7 +17,7 @@ from _diagnostic_contract import normalize_diagnostic, sorted_diagnostics
 from _skill_protocol_runtime import compatible_version
 from structure_state import Page, analyze
 
-STATE_VERSION = "1.0.0"
+STATE_VERSION = "1.1.0"
 STATE_PATH = PurePosixPath(".map/.state/freshness.json")
 IGNORE_PATH = PurePosixPath(".mapignore")
 DEFAULT_EXCLUDED_DIRS = frozenset(

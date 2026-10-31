@@ -17,7 +17,7 @@ In an unfamiliar project, every session searches for the same files from scratch
 1. Start Atlas with `/atlas`, or ask for the map in plain words and the agent starts it.
 2. Atlas writes `MAP.md` and pages under `.map/`, checks the hierarchy, and adds a short guidance block to the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing. Adding `<!-- OPT-OUT ATLAS -->` to a root file keeps the block out of it.
 3. Review and commit the pages. The map is a deliverable, not a handoff.
-4. In later sessions, the agent reads `MAP.md`, follows only the relevant branches, and reads the current files before deciding.
+4. In later sessions, the agent starts from the copy of `MAP.md` in its root guidance, follows only the relevant branches, reads the part of a large file that a pointer names, and reads the current files before deciding.
 5. Whoever changes a file that a pointer cites updates that pointer in the same work.
 
 ## A worked scenario

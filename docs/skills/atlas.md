@@ -22,7 +22,7 @@ Start it yourself with `/atlas`, or the agent may start it when your request mat
 
 ## What happens
 
-To navigate, the agent reads `MAP.md`, follows only the branches whose cues match the task, opens the file a Satellite marks as its start, and then reads the current project files before deciding anything. A Satellite's stopping point is a hint; the files still decide what the task needs. To author or rebalance, Atlas writes the wiki pages and validates the hierarchy with a read-only check. Authoring finishes by adding one short guidance block to the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing, so other agents find the map.
+To navigate, the agent starts from the copy of `MAP.md` in its root guidance, or reads `MAP.md`, follows only the branches whose cues match the task, and opens the file a Satellite marks as its start. For a large file, the pointer names a heading or a symbol, so the agent reads that part first and widens only when it needs more. It then reads the current project files before deciding anything. A Satellite's stopping point is a hint; the files still decide what the task needs. To author or rebalance, Atlas writes the wiki pages and validates the hierarchy with a read-only check, which also confirms that each named heading and symbol still exists. Authoring finishes by adding one guidance block to the root `AGENTS.md` and `CLAUDE.md`, creating either file when it is missing, so other agents find the map. The block holds a copy of `MAP.md` while the map's text is at most 2,000 bytes and has no HTML comment; otherwise it only points to `MAP.md`. After `MAP.md` changes, the check reports a copied block as stale until the guidance is set up again. A block that only points to `MAP.md` never goes stale.
 
 ## What you get
 
@@ -30,7 +30,7 @@ Committed wiki pages: `MAP.md` and the pages under `.map/`. The wiki is a delive
 
 ## When it stops
 
-The hierarchy check reports structural, reachability, link-safety, and portability problems for the agent to repair.
+The hierarchy check reports structural, reachability, link-safety, and portability problems, a heading or symbol a pointer names that its file no longer has, and a root guidance block that no longer matches `MAP.md`, for the agent to repair.
 
 ## Why it's built this way
 

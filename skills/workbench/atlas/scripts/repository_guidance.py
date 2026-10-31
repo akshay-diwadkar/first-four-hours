@@ -47,6 +47,14 @@ GUIDANCE_LINES = (
     "authoritative, so search directly when no link fits. Update affected map pointers when files "
     "move or change meaning; run Atlas `check`/`baseline` only for drift audits.",
 )
+INLINE_MAP_LIMIT = 2000
+INLINE_MAP_LEAD = (
+    "Atlas `setup-guidance` copied the rest of this section from `MAP.md`: follow only relevant "
+    "links, and search project files directly when none fits. Update affected map pointers when "
+    "files move or change meaning, and rerun `setup-guidance` after editing `MAP.md`; run Atlas "
+    "`check`/`baseline` only for drift audits."
+)
+H1_RE = re.compile(r"^ {0,3}#(?:[ \t]|$)")
 
 
 class GuidanceError(ValueError):
@@ -79,10 +87,39 @@ class PlannedWrite:
     mode: int | None
 
 
-def managed_block(newline: bytes = b"\n", prefix_breaks: int = 0, suffix_breaks: int = 0) -> bytes:
+def guidance_lines(root: Path) -> tuple[str, ...]:
+    try:
+        text = (root / "MAP.md").read_bytes().decode("utf-8")
+    except (OSError, UnicodeError):
+        return GUIDANCE_LINES
+    lines = text.splitlines()
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    if lines and H1_RE.match(lines[0]):
+        lines.pop(0)
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    legacy_heading = MARKERLESS_LEGACY_HEADING.decode("utf-8")
+    if (
+        not lines
+        or len("\n".join(lines).encode("utf-8")) > INLINE_MAP_LIMIT
+        or any("<!--" in line or legacy_heading in line for line in lines)
+    ):
+        return GUIDANCE_LINES
+    return ("## Atlas", "", INLINE_MAP_LEAD, "", *lines)
+
+
+def managed_block(
+    newline: bytes = b"\n",
+    prefix_breaks: int = 0,
+    suffix_breaks: int = 0,
+    lines: tuple[str, ...] = GUIDANCE_LINES,
+) -> bytes:
     if prefix_breaks not in (0, 1, 2) or suffix_breaks not in (0, 1):
         raise ValueError(f"unsupported managed spacing: {prefix_breaks} {suffix_breaks}")
-    body = newline.join(line.encode("utf-8") for line in GUIDANCE_LINES)
+    body = newline.join(line.encode("utf-8") for line in lines)
     counts = (prefix_breaks, suffix_breaks) if suffix_breaks else (prefix_breaks,) if prefix_breaks else ()
     begin = b" ".join((MANAGED_BEGIN, *(str(count).encode("ascii") for count in counts), b"-->"))
     return newline.join((begin, body, MANAGED_END, b"")) + newline * suffix_breaks
@@ -207,10 +244,12 @@ def _read_target(path: Path) -> tuple[bytes | None, int | None]:
     return payload, stat.S_IMODE(path.stat().st_mode)
 
 
-def _plan_setup(path: Path) -> PlannedWrite:
+def _plan_setup(path: Path, lines: tuple[str, ...] = GUIDANCE_LINES) -> PlannedWrite:
     payload, mode = _read_target(path)
     if payload is None:
-        return PlannedWrite(path, None, _created_heading(path.name, b"\n") + managed_block(), "created", None)
+        return PlannedWrite(
+            path, None, _created_heading(path.name, b"\n") + managed_block(lines=lines), "created", None
+        )
 
     _reject_obsolete_markers(payload, path.name)
     _reject_markerless_legacy(payload, path.name)
@@ -242,11 +281,41 @@ def _plan_setup(path: Path) -> PlannedWrite:
     desired = (
         before
         + newline * prefix_breaks
-        + managed_block(newline, prefix_breaks, suffix_breaks)
+        + managed_block(newline, prefix_breaks, suffix_breaks, lines)
         + after
     )
     action = "unchanged" if desired == payload else "updated"
     return PlannedWrite(path, payload, desired, action, mode)
+
+
+def guidance_drift(root: Path) -> list[dict[str, Any]]:
+    if not (root / "MAP.md").is_file():
+        return []
+    lines = guidance_lines(root)
+    diagnostics: list[dict[str, Any]] = []
+    for name in TARGETS:
+        path = root / name
+        try:
+            plan = _plan_setup(path, lines)
+            if plan.original is None or plan.action != "updated":
+                continue
+            if _owned_block(plan.original, name) is None:
+                continue
+            # A pointer block copies nothing from MAP.md, so it is never stale.
+            if _plan_setup(path, GUIDANCE_LINES).action == "unchanged":
+                continue
+        except (GuidanceError, OSError):
+            continue
+        diagnostics.append(
+            _diagnostic(
+                "map.guidance_stale",
+                f"The Atlas guidance block in {name} no longer matches what setup-guidance writes from MAP.md.",
+                name,
+                "Rerun Atlas `setup-guidance` to rewrite the block from MAP.md; never hand-edit the block.",
+                phase="run",
+            )
+        )
+    return diagnostics
 
 
 def _plan_remove(path: Path) -> PlannedWrite:
@@ -452,9 +521,12 @@ def apply_guidance(root: Path, operation: str) -> tuple[dict[str, Any], list[dic
                     "Build or repair MAP.md and its Landmark/Satellite indexes, run Atlas `run` to review exact topology diagnostics, then retry setup-guidance.",
                 )
             ]
-    planner = _plan_setup if operation == "setup" else _plan_remove
+    lines = guidance_lines(root) if operation == "setup" else GUIDANCE_LINES
     try:
-        plan = [planner(root / name) for name in TARGETS]
+        plan = [
+            _plan_setup(root / name, lines) if operation == "setup" else _plan_remove(root / name)
+            for name in TARGETS
+        ]
         _apply(plan)
     except (GuidanceError, OSError) as exc:
         message = str(exc)

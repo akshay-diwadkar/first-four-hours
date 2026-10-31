@@ -49,7 +49,7 @@ Do not scan the full wiki routinely. Reconsider hierarchy during initial mapping
 
 Walk at least one representative actual task through each affected route from `MAP.md` as a fresh agent would, choosing tasks of different kinds, such as a change, a diagnosis, and a verification, where a route serves several. For each, note the first project file reached, every point where you searched or guessed, and where you stopped. Repair every ambiguous cue, unproductive first read, unnecessary hop, missing entrypoint, and missing or misleading stop point you meet. This proportionate qualitative check proves no navigation quality.
 
-Authoring or rebalancing is complete after that walkthrough, when `run` succeeds and `setup-guidance` then succeeds. Root guidance is required: agents will not discover the map without it, so run `setup-guidance` without waiting for a request. It creates a missing root `AGENTS.md` or `CLAUDE.md`. Repair every `run` diagnostic and the map diagnostics `setup-guidance` reports (`map.guidance_setup_requires_valid_map`, `map.guidance_map_unreadable`), then rerun until both succeed. Report any other `setup-guidance` diagnostic, or the user declining root guidance, as incomplete authoring with that diagnostic or refusal; never hand-edit, relink, re-encode, or restore root instruction files to get past it, and never add `<!-- OPT-OUT ATLAS -->` yourself. Completion never requires freshness state; [freshness and maintenance](freshness-and-maintenance.md) makes freshness current.
+Authoring or rebalancing is complete after that walkthrough, when `run` succeeds and `setup-guidance` then succeeds. Root guidance is required: agents will not discover the map without it, so run `setup-guidance` without waiting for a request. Repair every `run` diagnostic and the map diagnostics `setup-guidance` reports (`map.guidance_setup_requires_valid_map`, `map.guidance_map_unreadable`), then rerun until both succeed. Report any other `setup-guidance` diagnostic, or the user declining root guidance, as incomplete authoring with that diagnostic or refusal; never hand-edit, relink, re-encode, or restore root instruction files to get past it, and never add `<!-- OPT-OUT ATLAS -->` yourself. Completion never requires freshness state; [freshness and maintenance](freshness-and-maintenance.md) makes freshness current.
 
 ## Reviewed patterns
 
@@ -183,10 +183,6 @@ Prefer a Satellite such as `access-tokens.md` that points to the productive entr
 
 ## Anti-patterns
 
-- A Map that lists project files, symbols, or Satellites bypasses progressive disclosure.
-- A Landmark with project-file links or implementation details mixes navigation with freshness-bearing knowledge.
 - A Satellite for one trivial helper or a generated caller inventory caches cheap project-folder facts.
 - A Satellite with no start target, or with links cued only by topic, makes the reader open each file to decide.
-- A Satellite containing access tokens, refresh tokens, and sessions despite independent use should promote.
-- A nested Landmark whose children are always read together should collapse.
 - A resolver, fuzzy/BM25 ranker, embedding/vector search, top-K selector, alias registry, section injector, or hierarchy scorer duplicates agent navigation and project-folder filesystem truth.

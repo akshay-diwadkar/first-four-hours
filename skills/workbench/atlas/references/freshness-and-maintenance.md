@@ -2,7 +2,7 @@
 
 Freshness proves eligible project-file deltas were reviewed, not semantic accuracy. `check` and `baseline` form an occasional, deliberate drift audit, for example before a release, after a large merge, or when a pointer proves wrong. It catches changes made without pointer upkeep; per-change upkeep never requires it, and it never runs during orientation.
 
-Three facts stay independent: the wiki is valid when `run` passes; root guidance is installed when `setup-guidance` succeeded; freshness is current when an exact reviewed `check` cycle was baselined. Orientation needs neither of the last two, and neither `run` nor `setup-guidance` writes freshness state.
+Three facts stay independent: the wiki is valid when `run` passes; root guidance is installed when `setup-guidance` succeeded; freshness is current when an exact reviewed `check` cycle was baselined. Orientation needs neither of the last two, and neither `run` nor `setup-guidance` writes freshness state. Guidance commands never create or baseline the wiki, and no other command runs them.
 
 ## Check
 

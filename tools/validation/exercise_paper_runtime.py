@@ -1154,6 +1154,7 @@ def scenario_c(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         session.reload()
         reloaded_hidden = not page.visible("#paper-save-status")
         box = page.text("#paper-attempt p")
+        link = page.text("#paper-attempt-download")
         page.click("#paper-save")
         wait_outcome("saved")
         checks.run("C3", [
@@ -1161,6 +1162,8 @@ def scenario_c(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
             (not session.events_named("Browser.downloadWillBegin"), "a download began at finish"),
             (names() == ["attempt-1.html", "paper.html"], f"the set folder holds {names()}"),
             (reloaded_hidden and "Press Save answers" in box, f"after reload the finished box reads {box!r}"),
+            # Nothing was downloaded on this path, so the link must not claim a download already happened.
+            (link == "Download a copy of your answer file", f"the finished box's link reads {link!r}"),
             (page.attr("#paper-save-status", "data-file") == "attempt-1.html",
              f"saving the reloaded paper reported {page.attr('#paper-save-status', 'data-file')!r}"),
             ((folder / "attempt-1.html").read_bytes() == kept, "saving the finished paper again changed attempt-1"),

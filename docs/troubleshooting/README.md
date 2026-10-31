@@ -47,7 +47,7 @@ These results are correct answers, not failures:
 | `blocked` | Assess | Supply the authority or evidence it names as missing or contradictory, then run Assess again. |
 | `clear` | Assess | No material defect was found. It is not approval; the merge decision stays yours. |
 | `needs-info`, `blocked`, `close-candidate`, or `needs-decomposition` | Ticket `select` | Make the missing decision, clear the blocker, close the ticket, or split it. You decide whether to persist replacement tickets. |
-| `experiment-first` or `research-limited` | Ideate | Run the named experiment, or accept the research limit and change the goal or the evidence. |
+| `Outcome: run an experiment first` or `Outcome: research limit reached` | Ideate | Run the named experiment, or accept the research limit and change the goal or the evidence. |
 | A `None:` route, or a route that stops early | Router | The current state already meets the target, or the next step depends on a result that does not exist yet. Ask for a fresh route once it does. |
 | A finding with missing evidence | Diagnose | Gather the evidence it names, then run Diagnose again. |
 | A gap with its next owner | Scribe | The named owner supplies the missing source; then write again. |

@@ -45,7 +45,7 @@
     {
       "name": "ideate",
       "invocation": "both",
-      "description": "Search possibilities across alternatives, causal paths, or composed forks for a researchable goal, then seal one state-appropriate ideation.md (decision-ready | experiment-first | research-limited). Invoke for researched, decision-oriented exploration or structured option generation; skip routine context gathering and casual quick-list brainstorming unless structured ideation is explicitly requested. Domain-neutral; repository context is optional."
+      "description": "Search possibilities across alternatives, causal paths, or paths with a fork for a researchable goal, researching the web unless told not to, then seal one ideation.md that opens with what to do. Invoke for researched, decision-oriented exploration or structured option generation; skip routine context gathering and casual quick-list brainstorming unless structured ideation is explicitly requested. Domain-neutral; repository context is optional."
     },
     {
       "name": "pr",

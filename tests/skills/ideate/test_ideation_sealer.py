@@ -22,13 +22,15 @@ def _valid_draft() -> str:
     # A small two-option decision: only the required records, no filler fields.
     return (
         "# Ideation: Reduce Latency\n\n"
-        "## Handoff\n"
-        "- State: decision-ready\n"
-        "- Selection: open\n"
+        "## What to do\n"
+        "- Outcome: recommended direction\n"
+        "- Final choice: yours to make\n\n"
+        "Option 1 leads with the verified caching benchmark; Option 2 stays a viable choice.\n\n"
+        "## Goal and research\n"
         "- Goal: reduce p99 query latency below 200ms\n"
         "- Decision criteria: latency reduction, effort\n"
         "- Scope / non-goals: API layer; no database hardware replacement\n"
-        "- Research: condition met — vendor docs and one caching benchmark; no production traces\n\n"
+        "- Research: settled — vendor docs, a web search, and one caching benchmark; no production traces\n\n"
         "## Evidence\n\n"
         "### External evidence\n\n"
         "| Finding | Source | Locator | Date/freshness | Relevance |\n"
@@ -46,10 +48,8 @@ def _valid_draft() -> str:
         "- Preserve baseline: Option 2, keep the current API layer\n\n"
         "### Option 1: Add In-memory Cache\n"
         "- Support basis: evidence-backed: the example.com caching benchmark\n\n"
-        "## Conclusion\n\n"
-        "Option 1 leads with the verified caching benchmark; Option 2 stays a viable choice.\n\n"
-        "## Open questions / next discriminator\n"
-        "- What would change the answer: Option 2 wins if payload size, not lookups, drives latency\n"
+        "## What would change the answer\n\n"
+        "Option 2 wins if payload size, not lookups, drives latency.\n"
     )
 
 
@@ -106,8 +106,10 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
     sealed_bytes = destination.read_bytes()
     # The title opens the handoff; the receipt is its final line.
     assert sealed_bytes.startswith(b"# Ideation: ")
-    assert sealed_bytes.splitlines()[-1].startswith(b"<!-- ideation-handoff: 1.0.0; sha256: ")
-    assert b"- Selection: open\n" in sealed_bytes
+    assert sealed_bytes.splitlines()[-1].startswith(b"<!-- ideation-handoff: 2.0.0; sha256: ")
+    # What to do opens the handoff, so a reader acts on it before any evidence.
+    assert sealed_bytes.split(b"\n## ", 1)[1].startswith(b"What to do\n")
+    assert b"- Final choice: yours to make\n" in sealed_bytes
 
     # Re-sealing the sealed handoff reproduces it and keeps one exclude rule;
     # the handoff never shows up as untracked noise.
@@ -122,21 +124,34 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
 
     # Each missing required record or lens line is refused with a diagnostic naming
     # its repair, and nothing is written.
-    research = "- Research: condition met — vendor docs and one caching benchmark; no production traces\n"
+    research = "- Research: settled — vendor docs, a web search, and one caching benchmark; no production traces\n"
     baseline = "- Preserve baseline: Option 2, keep the current API layer\n\n"
     survivor = (
         "### Option 1: Add In-memory Cache\n"
         "- Support basis: evidence-backed: the example.com caching benchmark\n\n"
-        "## Conclusion\n\n"
+        "## What would change the answer\n\n"
     )
+    choice = "- Final choice: yours to make\n"
+    action_prose = "Option 1 leads with the verified caching benchmark; Option 2 stays a viable choice.\n\n"
+    draft_text = _valid_draft()
+    action_start = draft_text.index("## What to do\n")
+    framing_start = draft_text.index("## Goal and research\n")
+    change_start = draft_text.index("## What would change the answer\n")
+    opening_onward = draft_text[action_start:change_start]
+    action_last = draft_text[framing_start:change_start] + draft_text[action_start:framing_start]
     for slug, old, new, codes, repair in (
-        ("missing", "- Selection: open\n", "", ["ideation.handoff_field_empty"], "'- Selection:'"),
-        ("unowned", "- Selection: open\n", "- Selection: user-selected\n", ["ideation.invalid_selection"], "<choice; source>"),
-        ("undelegated", "- Selection: open\n", "- Selection: delegated\n", ["ideation.invalid_selection"], "<scope; source>"),
-        ("no-research", research, "", ["ideation.handoff_field_empty"], "'- Research:'"),
-        ("bare-stop", research, "- Research: condition met\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
-        ("unknown-stop", research, "- Research: searched enough — docs only\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
-        ("no-shape", "Search shape: alternative\n", "", ["ideation.invalid_search_shape"], "'Search shape: alternative | path | composed'"),
+        ("missing", choice, "", ["ideation.field_empty"], "'- Final choice:'"),
+        ("unowned", choice, "- Final choice: made by you\n", ["ideation.invalid_final_choice"], "<choice; source>"),
+        ("undelegated", choice, "- Final choice: delegated\n", ["ideation.invalid_final_choice"], "<scope; source>"),
+        # A 1.x state is refused, never kept as an alias.
+        ("legacy-outcome", "- Outcome: recommended direction\n", "- Outcome: decision-ready\n", ["ideation.invalid_outcome"], "recommended direction"),
+        # What to do must open the handoff and say what to do, not only carry its fields.
+        ("action-last", opening_onward, action_last, ["ideation.heading_order"], "canonical order"),
+        ("fields-only", action_prose, "", ["ideation.empty_what_to_do"], "plain language"),
+        ("no-research", research, "", ["ideation.field_empty"], "'- Research:'"),
+        ("bare-stop", research, "- Research: settled\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
+        ("unknown-stop", research, "- Research: condition met — docs only\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
+        ("no-shape", "Search shape: alternative\n", "", ["ideation.invalid_search_shape"], "'Search shape: alternative | path | path with a fork'"),
         ("skipped-lens", "- Domain transfer: Option 1, response caching\n", "", ["ideation.lens_unaccounted"], "'- Domain transfer: <candidate>'"),
         ("no-defaults", "- Obvious defaults: scale out the API servers\n", "", ["ideation.lens_unaccounted"], "'- Obvious defaults: <candidate>'"),
         ("misplaced-lens", baseline + survivor, survivor + baseline, ["ideation.lens_unaccounted"], "'- Preserve baseline: <candidate>'"),
@@ -145,7 +160,7 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
         (
             "commented-orderings",
             "Search shape: alternative\n",
-            "Search shape: path\n<!--\n- Risk-first: a\n- Value-first: b\n- Reversible-first: c\n"
+            "Search shape: path with a fork\n<!--\n- Risk-first: a\n- Value-first: b\n- Reversible-first: c\n"
             "- Dependency-forced: d\n- Cheapest-learning-first: e\n-->\n",
             ["ideation.lens_unaccounted"] * 5,
             "'- Risk-first: <candidate>'",

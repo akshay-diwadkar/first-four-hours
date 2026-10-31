@@ -23,7 +23,7 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
 
 ## Scaffold and check
 
-Create each new set, the study plan, and `START_HERE.html` with `scaffold`. It takes the next set number, copies the paper runtime into `paper.html` with its `paper-meta` id, never replaces a file, and leaves `<!-- fill: ... -->` markers to replace, including the title it derives from folder names. A `supplied-paper` set gets only `source-notes.html`. Write by hand attempts, markings, correction sets, a supplied paper's documents, and your unofficial key for a supplied paper.
+Create each new set, the study plan, and `START_HERE.html` with `scaffold`. It takes the next set number, copies the paper runtime into `paper.html` with its `paper-meta` id, never replaces a file, and leaves `<!-- fill: ... -->` markers to replace, including the title it derives from folder names. A `supplied-paper` set gets only `source-notes.html`. Write by hand attempts, markings, correction sets, and a supplied paper's documents and your unofficial key for it.
 
 ```bash
 python <examiner>/scripts/cli.py --repo-root <student folder> --input kind=<set|study-plan|start-here> --input subject=<subject> [--input exam=<exam> --input practice_kind=<kind> --input date=<YYYY-MM-DD> --input marking_scheme=<yes|no>] --format json scaffold

@@ -4,7 +4,7 @@ Tutor teaches any subject, technical or not. It finds your real goal and startin
 
 ## When to use it
 
-Choose by what you want; Tutor can switch when the session shows a better fit:
+Choose by what you want; when the session shows a better fit, Tutor offers to switch:
 
 - **Explanation:** one self-contained answer, complete without exercises.
 - **Tutoring:** you apply the idea or explain it in your own words, and Tutor responds to the misconceptions your answers show. Ordinary exercises belong here.
@@ -25,13 +25,13 @@ Start it yourself with `/tutor`, or the agent may start it when your request mat
 
 ## What happens
 
-Tutor starts once the goal is clear enough and asks only questions that would change the teaching. It researches in proportion to how current, contested, or high-stakes the material is, and states uncertainty instead of inventing detail. It uses diagrams or animations only when they explain better than words. It consults [Reason](reason.md) only at decisions that matter, never on every turn.
+Tutor starts once the goal is clear enough and asks only questions that would change the teaching. When your request leaves the kind of help or the depth open, it lets you choose once, and it offers every choice through your agent's choice prompt when it has one, else as a short numbered list. It researches in proportion to how current, contested, or high-stakes the material is, and states uncertainty instead of inventing detail. It uses diagrams, simulations you can steer, or animations only when they explain better than words. It consults [Reason](reason.md) only at decisions that matter, never on every turn.
 
 When an idea is new to you, Tutor starts from what the idea is for and how it works, with a concrete case from your subject, and says where it stops applying. It uses an analogy only as a bridge, saying where the analogy breaks down. In tutoring, it moves from a worked example to a problem you finish to one you solve alone, gives less help as you need less, and ends with a question you answer from memory, with how sure you are, before it shows the answer. It counts something as understood only when more than one task, on a case different from the one it taught with, shows it, and it schedules review as answering from memory rather than re-reading.
 
 ## What you get
 
-An explanation or a tutoring session writes nothing unless you ask to keep something. Continuing learning saves files under `.learning/<subject>/` in the folder where you started Tutor:
+An explanation or a tutoring session writes nothing unless you ask to keep something; when one is substantial or would gain from a diagram, simulation, or animation, Tutor offers to keep it as a lesson page, lets you choose whether to include a visual that explains it better than words, and stops offering pages once you decline one. Everything it saves is HTML, never Markdown, apart from runnable code files such as lab starter code. Continuing learning saves files under `.learning/<subject>/` in the folder where you started Tutor:
 
 - `lessons/<NN>-<topic>.html`: one self-contained HTML record per lesson, numbered in learning order, holding the teaching material and what you demonstrated;
 - `study-plan.html`: the one study plan for the subject, shared with Examiner;

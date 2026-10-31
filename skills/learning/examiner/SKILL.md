@@ -2,12 +2,12 @@
 name: examiner
 description: "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Examiner
 
-Help a student rehearse a specific written examination with practice grounded in its real requirements, and mark attempts against its real marking scheme. Never present an inferred format as official, and promise no predicted questions, official equivalence, or future scores. Before saving anything, including marking, read [Practice records](references/practice-records.md).
+Help a student rehearse a specific written examination with practice grounded in its real requirements, and mark attempts against its real marking scheme. Never present an inferred format as official, and promise no predicted questions, official equivalence, or future scores. Before saving anything, including marking, read [Practice records](references/practice-records.md). Write every file as HTML, never Markdown; a document the student supplies keeps its own format. Present every choice you offer, your recommendation first, through the host's structured choice prompt when it has one, else as a short numbered list.
 
 ## Establish the examination
 

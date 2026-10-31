@@ -2,6 +2,8 @@
 
 Read this before writing a paper.
 
+When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time and which it is.
+
 ## Fidelity
 
 Match the real examination wherever its requirements establish it: question types and command words, sections and any choice of questions, marks per question and in total, the rules for candidates, rubric, answer format such as lines, boxes, or option letters, permitted materials, and syllabus coverage. Section and topic practice keep the real question style and marks for that part. Name each deliberate departure from representative conditions, such as an easier warm-up, a harder stretch set, or a shorter time, in the paper's instructions and the source notes. Difficulty and time are judgment: label them as estimates.

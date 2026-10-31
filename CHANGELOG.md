@@ -8,6 +8,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 - Tutor 1.2.0: Tutor now ships scripts and needs Python 3.11 or later. `scaffold` writes a lesson, the study plan, or `START_HERE.html` from a skeleton, taking the next lesson number and never replacing a file. `check` takes the pages just saved and blocks on unfilled skeleton markers, broken relative links, missing anchors, and unreadable files. It warns, without blocking, about absolute links and about cited web pages that are dead, unverifiable, or unreachable.
 - Examiner 1.2.0: Examiner now ships scripts and needs Python 3.11 or later. `scaffold` writes a practice set with the next set number and the paper runtime copied into `paper.html`, or the study plan or `START_HERE.html`, never replacing a file. `check` validates the pages just saved as Tutor's does.
+- Examiner 1.3.0: when Examiner delivers an on-screen paper, it starts a small helper on your computer, reachable only from it, and gives you a link to open the paper through. Saving or finishing writes your answers into the practice set's folder as `attempt-<N>.html`, so Examiner can mark them without you moving a file. Saves during an attempt update that attempt's file until it is finished; a new attempt takes the next number, and no earlier attempt is overwritten. If the helper is not running, the paper downloads the answer file as before and tells you so.
 
 ### Changed
 
@@ -40,6 +41,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Construct 1.1.2: ships the Blueprint 1.1.2 runtime copy, so it reports contract version 1.1.2. It still accepts every sealed 1.x plan.
 - Blueprint 1.1.3: a plan premise about an external service, such as a hosted platform, must rest on that service's current official documentation, including its recent changes, and the user is asked which of the service's modes they will use. A premise that no source settles goes to the user as a question instead of becoming an owner check after merge. Before, a plan could rely on older documentation for a setup the user did not choose.
 - Construct 1.1.3: ships the Blueprint 1.1.3 runtime copy, so it reports contract version 1.1.3. It still accepts every sealed 1.x plan.
+- Blueprint 1.1.5: before sealing, the planner names, for every file the plan adds or changes, each verification command that searches, counts, or validates that file, and checks the drafted text against that command's rule. Before, the rule was keyed to the commands, so an edit nobody linked to a validator, such as an Atlas pointer line, could seal and then fail final verification.
+- Construct 1.1.5: ships the Blueprint 1.1.5 runtime copy, so it reports contract version 1.1.5. It still accepts every sealed 1.x plan.
 
 ## [1.0.0] - 2026-10-25
 

@@ -35,6 +35,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tools" / "validation" / "paper_runtime_fixture.html"
 RUNTIME = ROOT / "skills" / "learning" / "examiner" / "assets" / "paper-runtime.html"
+HELPER = ROOT / "skills" / "learning" / "examiner" / "scripts" / "attempt_helper.py"
 MARKER = "<!-- paper-runtime -->"
 STORED = "JSON.parse(localStorage.getItem('ffh-paper:runtime-exercise-01'))"
 ANSWER_FILE = "answers-runtime-exercise-01.html"
@@ -52,7 +53,7 @@ MAC_PATHS = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 )
-EXPECTED_CHECKS = 27
+EXPECTED_CHECKS = 34
 
 
 class ExerciseError(Exception):
@@ -576,7 +577,7 @@ def _foreign_requests(events: list[dict[str, Any]], allowed: list[str]) -> list[
         url = str(event.get("params", {}).get("request", {}).get("url", ""))
         if url.startswith(("data:", "blob:", "about:")):
             continue
-        if url.startswith("file:") and _normal(url) in allowed_forms:
+        if _normal(url) in allowed_forms:
             continue
         foreign.append(url)
     return foreign
@@ -890,14 +891,16 @@ def scenario_a(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         (len(downloads) == 1, f"{len(downloads)} downloads began, not 1"),
         (bool(downloads) and downloads[0]["params"].get("suggestedFilename") == ANSWER_FILE,
          f"download suggested {downloads[0]['params'].get('suggestedFilename') if downloads else None!r}"),
+        (page.visible("#paper-save-status") and page.attr("#paper-save-status", "data-outcome") == "downloaded",
+         f"#paper-save-status outcome is {page.attr('#paper-save-status', 'data-outcome')!r}, not a visible downloaded"),
     ])
 
     answer_text = str(page.js(f"fetch({json.dumps(href)}).then(response => response.text())"))
     data = page.attempt_data(answer_text)
     answers = data.get("answers", {})
     checks.run("A16", [
-        ("This file was made on your device" in answer_text, "the answer file lacks the on-device sentence"),
-        ("Attempt 1" in answer_text, "the answer file lacks Attempt 1"),
+        ("This file was made on your own computer" in answer_text, "the answer file lacks the own-computer sentence"),
+        ("Browser attempt 1" in answer_text, "the answer file lacks Browser attempt 1"),
         ("Question 2: no answer (flagged for review)" in answer_text, "the answer file lacks the flagged unanswered question 2"),
         (data.get("id") == "runtime-exercise-01", "attempt data id differs"),
         (answers.get("q1") == "A", f"attempt data q1 is {answers.get('q1')!r}"),
@@ -1081,6 +1084,146 @@ def scenario_b(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
     session.close()
 
 
+def scenario_c(open_session: Any, papers: dict[str, Path], temp: Path, checks: Checks) -> None:
+    folder = temp / "student" / ".learning" / "exercise" / "exams" / "runtime-exercise" / "2026-01-01-full-mock-01"
+    folder.mkdir(parents=True)
+    (folder / "paper.html").write_text(papers["b"].read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+    helper = subprocess.Popen([sys.executable, str(HELPER), "--set-dir", str(folder)], stdout=subprocess.PIPE, text=True)
+    try:
+        assert helper.stdout is not None
+        started = json.loads(helper.stdout.readline() or "{}")
+        if started.get("status") != "serving":
+            raise ExerciseError(f"the attempt helper did not start: {started}")
+        url = str(started["url"])
+        origin = url[: -len("/paper.html")]
+        local = origin.replace("127.0.0.1", "localhost")
+        session: Session = open_session("profile-c")
+        page = Page(session)
+
+        def names() -> list[str]:
+            return sorted(path.name for path in folder.iterdir())
+
+        def data(name: str) -> dict[str, Any]:
+            return page.attempt_data((folder / name).read_text(encoding="utf-8"))
+
+        def wait_outcome(outcome: str) -> None:
+            session.wait_until("(() => { const e = document.querySelector('#paper-save-status');"
+                               f" return !!e && !e.hidden && e.getAttribute('data-outcome') === '{outcome}'; }})()", 5)
+
+        def reset_outcome() -> None:
+            page.js("document.querySelector('#paper-save-status').removeAttribute('data-outcome')")
+
+        session.navigate(url)
+        session.clear_downloads()
+        page.click("#paper-start")
+        page.click("input[name='q1'][value='A']")
+        page.click("#paper-save")
+        wait_outcome("saved")
+        first = data("attempt-1.html")
+        notice = page.text("#paper-practice-notice")
+        checks.run("C1", [
+            (names() == ["attempt-1.html", "paper.html"], f"the set folder holds {names()}"),
+            (first.get("answers", {}).get("q1") == "A", f"attempt-1 q1 is {first.get('answers', {}).get('q1')!r}"),
+            (first.get("attemptToken") == page.stored().get("attemptToken"), "attempt-1 token differs from the stored state"),
+            ("attempt-1.html" in page.text("#paper-save-status"), f"the status reads {page.text('#paper-save-status')!r}"),
+            ("only to Examiner's helper, a program on your own computer" in notice
+             and "Nothing is sent anywhere else." in notice, f"the notice reads {notice!r}"),
+            (not session.events_named("Browser.downloadWillBegin"), "a download began"),
+        ])
+
+        reset_outcome()
+        page.set_text("#q3", "Saved twice.")
+        page.click("#paper-save")
+        wait_outcome("saved")
+        checks.run("C2", [
+            (names() == ["attempt-1.html", "paper.html"], f"the set folder holds {names()}"),
+            (data("attempt-1.html").get("answers", {}).get("q3") == "Saved twice.", "attempt-1 q3 was not updated"),
+        ])
+
+        reset_outcome()
+        page.click("#paper-submit")
+        page.click("#paper-submit-yes")
+        page.click("#paper-break-skip")
+        page.click("#paper-submit")
+        page.click("#paper-submit-yes")
+        session.wait_until("document.documentElement.getAttribute('data-paper-status') === 'finished'", 5)
+        wait_outcome("saved")
+        finished = data("attempt-1.html").get("status")
+        # A reloaded finished paper shows no save outcome, so its box must say how to see one.
+        kept = (folder / "attempt-1.html").read_bytes()
+        session.reload()
+        reloaded_hidden = not page.visible("#paper-save-status")
+        box = page.text("#paper-attempt p")
+        page.click("#paper-save")
+        wait_outcome("saved")
+        checks.run("C3", [
+            (finished == "finished", "attempt-1 is not finished"),
+            (not session.events_named("Browser.downloadWillBegin"), "a download began at finish"),
+            (names() == ["attempt-1.html", "paper.html"], f"the set folder holds {names()}"),
+            (reloaded_hidden and "Press Save answers" in box, f"after reload the finished box reads {box!r}"),
+            (page.attr("#paper-save-status", "data-file") == "attempt-1.html",
+             f"saving the reloaded paper reported {page.attr('#paper-save-status', 'data-file')!r}"),
+            ((folder / "attempt-1.html").read_bytes() == kept, "saving the finished paper again changed attempt-1"),
+        ])
+
+        reset_outcome()
+        page.click("#paper-new-attempt")
+        page.click("#paper-new-attempt-yes")
+        page.click("#paper-start")
+        page.click("input[name='q1'][value='B']")
+        page.click("#paper-save")
+        wait_outcome("saved")
+        checks.run("C4", [
+            (page.attr("#paper-save-status", "data-file") == "attempt-2.html",
+             f"the save went to {page.attr('#paper-save-status', 'data-file')!r}"),
+            ((folder / "attempt-1.html").read_bytes() == kept, "attempt-1 changed"),
+            (data("attempt-2.html").get("attemptToken") != data("attempt-1.html").get("attemptToken"),
+             "the new attempt reused the token"),
+        ])
+
+        session.navigate(local + "/paper.html")
+        session.clear_downloads()
+        page.click("#paper-save")
+        localhost_file = session.saved_download()
+        local_begun = session.events_named("Browser.downloadWillBegin")
+        checks.run("C5", [
+            (bool(localhost_file), "no answer file downloaded from localhost"),
+            (bool(local_begun) and local_begun[0]["params"].get("suggestedFilename") == ANSWER_FILE,
+             f"download suggested {local_begun[0]['params'].get('suggestedFilename') if local_begun else None!r}"),
+            (page.attr("#paper-save-status", "data-outcome") == "downloaded",
+             f"the localhost outcome is {page.attr('#paper-save-status', 'data-outcome')!r}"),
+            (names() == ["attempt-1.html", "attempt-2.html", "paper.html"], f"the set folder holds {names()}"),
+        ])
+
+        session.navigate(url)
+        helper.terminate()
+        helper.wait(timeout=10)
+        session.clear_downloads()
+        page.click("#paper-save")
+        stopped_file = session.saved_download(15)
+        begun = session.events_named("Browser.downloadWillBegin")
+        checks.run("C6", [
+            (bool(stopped_file), "no answer file downloaded with the helper stopped"),
+            (bool(begun) and begun[0]["params"].get("suggestedFilename") == ANSWER_FILE,
+             f"download suggested {begun[0]['params'].get('suggestedFilename') if begun else None!r}"),
+            (page.attr("#paper-save-status", "data-outcome") == "downloaded",
+             f"the outcome is {page.attr('#paper-save-status', 'data-outcome')!r}"),
+            (ANSWER_FILE in page.text("#paper-save-status") and "Tell Examiner" in page.text("#paper-save-status"),
+             f"the status reads {page.text('#paper-save-status')!r}"),
+            (not (folder / "attempt-3.html").exists(), "attempt-3.html exists"),
+        ])
+
+        allowed = [url, origin + "/attempts", origin + "/favicon.ico", local + "/paper.html", local + "/favicon.ico"]
+        foreign = _foreign_requests(session.events, allowed)
+        checks.run("C7", [(not foreign, f"requests outside the helper: {foreign}")])
+        session.close()
+    finally:
+        helper.terminate()
+        helper.wait(timeout=10)
+        if helper.stdout is not None:
+            helper.stdout.close()
+
+
 def exercise(browser: str) -> tuple[str, int]:
     checks = Checks()
     sessions: list[Session] = []
@@ -1099,6 +1242,7 @@ def exercise(browser: str) -> tuple[str, int]:
 
             product = scenario_a(open_session, papers, temp, checks)
             scenario_b(open_session, papers, temp, checks)
+            scenario_c(open_session, papers, temp, checks)
         finally:
             for session in sessions:
                 session.close()

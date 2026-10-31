@@ -119,7 +119,9 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
             ("link.href ||= 'collect.html';", "link target"),
             ("use.setAttribute('xlink:href', 'sprite.svg#a');", "link target"),
             ("a.setAttributeNS(null, 'href', 'collect.html');", "link target"),
-            ("fetchLater('collect');", "network API")):
+            ("fetchLater('collect');", "network API"),
+            ('fetch("collect", { method: "POST" });', "network API"),
+            ("fetch(url);", "network API")):
         runtime.write_text(f"<script>{sample}</script>\n", encoding="utf-8")
         assert any(error.endswith(f": {name}") for error in validator.validate_paper_runtime(runtime)), sample
     # In-file code that reaches nothing outside the paper is not refused.
@@ -130,13 +132,15 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
                        " node.classList.add('source'); const fetched = 1; localStorage.getItem('form');"
                        " if (action === 'save') { p.style.background = 'none'; const here = location.href; }"
                        " const href = link.getAttribute('href'); items.forEach(action => run(action));"
-                       " menu.open(); p.style.backgroundColor = 'red';</script>\n", encoding="utf-8")
+                       " menu.open(); p.style.backgroundColor = 'red';"
+                       ' fetch("attempts", { method: "POST" }); const served = location.protocol.slice(0, 4) === "http";'
+                       "</script>\n", encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     # The size cap counts line endings as LF, so a CRLF checkout of the same text passes.
     runtime.write_text("a\n" * 14000, encoding="utf-8", newline="\r\n")
     assert validator.validate_paper_runtime(runtime) == []
-    runtime.write_text("a" * 41001, encoding="utf-8")
-    assert validator.validate_paper_runtime(runtime)[0].endswith("larger than 41000 bytes")
+    runtime.write_text("a" * 46001, encoding="utf-8")
+    assert validator.validate_paper_runtime(runtime)[0].endswith("larger than 46000 bytes")
     # No element exempts the background word; CSS uses background-color instead.
     for whole in ('<script>document.body.background = "bg.png"; // </style>\n</script>\n',
                   '<body background="bg.png">x</style>\n',

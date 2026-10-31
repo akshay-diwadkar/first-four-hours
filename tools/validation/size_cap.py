@@ -24,7 +24,7 @@ CAP_ENV = "SKILLS_MAX_GATED_ITEMS"
 MAX_SKILL_ITEMS = 3
 MAX_SHARED_ITEMS = 12
 MAX_TOTAL_ITEMS = 48
-SKILL_NAMES = frozenset({"architect", "assess", "atlas", "blueprint", "charter", "construct", "diagnose", "ideate", "pr", "reason", "router", "scribe", "ticket"})
+SKILL_NAMES = frozenset({"architect", "assess", "atlas", "blueprint", "charter", "construct", "diagnose", "examiner", "ideate", "pr", "reason", "router", "scribe", "ticket", "tutor"})
 _REPORT_PATH = os.environ.get("SKILLS_CASE_REPORT")
 
 

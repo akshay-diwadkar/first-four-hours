@@ -1622,7 +1622,7 @@ def main() -> int:
     for module_name in (
         "sync_diagnostic_runtime", "sync_classification_runtime", "sync_skill_protocol_runtime",
         "sync_architecture_handoff", "sync_delegation_projection", "sync_router_manifest",
-        "sync_skill_catalog",
+        "sync_skill_catalog", "sync_learning_runtime",
     ):
         import importlib
         errors.extend(importlib.import_module(module_name).check())

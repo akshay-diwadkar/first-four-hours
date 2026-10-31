@@ -1,0 +1,47 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateless",
+  "skill": "tutor",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {"name": "subject", "kind": "string", "required": false, "repeatable": false, "description": "Subject folder name under .learning/, lowercase words joined by hyphens.", "choices": [], "accepted_for": ["scaffold", "check"], "required_for": ["scaffold", "check"]},
+    {"name": "kind", "kind": "choice", "required": false, "repeatable": false, "description": "What to scaffold: a lesson or kept explanation, the shared study plan, or START_HERE.html.", "choices": ["lesson", "study-plan", "start-here"], "accepted_for": ["scaffold"], "required_for": ["scaffold"]},
+    {"name": "topic", "kind": "string", "required": false, "repeatable": false, "description": "Lesson topic, lowercase words joined by hyphens; required for a lesson.", "choices": [], "accepted_for": ["scaffold"]},
+    {"name": "date", "kind": "string", "required": false, "repeatable": false, "description": "Today's date as YYYY-MM-DD; required for a lesson.", "choices": [], "accepted_for": ["scaffold"]},
+    {"name": "file", "kind": "string", "required": false, "repeatable": true, "description": "A file just created or changed, as a path relative to .learning/<subject>/; repeat once per file.", "choices": [], "accepted_for": ["check"], "required_for": ["check"]},
+    {"name": "external", "kind": "choice", "required": false, "repeatable": false, "description": "Whether to fetch cited external links (default check); use skip only when offline.", "choices": ["check", "skip"], "accepted_for": ["check"]}
+  ],
+  "artifacts": [],
+  "phases": {},
+  "commands": {
+    "scaffold": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{repo_root}/.learning"],
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/learning_files.py", "scaffold", "--skill", "tutor", "--repo-root", "{repo_root}", "--kind", "{input.kind}", "--subject", "{input.subject}"],
+          "repeat": [{"input": "topic", "flag": "--topic"}, {"input": "date", "flag": "--date"}],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "check": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/learning_files.py", "check", "--skill", "tutor", "--repo-root", "{repo_root}", "--subject", "{input.subject}"],
+          "repeat": [{"input": "file", "flag": "--file"}, {"input": "external", "flag": "--external"}],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    }
+  }
+}

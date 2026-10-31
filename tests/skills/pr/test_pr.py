@@ -176,26 +176,24 @@ def _record(repo: Path, runs: Path, *argv: str) -> dict:
     return envelope["result"]
 
 
-def test_grounded_description_passes_check(tmp_path: Path) -> None:
+def test_ungrounded_description_is_rejected_with_repairs(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
-    runs = tmp_path / "runs.jsonl"
-    recorded = _record(repo, runs, sys.executable, "-c", "pass")
+    # Positive control: a grounded draft with a clean recorded run at HEAD passes check and writes nothing.
+    grounded_runs = tmp_path / "grounded-runs.jsonl"
+    recorded = _record(repo, grounded_runs, sys.executable, "-c", "pass")
     head = _git(repo, "rev-parse", "HEAD").strip()
     assert (recorded["exit_code"], recorded["head"], recorded["clean"]) == (0, head, True), recorded
-    draft = tmp_path / "draft.md"
-    _write(draft, GOOD.replace("{passed}", recorded["command"]))
-    code, envelope = _cli(repo, "check", f"draft={draft}", f"runs={runs}", "base=main")
+    grounded = tmp_path / "grounded.md"
+    _write(grounded, GOOD.replace("{passed}", recorded["command"]))
+    code, envelope = _cli(repo, "check", f"draft={grounded}", f"runs={grounded_runs}", "base=main")
     assert code == 0, envelope
     assert envelope["result"] == {
         "status": "checked",
         "head": head,
-        "body_sha256": hashlib.sha256(draft.read_bytes()).hexdigest(),
+        "body_sha256": hashlib.sha256(grounded.read_bytes()).hexdigest(),
     }, envelope
     assert _git(repo, "status", "--porcelain", "--untracked-files=all") == ""
 
-
-def test_ungrounded_description_is_rejected_with_repairs(tmp_path: Path) -> None:
-    repo = _repo(tmp_path)
     runs = tmp_path / "runs.jsonl"
     failed = _record(repo, runs, sys.executable, "-c", "raise SystemExit(3)")
     assert failed["exit_code"] == 3, failed

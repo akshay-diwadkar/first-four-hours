@@ -2,7 +2,7 @@
 name: tutor
 description: "Teach any subject, technical or not: a direct explanation, interactive tutoring that checks understanding and adapts, or continuing learning with a realistic study plan and self-contained HTML lesson records under `.learning/`. Use when someone wants to learn, understand, practise, or be taught something; skip explanations incidental to other work."
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # Tutor

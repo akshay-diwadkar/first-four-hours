@@ -47,6 +47,22 @@
         "tests/repository/test_routine_validation.py::test_live_repository_metadata"
       ]
     },
+    "tutor-runtime-contract": {
+      "test_targets": [
+        "tests/skills/tutor/test_learning_files.py"
+      ]
+    },
+    "examiner-runtime-contract": {
+      "test_targets": [
+        "tests/skills/examiner/test_practice_sets.py"
+      ]
+    },
+    "learning-runtime": {
+      "test_targets": [
+        "tests/skills/tutor/test_learning_files.py",
+        "tests/skills/examiner/test_practice_sets.py"
+      ]
+    },
     "charter-guidance-contract": {
       "test_targets": [
         "tests/repository/test_routine_validation.py::test_live_repository_metadata"
@@ -146,8 +162,7 @@
     },
     "scribe-runtime-contract": {
       "test_targets": [
-        "tests/skills/scribe/test_documents.py",
-        "tests/skills/scribe/test_semantic_validator.py"
+        "tests/skills/scribe/test_documents.py"
       ]
     },
     "ticket-runtime-contract": {
@@ -396,6 +411,31 @@
         "skills/learning/examiner/assets"
       ],
       "owner": "examiner-guidance-contract"
+    },
+    {
+      "id": "tutor-runtime-source",
+      "path_prefixes": [
+        "skills/learning/tutor/scripts",
+        "skills/learning/tutor/templates",
+        "skills/learning/tutor/skill-protocol.json"
+      ],
+      "owner": "tutor-runtime-contract"
+    },
+    {
+      "id": "examiner-runtime-source",
+      "path_prefixes": [
+        "skills/learning/examiner/scripts",
+        "skills/learning/examiner/templates",
+        "skills/learning/examiner/skill-protocol.json"
+      ],
+      "owner": "examiner-runtime-contract"
+    },
+    {
+      "id": "learning-runtime-source",
+      "path_prefixes": [
+        "tools/learning"
+      ],
+      "owner": "learning-runtime"
     },
     {
       "id": "charter-guidance-source",
@@ -761,7 +801,8 @@
         "tools/validation",
         "tools/diagnostics",
         "tools/classification",
-        "tools/skill_protocol"
+        "tools/skill_protocol",
+        "tools/learning"
       ],
       "owner": "repository-contract"
     },
@@ -939,12 +980,14 @@
     "charter": "charter-runtime-contract",
     "construct": "construct-runtime-contract",
     "diagnose": "diagnose-runtime-contract",
+    "examiner": "examiner-runtime-contract",
     "ideate": "ideate-runtime-contract",
     "pr": "pr-runtime-contract",
     "reason": "reason-guidance-contract",
     "router": "router-runtime-contract",
     "scribe": "scribe-runtime-contract",
-    "ticket": "ticket-runtime-contract"
+    "ticket": "ticket-runtime-contract",
+    "tutor": "tutor-runtime-contract"
   },
   "universal_targets": [
     "tests/repository/test_routine_validation.py::test_live_repository_metadata"

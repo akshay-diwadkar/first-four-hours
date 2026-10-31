@@ -2,7 +2,7 @@
 name: atlas
 description: Navigate, author, rebalance, validate, or maintain a project's filesystem-native Map/Landmark/Satellite orientation wiki over eligible project files. Use for unfamiliar project-folder orientation, initial mapping, a hierarchy defect, pointer upkeep, or a freshness drift audit; underlying project files remain truth and missing Atlas state never blocks normal work.
 metadata:
-  version: "1.1.0"
+  version: "2.0.0"
 ---
 
 # Atlas
@@ -15,7 +15,7 @@ Invoke commands as `python <skill>/scripts/cli.py --repo-root <root> --format js
 
 ## Navigate an existing wiki
 
-1. Start from root guidance's `MAP.md` copy, else read `MAP.md`.
+1. Start from the Map in root guidance.
 2. Follow only cue-matching links, batching each level's reads into one turn: a Satellite's start target first, a cross-link only when the task crosses its boundary.
 3. Read a link's heading section or named symbol's definition with a bounded read; widen only if insufficient.
 4. When no cue fits, routes compete, or an entrypoint proves unproductive, reconsider the route or search natively; never hunt through the whole wiki. If your work edits files, fix the misleading cue unless your skill limits Atlas upkeep.
@@ -27,7 +27,7 @@ Before changing wiki structure, read [information architecture](references/infor
 
 ## Validate the hierarchy
 
-The command is read-only. After edits, run `run` and repair every diagnostic. Counts are review signals.
+The command is read-only. After edits, run `run` and repair every diagnostic; report `map.map_unreadable`. Counts are review signals.
 
 ## Keep pointers current
 
@@ -35,4 +35,4 @@ When your work moves, renames, deletes, or changes the meaning of a file or symb
 
 ## Install project-folder guidance
 
-Agents discover the map only through root guidance, so authoring, rebalancing, and `MAP.md` edits finish with `setup-guidance`; it validates the hierarchy and maintains one block holding `MAP.md`'s body in root `AGENTS.md` and `CLAUDE.md`, creating either when missing. Only the user adds `<!-- OPT-OUT ATLAS -->`; `remove-guidance` runs only on explicit request.
+`setup-guidance` writes the Map, one block in root `AGENTS.md` and `CLAUDE.md`, from top-level Landmark titles and opening paragraphs, creating either file; authoring, rebalancing, and edits to those finish with it. Only the user adds `<!-- OPT-OUT ATLAS -->`; `remove-guidance` runs only on explicit request.

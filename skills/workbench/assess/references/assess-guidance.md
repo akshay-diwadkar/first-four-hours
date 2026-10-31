@@ -25,7 +25,7 @@ The Blueprint is authority evidence, never proof of correctness. A green baselin
 
 ## Atlas evidence
 
-When the target repository has an Atlas wiki (`MAP.md` and `.map/`), use the Satellites relevant to the changed files. A missing wiki changes nothing.
+When the target repository has an Atlas wiki (`.map/` pages), use the Satellites relevant to the changed files. A missing wiki changes nothing.
 
 - **Change-together cues.** For each changed file that a Satellite names as changing together with other files, confirm that those files changed too, or that this change does not need them to. A missing coupled change is a candidate propagation finding.
 - **Pointer upkeep.** When the diff moves, renames, deletes, or changes the meaning of a file that an existing Atlas pointer cites, that pointer and its cue must be updated in the same change. A stale pointer misleads later agents, so it is a maintainability defect.

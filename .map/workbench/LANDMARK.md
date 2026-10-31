@@ -1,6 +1,6 @@
 # Project workflows
 
-Navigate the project-facing capabilities by the stage of work and the handoff it needs.
+Follow for project definition, investigation, architecture, planning, execution, review, tickets, and project orientation.
 
 - [Investigate and decide structure](investigation.md): locate defect diagnosis and architecture decisions before implementation planning.
 - [Plan and execute](planning-and-execution.md): trace the sealed-plan boundary and its verification contracts.

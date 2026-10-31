@@ -38,7 +38,6 @@ def test_project_boundaries_are_refused(tmp_path: Path) -> None:
     root = _write(
         tmp_path / "repo",
         {
-            "MAP.md": "[Auth](.map/auth/LANDMARK.md)\n[Code](.map/code/LANDMARK.md)\n",
             ".map/code/LANDMARK.md": "# Code\n\n- [Sources](sources.md) — read for application entrypoints.\n",
             ".map/code/sources.md": "# Sources\n\n- [Source tree](../../src/) — application code.\n",
             "src/app.py": "print('app')\n",
@@ -65,14 +64,21 @@ def test_project_boundaries_are_refused(tmp_path: Path) -> None:
     entry = _write(
         tmp_path / "entry",
         {
-            "MAP.md": "[Docs](.map/docs/LANDMARK.md)\n",
-            ".map/docs/LANDMARK.md": "# Docs\n\n- [Entry](entry.md) — read for entry points.\n",
+            ".map/docs/LANDMARK.md": "# Docs\n\nFollow for entry\npoints.\n\n- [Entry](entry.md) — read for entry points.\n",
+            ".map/untitled/LANDMARK.md": "Follow for nothing.\n",
+            ".map/listed/LANDMARK.md": "# Listed\n\n- Follow for listings.\n",
+            ".map/linked/LANDMARK.md": "# Linked\n\nFollow with [docs](../docs/LANDMARK.md).\n",
+            ".map/commented/LANDMARK.md": "# Commented\n\nFollow for <kbd> keys.\n",
+            ".map/coded/LANDMARK.md": "# Coded\n\nFollow for `<!-- /ATLAS -->` handling.\n",
+            ".map/url/LANDMARK.md": "# Url\n\nFollow https://example.com for docs.\n",
+            ".map/odd name/LANDMARK.md": "# Odd\n\nFollow for odd names.\n",
             ".map/docs/entry.md": (
                 "# Entry\n\n"
                 "- [Start](../../docs/guide.md#start-here) — emphasized heading.\n"
                 "- [Steps](../../docs/guide.md#steps-1) — repeated heading.\n"
                 "- [Owned](../../docs/guide.md#_owned) — code-span heading.\n"
                 "- [Fenced](../../docs/guide.md#fenced) — heading only inside a fence.\n"
+                "- [Third](../../docs/guide.md#foo-2) — slug after a suffixed heading.\n"
                 "- [`authenticate` entry](../../src/app.py) — present symbol.\n"
                 "- [`authorize` check](../../src/app.py) — substring only.\n"
                 "- [App](../../src/app.py) — starts at `authorise_all`.\n"
@@ -80,6 +86,7 @@ def test_project_boundaries_are_refused(tmp_path: Path) -> None:
             ),
             "docs/guide.md": (
                 "# Guide\n\n## Start _here_\n\n## Steps\n\n## Steps\n\n## `_owned`\n\n"
+                "## Foo\n\n## Foo-1\n\n## Foo\n\n"
                 "```text\n## Fenced\n```\n"
             ),
             "src/app.py": "def authenticate():\n    return 'authorized'\n",
@@ -92,3 +99,21 @@ def test_project_boundaries_are_refused(tmp_path: Path) -> None:
     assert len(symbols) == 2, diagnostics
     assert any("`authorize`" in message for message in symbols), symbols
     assert any("`authorise_all`" in message for message in symbols), symbols
+    # The message names the whole path; the diagnostic's derived path field stops at a space.
+    entries = sorted(
+        str(item["message"]).removeprefix("Top-level Landmark ").partition(" cannot be listed")[0]
+        for item in diagnostics
+        if item["code"] == "map.landmark_entry_invalid"
+    )
+    assert entries == [
+        ".map/coded/LANDMARK.md",
+        ".map/commented/LANDMARK.md",
+        ".map/linked/LANDMARK.md",
+        ".map/listed/LANDMARK.md",
+        ".map/odd name/LANDMARK.md",
+        ".map/untitled/LANDMARK.md",
+        ".map/url/LANDMARK.md",
+    ], diagnostics
+
+    (tmp_path / "empty").mkdir()
+    assert _codes(tmp_path / "empty") == ["map.landmark_missing"]

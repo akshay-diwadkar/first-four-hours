@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -12,51 +10,45 @@ SKILL = ROOT / "skills" / "workbench" / "atlas"
 FIXTURES = Path(__file__).parent / "fixtures"
 sys.path.insert(0, str(SKILL / "scripts"))
 
-from repository_guidance import apply_guidance, guidance_lines, managed_block  # noqa: E402
+from repository_guidance import MAP_AUTHORITY, apply_guidance, managed_block, map_lines  # noqa: E402
+from structure_state import analyze, run_checks  # noqa: E402
 
 
 def test_setup_spaces_block_and_remove_restores_bytes(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     shutil.copytree(FIXTURES / "valid-simple", root)
     agents, claude = root / "AGENTS.md", root / "CLAUDE.md"
+    landmark_file = root / ".map/auth/LANDMARK.md"
     agents_original = b"# Rules\nKeep tests small. <!-- ATLASSIAN notes --> <!-- ATLAS 2026 roadmap -->\n"
     claude_original = b"# Rules\r\nNo trailing newline."
     agents.write_bytes(agents_original)
     claude.write_bytes(claude_original)
-    lines = guidance_lines(root)
+    landmark_file.write_text(
+        "# Authentication\n\nRoute through request identity\nand authorization concepts.\n\n"
+        "- [Request authentication](request-auth.md) — read when a request establishes a principal.\n",
+        encoding="utf-8",
+    )
+    lines = map_lines(analyze(root)[1])
 
     def apply(operation: str) -> None:
         report, diagnostics = apply_guidance(root, operation)
         assert diagnostics == [], diagnostics
         assert report["status"] == "complete"
 
-    def run() -> tuple[int, dict]:
-        result = subprocess.run(
-            [sys.executable, "-B", str(SKILL / "scripts" / "structure_state.py"), "--repo-root", str(root)],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-        )
-        return result.returncode, json.loads(result.stdout)
+    def checks() -> list[tuple[str, str]]:
+        return [(str(item["code"]), str(item["path"])) for item in run_checks(root)[1]]
 
-    spaced = agents_original + b"\n" + managed_block(b"\n", 1, lines=lines)
+    spaced = agents_original + b"\n" + managed_block(b"\n", 1, 0, lines)
     apply("setup")
     assert agents.read_bytes() == spaced
-    assert claude.read_bytes() == claude_original + b"\r\n\r\n" + managed_block(b"\r\n", 2, lines=lines)
-    landmark = "- [Authentication](.map/auth/LANDMARK.md) — read for request identity and authorization.".encode()
-    lead = (
-        "Atlas `setup-guidance` copied the rest of this section from `MAP.md`: follow only relevant links, "
-        "and search project files directly when none fits. Update affected map pointers when files move or "
-        "change meaning, and rerun `setup-guidance` after editing `MAP.md`; run Atlas `check`/`baseline` only "
-        "for drift audits."
-    ).encode()
-    assert landmark in agents.read_bytes() and lead in agents.read_bytes()
-    assert b"# Repository Map" not in agents.read_bytes()
+    assert claude.read_bytes() == claude_original + b"\r\n\r\n" + managed_block(b"\r\n", 2, 0, lines)
+    entry = b"- [Authentication](.map/auth/LANDMARK.md): Route through request identity and authorization concepts."
+    assert entry in agents.read_bytes() and MAP_AUTHORITY.encode() in agents.read_bytes()
     apply("setup")
     assert agents.read_bytes() == spaced
 
     agents.write_bytes(spaced + b"## Later\n")
-    followed = agents_original + b"\n" + managed_block(b"\n", 1, 1, lines=lines) + b"## Later\n"
+    followed = agents_original + b"\n" + managed_block(b"\n", 1, 1, lines) + b"## Later\n"
     apply("setup")
     assert agents.read_bytes() == followed
     apply("setup")
@@ -67,7 +59,7 @@ def test_setup_spaces_block_and_remove_restores_bytes(tmp_path: Path) -> None:
 
     agents.write_bytes(b"# Rules\n<!-- BEGIN ATLAS prefix=none -->\nold text\n<!-- END ATLAS -->\n")
     apply("setup")
-    assert agents.read_bytes() == b"# Rules\n\n" + managed_block(b"\n", 1, lines=lines)
+    assert agents.read_bytes() == b"# Rules\n\n" + managed_block(b"\n", 1, 0, lines)
     apply("remove")
     assert agents.read_bytes() == b"# Rules\n"
 
@@ -77,7 +69,7 @@ def test_setup_spaces_block_and_remove_restores_bytes(tmp_path: Path) -> None:
     apply("remove")
     assert agents.read_bytes() == b"# Rules\n## Later\n"
 
-    normalized = b"# Rules\r\n\r\n" + managed_block(b"\r\n", 1, 1, lines=lines) + b"## Later\r\n"
+    normalized = b"# Rules\r\n\r\n" + managed_block(b"\r\n", 1, 1, lines) + b"## Later\r\n"
     claude.write_bytes(normalized)
     apply("setup")
     assert claude.read_bytes() == normalized
@@ -86,34 +78,52 @@ def test_setup_spaces_block_and_remove_restores_bytes(tmp_path: Path) -> None:
 
     block_free, claude_free = agents.read_bytes(), claude.read_bytes()
     apply("setup")
-    assert run()[0] == 0
-    map_file = root / "MAP.md"
-    original_map = map_file.read_bytes()
-    map_file.write_bytes(original_map.replace(b"read for request identity", b"follow for request identity"))
-    code, payload = run()
-    assert code == 3, payload
-    assert [item["code"] for item in payload["diagnostics"]] == ["map.guidance_stale"] * 2, payload
-    assert sorted(item["path"] for item in payload["diagnostics"]) == ["AGENTS.md", "CLAUDE.md"], payload
-    apply("setup")
-    assert run()[0] == 0
+    assert checks() == []
 
-    pointer = b"read `MAP.md` and follow only relevant links"
-    head = b"# Repository Map\n\n" + landmark + b"\n\n"
-    paragraph = b"x" * (2000 - len(landmark) - 2)
-    map_file.write_bytes(head + paragraph + b"\n")
+    # Spacing around the block and newline style inside it are not Map drift, though setup rewrites both.
+    agents.write_bytes(agents.read_bytes() + b"## Later\n")
+    claude_payload = claude.read_bytes()
+    begin, end = claude_payload.index(b"<!-- ATLAS"), claude_payload.index(b"<!-- /ATLAS -->")
+    claude.write_bytes(claude_payload[:begin] + claude_payload[begin:end].replace(b"\r\n", b"\n") + claude_payload[end:])
+    respaced, renormalized = agents.read_bytes(), claude.read_bytes()
+    assert checks() == []
     apply("setup")
-    assert paragraph in agents.read_bytes()
-    map_file.write_bytes(head + paragraph + b"x\n")
-    apply("setup")
-    assert pointer in agents.read_bytes() and paragraph not in agents.read_bytes()
+    assert agents.read_bytes() != respaced and claude.read_bytes() != renormalized
 
-    map_file.write_bytes(original_map + b"<!-- note -->\n")
+    landmark_file.write_text(
+        landmark_file.read_text(encoding="utf-8").replace("Route through", "Follow for"), encoding="utf-8"
+    )
+    assert sorted(checks()) == [("map.map_stale", "AGENTS.md"), ("map.map_stale", "CLAUDE.md")]
     apply("setup")
-    assert pointer in agents.read_bytes() and b"<!-- note -->" not in agents.read_bytes()
-    apply("remove")
-    assert agents.read_bytes() == block_free
+    assert checks() == []
+    lines = map_lines(analyze(root)[1])
+    agents.write_bytes(block_free + b"\n" + managed_block(b"\n", 1, 0, lines[:-1]))
+    assert checks() == [("map.map_stale", "AGENTS.md")]
+    # Atlas 1.0.0's pointer block is rejection evidence: it gets no exemption.
+    pointer = (
+        "## Atlas",
+        "",
+        "Before project work, read `MAP.md` and follow only relevant links; project files are authoritative, "
+        "so search directly when no link fits. Update affected map pointers when files move or change meaning; "
+        "run Atlas `check`/`baseline` only for drift audits.",
+    )
+    agents.write_bytes(block_free + b"\n" + managed_block(b"\n", 1, 0, pointer))
+    assert checks() == [("map.map_stale", "AGENTS.md")]
+    apply("setup")
 
-    map_file.write_bytes(original_map)
-    agents.write_bytes(block_free + b"\n" + managed_block(b"\n", 1))
-    claude.write_bytes(claude_free + b"\r\n" + managed_block(b"\r\n", 1))
-    assert run()[0] == 0
+    claude.unlink()
+    assert checks() == [("map.map_missing", "CLAUDE.md")]
+    claude.write_bytes(b"# Rules\n<!-- OPT-OUT ATLAS -->\n")
+    assert checks() == []
+    agents.write_bytes(agents.read_bytes() + b"<!-- ATLAS -->\n")
+    assert checks() == [("map.map_unreadable", "AGENTS.md")]
+
+    agents.write_bytes(block_free)
+    apply("setup")
+    landmark_file.write_text(
+        landmark_file.read_text(encoding="utf-8").replace("Follow for", "[x](x.md) Follow for"), encoding="utf-8"
+    )
+    before = agents.read_bytes(), claude.read_bytes()
+    _report, diagnostics = apply_guidance(root, "setup")
+    assert [item["code"] for item in diagnostics] == ["map.guidance_setup_requires_valid_map"], diagnostics
+    assert (agents.read_bytes(), claude.read_bytes()) == before

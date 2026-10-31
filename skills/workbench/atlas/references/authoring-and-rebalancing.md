@@ -14,7 +14,7 @@
 3. Inspect current project files for the start targets, task cues, stop points, and costly cross-file conclusions worth caching.
 4. Create cohesive Satellites inside each Landmark.
 5. Add nested Landmarks only when another navigation level prevents unrelated reads.
-6. Write the tiny Map, navigation-only Landmarks, and project-file-linked Satellites.
+6. Write navigation-only Landmarks, each top-level one opening with its Map cue, and project-file-linked Satellites.
 7. Add only decision-useful wiki and project-file links.
 8. Merge file-shaped, symbol-shaped, or trivially thin Satellites.
 9. Promote already-separable Satellites.
@@ -41,22 +41,22 @@ Replace the old Satellite link in the parent Landmark with the new Landmark. Kee
 
 ## Collapse or merge a Landmark
 
-Collapse a nested Landmark into one Satellite when its children are cohesive or effectively always read together. If a top-level Landmark no longer deserves a cluster, merge or reorganize it into another top-level Landmark; never make `MAP.md` point directly to a Satellite.
+Collapse a nested Landmark into one Satellite when its children are cohesive or effectively always read together. If a top-level Landmark no longer deserves a cluster, merge or reorganize it into another top-level Landmark; the Map never points directly to a Satellite.
 
 Do not scan the full wiki routinely. Reconsider hierarchy during initial mapping, freshness review of an already affected subtree, an encountered navigation defect, or an explicit reorganization request.
 
 ## Completion
 
-Walk at least one representative actual task through each affected route from `MAP.md` as a fresh agent would, choosing tasks of different kinds, such as a change, a diagnosis, and a verification, where a route serves several. For each, note the first project file reached, every point where you searched or guessed, and where you stopped. Repair every ambiguous cue, unproductive first read, unnecessary hop, missing entrypoint, and missing or misleading stop point you meet. This proportionate qualitative check proves no navigation quality.
+Walk at least one representative actual task through each affected route from the Map as a fresh agent would, choosing tasks of different kinds, such as a change, a diagnosis, and a verification, where a route serves several. For each, note the first project file reached, every point where you searched or guessed, and where you stopped. Repair every ambiguous cue, unproductive first read, unnecessary hop, missing entrypoint, and missing or misleading stop point you meet. This proportionate qualitative check proves no navigation quality.
 
-Authoring or rebalancing is complete after that walkthrough, when `run` succeeds and `setup-guidance` then succeeds. Root guidance is required: agents will not discover the map without it, so run `setup-guidance` without waiting for a request. Repair every `run` diagnostic and the map diagnostics `setup-guidance` reports (`map.guidance_setup_requires_valid_map`, `map.guidance_map_unreadable`), then rerun until both succeed. Report any other `setup-guidance` diagnostic, or the user declining root guidance, as incomplete authoring with that diagnostic or refusal; never hand-edit, relink, re-encode, or restore root instruction files to get past it, and never add `<!-- OPT-OUT ATLAS -->` yourself. Completion never requires freshness state; [freshness and maintenance](freshness-and-maintenance.md) makes freshness current.
+Authoring or rebalancing is complete after that walkthrough, when `setup-guidance` succeeds and `run` then succeeds. Root guidance is required: agents will not discover the map without it, so run `setup-guidance` without waiting for a request. Repair every `run` diagnostic except `map.map_unreadable`, rerunning `setup-guidance` for `map.map_stale` and, unless the user removed guidance, `map.map_missing`, and the map diagnostics `setup-guidance` reports (`map.guidance_setup_requires_valid_map`, `map.guidance_map_unreadable`), then rerun until both succeed. Report `map.map_unreadable`, any other `setup-guidance` diagnostic, or the user declining or removing root guidance, as incomplete authoring with that diagnostic or refusal; never hand-edit, relink, re-encode, or restore root instruction files to get past it, and never add `<!-- OPT-OUT ATLAS -->` yourself. Completion never requires freshness state; [freshness and maintenance](freshness-and-maintenance.md) makes freshness current.
 
 ## Reviewed patterns
 
 ### Simple hierarchy
 
 ```text
-MAP.md
+Map (root guidance)
   -> .map/auth/LANDMARK.md
        -> .map/auth/request-auth.md
 ```
@@ -66,7 +66,7 @@ The Map says when authentication context is useful. The Landmark routes within a
 ### Nested hierarchy and cross-link
 
 ```text
-MAP.md
+Map (root guidance)
   -> .map/auth/LANDMARK.md
        -> .map/auth/tokens/LANDMARK.md
             -> access.md

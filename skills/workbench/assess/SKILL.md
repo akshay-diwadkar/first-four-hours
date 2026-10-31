@@ -2,7 +2,7 @@
 name: assess
 description: Assess a PR or code change against its issue/spec, acceptance criteria, repository rules, tests, and base behavior for correctness, code quality, maintainability, and proportionate security. Use for PR review, re-review, acceptance-criteria checks, or merge readiness.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Assess

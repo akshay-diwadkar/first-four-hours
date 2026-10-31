@@ -107,16 +107,24 @@ def test_set_scaffold_and_check_of_saved_files(tmp_path: Path) -> None:
         port = server.server_address[1]
         gone, private = f"http://127.0.0.1:{port}/gone", f"http://127.0.0.1:{port}/private"
         key = mock / "answer-key.html"
-        key.write_text(page("paper.html", "missing.html", "#nope", "paper.html#absent", "/abs.html", gone, private), encoding="utf-8")
+        malformed = ("http://[::1/x", "https:/no-host/x")
+        key.write_text(
+            page("paper.html", "missing.html", "#nope", "paper.html#absent", "/abs.html", gone, private, *malformed),
+            encoding="utf-8",
+        )
 
-        # Broken relative targets and missing anchors block; absolute and external problems only warn; nothing is written.
+        # Broken relative targets and missing anchors block; absolute and external problems, including a malformed
+        # or hostless citation, only warn and never hide the blocking problems; nothing is written.
         before = snapshot(student / ".learning")
         code, envelope = cli(student, "check", ("subject", "chemistry"), ("file", f"{relative}/answer-key.html"))
         assert code == 3, envelope
         errors = sorted(item["code"] for item in envelope["diagnostics"] if item["severity"] == "error")
-        warnings = {item["code"] for item in envelope["diagnostics"] if item["severity"] == "warning"}
+        warnings = sorted(item["code"] for item in envelope["diagnostics"] if item["severity"] == "warning")
         assert errors == ["learning.fragment_missing", "learning.fragment_missing", "learning.link_broken"], envelope
-        assert warnings == {"learning.link_absolute", "learning.external_dead", "learning.external_unverified"}, envelope
+        assert warnings == [
+            "learning.external_dead", "learning.external_unverified", "learning.external_unverified",
+            "learning.external_unverified", "learning.link_absolute",
+        ], envelope
         assert snapshot(student / ".learning") == before
 
         # Without the broken links the page passes with warnings; skip fetches nothing.

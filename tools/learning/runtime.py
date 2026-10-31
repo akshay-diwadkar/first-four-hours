@@ -61,7 +61,7 @@ ACTIONS = {
     "learning.fragment_missing": "Point the link at an id that exists in the target page, or add that id.",
     "learning.link_absolute": "Prefer a relative link so the page still works when the folder moves.",
     "learning.external_dead": "Replace the citation with a live source, or tell the learner it is dead.",
-    "learning.external_unverified": "Open the citation yourself or tell the learner it could not be verified.",
+    "learning.external_unverified": "Correct the URL if it is malformed, else open the citation yourself, or tell the learner it could not be verified.",
     "learning.external_unreachable": "Retry later, or tell the learner the citation could not be reached.",
     "learning.external_offline": "Retry when the network is available, or rerun with external=skip and say the citations were not checked.",
     "learning.external_capped": "Check the remaining citations in a later run with fewer files.",
@@ -423,14 +423,19 @@ def check(args: argparse.Namespace) -> tuple[int, Any]:
                     add("learning.fragment_missing", f"{name} links #{fragment}, which no id in it matches", path, line)
                 continue
             slashed = ref.replace("\\", "/")
-            parts = urllib.parse.urlsplit(slashed)
+            try:
+                parts = urllib.parse.urlsplit(slashed)
+            except ValueError as exc:
+                # Only a URL with a host part can fail to split, so this is never a relative link.
+                add("learning.external_unverified", f"{name} links {ref}, which is not a valid URL: {exc}", path, line, "warning")
+                continue
             scheme = parts.scheme.lower()
             if slashed.startswith("/") or DRIVE_RE.match(slashed) or scheme == "file":
                 add("learning.link_absolute", f"{name} uses the absolute link {ref}", path, line, "warning")
                 continue
             if scheme in ("http", "https"):
                 if not parts.netloc:
-                    add("learning.link_broken", f"{name} links {ref}, which has no host", path, line)
+                    add("learning.external_unverified", f"{name} links {ref}, which has no host", path, line, "warning")
                 else:
                     url = urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
                     external.setdefault(url, []).append(f"{name}:{line}")

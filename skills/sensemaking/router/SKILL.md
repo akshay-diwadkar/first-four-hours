@@ -3,7 +3,7 @@ name: router
 description: Author the smallest sufficient route of suite capabilities into ignored `route.md`. Use when the next capability is unclear, work spans several capabilities, or current state may already satisfy part of the request; skip it when one capability obviously applies.
 user-invocable: false
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Router

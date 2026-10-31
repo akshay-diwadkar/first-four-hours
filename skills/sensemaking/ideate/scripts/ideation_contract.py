@@ -20,47 +20,54 @@ from ideation_workspace import WORKSPACE_DIR, WORKSPACE_PARTS
 # Structural constants
 # ---------------------------------------------------------------------------
 
-IDEATE_VERSION = "1.0.0"
+IDEATE_VERSION = "2.0.0"
+
+WHAT_TO_DO_HEADING = "## What to do"
+GOAL_AND_RESEARCH_HEADING = "## Goal and research"
+WHAT_WOULD_CHANGE_HEADING = "## What would change the answer"
+SUGGESTED_FOLLOW_UP_HEADING = "## Suggested follow-up"
 
 REQUIRED_HEADINGS = (
-    "## Handoff",
+    WHAT_TO_DO_HEADING,
+    GOAL_AND_RESEARCH_HEADING,
     "## Evidence",
     "## Exploration",
-    "## Conclusion",
-    "## Open questions / next discriminator",
+    WHAT_WOULD_CHANGE_HEADING,
 )
 OPTIONAL_HEADINGS = (
-    "## Optional downstream action",
+    SUGGESTED_FOLLOW_UP_HEADING,
 )
 
-HANDOFF_STATES = {"decision-ready", "experiment-first", "research-limited"}
+OUTCOMES = {"recommended direction", "run an experiment first", "research limit reached"}
 RESEARCH_STOP_REASON_PREFIXES = (
-    "condition met",
+    "settled",
     "diminishing returns",
     "unavailable sources",
     "user limit",
 )
+WEB_OPT_OUT_STOP_REASONS = ("unavailable sources", "user limit")
 
 TITLE_RE = re.compile(r"^# Ideation:[ \t]*(.+)$")
-HANDOFF_STATE_RE = re.compile(r"^- State:[ \t]*(.+)$", re.MULTILINE)
-HANDOFF_RESEARCH_RE = re.compile(r"^- Research:[ \t]*(.+)$", re.MULTILINE)
+OUTCOME_RE = re.compile(r"^- Outcome:[ \t]*(.+)$", re.MULTILINE)
+RESEARCH_RE = re.compile(r"^- Research:[ \t]*(.+)$", re.MULTILINE)
 RESEARCH_RECORD_RE = re.compile(
     r"^(?:" + "|".join(re.escape(prefix) for prefix in RESEARCH_STOP_REASON_PREFIXES) + r")[ \t]+[—-][ \t]+\S",
     re.IGNORECASE,
 )
-HANDOFF_SELECTION_RE = re.compile(r"^- Selection:[ \t]*(.+)$", re.MULTILINE)
-SELECTION_VALUE_RE = re.compile(r"^(open|user-selected|delegated)(?:[ \t]+[—-][ \t]+(\S.*))?$")
+FINAL_CHOICE_RE = re.compile(r"^- Final choice:[ \t]*(.+)$", re.MULTILINE)
+FINAL_CHOICE_VALUE_RE = re.compile(r"^(yours to make|made by you|delegated)(?:[ \t]+[—-][ \t]+(\S.*))?$")
+WHAT_TO_DO_FIELD_LINE_RE = re.compile(r"^- (?:Outcome|Final choice):.*$", re.MULTILINE)
 
-HANDOFF_REQUIRED_FIELDS = (
-    "- State:",
-    "- Selection:",
+WHAT_TO_DO_REQUIRED_FIELDS = (
+    "- Outcome:",
+    "- Final choice:",
+)
+GOAL_AND_RESEARCH_REQUIRED_FIELDS = (
     "- Goal:",
     "- Decision criteria:",
     "- Scope / non-goals:",
     "- Research:",
 )
-
-ADVERSARIAL_REQUIRED_FIELDS = ("- What would change the answer:",)
 
 SUPPORT_BASIS_PREFIXES = (
     "evidence-backed:",
@@ -68,7 +75,8 @@ SUPPORT_BASIS_PREFIXES = (
     "hypothesis:",
 )
 
-SEARCH_SHAPES = ("alternative", "path", "composed")
+SEARCH_SHAPES = ("alternative", "path", "path with a fork")
+SEQUENCED_SHAPES = ("path", "path with a fork")
 SEARCH_SHAPE_RE = re.compile(r"^Search shape:[ \t]*(.*)$", re.MULTILINE)
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 CAUSAL_LENSES = (
@@ -222,19 +230,19 @@ def _validate_research_record(record: str) -> list[Diagnostic]:
     return [
         Diagnostic(
             "ideation.invalid_research_record",
-            "research record must read '<condition met | diminishing returns | unavailable sources | user limit> "
+            "research record must read '<settled | diminishing returns | unavailable sources | user limit> "
             "— <coverage searched; limitations>'",
         )
     ]
 
 
-def _validate_selection(selection: str) -> list[Diagnostic]:
-    match = SELECTION_VALUE_RE.fullmatch(selection.strip())
-    if match is None or (match.group(1) != "open" and match.group(2) is None):
+def _validate_final_choice(final_choice: str) -> list[Diagnostic]:
+    match = FINAL_CHOICE_VALUE_RE.fullmatch(final_choice.strip())
+    if match is None or (match.group(1) != "yours to make" and match.group(2) is None):
         return [
             Diagnostic(
-                "ideation.invalid_selection",
-                "handoff selection must be 'open', 'user-selected — <choice; source>', "
+                "ideation.invalid_final_choice",
+                "final choice must be 'yours to make', 'made by you — <choice; source>', "
                 "or 'delegated — <scope; source>'",
             )
         ]
@@ -313,44 +321,67 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
     if valid_positions != sorted(valid_positions):
         errors.append(Diagnostic("ideation.heading_order", "required headings must appear in canonical order"))
 
-    sec_opt_idx = text.find("## Optional downstream action")
+    sec_opt_idx = text.find(SUGGESTED_FOLLOW_UP_HEADING)
     if sec_opt_idx != -1:
-        if text.count("## Optional downstream action") > 1:
-            errors.append(Diagnostic("ideation.duplicate_heading", "optional heading '## Optional downstream action' appears multiple times"))
-        sec_disc_idx = text.find("## Open questions / next discriminator")
-        if sec_disc_idx != -1 and sec_opt_idx < sec_disc_idx:
-            errors.append(Diagnostic("ideation.heading_order", "Optional downstream action must appear after Open questions / next discriminator"))
+        if text.count(SUGGESTED_FOLLOW_UP_HEADING) > 1:
+            errors.append(Diagnostic("ideation.duplicate_heading", f"optional heading {SUGGESTED_FOLLOW_UP_HEADING!r} appears multiple times"))
+        sec_change_idx = text.find(WHAT_WOULD_CHANGE_HEADING)
+        if sec_change_idx != -1 and sec_opt_idx < sec_change_idx:
+            errors.append(Diagnostic("ideation.heading_order", "Suggested follow-up must appear after What would change the answer"))
 
-    # 3. Handoff section fields
-    handoff_body = _section_body(text, "## Handoff")
-    for field in HANDOFF_REQUIRED_FIELDS:
-        line_re = re.compile(rf"^{re.escape(field)}[ \t]*(.*)$", re.MULTILINE)
-        m = line_re.search(handoff_body)
-        if not m or not m.group(1).strip():
-            errors.append(Diagnostic("ideation.handoff_field_empty", f"required handoff field is missing or empty: {field!r}"))
+    # 3. Required fields of What to do and Goal and research
+    what_to_do_body = _section_body(text, WHAT_TO_DO_HEADING)
+    goal_and_research_body = _section_body(text, GOAL_AND_RESEARCH_HEADING)
+    for body, fields in (
+        (what_to_do_body, WHAT_TO_DO_REQUIRED_FIELDS),
+        (goal_and_research_body, GOAL_AND_RESEARCH_REQUIRED_FIELDS),
+    ):
+        for field in fields:
+            line_re = re.compile(rf"^{re.escape(field)}[ \t]*(.*)$", re.MULTILINE)
+            m = line_re.search(body)
+            if not m or not m.group(1).strip():
+                errors.append(Diagnostic("ideation.field_empty", f"required field is missing or empty: {field!r}"))
 
-    research_m = HANDOFF_RESEARCH_RE.search(handoff_body)
+    research_m = RESEARCH_RE.search(goal_and_research_body)
+    research_valid = False
     if research_m:
-        errors.extend(_validate_research_record(research_m.group(1)))
+        research_errors = _validate_research_record(research_m.group(1))
+        research_valid = not research_errors
+        errors.extend(research_errors)
 
-    selection_m = HANDOFF_SELECTION_RE.search(handoff_body)
-    if selection_m:
-        errors.extend(_validate_selection(selection_m.group(1)))
+    final_choice_m = FINAL_CHOICE_RE.search(what_to_do_body)
+    if final_choice_m:
+        errors.extend(_validate_final_choice(final_choice_m.group(1)))
 
-    # 4. Handoff state
-    state_m = HANDOFF_STATE_RE.search(handoff_body)
-    if not state_m:
-        errors.append(Diagnostic("ideation.missing_state", "handoff '- State:' field is required"))
-        state = ""
+    # 4. Outcome
+    outcome_m = OUTCOME_RE.search(what_to_do_body)
+    if not outcome_m:
+        errors.append(
+            Diagnostic(
+                "ideation.missing_outcome",
+                "What to do requires '- Outcome: recommended direction | run an experiment first | research limit reached'",
+            )
+        )
+        outcome = ""
     else:
-        state = state_m.group(1).strip()
-        if state not in HANDOFF_STATES:
+        outcome = outcome_m.group(1).strip()
+        if outcome not in OUTCOMES:
             errors.append(
                 Diagnostic(
-                    "ideation.invalid_state",
-                    f"handoff state {state!r} must be one of: {', '.join(sorted(HANDOFF_STATES))}",
+                    "ideation.invalid_outcome",
+                    "outcome must be one of: recommended direction, run an experiment first, research limit reached",
                 )
             )
+
+    # What to do states the recommendation or next step in prose after its fields
+    what_to_do_prose = WHAT_TO_DO_FIELD_LINE_RE.sub("", HTML_COMMENT_RE.sub("", what_to_do_body))
+    if not what_to_do_prose.strip():
+        errors.append(
+            Diagnostic(
+                "ideation.empty_what_to_do",
+                "What to do must state the recommendation or the next step in plain language after its fields",
+            )
+        )
 
     # 5. Evidence section
     evidence_section = _section_body(text, "## Evidence")
@@ -427,6 +458,21 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
         if verification in EMPTY_CELLS:
             errors.append(Diagnostic("ideation.empty_contextual_verification", f"{label}: verification must be non-empty"))
 
+    # Web research is the default: with no External row naming a source, research must
+    # record why the web was not searched.
+    if research_m and research_valid:
+        sourced_external = [row for row in rows["external"] if row[1] not in EMPTY_CELLS]
+        stop_reason = research_m.group(1).strip().casefold()
+        if not sourced_external and not stop_reason.startswith(WEB_OPT_OUT_STOP_REASONS):
+            errors.append(
+                Diagnostic(
+                    "ideation.web_research_missing",
+                    "no External evidence row: search the web and record what it found (including that it "
+                    "found nothing relevant), or record why not with 'user limit' (the user said not to) "
+                    "or 'unavailable sources' (web research could not be done)",
+                )
+            )
+
     # 7. Exploration section
     exploration_body = _section_body(text, "## Exploration")
     if not exploration_body.strip():
@@ -441,10 +487,10 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
         errors.append(
             Diagnostic(
                 "ideation.invalid_search_shape",
-                "Exploration must declare 'Search shape: alternative | path | composed'",
+                "Exploration must declare 'Search shape: alternative | path | path with a fork'",
             )
         )
-    required_lenses = CAUSAL_LENSES + (SEQUENCING_LENSES if shape in ("path", "composed") else ())
+    required_lenses = CAUSAL_LENSES + (SEQUENCING_LENSES if shape in SEQUENCED_SHAPES else ())
     for lens in required_lenses:
         if not re.search(rf"^- {re.escape(lens)}:[ \t]*\S", visible_exploration, re.MULTILINE):
             errors.append(
@@ -463,8 +509,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
     ):
         errors.extend(_validate_decisive_experiment("Exploration", exp_m.group(1)))
 
-    conclusion_body = _section_body(text, "## Conclusion")
-    sec_disc_body = _section_body(text, "## Open questions / next discriminator")
+    what_would_change_body = _section_body(text, WHAT_WOULD_CHANGE_HEADING)
 
     # Check support bases if declared
     for support_m in re.finditer(r"^- Support basis:[ \t]*(.+)$", exploration_body, re.MULTILINE):
@@ -485,31 +530,27 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
                 )
             )
 
-    # 8. Conclusion section
-    if not conclusion_body.strip():
-        errors.append(Diagnostic("ideation.empty_conclusion", "Conclusion section must be non-empty"))
-
-    # 9. State invariants
-    if state == "decision-ready":
+    # 8. Outcome invariants
+    if outcome == "recommended direction":
         if sum(len(found) for found in rows.values()) == 0:
             errors.append(
                 Diagnostic(
-                    "ideation.decision_ready_empty_evidence",
-                    "state 'decision-ready' requires at least one evidence item (local, external, or contextual)",
+                    "ideation.recommendation_without_evidence",
+                    "outcome 'recommended direction' requires at least one evidence row (local, external, or contextual)",
                 )
             )
 
-    # 11. Section optional downstream action routing restriction
-    sec_opt_body = _section_body(text, "## Optional downstream action")
+    # 9. Suggested follow-up routing restriction
+    sec_opt_body = _section_body(text, SUGGESTED_FOLLOW_UP_HEADING)
     if sec_opt_body and "construct" in sec_opt_body.lower():
         errors.append(
             Diagnostic(
                 "ideation.prohibited_direct_implementation",
-                "optional downstream action must never route directly to 'construct'",
+                "suggested follow-up must never route directly to 'construct'",
             )
         )
 
-    # 12. Prohibited implementation patches
+    # 10. Prohibited implementation patches
     if PROHIBITED_RE.search(text):
         errors.append(
             Diagnostic(
@@ -518,25 +559,15 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
             )
         )
 
-    # 13. Open questions / next discriminator adversarial fields
-    if not sec_disc_body.strip():
+    # 11. What would change the answer
+    if not HTML_COMMENT_RE.sub("", what_would_change_body).strip():
         errors.append(
             Diagnostic(
-                "ideation.empty_open_questions",
-                "Open questions / next discriminator section must be non-empty",
+                "ideation.empty_what_would_change",
+                "What would change the answer must state the strongest challenge and when another candidate "
+                "or the baseline would win",
             )
         )
-    else:
-        for field_name in ADVERSARIAL_REQUIRED_FIELDS:
-            field_pattern = re.compile(rf"^{re.escape(field_name)}[ \t]*(.*)$", re.MULTILINE)
-            match = field_pattern.search(sec_disc_body)
-            if not match or not match.group(1).strip():
-                errors.append(
-                    Diagnostic(
-                        "ideation.missing_adversarial_field",
-                        f"required field is missing or empty in Open questions: {field_name!r}",
-                    )
-                )
 
     return errors
 

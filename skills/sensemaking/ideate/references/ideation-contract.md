@@ -1,71 +1,62 @@
 # Ideation Contract
 
-- [Structure](#structure)
-- [Deterministic rules](#deterministic-rules)
-  - [Handoff](#handoff)
-  - [Evidence](#evidence)
-  - [Exploration](#exploration)
-  - [Conclusion](#conclusion)
-  - [Open questions / next discriminator](#open-questions--next-discriminator)
-  - [Optional downstream action](#optional-downstream-action)
-  - [Prohibited (deterministic)](#prohibited-deterministic)
-  - [Receipt](#receipt)
-  - [Workspace](#workspace)
-- [Guidance](#guidance)
-  - [Framing](#framing)
-  - [Generation](#generation)
-  - [Search shapes and lenses](#search-shapes-and-lenses)
-  - [Dominant discriminator and search saturation](#dominant-discriminator-and-search-saturation)
-  - [Possibility space and feasibility](#possibility-space-and-feasibility)
-  - [Blocker routing](#blocker-routing)
-  - [Consumption](#consumption)
-  - [Reason boundary](#reason-boundary)
-- [Agent obligations (not machine-judged)](#agent-obligations-not-machine-judged)
-
 Exact `ideation.md` format. Python enforces structure and syntax only; idea quality, relevance, novelty, and truthful prose remain agent obligations.
 
 ## Structure
 
 ```text
 # Ideation: <goal>
-## Handoff
+## What to do
+## Goal and research
 ## Evidence
 ## Exploration
-## Conclusion
-## Open questions / next discriminator
-## Optional downstream action   ← omit when absent
+## What would change the answer
+## Suggested follow-up   ← omit when absent
 ```
 
-Title first line with non-empty goal. Headings in canonical order, once each. Required records are the whole floor: add another line only when a consumer acts on it.
+Title first line with non-empty goal. Headings in canonical order, once each. Required records are the whole floor: add another line only when a consumer acts on it. Write headings, labels, and values for a reader who has never seen this contract: plain words, no internal codes.
 
 ## Deterministic rules
 
-### Handoff
+### What to do
+
+The opening section: a reader who knows nothing of this format acts from it alone. Two required fields:
+
+```text
+- Outcome: recommended direction | run an experiment first | research limit reached
+- Final choice: yours to make | made by you — <choice; source> | delegated — <scope; source>
+```
+
+Agent-owned:
+- `recommended direction` → evidence/authority supports a recommendation for the next intended commitment, whether that is an alternative, a combination of alternatives, or a coherent causal/dependency path. It cannot rest on an unverified hypothesis or empty evidence.
+- `run an experiment first` → one testable observation could materially change the conclusion or next commitment before stronger commitment.
+- `research limit reached` → insufficient coverage for a defensible stronger outcome.
+
+`Final choice:` records who makes the final choice; it never restates the recommendation:
+- `yours to make` → the user still chooses. The recommendation is advice, not approval or implementation authority.
+- `made by you — <choice; source>` → the user explicitly chose before sealing; cite where (for example a contextual evidence row) and do not ask again.
+- `delegated — <scope; source>` → the user explicitly delegated the final choice; Ideate chose within that scope. A request for a recommendation, or delegation of a research blocker, is not delegation of the final choice.
+
+The sealer requires one of these values and a note after `made by you` or `delegated`; their truth stays agent-owned.
+
+After the fields, required prose states, in plain language grounded in the decision criteria and verified evidence, either:
+- **A recommendation:** the recommended direction or path, its material trade-offs, and the viable choices left while the choice is `yours to make`. Under `made by you` or `delegated`, still give the evidence-supported recommendation and flag any divergence from the recorded choice, which stands; OR
+- **What to do before choosing:** when evidence does not justify the next intended commitment, the experiment to run and what each result would mean, or what research could not establish and what would lift that limit, with the current trade-offs and no manufactured winner.
+
+For a path search, with or without a fork, state why the recommended order beats the competing orderings. Ranking and comparison tables are optional and used only when they materially aid alternative search.
+
+### Goal and research
 
 Required non-empty fields:
 
 ```text
-- State: decision-ready | experiment-first | research-limited
-- Selection: open | user-selected — <choice; source> | delegated — <scope; source>
 - Goal:
 - Decision criteria:
 - Scope / non-goals:
-- Research: condition met | diminishing returns | unavailable sources | user limit — <coverage; limitations>
+- Research: settled | diminishing returns | unavailable sources | user limit — <coverage; limitations>
 ```
 
-Agent-owned:
-- `decision-ready` → evidence/authority supports a recommendation for the next intended commitment, whether that is an alternative, a combination of alternatives, or a coherent causal/dependency path.
-- `experiment-first` → one testable observation could materially change the conclusion or next commitment before stronger commitment.
-- `research-limited` → insufficient coverage for a defensible stronger state.
-
-`Selection:` records who owns the final choice; it never restates the recommendation:
-- `open` → the user still selects. The Conclusion's recommendation is advice, not approval or implementation authority.
-- `user-selected — <choice; source>` → the user explicitly chose before sealing; cite where (for example a contextual evidence row) and do not ask again.
-- `delegated — <scope; source>` → the user explicitly delegated final selection; Ideate selected within that scope. A request for a recommendation, or delegation of a research blocker, is not delegation of final selection.
-
-The sealer requires one of these values and a note after `user-selected` or `delegated`; their truth stays agent-owned.
-
-`Research:` is the one research record. It begins with why research stopped (`condition met`, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: playbooks and sources used, what was searched, and what was unavailable, skipped, or user-excluded. `decision-ready` cannot rest on an unverified hypothesis or empty evidence. Individually verified findings or completed source collection do not determine aggregate readiness; sufficiency for the next intended commitment remains agent-owned.
+`Research:` is the one research record. It begins with why research stopped (`settled` when more search could not change the answer, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: playbooks and sources used, the web searches run, and what was unavailable, skipped, or user-excluded. The sealer refuses an ideation with no External evidence row naming a source unless research stopped for `user limit`, whose coverage then names the user's web opt-out, or `unavailable sources`, whose coverage names why web research could not be done; record a web search that found nothing relevant as an External evidence row saying so. Individually verified findings or completed source collection do not determine aggregate readiness; sufficiency for the next intended commitment remains agent-owned.
 
 ### Evidence
 
@@ -82,7 +73,7 @@ Elsewhere, cite evidence by what it is, such as its source and finding, never by
 Exploration opens with the divergence record, required in every search:
 
 ```text
-Search shape: alternative | path | composed
+Search shape: alternative | path | path with a fork
 - Obvious defaults:
 - Simplify/eliminate:
 - Invert/relax an authorized constraint:
@@ -93,25 +84,17 @@ Search shape: alternative | path | composed
 - Preserve baseline:
 ```
 
-A `path` or `composed` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer. The sealer checks only that each line exists outside HTML comments and is non-empty.
+A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer. The sealer checks only that each line exists outside HTML comments and is non-empty.
 
-Then `### Dropped` lists each dropped candidate with a one-line reason, and each surviving candidate, ordering, or path gets its own subsection holding only what distinguishes it under the decision criteria. Path and composed exploration describe causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
+Then `### Dropped` lists each dropped candidate with a one-line reason, and each surviving candidate, ordering, or path gets its own subsection holding only what distinguishes it under the decision criteria. Path exploration, with or without a fork, describes causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
 
 Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); the sealer checks only lines with one of these labels and requires every bound non-empty. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
 
-### Conclusion
+### What would change the answer
 
-Clear synthesis and rationale grounded in stated decision criteria and verified evidence. Supports either:
-- **Recommended direction / path:** when evidence or authority supports a lead alternative, a combination of alternatives, or a causal path, give the recommendation, its material trade-offs, and the viable choices left to the user under `Selection: open`. Under `user-selected` or `delegated`, still give the evidence-supported recommendation and flag any divergence from the recorded choice, which stands; OR
-- **Unresolved synthesis / next commitment:** when evidence does not justify the next intended commitment, summarize current trade-offs and the next decisive discriminator or research limit without manufacturing a winner.
+Required non-empty section, the one record of what would change the answer: the strongest challenge to What to do, the condition under which another candidate, ordering, or the baseline would win, and the uncertainty that remains.
 
-For a path or composed search, state why the recommended order beats the competing orderings. Ranking and comparison tables are optional and used only when they materially aid alternative search.
-
-### Open questions / next discriminator
-
-Required non-empty field `- What would change the answer:`, the one record of what would change the answer: the strongest challenge to the Conclusion, the condition under which another candidate, ordering, or the baseline would win, and the uncertainty that remains.
-
-### Optional downstream action
+### Suggested follow-up
 
 Optional. Never route directly to `construct`.
 
@@ -142,7 +125,7 @@ Diverge before judging feasibility, in every domain. Generate a wide, cheap cand
 Choose the search structure that best fits the problem:
 - **Alternatives:** approaches to one goal that can be chosen alone or combined, with no required order, evaluated against decision criteria, impact, risk, effort, and confidence; recommend a combination when evidence supports it.
 - **Paths:** ordering, dependency, or multi-step problems where sequencing and prerequisites dominate; trace milestones, prerequisites, sequencing rationale, genuine forks, and dead ends avoided.
-- **Composed:** a sequence with an architectural fork that needs option resolution, or an option whose selection continues into a causal or strategy progression.
+- **Path with a fork:** a sequence with an architectural fork that needs option resolution, or an option whose selection continues into a causal or strategy progression.
 
 Causal-divergence lenses, for every search:
 - **Obvious defaults:** Name at least one answer a typical agent would give first, so the other lenses look past them; this line is never not applicable.
@@ -154,7 +137,7 @@ Causal-divergence lenses, for every search:
 - **Failure recovery:** Shift from preventing failure to limiting it or recovering from it.
 - **Preserve baseline:** Keep current/status-quo approach as a legitimate candidate when available evidence does not justify intervention.
 
-Sequencing lenses, for path and composed searches; each proposes a competing ordering, never a justification of an order already chosen:
+Sequencing lenses, for path searches with or without a fork; each proposes a competing ordering, never a justification of an order already chosen:
 - **Risk-first:** Retire the step most likely to fail first.
 - **Value-first:** Deliver the most valuable outcome earliest.
 - **Reversible-first:** Take reversible steps before irreversible commitments.
@@ -180,15 +163,15 @@ Classify each blocker before asking:
 - **Evidence-owned:** Gather a decision-changing observation.
 - **Ideate-owned:** Decide directly using criteria and authority.
 - **Materially user-owned:** Ask exactly one minimum action-changing question through Reason, or directly when Reason is unnecessary. If the user delegates that blocker ("you decide"), decide it within Ideate authority.
-- **Unavailable or untestable evidence:** Preserve uncertainty: use `experiment-first` for one testable decision-changing discriminator or `research-limited` for insufficient/unobtainable coverage.
+- **Unavailable or untestable evidence:** Preserve uncertainty: use `run an experiment first` for one testable decision-changing discriminator or `research limit reached` for insufficient/unobtainable coverage.
 
 ### Consumption
 
-Return the sealed path to the user or invoking owner. A consumer reads `State`, `Selection`, the Conclusion, and the viable options in Exploration without replaying research. Under `Selection: open` it presents the recommendation and viable choices and obtains the user's final selection before committing; `user-selected` and `delegated` stand without asking again. Inside Blueprint planning, Ideate is a bounded consultation that returns this result to the planner, not a separate upstream stage. Ideate never plans or implements.
+Return the sealed path to the user or invoking owner. A consumer reads What to do and the viable options in Exploration without replaying research. While the final choice is `yours to make` it presents the recommendation and viable choices and obtains the user's final selection before committing; `made by you` and `delegated` stand without asking again. Inside Blueprint planning, Ideate is a bounded consultation that returns this result to the planner, not a separate upstream stage. Ideate never plans or implements.
 
 ### Reason boundary
 
-A Reason challenge targets a consequential researched provisional conclusion or load-bearing claim; Reason cannot choose Ideate's conclusion or next commitment.
+A Reason challenge targets a consequential researched provisional conclusion or load-bearing claim; Reason cannot choose Ideate's conclusion or next commitment. Ideate re-verifies Reason evidence; only its accepted consequence persists in `ideation.md`.
 
 ## Agent obligations (not machine-judged)
 

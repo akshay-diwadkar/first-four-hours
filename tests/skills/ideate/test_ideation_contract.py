@@ -15,21 +15,23 @@ from ideation_contract import (  # noqa: E402
 # Minimal valid bodies for reuse
 # ---------------------------------------------------------------------------
 
+RESEARCH = "- Research: settled — searched cache and index options on the web; no production load traces\n"
 
-def _valid_open_questions() -> str:
+
+def _valid_what_would_change() -> str:
     return (
-        "## Open questions / next discriminator\n"
-        "- What would change the answer: an index rebuild wins if the cache hit rate falls below 70%\n"
+        "## What would change the answer\n"
+        "An index rebuild wins if the cache hit rate falls below 70%.\n"
     )
 
 
 def _valid_body(
-    state: str = "decision-ready",
+    outcome: str = "recommended direction",
     local_rows: str = "",
     contextual_rows: str = "",
     ext_rows: str = "| Found X | https://example.com | § 2 | 2026-07 | high |\n",
     exploration: str | None = None,
-    conclusion: str | None = None,
+    what_to_do: str = "Proceed with Strategy A as primary direction based on the example.com benchmark.\n",
 ) -> str:
     if exploration is None:
         exploration = (
@@ -51,8 +53,6 @@ def _valid_body(
             "- Support basis: evidence-backed: the example.com caching benchmark\n"
             "- Cheapest decisive experiment: test with 10k items; metric: hit rate; pass/fail: >80%; duration: 1h; cost/effort: low\n"
         )
-    if conclusion is None:
-        conclusion = "## Conclusion\n\nProceed with Strategy A as primary direction based on the example.com benchmark.\n"
     local_section = ""
     if local_rows:
         local_section = (
@@ -77,20 +77,21 @@ def _valid_body(
 
     return (
         "# Ideation: Optimize Query Latency\n\n"
-        "## Handoff\n"
-        f"- State: {state}\n"
-        "- Selection: open\n"
+        "## What to do\n"
+        f"- Outcome: {outcome}\n"
+        "- Final choice: yours to make\n\n"
+        f"{what_to_do}\n"
+        "## Goal and research\n"
         "- Goal: reduce p99 query latency under 100ms\n"
         "- Decision criteria: latency reduction, implementation complexity\n"
         "- Scope / non-goals: query processing pipeline; no hardware expansion\n"
-        "- Research: condition met — searched cache and index options; no production load traces\n\n"
+        f"{RESEARCH}\n"
         "## Evidence\n\n"
         f"{local_section}"
         f"{ext_section}"
         f"{contextual_section}"
         f"{exploration}\n\n"
-        f"{conclusion}\n\n"
-        f"{_valid_open_questions()}"
+        f"{_valid_what_would_change()}"
     )
 
 
@@ -98,15 +99,13 @@ def test_readable_evidence_tables_keep_row_checks(tmp_path: Path) -> None:
     benchmark = tmp_path / "bench.txt"
     benchmark.write_text("hit rate 82%\n", encoding="utf-8")
     digest = hashlib.sha256(benchmark.read_bytes()).hexdigest()
-    body = _valid_body(
-        local_rows=f"| Cache benchmark shows an 82% hit rate | bench.txt | whole file | hash-verified {digest} |\n",
-        contextual_rows="| Team caps cache memory at 2 GB | user planning message | first request | user-stated |\n",
-        conclusion=(
-            "## Conclusion\n\n"
-            "Combine Strategy A with an L2 cache tier: the local cache benchmark and the "
-            "example.com study both support it within the team's 2 GB memory cap.\n"
-        ),
+    local_rows = f"| Cache benchmark shows an 82% hit rate | bench.txt | whole file | hash-verified {digest} |\n"
+    contextual_rows = "| Team caps cache memory at 2 GB | user planning message | first request | user-stated |\n"
+    what_to_do = (
+        "Combine Strategy A with an L2 cache tier: the local cache benchmark and the "
+        "example.com study both support it within the team's 2 GB memory cap.\n"
     )
+    body = _valid_body(local_rows=local_rows, contextual_rows=contextual_rows, what_to_do=what_to_do)
 
     # Several sources are cited in readable words, with no evidence codes to assign or decode.
     assert validate_ideation(body, repo_root=tmp_path) == []
@@ -127,14 +126,30 @@ def test_readable_evidence_tables_keep_row_checks(tmp_path: Path) -> None:
     )
     assert [e.code for e in validate_ideation(stray, repo_root=tmp_path)] == ["ideation.unrecognized_evidence_table"]
     misplaced = body.replace(
-        "## Conclusion",
+        "## What would change the answer",
         "### Local evidence\n\n| Claim | Source path | Locator | Verification |\n| --- | --- | --- | --- |\n"
-        "| Prior handoff | .first-four-hours/ideations/x/ideation.md | whole file | read |\n\n## Conclusion",
+        "| Prior handoff | .first-four-hours/ideations/x/ideation.md | whole file | read |\n\n## What would change the answer",
         1,
     )
     assert [e.code for e in validate_ideation(misplaced, repo_root=tmp_path)] == [
         "ideation.misplaced_evidence_declaration"
     ]
+
+    # Web research is the default: local and contextual rows alone do not stand in for it,
+    # unless research records the user's opt-out or that the web was unavailable.
+    no_web = _valid_body(local_rows=local_rows, contextual_rows=contextual_rows, ext_rows="", what_to_do=what_to_do)
+    assert [e.code for e in validate_ideation(no_web, repo_root=tmp_path)] == ["ideation.web_research_missing"]
+    opted_out = no_web.replace(
+        RESEARCH, "- Research: user limit — the user asked for no web research; local benchmark only\n"
+    )
+    assert validate_ideation(opted_out, repo_root=tmp_path) == []
+    unavailable = no_web.replace(
+        RESEARCH, "- Research: unavailable sources — web search tools unavailable; local benchmark only\n"
+    )
+    assert validate_ideation(unavailable, repo_root=tmp_path) == []
+    # A placeholder External row names no source, so it is not web research.
+    placeholder = _valid_body().replace("| https://example.com |", "| - |")
+    assert [e.code for e in validate_ideation(placeholder)] == ["ideation.web_research_missing"]
 
     # Local rows are still read and checked: stale and missing files fail at their row.
     benchmark.write_text("hit rate 40%\n", encoding="utf-8")
@@ -144,7 +159,7 @@ def test_readable_evidence_tables_keep_row_checks(tmp_path: Path) -> None:
 
 
 def test_prohibited_direct_construct_routing():
-    opt_action = "## Optional downstream action\nDirectly invoke construct to implement changes."
-    body = _valid_body() + "\n\n" + opt_action
+    follow_up = "## Suggested follow-up\nDirectly invoke construct to implement changes."
+    body = _valid_body() + "\n\n" + follow_up
     errors = validate_ideation(body)
     assert any(e.code == "ideation.prohibited_direct_implementation" for e in errors)

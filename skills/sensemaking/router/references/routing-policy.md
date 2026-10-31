@@ -36,4 +36,4 @@ Router owns these composition facts, taken from each producer's current contract
 | `blueprint` | sealed `.first-four-hours/blueprints/<task>/blueprint.md` | `construct` |
 | any change or PR | the change itself | `assess` |
 
-Construct's precondition is its declared `implicit_authority` (`sealed-blueprint`): a sealed Blueprint from an earlier step or current state. Router adds no approval gate. An open Ideate selection ends the route.
+Construct's precondition is its declared `implicit_authority` (`sealed-blueprint`): a sealed Blueprint from an earlier step or current state. Router adds no approval gate. An ideation whose final choice is still the user's ends the route.

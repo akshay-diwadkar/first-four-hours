@@ -23,17 +23,16 @@ Start it yourself with `/ideate`, or the agent may start it when your request ma
 
 ## What happens
 
-Ideate frames the goal and decision criteria, names the obvious answers first, then generates candidates from several angles that look past them, all before judging any. It tests, extends, or eliminates them with the cheapest evidence that could change the conclusion, compares the survivors with each other and with the current approach, and recombines their strongest parts. It keeps mechanisms the evidence supports apart from untested hypotheses. It consults [Reason](reason.md) at its judgment points.
+Ideate frames the goal and decision criteria, names the obvious answers first, then generates candidates from several angles that look past them, all before judging any. It tests, extends, or eliminates them with the cheapest evidence that could change the conclusion, compares the survivors with each other and with the current approach, and recombines their strongest parts. It searches the web for prior art and current practice as well as any repository, unless you tell it not to, and records when you opted out or web research could not be done. It keeps mechanisms the evidence supports apart from untested hypotheses. It consults [Reason](reason.md) at its judgment points.
 
 ## What you get
 
-A sealed `ideation.md` in the ignored folder `.first-four-hours/ideations/<slug>/`, in one of three states:
+A sealed `ideation.md` in the ignored folder `.first-four-hours/ideations/<slug>/`. It opens with **What to do**, written so you can act on it without knowing the format:
 
-- `decision-ready`: a recommended direction and the viable choices;
-- `experiment-first`: the next experiment that would decide between them;
-- `research-limited`: what the available research could not establish.
+- `Outcome`: `recommended direction`, with the viable choices; `run an experiment first`, with the experiment that would decide between them; or `research limit reached`, with what the research could not establish;
+- `Final choice`: `yours to make`, `made by you`, or `delegated` within a scope you set. A recommendation is never your approval.
 
-Its `Selection` line records who owns the final choice: `open` (still yours), `user-selected`, or `delegated`. A recommendation is never your approval.
+The goal, decision criteria, and research coverage, including the web searches run, follow it, then the evidence, the options explored, and what would change the answer.
 
 ## When it stops
 

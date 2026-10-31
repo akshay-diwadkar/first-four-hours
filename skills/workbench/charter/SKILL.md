@@ -3,7 +3,7 @@ name: charter
 description: Turn a rough ambition for an app, project, or large idea into one agreed, resumable charter.md that later work is judged against, optionally published as one GitHub umbrella issue. Use when a whole project needs its purpose, scope, success, and open questions settled before tickets or plans.
 disable-model-invocation: true
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Charter
@@ -14,7 +14,7 @@ Charter never creates child or implementation tickets. It never decomposes or im
 
 ## Start
 
-1. Triage. A change, defect, or structural question is not a project: name `blueprint`, `diagnose`, or `architect` and stop. With no ambition, or a question of what to do next, name `ideate` or `router`; a `decision-ready` ideation the user chose from is a valid start.
+1. Triage. A change, defect, or structural question is not a project: name `blueprint`, `diagnose`, or `architect` and stop. With no ambition, or a question of what to do next, name `ideate` or `router`; an ideation with a recommended direction, once the user has chosen from it, is a valid start.
 2. List `.first-four-hours/charters/` and read each file's `## Authority`. Resume this project's live charter; if several could be it, ask, never guess. With none, agree a short slug with the user and run `prepare`. The slug is fixed for the project's life; when `prepare` refuses it, ask for another, never rewrite it.
 3. When Authority names a published issue, read the issue first: it owns the definition. Re-derive the gate before trusting the recorded state.
 

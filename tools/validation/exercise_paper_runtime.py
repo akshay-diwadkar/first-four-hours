@@ -1148,13 +1148,24 @@ def scenario_c(open_session: Any, papers: dict[str, Path], temp: Path, checks: C
         page.click("#paper-submit-yes")
         session.wait_until("document.documentElement.getAttribute('data-paper-status') === 'finished'", 5)
         wait_outcome("saved")
+        finished = data("attempt-1.html").get("status")
+        # A reloaded finished paper shows no save outcome, so its box must say how to see one.
+        kept = (folder / "attempt-1.html").read_bytes()
+        session.reload()
+        reloaded_hidden = not page.visible("#paper-save-status")
+        box = page.text("#paper-attempt p")
+        page.click("#paper-save")
+        wait_outcome("saved")
         checks.run("C3", [
-            (data("attempt-1.html").get("status") == "finished", "attempt-1 is not finished"),
+            (finished == "finished", "attempt-1 is not finished"),
             (not session.events_named("Browser.downloadWillBegin"), "a download began at finish"),
             (names() == ["attempt-1.html", "paper.html"], f"the set folder holds {names()}"),
+            (reloaded_hidden and "Press Save answers" in box, f"after reload the finished box reads {box!r}"),
+            (page.attr("#paper-save-status", "data-file") == "attempt-1.html",
+             f"saving the reloaded paper reported {page.attr('#paper-save-status', 'data-file')!r}"),
+            ((folder / "attempt-1.html").read_bytes() == kept, "saving the finished paper again changed attempt-1"),
         ])
 
-        kept = (folder / "attempt-1.html").read_bytes()
         reset_outcome()
         page.click("#paper-new-attempt")
         page.click("#paper-new-attempt-yes")

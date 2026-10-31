@@ -105,7 +105,7 @@ def discover_selected_test_scopes(selected: list[str]) -> list[tuple[str, list[P
         parts = target.split("/")
         if len(parts) >= 3 and parts[:2] == ["tests", "skills"]:
             name = f"tests/skills/{parts[2]}"
-            extras = [ROOT / "skills" / domain / parts[2] / "scripts" for domain in ("workbench", "sensemaking")]
+            extras = [ROOT / "skills" / domain / parts[2] / "scripts" for domain in ("workbench", "sensemaking", "learning")]
             extras = [item for item in extras if item.is_dir()]
         else:
             name = "repository-tests"

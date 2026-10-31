@@ -4,6 +4,11 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- Tutor 1.2.0: Tutor now ships scripts and needs Python 3.11 or later. `scaffold` writes a lesson, the study plan, or `START_HERE.html` from a skeleton, taking the next lesson number and never replacing a file. `check` takes the pages just saved and blocks on unfilled skeleton markers, broken relative links, missing anchors, and unreadable files. It warns, without blocking, about absolute links and about cited web pages that are dead, unverifiable, or unreachable.
+- Examiner 1.2.0: Examiner now ships scripts and needs Python 3.11 or later. `scaffold` writes a practice set with the next set number and the paper runtime copied into `paper.html`, or the study plan or `START_HERE.html`, never replacing a file. `check` validates the pages just saved as Tutor's does.
+
 ### Changed
 
 - Tutor 1.1.0: takes the kind of help from your request when it says, and otherwise, like an open depth, lets you choose once; a better-fitting mode mid-session is offered, not imposed. Every choice comes through the host's choice prompt when it has one, else a short numbered list. Tutor offers to keep a substantial explanation or session, or one that would gain from a visual, as a lesson page until you decline one, lets you choose whether to include a visual that explains it better than words, and saves everything as HTML, never Markdown, apart from runnable code files. Its visuals guidance adds simulations you steer, each with a stated model, keyboard and pointer controls, a text readout, and a check against an independently computed case.

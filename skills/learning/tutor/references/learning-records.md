@@ -19,6 +19,22 @@ Keep every record under `.learning/` in the folder where the learner invoked Tut
 - `<NN>` is the next number in learning order, zero-padded to two digits (`01`, `02`): one more than the highest number already in `lessons/`. A kept one-off explanation takes the next number in its subject.
 - The records are ordinary files the learner may commit. Never add them to `.gitignore`, `.git/info/exclude`, or any other ignore rule.
 
+## Scaffold and check
+
+Create each new lesson or kept explanation, the study plan, and `START_HERE.html` with `scaffold`. It takes the next number, never replaces a file, and leaves `<!-- fill: ... -->` markers to replace, including the title it derives from folder names:
+
+```bash
+python <tutor>/scripts/cli.py --repo-root <learner folder> --input kind=<lesson|study-plan|start-here> --input subject=<subject> [--input topic=<topic> --input date=<YYYY-MM-DD>] --format json scaffold
+```
+
+After each save, check every file you created or changed, one `file` input each:
+
+```bash
+python <tutor>/scripts/cli.py --repo-root <learner folder> --input subject=<subject> --input file=<path under the subject folder> --format json check
+```
+
+Repair each blocking problem (an unfilled marker, a broken relative link, a missing anchor, an unreadable file) in text you may change; where the never-overwrite rule protects the text, tell the learner instead. Its warnings are advice: replace or flag to the learner a dead or unverifiable citation, and prefer relative links to absolute ones. Add `--input external=skip` only when offline. When the scripts cannot run, write the files by hand to this reference and say the check did not run.
+
 ## Start here page
 
 On every save, create or refresh in place the subject's self-contained `START_HERE.html`; the never-overwrite and next-number rules do not apply to it. In plain words, it says what each kind of file there is, including any Examiner `exams/`; that any answer key is for after an attempt; which to open first; the next step, linked to the study plan when one exists, else to its record; and what to ask Tutor or Examiner to continue. It copies no list of lessons or sets, progress, coverage, or results; keep what it says about files Tutor does not write.

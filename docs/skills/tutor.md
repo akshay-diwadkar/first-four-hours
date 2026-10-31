@@ -37,6 +37,8 @@ An explanation or a tutoring session writes nothing unless you ask to keep somet
 - `study-plan.html`: the one study plan for the subject, shared with Examiner;
 - `START_HERE.html`: the page to open first. In plain words it says what each kind of file in the folder is, where to pick up, and what to ask to continue. Tutor and Examiner refresh it whenever they save.
 
+Tutor creates each file from a skeleton, so names, numbering, and required sections are right, and after every save it checks that links between your files work and tells you about cited web pages it could not reach. These scripts need Python 3.11 or later.
+
 These are ordinary files you may commit. Delivered teaching is never recorded as understanding; only your own answers and work show it.
 
 ## When it stops

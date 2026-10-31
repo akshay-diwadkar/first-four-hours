@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -10,6 +11,7 @@ from typing import Any
 
 import pytest
 from bundle_workspace import WorkspaceError, prepare_workspace
+from check_document import validate_document, validate_sources
 
 from tools.validation.git_test_support import seed_git
 from tools.validation.python_test_support import run_python
@@ -24,6 +26,10 @@ def cli(repo: Path, command: str, **inputs: str) -> tuple[int, dict[str, Any]]:
         argv += ["--input", f"{name}={value}"]
     result = run_python([*argv, "--format", "json", command], capture_output=True, text=True, check=False)
     return result.returncode, json.loads(result.stdout)
+
+
+def source_types(bundle: dict[str, Any], repo: Path) -> set[str]:
+    return {item["type"] for item in validate_sources(bundle, repo)}
 
 
 def snapshot(*paths: Path) -> dict[Path, tuple[bytes, int]]:
@@ -68,6 +74,27 @@ def link_directory(target: Path, link: Path) -> None:
 def test_write_checks_every_listed_document_without_writing(document_case: tuple[Path, Path, dict[str, Any]]) -> None:
     repo, documents, bundle = document_case
     runbook, reference = documents / "runbook.md", documents / "reference.md"
+    # Source validation on the untouched bundle: stale hashes, audit-namespace sources, and undeclared sources.
+    assert source_types(bundle, repo) == set()
+    assert validate_document(runbook.read_text(encoding="utf-8"), bundle["documents"][0]) == []
+    stale = copy.deepcopy(bundle)
+    stale["sources"][0]["sha256"] = "0" * 64
+    assert "source_hash_mismatch" in source_types(stale, repo)
+    report = copy.deepcopy(bundle)
+    report["sources"].append(
+        {"id": "SRC-2", "path": ".first-four-hours/scribes/runbook/scribe-audit.md", "sha256": "0" * 64, "authority": "audit report"}
+    )
+    assert "namespace_source" in source_types(report, repo)
+    undeclared = copy.deepcopy(bundle)
+    undeclared["documents"][1]["required_facts"] = [
+        {"id": "FACT-1", "claim": "Run the service.", "source_ids": ["SRC-1", "SRC-9"]}
+    ]
+    undeclared["documents"][1]["integrity_literals"] = [
+        {"id": "LIT-1", "kind": "value", "literal": "service", "source_ids": ["SRC-1"]}
+    ]
+    errors = validate_sources(undeclared, repo)
+    assert [(item["type"], item["location"]) for item in errors] == [("undeclared_source", "source SRC-9")]
+
     bundle_path = write_bundle(repo.parent / "temp", with_fact(bundle))
     status = git_status(repo, "--ignored")
     before = snapshot(runbook, reference, bundle_path)

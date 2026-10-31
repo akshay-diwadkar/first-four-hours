@@ -4,6 +4,7 @@
 - [`main` in the canonical protocol runtime](../../tools/skill_protocol/runtime.py): inspect the implementation behind the shared CLI contract, starting where `main` dispatches each command.
 - [Runtime synchronization](../../tools/validation/sync_skill_protocol_runtime.py): trace the canonical runtime into each executable package's local fallback.
 - [Diagnostic runtime](../../tools/diagnostics/runtime.py): canonical repair-ready diagnostic shape; [its synchronizer](../../tools/validation/sync_diagnostic_runtime.py) projects it into executable skills.
+- [Learning runtime](../../tools/learning/runtime.py): canonical `scaffold` and `check` code and file templates for Tutor and Examiner; [its synchronizer](../../tools/validation/sync_learning_runtime.py) copies them into both skills.
 - [`classify` in the classification runtime](../../tools/classification/runtime.py): canonical deterministic classification; [its synchronizer](../../tools/validation/sync_classification_runtime.py) projects the portable copies.
 - [Architecture handoff verifiers](../../tools/validation/sync_architecture_handoff.py): derive the standalone verifiers that consuming skills use for Architect handoffs.
 - [Delegation doctrine](../../SKILL_PHILOSOPHY.md): read the shared authority and bounded-labor contract before modifying delegation guidance.

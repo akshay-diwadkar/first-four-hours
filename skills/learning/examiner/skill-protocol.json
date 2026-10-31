@@ -1,0 +1,49 @@
+{
+  "protocol_version": "1.0.0",
+  "mode": "stateless",
+  "skill": "examiner",
+  "minimum_python": "3.11",
+  "run_dir_policy": "outside_skill_and_repo",
+  "requirements": [],
+  "inputs": [
+    {"name": "subject", "kind": "string", "required": false, "repeatable": false, "description": "Subject folder name under .learning/, lowercase words joined by hyphens.", "choices": [], "accepted_for": ["scaffold", "check"], "required_for": ["scaffold", "check"]},
+    {"name": "kind", "kind": "choice", "required": false, "repeatable": false, "description": "What to scaffold: a practice set, the shared study plan, or START_HERE.html.", "choices": ["set", "study-plan", "start-here"], "accepted_for": ["scaffold"], "required_for": ["scaffold"]},
+    {"name": "exam", "kind": "string", "required": false, "repeatable": false, "description": "Examination folder name, lowercase words joined by hyphens; required for a set.", "choices": [], "accepted_for": ["scaffold"]},
+    {"name": "practice_kind", "kind": "choice", "required": false, "repeatable": false, "description": "Practice kind of the set; required for a set.", "choices": ["full-mock", "section-practice", "topic-practice", "supplied-paper"], "accepted_for": ["scaffold"]},
+    {"name": "date", "kind": "string", "required": false, "repeatable": false, "description": "The set's creation date as YYYY-MM-DD; required for a set.", "choices": [], "accepted_for": ["scaffold"]},
+    {"name": "marking_scheme", "kind": "choice", "required": false, "repeatable": false, "description": "Whether the set gets marking-scheme.html (default no); yes only when the examination uses one.", "choices": ["yes", "no"], "accepted_for": ["scaffold"]},
+    {"name": "file", "kind": "string", "required": false, "repeatable": true, "description": "A file just created or changed, as a path relative to .learning/<subject>/; repeat once per file.", "choices": [], "accepted_for": ["check"], "required_for": ["check"]},
+    {"name": "external", "kind": "choice", "required": false, "repeatable": false, "description": "Whether to fetch cited external links (default check); use skip only when offline.", "choices": ["check", "skip"], "accepted_for": ["check"]}
+  ],
+  "artifacts": [],
+  "phases": {},
+  "commands": {
+    "scaffold": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "allowed_writes": ["{repo_root}/.learning"],
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/learning_files.py", "scaffold", "--skill", "examiner", "--repo-root", "{repo_root}", "--kind", "{input.kind}", "--subject", "{input.subject}"],
+          "repeat": [{"input": "exam", "flag": "--exam"}, {"input": "practice_kind", "flag": "--practice-kind"}, {"input": "date", "flag": "--date"}, {"input": "marking_scheme", "flag": "--marking-scheme"}],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "check": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": ["{python}", "{skill_dir}/scripts/learning_files.py", "check", "--skill", "examiner", "--repo-root", "{repo_root}", "--subject", "{input.subject}"],
+          "repeat": [{"input": "file", "flag": "--file"}, {"input": "external", "flag": "--external"}],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    }
+  }
+}

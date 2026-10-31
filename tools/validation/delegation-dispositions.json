@@ -29,7 +29,7 @@
       "mode": "projected",
       "protocol": "skills/workbench/blueprint/references/delegation-protocol.md",
       "owner": "Blueprint owns planning scope, decisions, and the sealed blueprint.md.",
-      "lifecycle": "When another orchestrated handoff invokes Blueprint, it owns the planning stage and blueprint.md.",
+      "lifecycle": "When another orchestrated handoff invokes Blueprint, Blueprint still owns the planning stage and `blueprint.md`.",
       "workers": "Bounded read-only repository exploration is earned when it avoids owner context pollution.",
       "specialists": "Material planning review remains owner-consumed judgment rather than cheapest-worker labor.",
       "writes": "Blueprint alone writes blueprint.md; exploration is read-only.",

@@ -1,4 +1,4 @@
-# Adversarial challenge
+# Challenge and rehearsal
 
 One separate fresh-context subagent challenges every draft before handoff, at its tier. Before launching it, consult `reason` in owner context, one pass without a subagent: attack the draft's most load-bearing premise and its verification against the Construct Verification section below, to catch defects before the challenger does.
 
@@ -12,27 +12,11 @@ A draft is **elevated** when it shows any of these, and **standard** otherwise:
 - an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service);
 - a change to Blueprint's or Construct's seal runtime.
 
-Read these signals from the draft, never from how easy the work seems; one you cannot rule out counts. The tier alone sets the challenger's depth and model, whatever its ambiguity: a standard challenger gets the brief below on the cheapest sufficient selectable model; an elevated one also gets [Elevated attack](elevated-attack.md), on a model at least as capable as the planner. Without model selection, both use the model you have.
+Read these signals from the draft, never from how easy the work seems; one you cannot rule out counts. The tier alone sets the challenger's depth and model, whatever its ambiguity: a standard challenger gets the [Challenger brief](challenger-brief.md) on the cheapest sufficient selectable model; an elevated one also gets [Elevated attack](elevated-attack.md), on a model at least as capable as the planner. Without model selection, both use the model you have.
 
 ## One fresh challenge
 
-Launch the challenger as a separate subagent with fresh context; your own re-read does not replace it. If no separate subagent can be launched, stop without sealing and report that the required challenge could not run. Give the challenger the authoritative request and answers, the draft `blueprint.md`, the relevant source identity, the exact evidence pointers, the [planning contract](planning-contract.md), this contract, the repository's planning-trap list when its guidance names one, and the Verification section of `references/execution-contract.md` in the Construct skill installed beside Blueprint; without Construct, the planning contract's Verification purity paragraph stands in for it. Add a branch reference only when the draft uses its branch: [Declared text](declared-text.md) for Exact, Frozen, or Proof run declarations, [Ideate in planning](ideate-in-planning.md) when the request records an Ideate selection, [Executable contracts](executable-contracts.md) for a dispatch-sensitive command, [Incomplete gates](incomplete-gates.md) for an environment-sensitive gate, and [Architecture intake](architecture-intake.md) for supplied architecture. Do not give it the README, [Seal receipts](seal-receipts.md), or the planner's reasoning transcript. Brief it with what to read, never with premises to confirm or conclusions to expect.
-
-The challenger is bound by the planning contract's Probe, don't prototype rule; it may run current-tree safe probes and Blueprint's own `check`, and writes nothing beyond a probe's own side effects.
-
-Core question:
-
-> This Blueprint was sealed, an executor without design authority built it literally, and review rejected the result. Write that review: how is the result wrong, incomplete, unsafe, unnecessarily broad, or unverifiable?
-
-Seed it from the planning traps the plan touches and any review findings the request carries. First read the Tier signals from the draft yourself; a signal present when you were not given Elevated attack is a finding. Walk the draft in step order, tracking what exists after each step and judging each Run at its phase (Before implementation precedes every instruction): a Proof run or Run needing something (a file, a target its runner selects or reads, a tool) not yet there, or working only outside how Construct launches it, is a finding even when it passes now. For every material instruction, construct a **compliant-but-bad implementation**, such as an open decision, a dropped outcome or consumer, a wrong premise, an undecided input or exit path, missing preservation or Atlas propagation, unearned scope, or proof that passes a wrong result. Transcribed code, an unstated dependency, or a proof case naming no wrong implementation it rejects is a finding. Check verification form too: each Run executes verbatim, each Expect is judgeable from its Run's output and tells completion from a plausible failure, each condition's `Shown by` proof exists and can show it, owner-only acceptance carries `Owner gate:`, and selection covers the whole planned diff, including renamed and deleted sides.
-
-Attack decisions and proof, never plan code's compile, lint, or type correctness. The challenger continues after the first finding through the remaining material scope and reports every independently material gap found in the bounded pass. It advises only: it never rewrites the Blueprint, chooses scope, or owns design.
-
-Derive every applicable counterexample from source, current-tree probes, and the authored command path, including unchanged seams. Re-derive at least the plan's most load-bearing premise yourself from source, and through the authored command's public entrypoint when that premise concerns command behavior; the planner's probe is not that evidence. Trace commands as Commands and evidence and, when its branch applies, Executable contracts require (read it if not given), including fixture selection when tests, fixtures, or package surfaces change, and check for an exit-code contradiction wherever an Expect admits nonzero exit. When no such risk applies, no disposition record is earned; do not manufacture work for a simple plan. Whatever the plan's size, hold at least the authored command likeliest to write to Verification purity: trace its actual write surface from source or a probe that rule allows, and test that its check reads independent source truth.
-
-For each material finding name the instruction, command, or completion condition; the compliant-but-bad result; decisive evidence or missing fact; and the smallest closure obligation; a missing behavior proof closes only as the planning contract's Step proof allows. An outcome no source or current-tree probe can settle remains a finding until it meets the planning contract's Probe, don't prototype rule. A restated checklist or an unsupported assertion that a command works is not a finding or closure proof, and an authored Run alone never closes a load-bearing finding.
-
-Challenge at least one plausible failure in each materially distinct branch. State untested limits.
+Launch the challenger as a separate subagent with fresh context; your own re-read does not replace it. If no separate subagent can be launched, stop without sealing and report that the required challenge could not run. Give the challenger the authoritative request and answers, the draft `blueprint.md`, the relevant source identity, the exact evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Tier and Requirement trace, the repository's planning-trap list when its guidance names one, and the Verification section of `references/execution-contract.md` in the Construct skill installed beside Blueprint; without Construct, the planning contract's Verification purity paragraph stands in for it. Add a branch reference only when the draft uses its branch: [Declared text](declared-text.md) for Exact, Frozen, or Proof run declarations, [Ideate in planning](ideate-in-planning.md) when the request records an Ideate selection, [Executable contracts](executable-contracts.md) for a command whose dispatch, interpreter, or environment setup matters, [Incomplete gates](incomplete-gates.md) for an environment-sensitive gate, and [Architecture intake](architecture-intake.md) for supplied architecture. Do not give it the README, [Seal receipts](seal-receipts.md), this file's other sections, or the planner's reasoning transcript. Brief it with what to read, never with premises to confirm or conclusions to expect.
 
 ## Repair and re-check
 
@@ -46,10 +30,9 @@ Before sealing, trace every clause of the authoritative request, and every impor
 
 Seal only when all are true:
 
-- user-owned ambiguity is closed;
 - decision-critical repository claims are grounded;
 - every request clause and imported invariant traces completely, as the requirement trace defines;
-- every producible input state, exit path, and invariant-violation path of changed behavior is decided;
+- [Attack the problem](planning-contract.md#attack-the-problem)'s stop holds for changed behavior;
 - no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance;
 - where completion or a resume relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source, and proof fails an implementation that trusts a stale record or a missing relationship;
 - current consumers, preservation, and safety boundaries are accounted for;
@@ -62,4 +45,4 @@ Seal only when all are true:
 - no step or Run forces the executor to discover or choose an additional repair, scope, policy or authority, ownership, validation or typing scope, exception or budget override, compatibility, or other semantic decision;
 - verification is discriminating and proportionate.
 
-If substantive judgment is still required anywhere, the Blueprint is not ready to seal. After sealing, stop. A changed request or answer means a fresh draft and workspace; a frozen request or sealed Blueprint is never edited in place.
+If substantive judgment is still required anywhere, the Blueprint is not ready to seal. After sealing, stop.

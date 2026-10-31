@@ -4,7 +4,7 @@ Tutor teaches any subject, technical or not. It finds your real goal and startin
 
 ## When to use it
 
-Choose by what you want; Tutor can switch when the session shows a better fit:
+Choose by what you want; when the session shows a better fit, Tutor offers to switch:
 
 - **Explanation:** one self-contained answer, complete without exercises.
 - **Tutoring:** you apply the idea or explain it in your own words, and Tutor responds to the misconceptions your answers show. Ordinary exercises belong here.

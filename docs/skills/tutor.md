@@ -31,7 +31,7 @@ When an idea is new to you, Tutor starts from what the idea is for and how it wo
 
 ## What you get
 
-An explanation or a tutoring session writes nothing unless you ask to keep something; when one is substantial or would gain from a diagram, simulation, or animation, Tutor offers once to keep it as a lesson page. Everything it saves is HTML, never Markdown, apart from runnable code files such as lab starter code. Continuing learning saves files under `.learning/<subject>/` in the folder where you started Tutor:
+An explanation or a tutoring session writes nothing unless you ask to keep something; when one is substantial or would gain from a diagram, simulation, or animation, Tutor lets you choose once between chat and a lesson page, each with or without that visual. Everything it saves is HTML, never Markdown, apart from runnable code files such as lab starter code. Continuing learning saves files under `.learning/<subject>/` in the folder where you started Tutor:
 
 - `lessons/<NN>-<topic>.html`: one self-contained HTML record per lesson, numbered in learning order, holding the teaching material and what you demonstrated;
 - `study-plan.html`: the one study plan for the subject, shared with Examiner;

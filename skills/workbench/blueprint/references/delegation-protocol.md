@@ -1,6 +1,6 @@
 # Bounded exploration and delegation
 
-When another orchestrated handoff invokes Blueprint, it owns the planning stage and blueprint.md.
+When another orchestrated handoff invokes Blueprint, Blueprint still owns the planning stage and `blueprint.md`.
 
 ## Selection order
 

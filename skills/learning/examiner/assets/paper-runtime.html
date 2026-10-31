@@ -1,5 +1,5 @@
 <!--
-Examiner paper runtime: the offline timed rehearsal every on-screen practice paper copies unchanged.
+Examiner paper runtime: the timed rehearsal every on-screen practice paper copies unchanged; it saves attempts only to Examiner's attempt helper on this computer.
 
 Authoring contract
 
@@ -204,9 +204,13 @@ rehearsal off and leaves the paper readable and printable.
       .map(function (section) { return section.getAttribute("data-question"); });
   }
 
+  function newToken() {
+    return (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).slice(0, 32);
+  }
+
   function freshState(attempt) {
     return {
-      id: meta.id, attempt: attempt, status: "not-started", partIndex: 0, current: null,
+      id: meta.id, attempt: attempt, attemptToken: newToken(), status: "not-started", partIndex: 0, current: null,
       visited: [], answers: {}, flags: [], breakEndsAt: null, downloaded: false,
       parts: meta.parts.map(function (part) {
         return { id: part.id, startedAt: null, endedAt: null, endedBy: null, restMs: 0, restStartedAt: null };
@@ -254,6 +258,9 @@ rehearsal off and leaves the paper readable and printable.
     candidate.flags = present(candidate.flags);
     candidate.visited = present(candidate.visited);
     candidate.downloaded = candidate.downloaded === true;
+    if (typeof candidate.attemptToken !== "string" || !/^[a-z0-9]{8,64}$/.test(candidate.attemptToken)) {
+      candidate.attemptToken = newToken();
+    }
     candidate.parts.forEach(function (part) {
       if (!isNumber(part.restMs)) { part.restMs = 0; }
     });
@@ -405,9 +412,9 @@ rehearsal off and leaves the paper readable and printable.
       "<body style=\"font-family: system-ui, sans-serif; line-height: 1.5; max-width: 46rem; margin: 2rem auto; padding: 0 1rem;\">",
       "<h1 style=\"font-size: 1.5rem;\">Answers: " + escapeHtml(meta.title) + "</h1>",
       "<p>Practice set: " + escapeHtml(meta.id) + "</p>",
-      "<p>Attempt " + state.attempt + "</p>",
+      "<p>Browser attempt " + state.attempt + "</p>",
       "<p>Made " + escapeHtml(timeText(now)) + "</p>",
-      "<p>This file was made on your device; saving it sent nothing.</p>",
+      "<p>This file was made on your own computer and was sent nowhere else.</p>",
       "<h2 style=\"font-size: 1.2rem;\">Parts</h2>",
       "<ul>"
     ];
@@ -442,9 +449,9 @@ rehearsal off and leaves the paper readable and printable.
   /* Page elements. */
   const panel = make("div", { id: "paper-runtime" });
   const notice = make("p", { id: "paper-practice-notice" },
-    "Practice features: the clock, question list, review flags, breaks, saving and automatic submission belong to this practice paper, not to the rules of the real examination. The examination's own rules are in the paper's instructions. Saving keeps your answers on this device or in a file you download; nothing is sent anywhere.");
+    "Practice features: the clock, question list, review flags, breaks, saving and automatic submission belong to this practice paper, not to the rules of the real examination. The examination's own rules are in the paper's instructions. Saving sends your answers only to Examiner's helper, a program on your own computer that keeps them in this practice set's folder; if it is not running, your browser downloads them as a file instead. Nothing is sent anywhere else.");
   const storageWarning = make("p", { id: "paper-storage-warning", role: "alert" },
-    "This browser is not keeping your progress. Use Save answers often and keep the file: a refresh or closing this page would lose your answers and time.");
+    "This browser is not keeping your progress. Use Save answers often, and keep any answer file it downloads: a refresh or closing this page would lose your answers and time.");
   storageWarning.hidden = true;
   const loadError = make("p", { id: "paper-load-error", role: "alert" }, "This file is not an answer file for this practice paper.");
   loadError.hidden = true;
@@ -484,7 +491,7 @@ rehearsal off and leaves the paper readable and printable.
 
   const attemptBox = make("div", { id: "paper-attempt" });
   const attemptLink = make("a", { id: "paper-attempt-download" }, "Download the answer file again");
-  attemptBox.append(make("p", {}, "This paper is finished and locked. Your answer file has been made: keep it, or send it for marking."), attemptLink);
+  attemptBox.append(make("p", {}, "This paper is finished and locked; the message below says where your answers were saved."), attemptLink);
   const newAttemptButton = make("button", { id: "paper-new-attempt", type: "button" }, "Start a new attempt");
   const newAttemptConfirm = make("div", { id: "paper-new-attempt-confirm", role: "alertdialog" });
   const newAttemptYes = make("button", { id: "paper-new-attempt-yes", type: "button" }, "Yes, start again");
@@ -493,14 +500,16 @@ rehearsal off and leaves the paper readable and printable.
   newAttemptConfirm.hidden = true;
 
   const fileRow = make("div", { "class": "paper-runtime-row" });
-  const saveButton = make("button", { id: "paper-save", type: "button" }, "Save answers (downloads an answer file)");
+  const saveButton = make("button", { id: "paper-save", type: "button" }, "Save answers");
   const loadLabel = make("label", { "for": "paper-load" }, "Load a saved answer file to continue: ");
   const loadInput = make("input", { id: "paper-load", type: "file", accept: ".html" });
   fileRow.append(saveButton, loadLabel, loadInput);
+  const saveStatus = make("p", { id: "paper-save-status", role: "status" });
+  saveStatus.hidden = true;
 
   const parts = [storageWarning, loadError, startScreen, clock];
   if (restButton) { parts.push(restButton); }
-  parts.push(navigation, submitConfirm, palette, summary, breakBox, attemptBox, newAttemptButton, newAttemptConfirm, fileRow, notice);
+  parts.push(navigation, submitConfirm, palette, summary, breakBox, attemptBox, newAttemptButton, newAttemptConfirm, fileRow, saveStatus, notice);
   panel.append.apply(panel, parts);
   mountPanel(panel);
 
@@ -560,14 +569,47 @@ rehearsal off and leaves the paper readable and printable.
   doc.addEventListener("change", onAnswer);
 
   /* Finished: one answer-file link per entry into finished; one automatic download per attempt. */
+  /* Saving: only a page served by the attempt helper on 127.0.0.1 sends anything, and only to it; else a download. */
+  function showSaved(outcome, text, file) {
+    saveStatus.setAttribute("data-outcome", outcome);
+    if (file) { saveStatus.setAttribute("data-file", file); }
+    saveStatus.textContent = text;
+    saveStatus.hidden = false;
+  }
+
+  function deliver(text, download) {
+    function fallBack() {
+      download();
+      showSaved("downloaded", "Your answers could not be saved in this practice set's folder, because the paper was not opened from Examiner's link or its helper is not running, so your browser downloaded them as " +
+        fileName + " instead. Tell Examiner where that file is so it can mark it.");
+    }
+    const served = location.hostname === "127.0.0.1" && location.protocol.length === 5 && location.protocol.slice(0, 4) === "http";
+    if (!served) { fallBack(); return; }
+    const controller = new AbortController();
+    const timer = setTimeout(function () { controller.abort(); }, 10000);
+    fetch("attempts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ html: text }), signal: controller.signal })
+      .then(function (response) {
+        if (!response.ok) { throw new Error("refused"); }
+        return response.json();
+      })
+      .then(function (reply) {
+        if (!isObject(reply) || typeof reply.file !== "string") { throw new Error("no file"); }
+        showSaved("saved", "Saved in this practice set's folder as " + reply.file + ", where Examiner can mark it.", reply.file);
+      })
+      .catch(fallBack)
+      .then(function () { clearTimeout(timer); });
+  }
+
   let attemptUrl = null;
-  let pendingDownload = false;
+  let attemptText = "";
+  let pendingDeliver = false;
   function syncFinished() {
     if (state.status !== "finished") { attemptUrl = null; return; }
     if (attemptUrl) { return; }
-    pendingDownload = !state.downloaded;
+    pendingDeliver = !state.downloaded;
     state.downloaded = true;
-    attemptLink.setAttribute("href", attemptUrl = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" })));
+    attemptText = answerFile();
+    attemptLink.setAttribute("href", attemptUrl = URL.createObjectURL(new Blob([attemptText], { type: "text/html" })));
     attemptLink.setAttribute("download", fileName);
   }
 
@@ -683,9 +725,9 @@ rehearsal off and leaves the paper readable and printable.
     });
 
     renderClocks();
-    if (pendingDownload) {
-      pendingDownload = false;
-      attemptLink.click();
+    if (pendingDeliver) {
+      pendingDeliver = false;
+      deliver(attemptText, function () { attemptLink.click(); });
     }
   }
 
@@ -766,13 +808,16 @@ rehearsal off and leaves the paper readable and printable.
   });
 
   saveButton.addEventListener("click", function () {
-    let url;
-    const link = make("a", { href: url = URL.createObjectURL(new Blob([answerFile()], { type: "text/html" })), download: fileName });
-    link.hidden = true;
-    doc.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    const text = answerFile();
+    deliver(text, function () {
+      let url;
+      const link = make("a", { href: url = URL.createObjectURL(new Blob([text], { type: "text/html" })), download: fileName });
+      link.hidden = true;
+      doc.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    });
   });
 
   function showLoadError(text) {

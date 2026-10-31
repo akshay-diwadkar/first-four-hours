@@ -1530,7 +1530,7 @@ PAPER_RUNTIME_EXTERNAL = (
     ("absolute URL", re.compile(r"\b(?:https?|wss?|ftp):", re.IGNORECASE)),
     ("protocol-relative URL", re.compile(r"""["'(=]\s*//[^/\s]""")),
     ("network API", re.compile(
-        r"\b(?:fetch(?:Later)?|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
+        r"\bfetch\b(?!\(\"attempts\", \{)|\b(?:fetchLater|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|RTCPeerConnection)\b")),
     ("module import", re.compile(r"\bimport\s*\(|^\s*import\b|@import", re.IGNORECASE | re.MULTILINE)),
     ("external resource element", re.compile(
         r"<\s*(?:link|iframe|img|embed|object|video|audio|source|base)\b|\bsrc\s*=", re.IGNORECASE)),
@@ -1570,7 +1570,7 @@ PAPER_RUNTIME_EXTERNAL = (
         + r"""|[{,]\s*href\s*[,}]""",
         re.IGNORECASE)),
 )
-PAPER_RUNTIME_MAX_BYTES = 41000
+PAPER_RUNTIME_MAX_BYTES = 46000
 
 
 def validate_paper_runtime(path: Path = PAPER_RUNTIME) -> list[str]:

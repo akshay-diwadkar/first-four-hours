@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http.client
 import http.server
 import json
 import os
@@ -13,6 +14,7 @@ from typing import Any
 
 SKILL = Path(__file__).resolve().parents[3] / "skills" / "learning" / "examiner"
 CLI = SKILL / "scripts" / "cli.py"
+HELPER = SKILL / "scripts" / "attempt_helper.py"
 EXAM = "aqa-gcse-chemistry-8462"
 SET_ID = f"chemistry/{EXAM}/2026-10-31-full-mock-01"
 
@@ -62,6 +64,35 @@ def snapshot(root: Path) -> dict[Path, bytes | None]:
 def page(*links: str) -> str:
     anchors = "\n".join(f'<p><a href="{link}">link</a></p>' for link in links)
     return f'<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>Key</title></head>\n<body><h2 id="ok">Answers</h2>\n<p><a href="#ok">top of answers</a></p>\n{anchors}\n</body></html>\n'
+
+
+def attempt_html(token: str, status: str, marker: str) -> str:
+    data = json.dumps({"attemptToken": token, "status": status, "marker": marker})
+    return f'<!doctype html>\n<p>{marker}</p>\n<script type="application/json" id="paper-attempt-data">{data}</script>\n'
+
+
+def helper_request(
+    port: int, method: str, path: str, body: Any = None, *, origin: str | None = "own",
+    content_type: str = "application/json", host: str | None = None,
+) -> tuple[int, bytes]:
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    try:
+        connection.putrequest(method, path, skip_host=True)
+        connection.putheader("Host", host or f"127.0.0.1:{port}")
+        if origin == "own":
+            connection.putheader("Origin", f"http://127.0.0.1:{port}")
+        elif origin is not None:
+            connection.putheader("Origin", origin)
+        data = b""
+        if body is not None:
+            data = (json.dumps(body) if not isinstance(body, str) else body).encode("utf-8")
+            connection.putheader("Content-Type", content_type)
+            connection.putheader("Content-Length", str(len(data)))
+        connection.endheaders(data or None)
+        response = connection.getresponse()
+        return response.status, response.read()
+    finally:
+        connection.close()
 
 
 def test_set_scaffold_and_check_of_saved_files(tmp_path: Path) -> None:
@@ -155,3 +186,55 @@ def test_set_scaffold_and_check_of_saved_files(tmp_path: Path) -> None:
     code, envelope = cli(student, "check", ("subject", "chemistry"), ("file", f"{relative}/answer-key.html"))
     assert code == 0, envelope
     assert [item["code"] for item in envelope["result"]["warnings"]] == ["learning.external_offline"], envelope
+
+    # The attempt helper saves each attempt into the set folder, never over another attempt.
+    (mock / "attempt-1.html").write_text("hand", encoding="utf-8")
+    (mock / "attempt-1-2.html").write_text("transcribed", encoding="utf-8")
+    hand = {name: (mock / name).read_bytes() for name in ("attempt-1.html", "attempt-1-2.html")}
+    helper = subprocess.Popen([sys.executable, str(HELPER), "--set-dir", str(mock)], stdout=subprocess.PIPE, text=True)
+    try:
+        assert helper.stdout is not None
+        started = json.loads(helper.stdout.readline())
+        assert started["status"] == "serving" and started["url"].startswith("http://127.0.0.1:"), started
+        port = int(started["url"].split(":")[2].split("/")[0])
+
+        def save(token: str, status: str, marker: str) -> tuple[int, Any]:
+            code, raw = helper_request(port, "POST", "/attempts", {"html": attempt_html(token, status, marker)})
+            return code, json.loads(raw)
+
+        code, raw = helper_request(port, "GET", "/paper.html")
+        assert code == 200 and raw == (mock / "paper.html").read_bytes()
+        assert helper_request(port, "GET", "/nope.html")[0] == 404
+
+        assert save("tokenaaaa1", "running", "first") == (200, {"file": "attempt-2.html", "attempt": 2, "created": True})
+        assert {name: (mock / name).read_bytes() for name in hand} == hand
+        assert save("tokenaaaa1", "running", "second") == (200, {"file": "attempt-2.html", "attempt": 2, "created": False})
+        assert "second" in (mock / "attempt-2.html").read_text(encoding="utf-8")
+        assert not (mock / "attempt-3.html").exists()
+
+        # A finished attempt is never replaced, even by an older state of the same attempt.
+        assert save("tokenaaaa1", "finished", "done")[0] == 200
+        done = (mock / "attempt-2.html").read_bytes()
+        assert b"done" in done
+        assert save("tokenaaaa1", "running", "stale") == (200, {"file": "attempt-2.html", "attempt": 2, "created": False})
+        assert (mock / "attempt-2.html").read_bytes() == done
+
+        assert save("tokenbbbb2", "running", "next") == (200, {"file": "attempt-3.html", "attempt": 3, "created": True})
+
+        # Each guard alone refuses its request and writes nothing.
+        before = snapshot(mock)
+        good = {"html": attempt_html("tokencccc3", "running", "refused")}
+        assert helper_request(port, "POST", "/attempts", good, origin="http://evil.example")[0] == 403
+        assert helper_request(port, "POST", "/attempts", good, content_type="text/plain")[0] == 415
+        assert helper_request(port, "POST", "/attempts", good, origin=None, host=f"evil.example:{port}")[0] == 403
+        assert helper_request(port, "POST", "/attempts", {"html": "<p>no attempt data</p>"})[0] == 400
+        assert snapshot(mock) == before
+    finally:
+        helper.terminate()
+        helper.wait(timeout=10)
+        if helper.stdout is not None:
+            helper.stdout.close()
+    assert sorted(path.name for path in mock.iterdir()) == [
+        "answer-key.html", "attempt-1-2.html", "attempt-1.html", "attempt-2.html", "attempt-3.html",
+        "marking-scheme.html", "paper.html", "source-notes.html",
+    ]

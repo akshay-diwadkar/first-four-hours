@@ -2,7 +2,7 @@
 name: examiner
 description: "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # Examiner
@@ -23,7 +23,7 @@ When official requirements cannot be verified, for example without research acce
 
 Produce what the student asked for: a full mock, section practice, or topic practice. Before writing a paper, read [Papers](references/papers.md). Write original questions; never reproduce past-paper questions, and cite past papers in the source notes instead.
 
-Solve and audit every question before delivery. Then summarise the paper's coverage, conditions, departures from representative conditions, and unresolved assumptions in the reply. Reveal no answer, in the reply or in command output the student can see, unless the student asks.
+Solve and audit every question before delivery. Then start the paper's attempt helper as [Practice records](references/practice-records.md) describes, give the student its link, and summarise the paper's coverage, conditions, departures from representative conditions, and unresolved assumptions in the reply. Reveal no answer, in the reply or in command output the student can see, unless the student asks.
 
 ## Attempts and marking
 
@@ -43,4 +43,4 @@ Examiner works alone. When marking shows conceptual gaps, it may offer to contin
 
 ## Completion
 
-A paper is complete when its saved set passes the audit, apart from a save-and-reload test you could not run, and the reply states its coverage, conditions, departures, unresolved assumptions, and any such untested save and reload. Marking is complete when every answer is marked against the scheme with each deduction explained, the diagnosis cites evidence from the attempt, and follow-up practice is offered. State unresolved limitations and make no claim about future performance.
+A paper is complete when its saved set passes the audit, apart from a save-and-reload test you could not run, and the reply gives the attempt helper's link or says why it is not running and states its coverage, conditions, departures, unresolved assumptions, and any such untested save and reload. Marking is complete when every answer is marked against the scheme with each deduction explained, the diagnosis cites evidence from the attempt, and follow-up practice is offered. State unresolved limitations and make no claim about future performance.

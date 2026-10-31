@@ -23,7 +23,7 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
 
 ## Scaffold and check
 
-Create each new set, the study plan, and `START_HERE.html` with `scaffold`. It takes the next set number, copies the paper runtime into `paper.html` with its `paper-meta` id, never replaces a file, and leaves `<!-- fill: ... -->` markers to replace, including the title it derives from folder names. A `supplied-paper` set gets only `source-notes.html`. Write by hand attempts, markings, correction sets, and a supplied paper's documents and your unofficial key for it.
+Create each new set, the study plan, and `START_HERE.html` with `scaffold`. It takes the next set number, copies the paper runtime into `paper.html` with its `paper-meta` id, never replaces a file, and leaves `<!-- fill: ... -->` markers to replace, including the title it derives from folder names. A `supplied-paper` set gets only `source-notes.html`. Write by hand markings, correction sets, attempts the attempt helper did not save, and a supplied paper's documents and your unofficial key for it.
 
 ```bash
 python <examiner>/scripts/cli.py --repo-root <student folder> --input kind=<set|study-plan|start-here> --input subject=<subject> [--input exam=<exam> --input practice_kind=<kind> --input date=<YYYY-MM-DD> --input marking_scheme=<yes|no>] --format json scaffold
@@ -36,6 +36,16 @@ python <examiner>/scripts/cli.py --repo-root <student folder> --input subject=<s
 ```
 
 Repair each blocking problem (an unfilled marker, a broken relative link, a missing anchor, an unreadable file) in text you may change; where the never-overwrite rule protects the text, tell the student instead. Its warnings are advice: replace or flag to the student a dead or unverifiable citation, and prefer relative links to absolute ones. Add `--input external=skip` only when offline. When the scripts cannot run, write the files by hand to this reference and say the check did not run.
+
+## Attempt helper
+
+When you deliver an on-screen paper, start its attempt helper as a background process, never waiting for it to exit, and give the student the `url` its first output line reports, asking them to keep this session open while they sit the paper. Bound to this computer, it serves the set folder and saves what the paper sends on each save or finish as `attempt-<N>.html` there: saves during an attempt update that attempt's file, and only a new attempt takes the next number.
+
+```bash
+python <examiner>/scripts/attempt_helper.py --set-dir <student folder>/.learning/<subject>/exams/<exam>/<set folder>
+```
+
+When the host cannot keep a process running or the helper reports `blocked`, give the student the command to run themselves, or say that the paper opened from its file downloads their answers instead and they should tell you where that file is. If the helper stops before the student finishes, start it again, give the new link, and ask the student to load their latest `attempt-<N>.html` with the paper's load control before pressing Start. Stop the helper once the student has finished.
 
 ## Start here page
 

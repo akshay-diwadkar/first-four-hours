@@ -7,7 +7,7 @@ When another orchestrated handoff invokes Blueprint, Blueprint still owns the pl
 List the open facts your decisions need, then close each in this order:
 
 1. Use authoritative upstream evidence already containing the required fact.
-2. Explore read-only. Delegate a question costing more to explore than to brief and check, such as a sweep that would flood your context, to a bounded worker on the cheapest sufficient selectable model; send independent ones together, one envelope each, and consume their returns together; a question needing another's answer waits for it. Keep tiny questions local, and all of them when no worker can launch.
+2. Explore read-only. Delegate a question costing more to explore than to brief and check, such as a multi-file sweep or a read or command whose output would run long, to a bounded worker on the cheapest sufficient selectable model; send independent ones together, one envelope each, and consume their returns together; a question needing another's answer waits for it. Keep tiny questions local, and all of them when no worker can launch, reading only the range, search result, or filtered output that answers the question.
 3. Return a blocker only when the required fact genuinely cannot be established.
 
 ## Envelope

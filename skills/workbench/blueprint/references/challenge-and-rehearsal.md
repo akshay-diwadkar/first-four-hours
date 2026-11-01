@@ -7,12 +7,12 @@ One separate fresh-context subagent challenges every draft before handoff, at it
 A draft is **elevated** when it shows any of these, and **standard** otherwise:
 
 - a Location creating, changing, or deleting a file that runs as code (script, validator, test, runtime) or that one reads as configuration or fixtures;
-- a budgeted or deadline gate over something the plan edits, such as token-budgeted guidance or deadline-bound tests;
+- a budgeted or deadline gate whose limit the plan changes, or whose measured headroom the planned change can plausibly consume (where the planning contract requires a decided branch);
 - a changed contract another skill, package, or service consumes, or Locations in more than one of them (docs and changelog entries describing the change do not count);
 - an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service);
 - a change to Blueprint's or Construct's seal runtime.
 
-Read these signals from the draft, never from how easy the work seems; one you cannot rule out counts. The tier alone sets the challenger's depth and model, whatever its ambiguity: a standard challenger gets the [Challenger brief](challenger-brief.md) on the cheapest sufficient selectable model; an elevated one also gets [Elevated attack](elevated-attack.md), on a model at least as capable as the planner. Without model selection, both use the model you have.
+A Location changing only a skill version (`metadata.version` or a declaration validation checks against it) raises no signal. Read these signals from the draft, never from how easy the work seems; one you cannot rule out counts. The tier alone sets the challenger's depth and model, whatever its ambiguity: a standard challenger gets the [Challenger brief](challenger-brief.md) on the cheapest sufficient selectable model; an elevated one also gets [Elevated attack](elevated-attack.md), on a model at least as capable as the planner. Without model selection, both use the model you have.
 
 ## One fresh challenge
 
@@ -21,6 +21,8 @@ Launch the challenger as a separate subagent with fresh context; your own re-rea
 ## Repair and re-check
 
 Re-verify every finding against the authoritative request and current source, and weigh it by current user authority, evidence, and real consequence; a plan's own non-goal never rejects a finding that names a required outcome. Merge only true duplicate symptoms; accept, reject, or preserve uncertainty from evidence rather than confidence or wording. Closure must identify the repaired plan instruction or command and the evidence or fully decided branch that defeats the counterexample; unsupported closure and unresolved load-bearing uncertainty block seal. A finding that needs a new fact earns one targeted bounded exploration, never a sweep; a newly material user-owned choice returns to intent closure. When a repair changes direction or a load-bearing premise fails, you own the replacement decision and repair. Locally re-trace the repaired plan for interaction errors among the repairs, and reread each Exact or Frozen block a repair changed as the file now holds it, because an edit can turn an escape sequence into a real line break or break a fence. Then remove or merge work that no longer earns its cost while keeping every decision and instruction the executor needs. Keep a declined finding's reason only when it prevents material rediscovery, as an ordinary Current State fact. A second fresh challenge is earned only when repairs replace the plan basis or architecture, or when the challenged tier missed a Tier signal the draft has or a repair adds (then elevated); any other independent review is earned only by a named material residual risk, never by a security, recovery, or concurrency label alone.
+
+A second challenge runs only when earned as above. One user request gets at most two fresh challenges that returned a review, counting other independent reviews and drafts carried to a fresh workspace; only a new request recording the user's answer to this stop resets the count. When a repair after the second would earn another, stop without sealing and report the failing premise with its evidence, asking the user only when it is user-owned.
 
 ## Requirement trace
 

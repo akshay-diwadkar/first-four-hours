@@ -49,6 +49,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Construct 1.1.2: ships the Blueprint 1.1.2 runtime copy, so it reports contract version 1.1.2. It still accepts every sealed 1.x plan.
 - Blueprint 1.1.3: a plan premise about an external service, such as a hosted platform, must rest on that service's current official documentation, including its recent changes, and the user is asked which of the service's modes they will use. A premise that no source settles goes to the user as a question instead of becoming an owner check after merge. Before, a plan could rely on older documentation for a setup the user did not choose.
 - Construct 1.1.3: ships the Blueprint 1.1.3 runtime copy, so it reports contract version 1.1.3. It still accepts every sealed 1.x plan.
+- Blueprint 1.1.7: before sealing, the planner names, for every file the plan adds or changes, each verification command that searches, counts, or validates that file, and checks the drafted text against that command's rule. Before, the rule was keyed to the commands, so an edit nobody linked to a validator, such as an Atlas pointer line, could seal and then fail final verification.
+- Construct 1.1.7: ships the Blueprint 1.1.7 runtime copy, so it reports contract version 1.1.7. It still accepts every sealed 1.x plan.
 
 ## [1.0.0] - 2026-10-25
 

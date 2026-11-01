@@ -55,7 +55,7 @@ An explanation ends when it answers your question. A tutoring or continuing-lear
 
 ## Related skills
 
-Tutor works alone. When you continue a series, it reads the latest [Examiner](examiner.md) marking of each practice set and records each misunderstanding or recurring pattern Examiner diagnosed as still open in the lesson on that topic, or the first lesson that teaches it, until you show it again to Tutor; slips and open questions are not carried. It can suggest examination practice. See [How skills hand work to each other](../concepts/handoffs.md).
+Tutor works alone. When you continue a series, it reads the latest [Examiner](examiner.md) marking of each attempt and records each misunderstanding or recurring pattern Examiner diagnosed as still open, linked to that marking, in a lesson on every topic it affects, or the first lesson that teaches that topic, until you show it again to Tutor on that topic. It leaves out slips and open questions, and a gap a lesson on that topic already links to a marking of that attempt; a gap you resolved some other way is checked with you again once. It can suggest examination practice. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

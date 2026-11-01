@@ -12,7 +12,7 @@ Emit the line when the consultation ends, on its own line as working output, nev
 
 ## Into the reply
 
-Only an explicit user invocation, or a result the user must act on, puts a branch's user-facing result in the reply. Otherwise the owner acts on it; besides the owner's own content, the reply carries only that set-off line where the host requires it, the open-disposition statements below, and any missed or late checkpoint [Checkpoint trace](checkpoint-trace.md) requires there.
+Only an explicit user invocation, or a result the user must act on, puts a branch's user-facing result in the reply. Otherwise the owner acts on it; besides the owner's own content, the reply carries only that set-off line where the host requires it, the open-disposition statements below, any expected fresh challenge that did not run per [challenge details](challenge.md), and any missed or late checkpoint [Checkpoint trace](checkpoint-trace.md) requires there.
 
 ## Open dispositions
 

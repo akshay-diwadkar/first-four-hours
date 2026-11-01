@@ -353,7 +353,10 @@
         "skills/sensemaking/reason/SKILL.md",
         "skills/sensemaking/reason/references"
       ],
-      "owner": "reason-guidance-contract"
+      "owner": "reason-guidance-contract",
+      "exclude_prefixes": [
+        "skills/sensemaking/reason/references/delegation-protocol.md"
+      ]
     },
     {
       "id": "tutor-guidance-source",
@@ -804,7 +807,8 @@
         "skills/workbench/blueprint/references/delegation-protocol.md",
         "skills/workbench/construct/references/delegation-protocol.md",
         "skills/workbench/diagnose/references/delegation-protocol.md",
-        "skills/workbench/assess/references/delegation-protocol.md"
+        "skills/workbench/assess/references/delegation-protocol.md",
+        "skills/sensemaking/reason/references/delegation-protocol.md"
       ],
       "owner": "delegation-projection-contract"
     },

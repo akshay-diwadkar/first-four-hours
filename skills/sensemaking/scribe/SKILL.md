@@ -2,7 +2,7 @@
 name: scribe
 description: Write source-grounded technical documentation such as runbooks, procedures, setup guides, notices, error messages, and reference pages, or audit an existing document read-only. Use when a document must faithfully carry supplied commands, paths, values, warnings, and recovery without invented facts.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Scribe
@@ -13,7 +13,7 @@ Turn supplied technical sources into a document its reader can execute and trace
 
 Write only with document-creation or revision authority; implicit invocation never grants write or remediation authority. Audit is a separate operation that writes only its report. Audit must not modify the document, bundle, or bound sources.
 
-Derive audience, reader job, and scope from the request and sources. Ask the user only for a material publication or content-policy choice the sources cannot settle; a missing source fact is an unresolved gap. Consult `reason` before committing to a document plan, after a failed direction, and before reporting completion. Final and stop reports trace `reason` checkpoints per its Checkpoint trace.
+Derive audience, reader job, and scope from the request and sources. Ask the user only for a material publication or content-policy choice the sources cannot settle; a missing source fact is an unresolved gap. Consult `reason` before committing to a document plan, after a failure or direction change, and before reporting completion. Final and stop reports trace `reason` checkpoints per its Checkpoint trace.
 
 ## Write and audit
 

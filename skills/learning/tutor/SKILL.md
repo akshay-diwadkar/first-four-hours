@@ -2,7 +2,7 @@
 name: tutor
 description: "Teach any subject, technical or not: a direct explanation, interactive tutoring that checks understanding and adapts, or continuing learning with a realistic study plan and self-contained HTML lesson records under `.learning/`. Use when someone wants to learn, understand, practise, or be taught something; skip explanations incidental to other work."
 metadata:
-  version: "1.2.1"
+  version: "1.2.2"
 ---
 
 # Tutor
@@ -29,7 +29,7 @@ Use a diagram, interactive example, simulation, or animation only when it explai
 
 ## Reason checkpoints
 
-Consult `reason` only at decisions that matter: before committing to a study plan or teaching sequence, after a teaching approach fails, and before presenting a diagnosis of the learner's understanding. Never consult on every tutoring turn, and keep checkpoint results out of teaching replies.
+Consult `reason` before committing to a plan or teaching sequence, after a failure or direction change, and before presenting an explanation or a diagnosis of understanding. Other turns skip it: the next answer checks each. Reports trace it per its Checkpoint trace.
 
 ## Boundaries
 

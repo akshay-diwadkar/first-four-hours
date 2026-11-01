@@ -18,7 +18,7 @@ from jsonschema import Draft7Validator
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 BUNDLE_SCHEMA = SKILL_ROOT / "schemas" / "document-bundle.schema.json"
-BUNDLE_CONTRACT_VERSION = "1.0.0"
+BUNDLE_CONTRACT_VERSION = "1.0.1"
 # Source-binding repairs point at the bundle or source, never the audited document.
 SOURCE_REPAIRS = {
     "unsafe_source_path": "Bind a repository-relative source path inside the repository root.",

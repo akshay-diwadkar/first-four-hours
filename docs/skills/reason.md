@@ -32,13 +32,15 @@ Reason picks the smallest branch that fits the concern:
 
 The agent that consulted it weighs the result, fixes supported gaps, and chooses any replacement itself.
 
+When the agent challenges its own non-trivial proposal or result and a wrong one would be hard to reverse or cross a safety, security, permission, or authority boundary, including a readiness claim that clears such an action, the challenge runs in a fresh-context subagent. That challenger gets the claim, its requirements, and its evidence, never the agent's reasoning, and the agent rechecks what it returns. Skills with their own fresh challenger, reviewer, or adversarial specialist, such as [Blueprint](blueprint.md), [Assess](assess.md), and [Ideate](ideate.md), use theirs instead. Where no subagent can start, or the host or you do not allow one, the challenge runs in the agent's own context and the agent tells you the fresh challenge did not run.
+
 ## What you get
 
 No file. Each consultation ends with a one- or two-line result on its own line, outside the agent's answer (or as a set-off first line where only the answer is shown), naming what it examined, the risk it tested, and one disposition: material objection, missing evidence, needed user input, or no material concern. When you start Reason yourself, it returns its branch result to you. An objection, evidence gap, or needed input still open when the agent presents its result is resolved first or told to you with what would settle it, and the agent claims no readiness it undermines. No result is approval or proof of correctness.
 
 ## When it stops
 
-A consultation is one pass. Reason does not call itself again or start other skills.
+A consultation is one pass, including when a fresh-context challenger runs it; that challenger starts nothing further. Reason does not call itself again or start other skills.
 
 ## Why it's built this way
 

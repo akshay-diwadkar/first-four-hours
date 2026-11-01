@@ -81,11 +81,12 @@
     },
     {
       "skill": "reason",
-      "mode": "direct",
+      "mode": "projected",
+      "protocol": "skills/sensemaking/reason/references/delegation-protocol.md",
       "owner": "Reason owns one temporary reasoning intervention and returns a defensible next move, bounded challenge result, or one question to the invoking owner.",
       "lifecycle": "Reason restores decision readiness, challenges one consequential claim, or asks one irreducible user-owned question without taking the domain owner's task or artifact authority.",
       "workers": "Reason may recommend delegation as an owner next move; it does not create a nested worker tree.",
-      "specialists": "Fresh isolated challenge may be used when proportionate, but no panel, voting, persona, or mandatory delegation framework is earned.",
+      "specialists": "One fresh read-only challenger is expected when a challenge targets the consulting agent's own non-trivial proposal or result whose failure would be hard to reverse or cross a safety, security, permission, or authority boundary, unless the owner skill defines its own fresh challenger, reviewer, or adversarial specialist; the owner rechecks its return, and no panel, voting, persona, or recursion is earned.",
       "writes": "Reason is read-only, temporary, stateless, and artifact-free.",
       "rationale": "Its bounded reasoning is the semantic task; splitting it into worker or public helper identities would blur blocker, challenge, question, and domain ownership."
     },

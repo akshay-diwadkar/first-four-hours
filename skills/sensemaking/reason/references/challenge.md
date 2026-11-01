@@ -1,8 +1,12 @@
 # Challenge details
 
+## Choose the context
+
+Run this pass in fresh context, per [Fresh challenge](delegation-protocol.md), when it challenges a non-trivial proposal or result, as [Results](results.md) defines it, that you produced or planned in your current context, and a wrong one would be hard to reverse or would cross a safety, security, permission, or authority boundary, including a completion or readiness claim that clears such an action. Owner context suffices otherwise, when this pass already runs in fresh context, and where the owner skill defines its own fresh challenger, reviewer, or adversarial specialist for this work: that skill's rule decides whether one runs, and Reason adds none. When this pass needs fresh context but no subagent can launch, or host or user policy forbids launching one, run it in owner context, keep its disposition, and state in the reply that the expected fresh challenge did not run.
+
 ## Select the claim
 
-Do not reopen goal selection, do routine domain work, or promote style-only criticism. Prefer fresh isolated challenge when proportionate; it is never required.
+Do not reopen goal selection, do routine domain work, or promote style-only criticism.
 
 Find the claim whose failure changes the proposed action, acceptance, or claimed completion: imagine the proposal or result has already failed, name the most plausible cause, and select the claim that cause would break. Prefer proposal, authoritative evidence, material assumptions, consequence, and stop condition over the proposing agent's transcript. Never request or persist chain-of-thought. At a checkpoint on a non-trivial decision, the selected claim is the strongest opposing argument, and the pass still tests blind spots and verifies every other load-bearing assumption before `no-material-objection`.
 

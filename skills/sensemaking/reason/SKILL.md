@@ -2,7 +2,7 @@
 name: reason
 description: "Consult at every judgment checkpoint: before committing to an approach, after a failure or direction change, and before presenting a result. Also unblocks decisions, challenges consequential claims, or asks irreducible user-owned questions. Skip only mechanical work with nothing left to judge."
 metadata:
-  version: "1.0.2"
+  version: "1.1.0"
 ---
 
 # Reason
@@ -20,7 +20,7 @@ Each consultation is one bounded pass scaled to consequence: the current goal, p
 Choose the smallest branch owning the concern by judgment; branches may reclassify internally. Read the branch reference on entry; it holds the user-facing result shape.
 
 - **decide:** no defensible next move exists because goal, evidence, conflict, cause, options, assumptions, or failure remain unresolved: [decide details](references/decide.md).
-- **challenge:** a concrete proposal or result exists: [challenge details](references/challenge.md).
+- **challenge:** a concrete proposal or result exists: [challenge details](references/challenge.md), which says when to brief a [fresh challenger](references/delegation-protocol.md).
 - **ask:** progress depends on one material user-owned fact, choice, preference, policy, permission, risk tolerance, scope, authority, or operational rule that evidence and bounded exploration cannot derive: [ask details](references/ask.md).
 
 No result is approval or proof of correctness.

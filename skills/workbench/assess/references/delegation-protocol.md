@@ -23,8 +23,7 @@ Each subagent receives only a curated packet:
 - the exact target, base, and head, or the bounded source;
 - snapshots of, or pointers to, the original request, the authoritative requirements, and any available Blueprint, which is authority evidence, never proof, so the delegate checks the diff against the original request as well as the plan;
 - the base-to-head diff;
-- its slice or falsification question, with its exclusions;
-- pointers to the relevant Atlas Satellites when they exist; and
+- its slice or falsification question, with its exclusions; and
 - the objective stop and the compact return contract.
 
 Never give a subagent the owner's transcript or exploration notes, the implementer's narrative or self-assessment, PR prose, or prior findings. It reviews adversarially inside that slice, continues after the strongest defect until independently material defects in scope are exhausted, returns material ambiguity or contradiction instead of broadening authority, and does not delegate.

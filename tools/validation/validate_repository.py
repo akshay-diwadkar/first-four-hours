@@ -34,7 +34,6 @@ from tools.skill_protocol import validate_manifest  # noqa: E402
 from tools.skill_protocol.runtime import compatible_version  # noqa: E402
 
 SKILLS_ROOT = ROOT / "skills"
-ATLAS_STRUCTURE_SCRIPT = SKILLS_ROOT / "workbench" / "atlas" / "scripts" / "structure_state.py"
 VERSION_PATH = ROOT / "VERSION"
 README_PATH = ROOT / "README.md"
 INSTALLATION_GUIDE_LABEL = "docs/getting-started/installation.md"
@@ -254,7 +253,6 @@ RETIRED_REASONING_IDENTITY_RE = re.compile(
     re.MULTILINE,
 )
 CANONICAL_REPLACEMENTS = {
-    "map-codebase": "atlas",
     "audit-codebase": "diagnose",
     "optimize-codebase": "diagnose",
     "design-codebase": "architect",
@@ -325,7 +323,7 @@ CANONICAL_CONVERGENCE_REJECTION_LOCATIONS: dict[str, frozenset[str]] = {
     ),
     "tests/classification/test_classification.py": frozenset({"diagram-codebase", "manualize", "optimizations"}),
     "tests/integration/test_installed_skill_execution.py": frozenset({"route-handoff.md", "blueprint-context.md"}),
-    "tests/repository/test_routine_validation.py": frozenset({"map-codebase", "skills/routing", "retired reasoning identity"}),
+    "tests/repository/test_routine_validation.py": frozenset({"audit-codebase", "skills/routing", "retired reasoning identity"}),
     "tests/repository/test_skill_repository.py": frozenset(
         {
             *RETIRED_CAPABILITY_IDENTITIES,
@@ -342,7 +340,6 @@ CANONICAL_CONVERGENCE_REJECTION_LOCATIONS: dict[str, frozenset[str]] = {
             "ticket-handoff.md",
         }
     ),
-    "tests/skills/atlas/test_repository_guidance.py": frozenset({"map-codebase"}),
     "skills/workbench/blueprint/SKILL.md": frozenset({"blueprint-context.md"}),
     "skills/workbench/blueprint/README.md": frozenset({"blueprint-context.md"}),
     "tests/skills/blueprint/test_blueprint_contract.py": frozenset(
@@ -375,7 +372,6 @@ CONTRACT_VERSION_DECLARATIONS = (
     ("skills/workbench/assess/templates/assessment-bundle.json", r'^  "schema_version": "([^"]+)",$', "workbench/assess", "exact"),
     ("skills/workbench/diagnose/scripts/diagnosis_handoff.py", r'^CONTRACT_VERSION = "([^"]+)"$', "workbench/diagnose", "exact"),
     ("skills/workbench/diagnose/templates/diagnosis-bundle.json", r'^  "schema_version": "([^"]+)",$', "workbench/diagnose", "exact"),
-    ("skills/workbench/atlas/scripts/freshness_state.py", r'^STATE_VERSION = "([^"]+)"$', "workbench/atlas", "exact"),
     ("skills/workbench/ticket/scripts/github_common.py", r'^TICKET_VERSION = "([^"]+)"$', "workbench/ticket", "exact"),
     ("skills/sensemaking/ideate/scripts/ideation_contract.py", r'^IDEATE_VERSION = "([^"]+)"$', "sensemaking/ideate", "exact"),
     ("skills/sensemaking/scribe/scripts/check_document.py", r'^BUNDLE_CONTRACT_VERSION = "([^"]+)"$', "sensemaking/scribe", "exact"),
@@ -1494,29 +1490,6 @@ def validate_ticket_rename(source_files: list[Path] | None = None) -> list[str]:
     return errors
 
 
-def validate_atlas_wiki() -> list[str]:
-    """Check a committed root Atlas wiki's structure; freshness state is never consulted."""
-    wiki_path = ROOT / ".map"
-    if not (wiki_path.exists() or wiki_path.is_symlink()):
-        return []
-    result = run_capture(
-        [sys.executable, "-B", str(ATLAS_STRUCTURE_SCRIPT), "--repo-root", str(ROOT)],
-        cwd=ROOT,
-    )
-    if result.returncode == 0:
-        return []
-    if result.returncode == 3:
-        try:
-            payload = json.loads(result.stdout.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            payload = None
-        diagnostics = payload.get("diagnostics") if isinstance(payload, dict) else None
-        if isinstance(diagnostics, list) and diagnostics and all(isinstance(item, dict) for item in diagnostics):
-            return [f"Atlas wiki structure: {item.get('code')}: {item.get('message')}" for item in diagnostics]
-    detail = result.stderr.decode("utf-8", errors="replace").strip()
-    return [f"Atlas wiki structural validation did not complete (exit {result.returncode}): {detail}"]
-
-
 PAPER_RUNTIME = SKILLS_ROOT / "learning" / "examiner" / "assets" / "paper-runtime.html"
 # A write assigns (never compares, never an arrow) outside a declaration; an in-page link target is a "#" fragment
 # or a blob the runtime made itself. Text cannot show where an action or background value points, so every such
@@ -1605,7 +1578,6 @@ def main() -> int:
     errors.extend(validate_contract_versions())
     errors.extend(validate_domain_layout())
     errors.extend(validate_test_ownership())
-    errors.extend(validate_atlas_wiki())
     from validate_runtime_discovery_policy import validate as validate_runtime_discovery
     errors.extend(validate_runtime_discovery())
     errors.extend(validate_guidance(ROOT))

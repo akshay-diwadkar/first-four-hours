@@ -2,7 +2,7 @@
 
 ## Bound the pass
 
-Derive the smallest useful exploration from the request, current project files/source, architecture docs or ADRs, ownership notes, bounded relevant history, and optional Atlas orientation that already exists and is immediately useful. Atlas and old map output are bearings only: do not build, refresh, repair, validate, clear staleness, or treat them as scope, qualification, evidence, or completion authority.
+Derive the smallest useful exploration from the request, current project files/source, architecture docs or ADRs, ownership notes, and bounded relevant history.
 
 State the boundary, exclusions, material unknowns, and stop condition only as far as needed to avoid a blind spot or endless search.
 

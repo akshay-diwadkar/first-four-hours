@@ -20,7 +20,6 @@
 * [Skills](skills/README.md)
   * [Architect](skills/architect.md)
   * [Assess](skills/assess.md)
-  * [Atlas](skills/atlas.md)
   * [Blueprint](skills/blueprint.md)
   * [Charter](skills/charter.md)
   * [Construct](skills/construct.md)
@@ -44,7 +43,6 @@
   * [Trust a change before you merge it](recipes/review-before-merge.md)
   * [Find the next step when work spans several skills](recipes/find-the-next-skill.md)
   * [Get a stuck decision moving again](recipes/unstick-a-decision.md)
-  * [Stop rediscovering an unfamiliar codebase](recipes/orient-in-a-codebase.md)
   * [Write documentation that matches its sources](recipes/write-docs-from-sources.md)
   * [Learn a subject and practise for its exam](recipes/learn-and-practise.md)
 

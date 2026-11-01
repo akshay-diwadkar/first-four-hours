@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / "tools" / "validation"))
 import validate_repository as validator  # noqa: E402
 import sync_skill_catalog as catalog  # noqa: E402
 
-def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
+def test_reference_checks_reject_broken_skill_docs_and_links(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.setattr(validator, "ROOT", tmp_path)
@@ -26,26 +26,6 @@ def test_reference_checks_reject_broken_skill_docs_and_atlas_links(
     assert any("does not exist" in error for error in errors)
     assert any("escapes the repository" in error for error in errors)
     assert any("reference is not linked directly" in error for error in errors)
-
-    # Without a .map directory the repository validator runs no Atlas check.
-    assert validator.validate_atlas_wiki() == []
-    wiki = {
-        "AGENTS.md": "# Rules\n<!-- OPT-OUT ATLAS -->\n",
-        "CLAUDE.md": "# Rules\n<!-- OPT-OUT ATLAS -->\n",
-        ".map/validation/LANDMARK.md": "# Validation\n\nFollow for the runner.\n\n- [Runner](runner.md) — read when changing the runner.\n",
-        ".map/validation/runner.md": "# Runner\n\n- [Runner entrypoint](../../tools/runner.py) — productive entrypoint.\n",
-        "tools/runner.py": "",
-    }
-    for relative, text in wiki.items():
-        path = tmp_path / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
-    assert validator.validate_atlas_wiki() == []
-    # A rename outside the wiki breaks the Satellite pointer without touching a wiki path.
-    (tmp_path / "tools" / "runner.py").rename(tmp_path / "tools" / "supervisor.py")
-    errors = validator.validate_atlas_wiki()
-    assert len(errors) == 1
-    assert errors[0].startswith("Atlas wiki structure: map.link_broken: ")
 
     # Links in the user documentation must resolve too.
     (tmp_path / "docs").mkdir()

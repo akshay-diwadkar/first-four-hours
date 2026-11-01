@@ -13,7 +13,6 @@
       "skills": [
         "./skills/workbench/architect",
         "./skills/workbench/assess",
-        "./skills/workbench/atlas",
         "./skills/workbench/blueprint",
         "./skills/workbench/charter",
         "./skills/workbench/construct",

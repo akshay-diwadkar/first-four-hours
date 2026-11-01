@@ -24,7 +24,6 @@
     "ideate": "both",
     "construct": "both",
     "scribe": "both",
-    "atlas": "both",
     "blueprint": "both",
     "router": "model-invoked",
     "ticket": "user-invoked",

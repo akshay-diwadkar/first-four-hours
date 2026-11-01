@@ -13,7 +13,6 @@ Start from the problem in front of you, not from how the suite is organized. Pic
 | A finished change you need to trust before merging | [Assess](../skills/assess.md) |
 | A rough idea for a whole app or project whose purpose, scope, and success are not agreed yet | [Charter](../skills/charter.md) |
 | Work too big for one session, or a backlog to pick the next ready ticket from | [Ticket](../skills/ticket.md) |
-| A codebase you do not know yet, where agents keep searching for the files that matter | [Atlas](../skills/atlas.md) |
 | Several possible directions and no clear way to choose | [Ideate](../skills/ideate.md) |
 | A decision that is stuck, or rests on an assumption you doubt | [Reason](../skills/reason.md) |
 | Not knowing which skill comes next, or work that spans several skills | [Router](../skills/router.md) (ask in plain words) |

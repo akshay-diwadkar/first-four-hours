@@ -9,7 +9,6 @@ Documentation that reads well but cannot be followed is the costly kind: a wrong
 
 ## Use something else when
 
-- You need a navigation map for agents: [Stop rediscovering an unfamiliar codebase](orient-in-a-codebase.md).
 - You want to learn a subject: [Learn a subject and practise for its exam](learn-and-practise.md).
 
 ## Steps

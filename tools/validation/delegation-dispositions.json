@@ -15,16 +15,6 @@
       "rationale": "Evidence labor and independent design challenge are separable from final design authority."
     },
     {
-      "skill": "atlas",
-      "mode": "direct",
-      "owner": "Atlas owns orientation meaning, hierarchy decisions, and any authorized wiki edits.",
-      "lifecycle": "Atlas remains the orientation-stage owner when another workflow invokes it.",
-      "workers": "No bounded worker seam is earned; repository exploration and map interpretation are the semantic task.",
-      "specialists": "No separate specialist branch is currently earned.",
-      "writes": "Atlas alone authors or rebalances its wiki after authority is established.",
-      "rationale": "Delegation would split tightly coupled exploration and orientation judgment without cheap verification."
-    },
-    {
       "skill": "blueprint",
       "mode": "projected",
       "protocol": "skills/workbench/blueprint/references/delegation-protocol.md",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject scripted repository discovery from non-Atlas skill runtimes.
+"""Reject scripted repository discovery from skill runtimes.
 
 This is development tooling and may inspect the repository.  Runtime code is
 allowed to validate only paths explicitly supplied in an artifact or command.
@@ -36,8 +36,6 @@ def validate() -> list[str]:
     approved = _exceptions()
     violations: list[str] = []
     for path in SKILLS.glob("*/*/scripts/*.py"):
-        if "atlas" in path.parts:
-            continue
         text = path.read_text(encoding="utf-8")
         relative = path.relative_to(ROOT).as_posix()
         for name, pattern in FORBIDDEN.items():

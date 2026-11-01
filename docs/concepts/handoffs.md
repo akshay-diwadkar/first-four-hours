@@ -25,7 +25,7 @@ Scribe keeps its audit report the same way, in `.first-four-hours/scribes/<slug>
 
 Charter's `charter.md` is not sealed: it is a living definition revised in place, and the project's authority until Charter publishes it as a GitHub issue. After a verified publication the issue owns the definition and the file points to it.
 
-Deliverables you asked for are not handoffs and stay committable: Scribe's documents, Ticket's local work-item store, the Atlas wiki, and the Learning skills' files under `.learning/<subject>/`. Construct and Reason write no artifact, and PR writes its draft outside the repository.
+Deliverables you asked for are not handoffs and stay committable: Scribe's documents, Ticket's local work-item store, and the Learning skills' files under `.learning/<subject>/`. Construct and Reason write no artifact, and PR writes its draft outside the repository.
 
 ## Project definition
 
@@ -57,10 +57,6 @@ Architect, Assess, Blueprint, Charter, Diagnose, Ticket, Ideate, Scribe, Tutor, 
 ## Routing
 
 [Router](../skills/router.md) writes a route of concrete skills, never domains, as far as the next steps are known, and stops where a step depends on a result that does not exist yet. It runs none of them. When the route runs out, the target may still need a fresh route.
-
-## Atlas upkeep
-
-[Atlas](../skills/atlas.md) is optional orientation; the project files stay the truth. Whoever changes a file that an Atlas pointer cites updates the pointer in the same work. Construct repairs links to files its plan deletes and lists other pointers the change may affect, for the next plan to handle.
 
 ## Review and pull requests
 

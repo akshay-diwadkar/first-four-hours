@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.1",
+  "schema_version": "1.1.0",
   "target": "repository-local exact base/head change",
   "base_ref": "refs/remotes/origin/main",
   "head_ref": "HEAD",

@@ -21,11 +21,11 @@ Start it yourself with `/construct`, or the agent may start it when your request
 
 ## What happens
 
-Construct checks the plan's seal and that the files it was planned against have not changed. It then implements each instruction in order, writing any text the plan fixes exactly as declared, and proves each step that declares proof, with at most three attempts per step. It may repair its own coding mistakes, but it never changes the plan's method, scope, or decisions. After the last instruction it repairs [Atlas](atlas.md) links to files the plan deleted and lists other pointers the change may affect, runs the plan's verification, and compares the final diff with the plan once. It writes no state of its own, so a resumed run rereads progress from the worktree. It never edits the plan and never commits.
+Construct checks the plan's seal and that the files it was planned against have not changed. It then implements each instruction in order, writing any text the plan fixes exactly as declared, and proves each step that declares proof, with at most three attempts per step. It may repair its own coding mistakes, but it never changes the plan's method, scope, or decisions. After the last instruction it runs the plan's verification and compares the final diff with the plan once. It writes no state of its own, so a resumed run rereads progress from the worktree. It never edits the plan and never commits.
 
 ## What you get
 
-Your worktree with the change applied, and a report of the instructions, proof results, checks run before the change, each final verification command with its expected result and whether the output met it, Atlas repairs, and whether protected paths and HEAD are unchanged. Conditions marked `Owner gate:` are listed as pending for their owner.
+Your worktree with the change applied, and a report of the instructions, proof results, checks run before the change, each final verification command with its expected result and whether the output met it, and whether protected paths and HEAD are unchanged. Conditions marked `Owner gate:` are listed as pending for their owner.
 
 ## When it stops
 

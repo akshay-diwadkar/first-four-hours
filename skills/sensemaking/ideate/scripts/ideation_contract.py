@@ -20,7 +20,7 @@ from ideation_workspace import WORKSPACE_DIR, WORKSPACE_PARTS
 # Structural constants
 # ---------------------------------------------------------------------------
 
-IDEATE_VERSION = "2.0.0"
+IDEATE_VERSION = "2.0.1"
 
 WHAT_TO_DO_HEADING = "## What to do"
 GOAL_AND_RESEARCH_HEADING = "## Goal and research"

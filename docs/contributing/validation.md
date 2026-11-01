@@ -39,7 +39,7 @@ python tools/validation/test_ownership.py run --path docs/README.md --format jso
 `--path` is a focused selection aid; it does not establish that every final changed surface has been covered. Add an exact regression node with `--test` only when existing proof leaves a concrete gap. This retained node illustrates the syntax; it is not an extra check required for every contribution:
 
 ```bash
-python tools/validation/test_ownership.py run --base-ref origin/main --test tests/repository/test_progressive_disclosure.py::test_reference_checks_reject_broken_skill_docs_and_atlas_links --format json
+python tools/validation/test_ownership.py run --base-ref origin/main --test tests/repository/test_progressive_disclosure.py::test_reference_checks_reject_broken_skill_docs_and_links --format json
 ```
 
 `--test` requires an exact pytest node, not a module path. An owner profile may already include that node; the runner deduplicates the selection.

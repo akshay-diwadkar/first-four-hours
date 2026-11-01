@@ -174,7 +174,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     ]
     assert artifact.startswith("# Assessment\n")
     receipt = artifact.splitlines()[-1]
-    assert receipt.startswith("<!-- assessment-result: 1.0.1; sha256: ")
+    assert receipt.startswith("<!-- assessment-result: 1.1.0; sha256: ")
     assert "`findings`" in artifact
     assert '- Severity: "P1"' in artifact
     assert f"{head}:service.py#L1-L1" in artifact
@@ -199,7 +199,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
         parse_result(f"{blocked}<!-- assessment-result: 1.0.0; sha256: {blocked_digest} -->\n")
     assert refused_blocked.value.code == "artifact.shape_invalid"
     assert "requires a material limitation" in refused_blocked.value.message
-    legacy = artifact.replace("<!-- assessment-result: 1.0.1; ", "<!-- assessment-result: 2.0.0; ", 1)
+    legacy = artifact.replace("<!-- assessment-result: 1.1.0; ", "<!-- assessment-result: 2.0.0; ", 1)
     output.write_text(legacy, encoding="utf-8")
     checked = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert checked.returncode != 0

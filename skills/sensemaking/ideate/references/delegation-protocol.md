@@ -4,7 +4,7 @@ When Blueprint planning or another orchestrated handoff consults Ideate, Ideate 
 
 ## Research workers
 
-Delegate bounded read-only research — local material gathering under current Atlas outputs, external prior art, evidence and trade-off collection, or constraint inventory — only when it materially improves coverage or context quality. Give each worker an immutable frame: goal, scope and non-goals, assigned role, bounded source classes, selected playbooks, available context identifiers, explicit exclusions, and stop condition. Workers stay read-only and must never write `ideation.md`; their returns are candidate evidence that Ideate verifies before use. Retry one materially incomplete worker at most once, then record the gap as a research limitation.
+Delegate bounded read-only research — local material gathering, external prior art, evidence and trade-off collection, or constraint inventory — only when it materially improves coverage or context quality. Give each worker an immutable frame: goal, scope and non-goals, assigned role, bounded source classes, selected playbooks, available context identifiers, explicit exclusions, and stop condition. Workers stay read-only and must never write `ideation.md`; their returns are candidate evidence that Ideate verifies before use. Retry one materially incomplete worker at most once, then record the gap as a research limitation.
 
 ## Adversarial specialist
 

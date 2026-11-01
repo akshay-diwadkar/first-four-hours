@@ -38,7 +38,7 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
     samples = {
         "upper.md": "Use the `Think` skill.\n",
         "path.md": "See skills\\routing for history.\n",
-        "mapping.py": "LEGACY = {'map-codebase': 'atlas'}\n",
+        "mapping.py": "LEGACY = {'audit-codebase': 'diagnose'}\n",
         "clean.md": "Nothing retired here; skills route through the router.\n",
     }
     for name, text in samples.items():
@@ -46,7 +46,7 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
     assert validator.validate_canonical_convergence(tmp_path, [tmp_path / name for name in samples]) == [
         "upper.md: retired active surface remains: retired reasoning identity",
         "path.md: retired active surface remains: skills/routing",
-        "mapping.py: retired compatibility mapping remains: map-codebase -> atlas",
+        "mapping.py: retired compatibility mapping remains: audit-codebase -> diagnose",
     ]
     assert inventory_errors(json.loads(INVENTORY.read_text(encoding="utf-8"))) == []
     # Examiner's paper runtime is refused when it reaches outside its own file.

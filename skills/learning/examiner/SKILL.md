@@ -2,7 +2,7 @@
 name: examiner
 description: "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
 metadata:
-  version: "1.2.1"
+  version: "1.2.2"
 ---
 
 # Examiner
@@ -35,7 +35,7 @@ Create a study plan, or add an examination section to an existing one, only when
 
 ## Reason checkpoints
 
-Consult `reason` only at decisions that matter: before committing to a study plan or a paper design, after a paper or marking approach fails, and before presenting marking, a diagnosis, or a finished paper. Never consult on every question, and keep checkpoint results out of replies.
+Consult `reason` before committing to a study plan or a paper design, after a failure or direction change, and before presenting marking, a diagnosis, or a finished paper. Its lines and open dispositions name questions by number, never an answer or hint. Reports trace it per its Checkpoint trace.
 
 ## Boundaries
 

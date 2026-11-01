@@ -3,7 +3,7 @@ name: charter
 description: Turn a rough ambition for an app, project, or large idea into one agreed, resumable charter.md that later work is judged against, optionally published as one GitHub umbrella issue. Use when a whole project needs its purpose, scope, success, and open questions settled before tickets or plans.
 disable-model-invocation: true
 metadata:
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Charter
@@ -27,7 +27,7 @@ Charter never creates child or implementation tickets. It never decomposes or im
 5. When conversation cannot settle an item, hand an external fact to `ideate` for a comparison the user chooses from, or build a disposable prototype to react to; neither is authority.
 6. Repeat until the gate passes or the user stops.
 
-A material revision is never accepted without an explicit user decision. Consult `reason` before presenting the agreed charter and before accepting a material revision, never on every turn.
+A material revision is never accepted without an explicit user decision. Consult `reason` before proposing the Purpose, after a failure or direction change, and before presenting the charter or accepting one. Rounds skip it: the user settles asked items; the presenting check covers derived ones. Close traces it.
 
 ## Close
 

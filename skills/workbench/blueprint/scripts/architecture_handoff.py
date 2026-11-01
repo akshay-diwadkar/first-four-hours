@@ -15,7 +15,7 @@ from architecture_contract import BLUEPRINT_WORKSPACE_PARTS, WORKSPACE_DIR, WORK
 
 BLUEPRINT_WORKSPACE_DIR = "/".join(BLUEPRINT_WORKSPACE_PARTS)
 
-ARCHITECT_VERSION = "1.0.2"
+ARCHITECT_VERSION = "1.0.3"
 # First Architect version whose no-HEAD Git snapshot skips Git-ignored files.
 NO_HEAD_GIT_SCOPE_SINCE = (1, 0, 1)
 RECEIPT_RE = re.compile(rf"^<!-- architecture: {compatible_version_pattern(ARCHITECT_VERSION)}; sha256: ([0-9a-f]{{64}}) -->$")

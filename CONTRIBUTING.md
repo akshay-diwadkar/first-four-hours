@@ -17,7 +17,6 @@ Each skill under `skills/<domain>/<skill>/` installs on its own. A skill that ne
 - [README.md](README.md) describes the skills and how to install them.
 - [Contributor guide](docs/contributing/README.md) explains change ownership, validation, packages, releases, and documentation maintenance.
 - [docs/README.md](docs/README.md) is the documentation entrypoint; [documentation rules](docs/contributing/documentation.md) govern changes to its pages.
-- The Atlas section of [AGENTS.md](AGENTS.md) is the map: it points through `.map/` to the files that matter for a task. The files themselves are the authority.
 - [AGENTS.md](AGENTS.md) holds the working rules for coding agents; `CLAUDE.md` carries the same rules for Claude Code.
 
 ## Make a change

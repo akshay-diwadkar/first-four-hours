@@ -67,7 +67,6 @@ Working on a project and its changes.
 
 - [Architect](docs/skills/architect.md): decide a structural question, such as a boundary, dependency direction, or module structure, before planning. [Contract](skills/workbench/architect/SKILL.md)
 - [Assess](docs/skills/assess.md): review one exact change against its requirements and base behavior before you trust it. [Contract](skills/workbench/assess/SKILL.md)
-- [Atlas](docs/skills/atlas.md): keep a small navigation wiki that points agents to the project files worth reading. [Contract](skills/workbench/atlas/SKILL.md)
 - [Blueprint](docs/skills/blueprint.md): plan a repository change so completely that a weaker agent can carry it out. [Contract](skills/workbench/blueprint/SKILL.md)
 - [Charter](docs/skills/charter.md): give a rough idea for a whole project its agreed purpose, scope, and success before anyone splits it into tickets. [Contract](skills/workbench/charter/SKILL.md)
 - [Construct](docs/skills/construct.md): carry out a sealed Blueprint plan and verify the result. [Contract](skills/workbench/construct/SKILL.md)

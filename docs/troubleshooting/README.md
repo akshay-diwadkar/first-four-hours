@@ -54,12 +54,6 @@ These results are correct answers, not failures:
 | A charter left in `settling` | Charter | Answer the open questions it names, starting with any missing observable success, then run `/charter` again; it resumes the same file. |
 | A publication stop such as `charter.umbrella_differs` or `charter.issue_changed` | Charter | The GitHub issue holds text you have not confirmed. Read it, then decide whether to bring the charter to it or replace it. |
 
-## Atlas is missing or out of date
-
-- **Likely cause:** the project has no Atlas wiki, or a file a pointer cites was moved, renamed, or deleted.
-- **Check:** a missing wiki blocks nothing; skills read the project files directly. For a stale wiki, start Atlas with `/atlas` or ask the agent in plain words to check the Atlas wiki. Its read-only hierarchy check reports structural, reachability, link-safety, and portability problems.
-- **Next step:** whoever changes a cited file updates its pointer in the same work. Construct repairs links to files its plan deletes and lists other affected pointers for the next plan. See [Atlas](../skills/atlas.md).
-
 ## Repository validation did not pass
 
 This entry is for contributors running the repository's required validation. [The versioning and validation policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) owns the command, its limits, and how to repair, rerun, and handle a slow run. Read the verdict from the final `validation-budget` record the command prints, not from earlier output.

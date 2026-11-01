@@ -16,7 +16,6 @@ One row per skill. The table is generated from the skill folders, [the invocatio
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | [`architect`](../skills/architect.md) | Workbench | [`skills/workbench/architect/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/architect/SKILL.md) | `both` | 3.11 or later | none |
 | [`assess`](../skills/assess.md) | Workbench | [`skills/workbench/assess/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/assess/SKILL.md) | `both` | 3.11 or later | none |
-| [`atlas`](../skills/atlas.md) | Workbench | [`skills/workbench/atlas/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/atlas/SKILL.md) | `both` | 3.11 or later | none |
 | [`blueprint`](../skills/blueprint.md) | Workbench | [`skills/workbench/blueprint/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/blueprint/SKILL.md) | `both` | 3.11 or later | none |
 | [`charter`](../skills/charter.md) | Workbench | [`skills/workbench/charter/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/charter/SKILL.md) | `user-invoked` | 3.11 or later | none |
 | [`construct`](../skills/construct.md) | Workbench | [`skills/workbench/construct/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/construct/SKILL.md) | `both` | 3.11 or later | none |

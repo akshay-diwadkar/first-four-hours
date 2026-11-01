@@ -2,7 +2,7 @@
 name: ideate
 description: "Search possibilities across alternatives, causal paths, or paths with a fork for a researchable goal, researching the web unless told not to, then seal one ideation.md that opens with what to do. Invoke for researched, decision-oriented exploration or structured option generation; skip routine context gathering and casual quick-list brainstorming unless structured ideation is explicitly requested. Domain-neutral; repository context is optional."
 metadata:
-  version: "2.0.0"
+  version: "2.0.1"
 ---
 
 # Ideate

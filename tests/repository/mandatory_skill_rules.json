@@ -119,34 +119,6 @@
     "text": "The primary agent remains the owner of edits"
   },
   {
-    "id": "map.source-authority",
-    "skill": "atlas",
-    "source": "SKILL.md",
-    "surface": "doctor",
-    "text": "Underlying project files are authoritative"
-  },
-  {
-    "id": "map.read-only-validation",
-    "skill": "atlas",
-    "source": "SKILL.md",
-    "surface": "doctor",
-    "text": "The command is read-only"
-  },
-  {
-    "id": "map.guidance-required",
-    "skill": "atlas",
-    "source": "references/authoring-and-rebalancing.md",
-    "surface": "doctor",
-    "text": "Root guidance is required: agents will not discover the map without it, so run `setup-guidance` without waiting for a request."
-  },
-  {
-    "id": "map.guidance-no-bypass",
-    "skill": "atlas",
-    "source": "references/authoring-and-rebalancing.md",
-    "surface": "doctor",
-    "text": "never hand-edit, relink, re-encode, or restore root instruction files to get past it, and never add `<!-- OPT-OUT ATLAS -->` yourself."
-  },
-  {
     "id": "plan.read-only",
     "skill": "blueprint",
     "source": "SKILL.md",

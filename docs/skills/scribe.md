@@ -9,7 +9,6 @@ Scribe writes technical documentation that a reader can follow and trace back to
 
 ## When to use something else
 
-- To keep a navigation map for agents, use [Atlas](atlas.md).
 - To learn a subject, use [Tutor](tutor.md).
 
 ## How to start it

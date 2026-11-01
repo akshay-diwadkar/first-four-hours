@@ -18,18 +18,10 @@ When a sealed Blueprint for this change is available:
 
 - **Baseline proof.** Run each `Run:` under its Verification `### After implementation` once, verbatim, from the root of a checkout already at the exact reviewed head with no tracked changes, honoring any `Timeout:`. Never rely on Construct's report or on PR claims that the Runs passed. Each Run is authored to exit `0` and meet its `Expect:` on a correct implementation, so a nonzero exit or an unmet `Expect:` is a candidate finding. Ignored caches or locks a Run creates are verification side effects. Do not run a Run that would change tracked content, and do not switch a checkout to reach the head.
 - **Missing baseline.** A declared `Incomplete:` outcome, or a Run you cannot execute, leaves that proof missing. Cover its surface with other focused proof or direct examination, or name it in `limitations`. Use `blocked` only when the gap prevents a trustworthy result.
-- **Conformance.** Check the diff against the plan directly: every instruction is realized at its Locations, no material change goes beyond what the plan and Construct's execution contract authorize (such as its Atlas pointer upkeep), and no `deleted` target survives. Treat each gap as a candidate finding and verify it against the original request and current source.
+- **Conformance.** Check the diff against the plan directly: every instruction is realized at its Locations, no material change goes beyond what the plan and Construct's execution contract authorize, and no `deleted` target survives. Treat each gap as a candidate finding and verify it against the original request and current source.
 - **Independent effort.** Spend it where the plan could be wrong: gaps between the plan and the original request; consumers and propagation the plan did not name; base behavior outside the plan's proof; code quality and maintainability of the implementation; proof that would pass a plausible wrong result; and proportionate security. Do not re-derive what the Blueprint's discriminating checks already establish on the reviewed head unless a candidate defect gives a concrete reason.
 
 The Blueprint is authority evidence, never proof of correctness. A green baseline is never `clear`: `clear` still requires every material requirement and surface to be accounted for under Reassessment and stop. A limitation the user accepted, as recorded in the Blueprint's sibling `request.md` or other authority, is not a finding while the change stays within it; one the Blueprint or a report accepts without that record is a candidate finding, never a clearance.
-
-## Atlas evidence
-
-When the target repository has an Atlas wiki (`.map/` pages), use the Satellites relevant to the changed files. A missing wiki changes nothing.
-
-- **Change-together cues.** For each changed file that a Satellite names as changing together with other files, confirm that those files changed too, or that this change does not need them to. A missing coupled change is a candidate propagation finding.
-- **Pointer upkeep.** When the diff moves, renames, deletes, or changes the meaning of a file that an existing Atlas pointer cites, that pointer and its cue must be updated in the same change. A stale pointer misleads later agents, so it is a maintainability defect.
-- **Scoping.** Use Landmark and Satellite cues to find affected callers and owners before broad searches. The wiki is non-exhaustive: a cue never clears a surface, and every finding or disposition rests on current source.
 
 ## Depth and Diagnose
 

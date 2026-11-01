@@ -12,16 +12,6 @@
         "tests/repository/test_routine_validation.py::test_live_repository_metadata"
       ]
     },
-    "atlas-guidance-contract": {
-      "test_targets": [
-        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
-      ]
-    },
-    "atlas-wiki-contract": {
-      "test_targets": [
-        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
-      ]
-    },
     "construct-guidance-contract": {
       "test_targets": [
         "tests/repository/test_skill_repository.py"
@@ -108,13 +98,6 @@
         "tests/repository/test_routine_validation.py::test_live_repository_metadata"
       ]
     },
-    "atlas-runtime-contract": {
-      "test_targets": [
-        "tests/skills/atlas/test_freshness_state.py",
-        "tests/skills/atlas/test_repository_guidance.py",
-        "tests/skills/atlas/test_structure_state.py"
-      ]
-    },
     "architect-runtime-contract": {
       "test_targets": [
         "tests/skills/architect/test_architecture_contract.py",
@@ -170,13 +153,6 @@
         "tests/skills/ticket/test_github_publish.py",
         "tests/skills/ticket/test_local_persist.py",
         "tests/skills/ticket/test_select_freshness.py"
-      ]
-    },
-    "atlas-test-contract": {
-      "test_targets": [
-        "tests/skills/atlas/test_freshness_state.py",
-        "tests/skills/atlas/test_repository_guidance.py",
-        "tests/skills/atlas/test_structure_state.py"
       ]
     },
     "ticket-select-runtime-contract": {
@@ -292,22 +268,6 @@
         "skills/workbench/architect/skill-protocol.json"
       ],
       "owner": "architect-runtime-contract"
-    },
-    {
-      "id": "atlas-guidance-source",
-      "path_prefixes": [
-        "skills/workbench/atlas/SKILL.md",
-        "skills/workbench/atlas/references"
-      ],
-      "owner": "atlas-guidance-contract"
-    },
-    {
-      "id": "atlas-runtime-source",
-      "path_prefixes": [
-        "skills/workbench/atlas/scripts",
-        "skills/workbench/atlas/skill-protocol.json"
-      ],
-      "owner": "atlas-runtime-contract"
     },
     {
       "id": "blueprint-instruction-source",
@@ -511,22 +471,6 @@
       "owner": "delegation-projection-contract"
     },
     {
-      "id": "atlas-tests",
-      "path_prefixes": [
-        "tests/skills/atlas"
-      ],
-      "owner": "atlas-test-contract"
-    },
-    {
-      "id": "atlas-wiki",
-      "path_prefixes": [
-        "MAP.md",
-        ".mapignore",
-        ".map"
-      ],
-      "owner": "atlas-wiki-contract"
-    },
-    {
       "id": "assess-guidance-source",
       "path_prefixes": [
         "skills/workbench/assess/SKILL.md",
@@ -553,6 +497,15 @@
         "tests/skills/review"
       ],
       "owner": "assess-runtime-contract"
+    },
+    {
+      "id": "retired-atlas-paths",
+      "path_prefixes": [
+        ".map",
+        "skills/workbench/atlas",
+        "tests/skills/atlas"
+      ],
+      "owner": "repository-contract"
     },
     {
       "id": "scribe-guidance-source",
@@ -820,7 +773,6 @@
       "path_prefixes": [
         "skills/workbench/architect/agents/openai.yaml",
         "skills/workbench/assess/agents/openai.yaml",
-        "skills/workbench/atlas/agents/openai.yaml",
         "skills/workbench/blueprint/agents/openai.yaml",
         "skills/workbench/charter/agents/openai.yaml",
         "skills/workbench/construct/agents/openai.yaml",
@@ -881,9 +833,6 @@
     "invocation-policy.json",
     ".claude-plugin",
     ".cursor-plugin",
-    "MAP.md",
-    ".mapignore",
-    ".map",
     "docs",
     ".github",
     ".gitbook.yaml",
@@ -975,7 +924,6 @@
   "skill_owners": {
     "architect": "architect-runtime-contract",
     "assess": "assess-runtime-contract",
-    "atlas": "atlas-runtime-contract",
     "blueprint": "blueprint-runtime-contract",
     "charter": "charter-runtime-contract",
     "construct": "construct-runtime-contract",

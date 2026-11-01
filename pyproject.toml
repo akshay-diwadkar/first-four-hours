@@ -19,7 +19,6 @@ strict_optional = true
 no_implicit_optional = true
 exclude = [
   "tests/skills/blueprint/fixtures/",
-  "tests/skills/atlas/fixtures/",
   "tests/skills/blueprint/evals/fixtures/",
   "tests/skills/construct/evals/fixtures/",
 ]

@@ -3,7 +3,7 @@ name: diagnose
 description: Diagnose defects, risks, improvements, and non-apparent runtime causes; seal findings and limitations into diagnosis.md. Use when a concrete problem or improvement opportunity needs its cause investigated from evidence before anyone decides a fix.
 disable-model-invocation: true
 metadata:
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Diagnose

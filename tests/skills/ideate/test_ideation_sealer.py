@@ -106,7 +106,7 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
     sealed_bytes = destination.read_bytes()
     # The title opens the handoff; the receipt is its final line.
     assert sealed_bytes.startswith(b"# Ideation: ")
-    assert sealed_bytes.splitlines()[-1].startswith(b"<!-- ideation-handoff: 2.0.0; sha256: ")
+    assert sealed_bytes.splitlines()[-1].startswith(b"<!-- ideation-handoff: 2.0.1; sha256: ")
     # What to do opens the handoff, so a reader acts on it before any evidence.
     assert sealed_bytes.split(b"\n## ", 1)[1].startswith(b"What to do\n")
     assert b"- Final choice: yours to make\n" in sealed_bytes

@@ -11,7 +11,7 @@ Guidance for source/evidence classes, domain traps, and material decision lenses
 
 ## Software / engineering
 
-- Establish the owning mechanism from current project files, tests/configuration and local conventions; then use official docs/specs/direct engineering sources. Atlas only orients; verify current files.
+- Establish the owning mechanism from current project files, tests/configuration and local conventions; then use official docs/specs/direct engineering sources.
 - Distinguish mechanisms from library/vendor names; keep paths at project/package/component/subsystem level, not file-level plans.
 - Use fit, compatibility, operability, reversibility, failure/recovery, and maintainability only when material.
 

@@ -8,7 +8,7 @@ A draft is **elevated** when it shows any of these, and **standard** otherwise:
 
 - a Location creating, changing, or deleting a file that runs as code (script, validator, test, runtime) or that one reads as configuration or fixtures;
 - a budgeted or deadline gate over something the plan edits, such as token-budgeted guidance or deadline-bound tests;
-- a changed contract another skill, package, or service consumes, or Locations in more than one of them (docs, Atlas pages, and changelog entries describing the change do not count);
+- a changed contract another skill, package, or service consumes, or Locations in more than one of them (docs and changelog entries describing the change do not count);
 - an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service);
 - a change to Blueprint's or Construct's seal runtime.
 

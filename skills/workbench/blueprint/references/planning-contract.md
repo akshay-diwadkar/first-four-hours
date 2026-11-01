@@ -34,11 +34,9 @@ Never accept a known gap yourself: when a requested outcome or load-bearing inva
 
 Exploration establishes facts, never decisions. [Bounded exploration](delegation-protocol.md) owns the envelope and the local-or-delegated choice; re-verify any returned fact that becomes load-bearing. A sealed plan for a like task under `.first-four-hours/blueprints/` may seed your structure; a seal proves shape, not review acceptance, so re-derive from current source every premise and decision you take.
 
-## Repository traps and Atlas
+## Repository traps
 
 While grounding, read the repository's own planning-trap list when its guidance names one and account for every trap the planned change touches. The list lives in repository guidance, never in this skill. Search the repository for each edited path and the tool writing any hash, receipt, projection, or generated copy another file records of it; when the plan changes a version, constant, or identifier other files compare against, search the whole repository for its old value and read the last commit that changed that value. Plan each refresh as an ordinary step. When reusing another file's mechanism, search for that file's path and key identifiers to find the allowlists, registrations, and vendored copies that permit or mirror it, and account for repository checks that scan what new code may contain.
-
-When an Atlas wiki exists (`.map/` pages) and the plan moves, renames, deletes, or changes the meaning of a file an existing pointer cites, plan that pointer's update as an ordinary step: Location the wiki page and state the exact pointer or cue change. Bound upkeep to affected existing pointers and never plan remapping. Missing Atlas state needs no step and never blocks planning.
 
 ## Attack the problem
 

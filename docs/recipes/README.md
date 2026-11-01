@@ -9,7 +9,6 @@ Each recipe starts from a problem you keep losing time to and shows the smallest
 - [Trust a change before you merge it](review-before-merge.md): reviews skim the diff and fixes quietly reopen decisions.
 - [Find the next step when work spans several skills](find-the-next-skill.md): the next skill is unclear and the agent drifts.
 - [Get a stuck decision moving again](unstick-a-decision.md): a decision stalls or rests on an unchecked assumption.
-- [Stop rediscovering an unfamiliar codebase](orient-in-a-codebase.md): every session searches for the same files from scratch.
 - [Write documentation that matches its sources](write-docs-from-sources.md): a document reads well but cannot be followed.
 - [Learn a subject and practise for its exam](learn-and-practise.md): learning and examination practice drift apart.
 

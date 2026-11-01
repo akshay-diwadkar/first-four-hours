@@ -103,7 +103,7 @@ def test_integrated_cli_run_seals_one_artifact_with_path_only_result(tmp_path: P
     assert rendered.index("- Limitations: ") < rendered.index("- Snapshot: ")
     body, _, receipt = rendered.removesuffix("\n").rpartition("\n")
     digest = hashlib.sha256((body + "\n").encode("utf-8")).hexdigest()
-    assert receipt == f"<!-- diagnosis: 1.0.2; sha256: {digest} -->"
+    assert receipt == f"<!-- diagnosis: 1.0.3; sha256: {digest} -->"
     evidence_digest = hashlib.sha256(b"retries = retries or DEFAULT_RETRIES\n").hexdigest()
     surface_digest = hashlib.sha256(b"value = 1\nvalue = 1\n").hexdigest()
     assert f'"sha256":"{evidence_digest}"' in rendered

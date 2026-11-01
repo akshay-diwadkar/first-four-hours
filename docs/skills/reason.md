@@ -34,7 +34,7 @@ The agent that consulted it weighs the result, fixes supported gaps, and chooses
 
 ## What you get
 
-No file. Each consultation ends with a one- or two-line result naming what it examined, the risk it tested, and one disposition: material objection, missing evidence, needed user input, or no material concern. When you start Reason yourself, it returns its branch result to you. No result is approval or proof of correctness.
+No file. Each consultation ends with a one- or two-line result on its own line, outside the agent's answer (or as a set-off first line where only the answer is shown), naming what it examined, the risk it tested, and one disposition: material objection, missing evidence, needed user input, or no material concern. When you start Reason yourself, it returns its branch result to you. An objection, evidence gap, or needed input still open when the agent presents its result is resolved first or told to you with what would settle it, and the agent claims no readiness it undermines. No result is approval or proof of correctness.
 
 ## When it stops
 

@@ -2,7 +2,7 @@
 
 Read this before creating a study plan or adding or updating its examination section.
 
-`.learning/<subject>/study-plan.html` is the one study plan for the subject, shared with Tutor when both are used. Read it when it exists and create it when it does not; never keep a second plan or a conflicting copy elsewhere. It is a self-contained HTML file like a practice-set file, with these sections:
+`.learning/<subject>/study-plan.html` is the one study plan for the subject, shared with Tutor when both are used. Read it when it exists and create it when it does not; never keep a second plan or a conflicting copy elsewhere. It has these sections:
 
 - `<section id="goal">`, shared by every skill that uses the plan: what the student wants to be able to do, any deadline or examination date, and the time available, as the student states it.
 - `<section id="examination-coverage">`, owned by Examiner, with one part per examination, each linking to its `exams/<exam>/` folder:

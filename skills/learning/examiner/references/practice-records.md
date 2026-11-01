@@ -16,14 +16,14 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
     attempt-1.html  marking-1.html
 ```
 
-- `<subject>` names the subject or learning goal, such as `chemistry`. `<exam>` names the examination by awarding body, qualification, and subject or code, such as `aqa-gcse-chemistry-8462`, or describes a custom examination. Use lowercase words joined by hyphens, from `a-z` and `0-9` only, and real names, never generic labels such as `exam` or `test`.
-- `<YYYY-MM-DD>` is the date the set was created. `<practice-kind>` is `full-mock`, `section-practice`, `topic-practice`, or `supplied-paper`. `<NN>` is one more than the highest set number already in that `exams/<exam>/` folder, zero-padded to two digits.
+- `<subject>` names the subject or learning goal, such as `chemistry`. `<exam>` names the examination by awarding body, qualification, and subject or code, such as `aqa-gcse-chemistry-8462`, or describes a custom examination. Use real names, never generic labels such as `exam` or `test`.
+- `<YYYY-MM-DD>` is the date the set was created. `<practice-kind>` is `full-mock`, `section-practice`, `topic-practice`, or `supplied-paper`. `<NN>` is the next set number in that `exams/<exam>/` folder, two digits.
 - List `.learning/` and the subject's `exams/` before creating a folder. Reuse the existing subject or examination folder for the same goal or examination instead of creating a near-duplicate; when you cannot tell, ask.
 - The files are ordinary files the student may commit. Never add them to `.gitignore`, `.git/info/exclude`, or any other ignore rule.
 
 ## Scaffold and check
 
-Create each new set, the study plan, and `START_HERE.html` with `scaffold`. It takes the next set number, copies the paper runtime into `paper.html` with its `paper-meta` id, never replaces a file, and leaves `<!-- fill: ... -->` markers to replace, including the title it derives from folder names. A `supplied-paper` set gets only `source-notes.html`. Write by hand attempts, markings, correction sets, and a supplied paper's documents and your unofficial key for it.
+Create each new set, the study plan, and `START_HERE.html` with `scaffold`. It takes the next set number, copies the paper runtime into `paper.html` with its `paper-meta` id, never replaces a file, and leaves `<!-- fill: ... -->` markers to replace. A `supplied-paper` set gets only `source-notes.html`. Write by hand attempts, markings, correction sets, and a supplied paper's documents and your unofficial key for it.
 
 ```bash
 python <examiner>/scripts/cli.py --repo-root <student folder> --input kind=<set|study-plan|start-here> --input subject=<subject> [--input exam=<exam> --input practice_kind=<kind> --input date=<YYYY-MM-DD> --input marking_scheme=<yes|no>] --format json scaffold

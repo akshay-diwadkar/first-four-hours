@@ -2,11 +2,13 @@
 
 Read this before writing a paper.
 
-When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time and which it is.
+When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing, asking then too, when time or conditions are open, whether an access arrangement such as extra time changes them. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time, which it is, and any access arrangement.
+
+A follow-up set for diagnosed gaps uses questions new to the student, on surfaces unlike those that exposed them.
 
 ## Fidelity
 
-Match the real examination wherever its requirements establish it: question types and command words, sections and any choice of questions, marks per question and in total, the rules for candidates, rubric, answer format such as lines, boxes, or option letters, permitted materials, and syllabus coverage. Section and topic practice keep the real question style and marks for that part. Name each deliberate departure from representative conditions, such as an easier warm-up, a harder stretch set, or a shorter time, in the paper's instructions and the source notes. Difficulty and time are judgment: label them as estimates.
+Match the real examination wherever its requirements establish it: question types and command words, sections and any choice of questions, marks per question and in total, the rules for candidates, rubric, answer format such as lines, boxes, or option letters, permitted materials, and syllabus coverage. Section and topic practice keep the real question style and marks for that part. Name each deliberate departure from representative conditions, such as a shorter time, in the paper's instructions and the source notes. Difficulty and time are judgment: label them as estimates.
 
 ## Set contents
 
@@ -15,7 +17,7 @@ Match the real examination wherever its requirements establish it: question type
 - **Marking scheme** (`marking-scheme.html`): only when the examination uses one, in its style: point-based marks, levels of response with descriptors, or both, with accepted alternatives, and the mark bands, assessment objectives, and consequential-marking and negation signals where the examination's schemes use them.
 - **Source notes** (`source-notes.html`): each requirement used with its source and session, labelled official, inferred from past papers, requested by the student, or good practice, not an examination rule; the approximation label and its assumptions when official requirements were not verified; deliberate departures; and unresolved limitations. No answers.
 
-Make each file one self-contained HTML file a browser opens directly: CSS, SVG, and images inline, mathematics as MathML or plain text, and no network dependency for essential content. It prints cleanly, uses real text rather than text in images, gives every figure alt text or a caption, never relies on colour alone, and links the set's other files relatively.
+Make each file one self-contained HTML file a browser opens directly: CSS, SVG, and images inline, mathematics as MathML or plain text, and no network dependency for essential content. It prints cleanly, uses real text rather than text in images, gives every figure alt text or a caption, and never relies on colour alone.
 
 ## Solve and audit
 
@@ -23,11 +25,12 @@ Before delivery, solve every question from the paper alone, as a student would, 
 
 - each answer is correct and the question gives enough information to reach it;
 - each question has one defensible reading, or the scheme accepts every defensible answer;
-- each multiple-choice or multiple-response question has exactly as many correct options as its instructions state, and plausible wrong options;
+- each multiple-choice or multiple-response question has exactly as many correct options as its instructions state, plausible wrong options, and no cue: correct letters spread evenly unless a source explains otherwise, and no correct option stands out by length or qualification;
+- no question gives away another's answer;
 - marks sum to the stated totals, and numbering and section order are continuous;
 - coverage matches the request and the syllabus areas the source notes claim;
 - your solution, the answer key, and the marking scheme agree, and every explanation supports the answer it explains;
 - the key repeats each question and its options exactly as the paper labels them, and each answer control matches its question's instructions;
 - the runtime appears byte for byte and its timing data matches the instructions; in a browser when available, reloading or loading a saved answer file restores every answer.
 
-Fix every failure and audit the changed questions again. An audit cannot prove difficulty or timing; keep those as labelled estimates.
+Fix every failure and audit the changed questions again.

@@ -51,6 +51,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Construct 1.1.3: ships the Blueprint 1.1.3 runtime copy, so it reports contract version 1.1.3. It still accepts every sealed 1.x plan.
 - Blueprint 1.1.7: before sealing, the planner names, for every file the plan adds or changes, each verification command that searches, counts, or validates that file, and checks the drafted text against that command's rule. Before, the rule was keyed to the commands, so an edit nobody linked to a validator, such as an Atlas pointer line, could seal and then fail final verification.
 - Construct 1.1.7: ships the Blueprint 1.1.7 runtime copy, so it reports contract version 1.1.7. It still accepts every sealed 1.x plan.
+- Tutor 1.2.1: when you continue a series, Tutor reads the latest Examiner marking of each practice set and records each misunderstanding or recurring pattern Examiner diagnosed as unresolved, linking that marking, until you show it again to Tutor, so a topic with such a diagnosis no longer shows as demonstrated. A re-mark of the same attempt does not reopen it; a retry that diagnoses it again does. The study plan's schedule skeleton now says to leave out time other sections already schedule.
+- Examiner 1.2.1: a finished on-screen paper now tells you how to get it marked: ask Examiner to mark it and say where you saved the answer file.
 
 ## [1.0.0] - 2026-10-25
 

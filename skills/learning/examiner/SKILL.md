@@ -2,7 +2,7 @@
 name: examiner
 description: "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
 metadata:
-  version: "1.2.0"
+  version: "1.2.1"
 ---
 
 # Examiner

@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-01
+
 ### Added
 
 - Tutor 1.2.0: Tutor now ships scripts and needs Python 3.11 or later. `scaffold` writes a lesson, the study plan, or `START_HERE.html` from a skeleton, taking the next lesson number and never replacing a file. `check` takes the pages just saved and blocks on unfilled skeleton markers, broken relative links, missing anchors, and unreadable files. It warns, without blocking, about absolute links and about cited web pages that are dead, unverifiable, or unreachable.

@@ -2,7 +2,7 @@
 
 Commands:
   check-questions  validate a question set; with --repo-dir, also prove each hop exists and
-                   that grepping the question's key terms misses at least one hop file
+                   that no key term finds the grep-gap hop among a readable number of files
   install-skill    copy this repository's Atlas skill into <repo>/.claude/skills/atlas
   build-map        have Atlas build .map/ and its CLAUDE.md block in <repo>; records the cost
   answer           run one arm (3 runs per question by default); resumable per run
@@ -39,6 +39,9 @@ BUILD_PROMPT = (
 )
 SKIP_DIRS = {".git", "node_modules", ".map", ".claude", "vendor", "target", "build", "dist", "__pycache__"}
 MAX_SCAN_BYTES = 2_000_000
+# A search returning at most this many files is one an agent can read through, so a grep-gap hop
+# inside it is reachable by grep after all.
+SELECTIVE_HITS = 25
 
 
 def work_dir(args: argparse.Namespace, qset: dict[str, Any]) -> Path:
@@ -81,17 +84,19 @@ def _repo_files(repo: Path) -> list[Path]:
     return out
 
 
-def _grep_hits(files: list[Path], repo: Path, terms: list[str]) -> set[str]:
-    pats = [re.compile(re.escape(t), re.I) for t in terms]
-    hits = set()
+def _load_texts(files: list[Path], repo: Path) -> dict[str, str]:
+    texts = {}
     for p in files:
         try:
-            text = p.read_text(encoding="utf-8")
+            texts[p.relative_to(repo).as_posix()] = p.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        if any(pat.search(text) for pat in pats):
-            hits.add(p.relative_to(repo).as_posix())
-    return hits
+    return texts
+
+
+def _term_hits(texts: dict[str, str], term: str) -> set[str]:
+    pat = re.compile(re.escape(term), re.I)
+    return {path for path, text in texts.items() if pat.search(text)}
 
 
 def cmd_check_questions(args: argparse.Namespace) -> int:
@@ -119,7 +124,7 @@ def cmd_check_questions(args: argparse.Namespace) -> int:
                 problems += [f'{q["id"]}: {p}' for p in _hop_problems(q)]
         if args.repo_dir:
             repo = args.repo_dir.resolve()
-            files = _repo_files(repo)
+            texts = _load_texts(_repo_files(repo), repo)
             for q in qs:
                 if c.is_control(q) or not q.get("hops") or not q.get("key_terms"):
                     continue
@@ -129,10 +134,12 @@ def cmd_check_questions(args: argparse.Namespace) -> int:
                         problems.append(f'{q["id"]}: hop file {h["file"]} does not exist')
                     elif h.get("symbol") and h["symbol"] not in f.read_text(encoding="utf-8", errors="replace"):
                         problems.append(f'{q["id"]}: {h["symbol"]} not found in {h["file"]}')
-                hits = _grep_hits(files, repo, q["key_terms"])
-                hop_files = {h["file"] for h in q["hops"]}
-                if hop_files <= hits:
-                    problems.append(f'{q["id"]}: grepping its key terms reaches every hop file; rewrite it')
+                gap_file = q["hops"][q["grep_gap"]["hop"]]["file"]
+                for term in q["key_terms"]:
+                    hits = _term_hits(texts, term)
+                    if gap_file in hits and len(hits) <= SELECTIVE_HITS:
+                        problems.append(f'{q["id"]}: key term "{term}" finds grep-gap hop {gap_file} '
+                                        f'among only {len(hits)} files; rewrite it')
     for p in problems:
         print(p)
     print("ok" if not problems else f"{len(problems)} problem(s)")
@@ -185,6 +192,7 @@ def _record(raw: dict[str, Any], ok: bool, reason: str) -> dict[str, Any]:
         "num_turns": data.get("num_turns"),
         "duration_ms": data.get("duration_ms"),
         "skills_loaded": raw["skills_loaded"],
+        "memory_paths": raw["memory_paths"],
         "tool_calls": raw["tool_calls"],
     }
 

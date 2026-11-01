@@ -100,6 +100,7 @@ def run_stream(cmd: list[str], *, cwd: Path, timeout: int, stdin_text: str | Non
         stderr, code = "timeout", -1
     result: dict[str, Any] | None = None
     skills: list[str] = []
+    memory: list[str] = []
     calls: list[dict[str, Any]] = []
     for line in stdout.splitlines():
         try:
@@ -109,6 +110,7 @@ def run_stream(cmd: list[str], *, cwd: Path, timeout: int, stdin_text: str | Non
         kind = event.get("type")
         if kind == "system" and event.get("subtype") == "init":
             skills = [str(s) for s in event.get("skills") or []]
+            memory = [str(m) for m in event.get("memory_paths") or []]
         elif kind == "assistant":
             for block in (event.get("message") or {}).get("content") or []:
                 if isinstance(block, dict) and block.get("type") == "tool_use":
@@ -121,6 +123,7 @@ def run_stream(cmd: list[str], *, cwd: Path, timeout: int, stdin_text: str | Non
         "stderr": stderr[-2000:],
         "result_event": result,
         "skills_loaded": skills,
+        "memory_paths": memory,
         "tool_calls": calls,
     }
 
@@ -179,6 +182,10 @@ def check_arm(repo: Path, arm: str, commit: str) -> list[str]:
     head = git_head(repo)
     if not head.startswith(commit) and not commit.startswith(head):
         problems.append(f"checkout is at {head}, question set pins {commit}")
+    for parent in repo.resolve().parents:
+        for name in ("CLAUDE.md", "CLAUDE.local.md", "AGENTS.md"):
+            if (parent / name).exists():
+                problems.append(f"{parent / name} sits above the checkout and would load into every run")
     state = arm_state(repo)
     want = arm == "atlas"
     for part, present in state.items():

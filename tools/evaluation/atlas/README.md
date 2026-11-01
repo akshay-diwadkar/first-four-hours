@@ -10,7 +10,7 @@ The method is fixed so results stay comparable:
 - **Arms:** both arms use the same checkout at the question set's pinned commit.
   - The baseline arm has no `.map/`, no Atlas block in `CLAUDE.md` or `AGENTS.md`, and no Atlas skill.
   - The Atlas arm has all three. The skill is installed at `.claude/skills/atlas`.
-  - `run.py answer` refuses a checkout that doesn't match its arm. It records a run as failed if the Atlas skill's loaded state doesn't match the arm.
+  - `run.py answer` refuses a checkout that doesn't match its arm, or one with a `CLAUDE.md`, `CLAUDE.local.md` or `AGENTS.md` in a parent folder, since that file would load into every run. Keep checkouts outside this repository. It records a run as failed if the Atlas skill's loaded state doesn't match the arm.
 - **Repeats:** each question runs 3 times per arm.
 - **Grading:** Opus 5.5 (`claude-opus-5-5`) at high effort grades all of a question's answers together against the reference answer, as correct, partial or wrong. Answers are shuffled, and mentions of Atlas and `.map/` paths are removed first. You then hand-check about 10% of the graded runs using the spot-check file.
 - **Tool calls:** every tool call is recorded from stream-json output. A call counts as map use when it reads or searches `.map/` or invokes the Atlas skill.
@@ -50,7 +50,7 @@ Before using a set, run `check-questions --repo-dir` against the pinned checkout
 - every set and question has its required fields;
 - every hop file exists and contains its symbol;
 - no question names one of its own hop symbols;
-- grepping a question's `key_terms` doesn't reach every one of its hop files.
+- no single key term finds the grep-gap hop's file among 25 or fewer matching files. A search with that few results is one an agent can read through, so the step wouldn't really be hidden. Common words that match thousands of files don't count as reaching it.
 
 ## Running one repository
 

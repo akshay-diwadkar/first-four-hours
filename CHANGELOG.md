@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-01
+
 ### Changed
 
 - Blueprint 1.2.1: uses fewer tokens per plan. It writes its first draft in one write instead of through many small edits, and keeps long file reads and command output out of its own context. It gives the full elevated challenge to a plan that changes a time or size budget or could use up the room left under one, no longer to every plan that edits budgeted guidance, and a change that only updates a skill's version number no longer counts as a code or seal-runtime change. A second challenge still runs only when earned, and a request gets at most two: when repairs after the second would need a third, Blueprint stops without sealing and names the premise that keeps failing.

@@ -15,6 +15,6 @@
     "router": {"top_level": 500, "references": 1000},
     "scribe": {"top_level": 750, "references": 10000},
     "ticket": {"top_level": 750, "references": 10000},
-    "tutor": {"top_level": 935, "references": 3055}
+    "tutor": {"top_level": 935, "references": 3226}
   }
 }

@@ -484,7 +484,7 @@ rehearsal off and leaves the paper readable and printable.
 
   const attemptBox = make("div", { id: "paper-attempt" });
   const attemptLink = make("a", { id: "paper-attempt-download" }, "Download the answer file again");
-  attemptBox.append(make("p", {}, "This paper is finished and locked. Your answer file has been made: keep it, or send it for marking."), attemptLink);
+  attemptBox.append(make("p", {}, "This paper is finished and locked. Your answer file has been made: keep it, or ask Examiner to mark it and say where you saved it."), attemptLink);
   const newAttemptButton = make("button", { id: "paper-new-attempt", type: "button" }, "Start a new attempt");
   const newAttemptConfirm = make("div", { id: "paper-new-attempt-confirm", role: "alertdialog" });
   const newAttemptYes = make("button", { id: "paper-new-attempt-yes", type: "button" }, "Yes, start again");

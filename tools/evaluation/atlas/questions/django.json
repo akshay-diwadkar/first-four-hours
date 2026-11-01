@@ -1,0 +1,132 @@
+{
+  "name": "django",
+  "repo": "django/django",
+  "ref": "6.1.2",
+  "commit": "2212534bae393714e1e51db2341d4fd5545e19f6",
+  "connection_rule": false,
+  "note": "Pilot, the memorized-repository control. Recorded before tool-call capture and before the connection-question rule; its questions are not connection questions.",
+  "questions": [
+    {
+      "id": "q01",
+      "kind": "trace-flow",
+      "question": "When an HTTP request arrives over WSGI, which classes and methods carry it through the middleware chain to the view and back? Name the files.",
+      "reference": "django/core/handlers/wsgi.py WSGIHandler.__call__ builds a WSGIRequest and calls BaseHandler.get_response (django/core/handlers/base.py). BaseHandler.load_middleware builds the middleware chain wrapping _get_response, which resolves the URL, runs process_view middleware, calls the view, and handles template responses. Async path: get_response_async/_get_response_async (ASGIHandler in asgi.py).",
+      "must_have": [
+        "WSGIHandler",
+        "BaseHandler.get_response or get_response",
+        "load_middleware",
+        "_get_response",
+        "django/core/handlers/base.py"
+      ]
+    },
+    {
+      "id": "q02",
+      "kind": "trace-flow",
+      "question": "With multiple databases configured, how does Django decide which database a QuerySet reads from or writes to? Point to the code.",
+      "reference": "QuerySet.db property in django/db/models/query.py returns self._db (from .using()) or router.db_for_write / router.db_for_read. The router is ConnectionRouter in django/db/utils.py, which iterates settings.DATABASE_ROUTERS via _router_func and falls back to DEFAULT_DB_ALIAS (or the instance's _state.db hint).",
+      "must_have": [
+        "QuerySet.db",
+        "ConnectionRouter",
+        "django/db/utils.py",
+        "db_for_read / db_for_write",
+        "DATABASE_ROUTERS"
+      ]
+    },
+    {
+      "id": "q03",
+      "kind": "locate-behavior",
+      "question": "Where does makemigrations detect that a model field was renamed rather than removed and re-added?",
+      "reference": "django/db/migrations/autodetector.py, MigrationAutodetector.create_renamed_fields (compares removed/added fields by deconstruction, asks questioner.ask_rename) and generate_renamed_fields (emits RenameField operations). Questioner lives in django/db/migrations/questioner.py.",
+      "must_have": [
+        "django/db/migrations/autodetector.py",
+        "MigrationAutodetector",
+        "create_renamed_fields or generate_renamed_fields",
+        "ask_rename / questioner"
+      ]
+    },
+    {
+      "id": "q04",
+      "kind": "where-to-change",
+      "question": "I want to add a custom field lookup (like __icontains) for my own field. Where are the built-in lookups defined and how are they registered on fields?",
+      "reference": "Built-in lookups are classes in django/db/models/lookups.py (base class Lookup; e.g. Contains/IContains as PatternLookup subclasses) registered with the @Field.register_lookup decorator. Registration comes from RegisterLookupMixin in django/db/models/query_utils.py (register_lookup / get_lookup). Query.build_lookup in django/db/models/sql/query.py resolves them at filter time.",
+      "must_have": [
+        "django/db/models/lookups.py",
+        "Lookup base class",
+        "register_lookup",
+        "RegisterLookupMixin",
+        "django/db/models/query_utils.py"
+      ]
+    },
+    {
+      "id": "q05",
+      "kind": "locate-behavior",
+      "question": "Where is CSRF validation performed for a POST request, and how is the submitted token compared to the secret?",
+      "reference": "django/middleware/csrf.py CsrfViewMiddleware.process_view: for unsafe methods it checks Origin (_origin_verified), Referer for HTTPS (_check_referer), then _check_token, which reads the POST field or X-CSRFToken header, validates format (_check_token_format) and calls _does_token_match, which unmasks and uses constant_time_compare from django/utils/crypto.py.",
+      "must_have": [
+        "django/middleware/csrf.py",
+        "CsrfViewMiddleware.process_view",
+        "_check_token",
+        "constant_time_compare"
+      ]
+    },
+    {
+      "id": "q06",
+      "kind": "architecture",
+      "question": "How does the Django template engine locate a template by name? Which components are involved?",
+      "reference": "django/template/engine.py Engine.get_template calls Engine.find_template, which iterates loaders built by get_template_loaders/find_template_loader. Loaders live in django/template/loaders/: filesystem.Loader (DIRS), app_directories.Loader (app templates/ dirs), cached.Loader (wraps others), locmem, all subclassing base.Loader. Backend wrapper is django/template/backends/django.py.",
+      "must_have": [
+        "django/template/engine.py",
+        "find_template",
+        "django/template/loaders/",
+        "filesystem / app_directories / cached loaders"
+      ]
+    },
+    {
+      "id": "q07",
+      "kind": "architecture",
+      "question": "How does a QuerySet get turned into SQL and executed? Name the main classes and methods.",
+      "reference": "QuerySet holds a django.db.models.sql.query.Query (django/db/models/sql/query.py). Query.get_compiler returns a compiler from django/db/models/sql/compiler.py (SQLCompiler and subclasses SQLInsertCompiler, SQLUpdateCompiler, SQLDeleteCompiler, SQLAggregateCompiler). SQLCompiler.as_sql builds SQL (pre_sql_setup, get_select etc.), execute_sql runs it via a cursor, results_iter yields rows; iteration happens through ModelIterable in query.py.",
+      "must_have": [
+        "Query in django/db/models/sql/query.py",
+        "get_compiler",
+        "SQLCompiler in django/db/models/sql/compiler.py",
+        "as_sql",
+        "execute_sql"
+      ]
+    },
+    {
+      "id": "q08",
+      "kind": "locate-behavior",
+      "question": "Where is the admin changelist's sidebar filtering (list_filter) implemented?",
+      "reference": "django/contrib/admin/views/main.py ChangeList (get_filters, get_filters_params, get_queryset applies filters) and django/contrib/admin/filters.py (ListFilter, SimpleListFilter, FieldListFilter and subclasses like RelatedFieldListFilter, BooleanFieldListFilter, DateFieldListFilter).",
+      "must_have": [
+        "django/contrib/admin/views/main.py",
+        "ChangeList",
+        "get_filters",
+        "django/contrib/admin/filters.py",
+        "SimpleListFilter / FieldListFilter"
+      ]
+    },
+    {
+      "id": "q09",
+      "kind": "conventions",
+      "question": "I'm fixing a bug in select_related. Where should the regression test go, and how do I run only those tests?",
+      "reference": "Tests live in tests/select_related/ (tests.py, models.py). Run with Django's own runner: from the tests/ directory, `./runtests.py select_related` (or `python runtests.py select_related`); requirements in tests/requirements/. Contributing docs: docs/internals/contributing/writing-code/unit-tests.txt.",
+      "must_have": [
+        "tests/select_related/",
+        "tests/runtests.py",
+        "runtests.py select_related"
+      ]
+    },
+    {
+      "id": "q10",
+      "kind": "single-symbol",
+      "question": "Where is get_object_or_404 defined?",
+      "reference": "django/shortcuts.py, function get_object_or_404 (with get_list_or_404 and async aget_object_or_404 nearby).",
+      "must_have": [
+        "django/shortcuts.py"
+      ],
+      "control": true
+    }
+  ]
+}

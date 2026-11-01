@@ -28,9 +28,9 @@ Find the symptom you see. Each entry gives the likely cause, a check that change
 
 ## Blueprint did not seal
 
-- **Likely cause:** a question only you can answer is still open, Ideate could only report a research limit for the direction the plan needs, or no separate subagent could run the challenge.
-- **Check:** read Blueprint's last message; it names the open question or the limit.
-- **Next step:** answer the question, supply the missing evidence or choose another direction, or run Blueprint where a subagent is available. A changed request needs a new plan in a fresh task folder. See [Blueprint](../skills/blueprint.md).
+- **Likely cause:** a question only you can answer is still open, Ideate could only report a research limit for the direction the plan needs, no separate subagent could run the challenge, or the plan still had not settled after two challenges.
+- **Check:** read Blueprint's last message; it names the open question, the limit, or the premise that keeps failing.
+- **Next step:** answer the question, supply the missing evidence or choose another direction, run Blueprint where a subagent is available, or follow the next step its report gives for the failing premise. A changed request needs a new plan in a fresh task folder. See [Blueprint](../skills/blueprint.md).
 
 ## Construct stopped before completion
 

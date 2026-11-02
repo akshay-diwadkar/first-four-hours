@@ -68,15 +68,15 @@ Choose the level from the evidenced consequence, affected scope, reachable condi
 
 Each new head starts from current authority, base, and head. A moved base/head or changed bound source or artifact leaves the earlier assessment stale, never a clearance.
 
-Review the delta when an earlier assessment of this change passes `check`, its result was not `blocked`, its head is an ancestor of this head, and the authoritative requirements are unchanged. The delta covers:
+Keep snapshots at paths a later re-review can read, and write refreshed ones to new paths, so `check` can still compare the earlier assessment's. Review the delta when `check` passes an earlier assessment of this change or refuses it only with `result.target_moved`, its result was not `blocked`, its `Head revision` is an ancestor of this head, and the authoritative requirements are unchanged. The delta covers:
 
 - every change from that head to this one, under the axes, and whatever those changes propagate to;
 - whether each earlier finding's `required_truth` now holds;
 - any path or surface that assessment left unexamined or limited;
-- incoming base changes that touch the change's paths or contracts, after a merge or rebase.
+- changes from that assessment's `Base revision` to the current base that touch the change's paths or contracts, whether or not they are merged in.
 
 Name the assessment's head and every path you did not re-inspect in `limitations`, so a `clear` reads as clear for the delta on top of that assessment, and carry its limitations forward. A defect you notice in unchanged code is still a finding.
 
-Assess the whole change instead when the requirements changed, the delta rewrites most of the change, the delta gives concrete reason to doubt the earlier coverage, or the user asks.
+Assess the whole change instead when no earlier assessment qualifies, as when the requirements changed or a rebase or amend left no such ancestor; when the delta rewrites most of the change or gives concrete reason to doubt the earlier coverage; or when the user asks.
 
 Stop when material requirements and surfaces are accounted for, candidates are verified or rejected, and further bounded inspection cannot plausibly reveal another merge-relevant defect. This is not omniscience or a whole-repository diagnosis claim; completeness is bounded to reasonably discoverable material defects in the assessed authority, surfaces, implementation, and proof.

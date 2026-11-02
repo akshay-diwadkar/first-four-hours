@@ -92,7 +92,9 @@ class AssessError(ValueError):
         self.evidence = evidence or (message,)
 
     def diagnostic(self, *, phase: str) -> dict[str, Any]:
-        if self.category == "stale_evidence":
+        if self.code == "result.target_moved":
+            action = "The base or head moved since this assessment. If it qualifies under Reassessment and stop in the assess guidance, review the delta; otherwise perform a fresh full assessment against the current exact base/head and assessed snapshots. Then seal a new assessment.md."
+        elif self.category == "stale_evidence":
             action = "Perform a fresh full assessment against the current exact base/head and assessed snapshots, then seal a new assessment.md."
         elif self.category == "unsafe_state":
             action = "Use the prepared ignored .first-four-hours/assessments/<slug>/assessment.md output path, keep source snapshots external, repair the named unsafe workspace/output condition, and retry without changing the assessed head."
@@ -1348,6 +1350,14 @@ def check_result(repo_root: Path, output: Path) -> dict[str, Any]:
             [f"{field}: stored={stored[field]!r}, current={expected[field]!r}" for field in mismatches]
             + source_mismatches
         )
+        if not source_mismatches and set(mismatches) <= {"base_revision", "head_revision"}:
+            raise _fail(
+                "result.target_moved",
+                "assessment.md was sealed against an earlier target: " + ", ".join(mismatches),
+                category="stale_evidence",
+                path=destination,
+                evidence=evidence,
+            )
         raise _fail(
             "result.stale",
             "assessment.md no longer matches current target identity: "

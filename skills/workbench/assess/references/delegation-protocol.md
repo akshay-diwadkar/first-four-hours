@@ -22,11 +22,11 @@ Axes are lenses, not work units: never require one subagent per axis, a fixed re
 Each subagent receives only a curated packet:
 - the exact target, base, and head, or the bounded source;
 - snapshots of, or pointers to, the original request, the authoritative requirements, and any available Blueprint, which is authority evidence, never proof, so the delegate checks the diff against the original request as well as the plan;
-- the base-to-head diff, or on a delta re-review the earlier-head-to-head diff;
+- the base-to-head diff, or on a delta re-review the earlier-head-to-head diff, each earlier finding's `required_truth`, the paths and surfaces that assessment left unexamined or limited, and its `Base revision`;
 - its slice or falsification question, with its exclusions; and
 - the objective stop and the compact return contract.
 
-Never give a subagent the owner's transcript or exploration notes, the implementer's narrative or self-assessment, PR prose, or prior findings. It reviews adversarially inside that slice, continues after the strongest defect until independently material defects in scope are exhausted, returns material ambiguity or contradiction instead of broadening authority, and does not delegate.
+Never give a subagent the owner's transcript or exploration notes, the implementer's narrative or self-assessment, PR prose, or prior findings beyond those delta items. It reviews adversarially inside that slice, continues after the strongest defect until independently material defects in scope are exhausted, returns material ambiguity or contradiction instead of broadening authority, and does not delegate.
 
 It always returns its examined scope and any material ambiguity, plus either candidate findings or a compact bounded-clear statement, and nothing else. A candidate finding contains concrete defect, material consequence, exact authority locator, and exact implementation/proof locator, plus whether it was observed by execution or reasoned; no essays, transcripts, plans, matrices, scores, or confidence.
 

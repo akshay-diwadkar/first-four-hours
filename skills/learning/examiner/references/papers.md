@@ -2,7 +2,7 @@
 
 Read this before writing a paper.
 
-When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing, asking then too, when time or conditions are open, whether an access arrangement such as extra time changes them. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time, which it is, and any access arrangement.
+When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. Unless the student has settled the time and conditions, ask once before writing, with any such choices, whether an access arrangement such as extra time changes them; an implied real allowance leaves this open. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time, which it is, and any access arrangement.
 
 A follow-up set for diagnosed gaps uses questions new to the student, on surfaces unlike those that exposed them.
 

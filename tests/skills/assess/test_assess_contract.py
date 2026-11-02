@@ -174,7 +174,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     ]
     assert artifact.startswith("# Assessment\n")
     receipt = artifact.splitlines()[-1]
-    assert receipt.startswith("<!-- assessment-result: 1.1.0; sha256: ")
+    assert receipt.startswith("<!-- assessment-result: 1.2.0; sha256: ")
     assert "`findings`" in artifact
     assert '- Severity: "P1"' in artifact
     assert f"{head}:service.py#L1-L1" in artifact
@@ -199,7 +199,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
         parse_result(f"{blocked}<!-- assessment-result: 1.0.0; sha256: {blocked_digest} -->\n")
     assert refused_blocked.value.code == "artifact.shape_invalid"
     assert "requires a material limitation" in refused_blocked.value.message
-    legacy = artifact.replace("<!-- assessment-result: 1.1.0; ", "<!-- assessment-result: 2.0.0; ", 1)
+    legacy = artifact.replace("<!-- assessment-result: 1.2.0; ", "<!-- assessment-result: 2.0.0; ", 1)
     output.write_text(legacy, encoding="utf-8")
     checked = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert checked.returncode != 0
@@ -251,7 +251,7 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
 
 
 def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:
-    repo, _base, _head = _repository(tmp_path, assessment_seed)
+    repo, base, _head = _repository(tmp_path, assessment_seed)
     prepared = _run(repo, "--input", "slug=Rename Check", "--format", "json", "prepare")
     assert prepared.returncode == 0, prepared.stdout + prepared.stderr
     workspace = json.loads(prepared.stdout)["result"]
@@ -319,6 +319,70 @@ def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path
     assert sealed.returncode == 0, sealed.stdout + sealed.stderr
     assert _git(repo, "status", "--porcelain") == ""
     assert _run(repo, "--input", f"output={output}", "--format", "json", "check").returncode == 0
+    # Replay a delta review on the template's own refs.
+    template = json.loads((SKILL / "templates" / "assessment-bundle.json").read_text(encoding="utf-8"))
+    default_refs = {"base_ref": template["base_ref"], "head_ref": template["head_ref"]}
+    _git(repo, "update-ref", default_refs["base_ref"], base)
+    snapshot = _snapshot(tmp_path)
+    snapshot_bytes = snapshot.read_bytes()
+    sources = [_assessed_source(snapshot)]
+    earlier_seal, _ = _seal(repo, tmp_path, _bundle(tmp_path, assessed_sources=sources, **default_refs), output)
+    assert earlier_seal.returncode == 0, earlier_seal.stdout + earlier_seal.stderr
+    earlier_check = _run(repo, "--input", f"output={output}", "--format", "json", "check")
+    assert earlier_check.returncode == 0, earlier_check.stdout + earlier_check.stderr
+    earlier_head = _git(repo, "rev-parse", "HEAD")
+    (repo / "delta.py").write_text("delta = 1\n", encoding="utf-8")
+    _git(repo, "add", "delta.py")
+    _git(repo, "commit", "-qm", "rework")
+    earlier_artifact = output.read_bytes()
+    moved_head = _run(repo, "--input", f"output={output}", "--format", "json", "check")
+    assert moved_head.returncode != 0
+    moved_head_diagnostic = json.loads(moved_head.stdout)["diagnostics"][0]
+    assert moved_head_diagnostic["code"] == "result.target_moved"
+    assert "review the delta" in moved_head_diagnostic["required_action"]
+    assert any("head_revision" in item for item in moved_head_diagnostic["supporting_evidence"])
+    assert output.read_bytes() == earlier_artifact
+    assert parse_result(output.read_text(encoding="utf-8"))["head_revision"] == earlier_head
+    _git(repo, "merge-base", "--is-ancestor", earlier_head, _git(repo, "rev-parse", "HEAD"))
+    _git(repo, "update-ref", default_refs["base_ref"], earlier_head)
+    moved_both = _run(repo, "--input", f"output={output}", "--format", "json", "check")
+    assert moved_both.returncode != 0
+    moved_both_diagnostic = json.loads(moved_both.stdout)["diagnostics"][0]
+    assert moved_both_diagnostic["code"] == "result.target_moved"
+    for field in ("base_revision", "head_revision"):
+        assert any(field in item for item in moved_both_diagnostic["supporting_evidence"])
+    _git(repo, "update-ref", default_refs["base_ref"], base)
+    delta_bundle = _bundle(
+        tmp_path,
+        assessed_sources=sources,
+        examined=[{"kind": "head-file", "path": "delta.py", "start_line": 1, "end_line": 1}],
+        limitations=[f"Delta on {earlier_head}: service.py was not re-inspected."],
+        **default_refs,
+    )
+    delta_seal, _ = _seal(repo, tmp_path, delta_bundle, output)
+    assert delta_seal.returncode == 0, delta_seal.stdout + delta_seal.stderr
+    assert json.loads(delta_seal.stdout)["result"]["unexamined_changed_paths"] == ["service.py"]
+    delta_check = _run(repo, "--input", f"output={output}", "--format", "json", "check")
+    assert delta_check.returncode == 0, delta_check.stdout + delta_check.stderr
+    _git(repo, "update-ref", default_refs["base_ref"], _git(repo, "rev-parse", "HEAD"))
+    moved_base = _run(repo, "--input", f"output={output}", "--format", "json", "check")
+    assert moved_base.returncode != 0
+    moved_base_diagnostic = json.loads(moved_base.stdout)["diagnostics"][0]
+    assert moved_base_diagnostic["code"] == "result.target_moved"
+    assert any("base_revision" in item for item in moved_base_diagnostic["supporting_evidence"])
+    snapshot.write_text("# Issue 382\nChanged acceptance.\n", encoding="utf-8")
+    changed_source = _run(repo, "--input", f"output={output}", "--format", "json", "check")
+    assert changed_source.returncode != 0
+    changed_source_diagnostic = json.loads(changed_source.stdout)["diagnostics"][0]
+    assert changed_source_diagnostic["code"] == "result.stale"
+    assert "review the delta" not in changed_source_diagnostic["required_action"]
+    snapshot.write_bytes(snapshot_bytes)
+    relocated = tmp_path / "relocated"
+    shutil.copytree(repo, relocated)
+    relocated_output = relocated / output.relative_to(repo)
+    relocated_check = _run(relocated, "--input", f"output={relocated_output}", "--format", "json", "check")
+    assert relocated_check.returncode != 0
+    assert json.loads(relocated_check.stdout)["diagnostics"][0]["code"] == "result.stale"
     output.write_text(output.read_text(encoding="utf-8").replace("`clear`", "`blocked`"), encoding="utf-8")
     before = output.read_bytes()
     checked = _run(repo, "--input", f"output={output}", "--format", "json", "check")

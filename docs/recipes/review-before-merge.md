@@ -18,7 +18,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 1. Start Assess on the branch, naming the authority (issue, specification, or sealed Blueprint) and the base.
 2. Read the result: `clear`, `findings`, or `blocked`. None of them is approval to merge.
 3. For `findings`, plan the fixes with a new Blueprint from `assessment.md`, and carry them out with a fresh Construct.
-4. Run Assess again on the reworked branch.
+4. Run Assess again on the reworked branch. When it reviews the rework and the earlier findings, its report names the head the earlier assessment reviewed; ask for a full review to cover the whole change again.
 5. Open the pull request with PR. It shows you the exact text and opens the pull request only after your yes. Merging stays yours.
 
 ## A worked scenario
@@ -63,7 +63,7 @@ Assess kept going after the first finding. The second never shows up in tests, b
 /blueprint : Plan fixes for the findings in .first-four-hours/assessments/shared-lists/assessment.md.
 ```
 
-A new Blueprint and a fresh Construct fix both findings, and a second Assess returns `clear`: no material defect found after a sufficient look. That is still not permission to merge.
+A new Blueprint and a fresh Construct fix both findings, and a second Assess returns `clear` for the rework on top of the first assessment: no material defect found after a sufficient look. Its report names the head the first assessment reviewed. That is still not permission to merge.
 
 ```text
 /pr : Open a pull request for this branch against main; it implements issue #40.
@@ -90,7 +90,7 @@ PR shows you the title and the full text, and opens the pull request only after 
 
 ## You are done when
 
-Assess returns `clear` for the final revision of the branch, which means no material defect was found after sufficient examination, and you have decided to merge.
+Assess returns `clear` for the final revision of the branch, which means no material defect was found after sufficient examination (when it reviews only the rework, in that rework on top of the earlier assessment), and you have decided to merge.
 
 ## If it goes wrong
 

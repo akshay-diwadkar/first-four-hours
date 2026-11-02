@@ -1,7 +1,5 @@
 # Learning records
 
-Read this on entering continuing learning, or when the learner asks to keep an explanation.
-
 ## Layout
 
 Keep every record under `.learning/` in the folder where the learner invoked Tutor, never under `.first-four-hours/`:
@@ -41,7 +39,7 @@ On every save, create or refresh in place the subject's self-contained `START_HE
 
 ## Never overwrite
 
-Never replace or delete an earlier lesson, and never rewrite its teaching material. Re-teaching a topic, revising an explanation, or retrying gets a new lesson with the next number that links back to the earlier one. The one in-place change to an earlier lesson is updating its learning record from later practice. If a chosen file name already exists, take the next number.
+Never replace or delete an earlier lesson, and never rewrite its teaching material. Re-teaching a topic, revising an explanation, or retrying gets a new lesson with the next number that links back to the earlier one. The one in-place change to an earlier lesson is updating its learning record from later study or practice. If a chosen file name already exists, take the next number.
 
 ## Lesson file
 
@@ -60,4 +58,4 @@ Make lessons easy to revisit: clear headings, a readable line length, legible li
 
 ## Recovering progress
 
-At the start of a continuing session, read the subject's `study-plan.html`, the learning records of its recent lessons, and each attempt's latest marking under `exams/`: of `marking-<N>.html` and its re-marks `marking-<N>-<M>.html`, the one with the highest `M`, where `marking-<N>.html` is `M` 1. The plan and records are the only progress state; write no separate Markdown or notes file that repeats them. When practice shows new understanding or a new difficulty, add it to the affected lesson's record, move it between Demonstrated and Unresolved in every other record that lists it, and update the study plan. A misunderstanding or recurring pattern such a marking diagnoses is a new difficulty for each topic whose questions show it, unless a lesson on that topic in `lessons/` already links a marking of that attempt for it; record it there as Unresolved, in the lesson that first teaches the topic when none exists yet. Whenever you record a difficulty a marking diagnoses, link that marking with a relative link and keep the link when it moves; move it to Demonstrated in a topic's record only from your own check on that topic.
+At the start of a continuing session, read the subject's `study-plan.html`, the records of its lessons last studied or practised, and each attempt's latest marking under `exams/`: of `marking-<N>.html` and its re-marks `marking-<N>-<M>.html`, the one with the highest `M`, where `marking-<N>.html` is `M` 1. The plan and records are the only progress state; write no separate Markdown or notes file that repeats them. When practice shows new understanding or a new difficulty, add it to the affected lesson's record, move it between Demonstrated and Unresolved in every other record that lists it, and update the study plan. A misunderstanding or recurring pattern such a marking diagnoses is a new difficulty for each topic whose questions show it, unless a lesson on that topic in `lessons/` already links a marking of that attempt for it; record it there as Unresolved, in the lesson that first teaches the topic when none exists yet. Whenever you record a difficulty a marking diagnoses, link that marking with a relative link and keep the link when it moves; move it to Demonstrated in a topic's record only from your own check on that topic.

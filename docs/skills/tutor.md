@@ -8,7 +8,7 @@ Choose by what you want; when the session shows a better fit, Tutor offers to sw
 
 - **Explanation:** one self-contained answer, complete without exercises.
 - **Tutoring:** you apply the idea or explain it in your own words, and Tutor responds to the misconceptions your answers show. Ordinary exercises belong here.
-- **Continuing learning:** a series, a study plan, or progress kept across sessions.
+- **Continuing learning:** a series, a study plan, or progress kept across sessions. A whole course or examination's material comes either paced, written as you progress, or up front, all written before you start. Tutor takes this from your request or asks once, and records it in the study plan's goal.
 
 ## When to use something else
 

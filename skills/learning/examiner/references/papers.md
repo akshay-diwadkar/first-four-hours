@@ -6,7 +6,7 @@ A follow-up set for diagnosed gaps uses questions new to the student, on surface
 
 ## Fidelity
 
-Match the real examination wherever its requirements establish it: question types and command words, sections and any choice of questions, marks per question and in total, the rules for candidates, rubric, answer format such as lines, boxes, or option letters, permitted materials, and syllabus coverage. Section and topic practice keep the real question style and marks for that part. Name each deliberate departure from representative conditions, such as a shorter time, in the paper's instructions and the source notes. Difficulty and time are judgment: label them as estimates.
+Match the real examination wherever its requirements establish it: question types and command words, sections and any choice of questions, marks per question and in total, the rules for candidates, rubric, answer format such as lines, boxes, or option letters, permitted materials, and syllabus coverage. Section and topic practice keep the real question style and marks for that part. Name each deliberate departure from representative conditions, such as an easier warm-up, a harder stretch set, or a shorter time, in the paper's instructions and the source notes. Difficulty and time are judgment: label them as estimates.
 
 ## Set contents
 

@@ -4,6 +4,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Changed
+
+- Examiner 1.3.0: when the time or conditions are open, asks once whether you have an access arrangement such as extra time, and the on-screen paper's timing and instructions reflect it. It settles what your request implies or research establishes before asking you. Its audit rejects multiple-choice cueing: correct letters unevenly spread without a sourced reason, a correct option given away by length or qualification, or one question revealing another's answer. A follow-up set for diagnosed gaps uses questions new to you, on different surfaces from those that exposed the gaps.
+
 ## [2.0.1] - 2026-11-01
 
 ### Changed

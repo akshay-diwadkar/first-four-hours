@@ -1,7 +1,5 @@
 # Practice records
 
-Read this before saving anything.
-
 ## Layout
 
 Keep every file under `.learning/` in the folder where the student invoked Examiner, never under `.first-four-hours/`:
@@ -16,7 +14,7 @@ Keep every file under `.learning/` in the folder where the student invoked Exami
     attempt-1.html  marking-1.html
 ```
 
-- `<subject>` names the subject or learning goal, such as `chemistry`. `<exam>` names the examination by awarding body, qualification, and subject or code, such as `aqa-gcse-chemistry-8462`, or describes a custom examination. Use real names, never generic labels such as `exam` or `test`.
+- `<subject>` names the subject or learning goal, such as `chemistry`. `<exam>` names the examination by awarding body, qualification, and subject or code, such as `aqa-gcse-chemistry-8462`, or describes a custom examination. Use real names in hyphen-joined lowercase `a-z0-9` words, never generic labels such as `exam` or `test` or device names like `con`.
 - `<YYYY-MM-DD>` is the date the set was created. `<practice-kind>` is `full-mock`, `section-practice`, `topic-practice`, or `supplied-paper`. `<NN>` is the next set number in that `exams/<exam>/` folder, two digits.
 - List `.learning/` and the subject's `exams/` before creating a folder. Reuse the existing subject or examination folder for the same goal or examination instead of creating a near-duplicate; when you cannot tell, ask.
 - The files are ordinary files the student may commit. Never add them to `.gitignore`, `.git/info/exclude`, or any other ignore rule.

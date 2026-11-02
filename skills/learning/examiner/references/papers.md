@@ -1,8 +1,6 @@
 # Papers
 
-Read this before writing a paper.
-
-When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. Unless the student has settled the time and conditions, ask once before writing, with any such choices, whether an access arrangement such as extra time changes them; an implied real allowance leaves this open. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time, which it is, and any access arrangement.
+When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. Unless the student has settled the time and conditions, ask once before writing, with any such choices, whether an access arrangement such as extra time changes them; an implied real allowance leaves this open. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state each part's time with any extra time, which it is, and any arrangement. `paper-meta` follows the runtime's opening comment.
 
 A follow-up set for diagnosed gaps uses questions new to the student, on surfaces unlike those that exposed them.
 
@@ -31,6 +29,6 @@ Before delivery, solve every question from the paper alone, as a student would, 
 - coverage matches the request and the syllabus areas the source notes claim;
 - your solution, the answer key, and the marking scheme agree, and every explanation supports the answer it explains;
 - the key repeats each question and its options exactly as the paper labels them, and each answer control matches its question's instructions;
-- the runtime appears byte for byte and its timing data matches the instructions; in a browser when available, reloading or loading a saved answer file restores every answer.
+- the runtime appears byte for byte and its timing data, with `access`, gives each part's stated time; in a browser when available, reloading or loading a saved answer file restores every answer.
 
 Fix every failure and audit the changed questions again.

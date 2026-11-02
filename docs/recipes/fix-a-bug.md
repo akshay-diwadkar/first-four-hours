@@ -27,7 +27,7 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 Larder's support inbox keeps getting the same complaint: some customers receive two order-confirmation emails. The quick patch would be a duplicate filter in the email sender. You start Diagnose instead.
 
 ```text
-/diagnose : Find out why some Larder customers receive two order-confirmation emails.
+/diagnose : Support keeps hearing from Larder customers who got two order-confirmation emails for one order, and it gets worse when checkout is busy. Find out why; a duplicate filter in the sender is not an answer.
 ```
 
 Diagnose follows the email back from the sender to its caller: the payment webhook handler. The handler sends the confirmation before it records the provider's event ID. Against a local test app, Diagnose replays one captured webhook twice and gets two emails; it replays it again with that event ID already marked as seen and gets none. Changing the suspected cause moved the effect, so the cause is `demonstrated`, not just reproduced. It touches no production system and changes no code.

@@ -19,6 +19,8 @@ Start it yourself with `/construct`, or the agent may start it when your request
 /construct : Implement the sealed blueprint in .first-four-hours/blueprints/<task-slug>/blueprint.md.
 ```
 
+The request is one line because the plan already made every decision.
+
 ## What happens
 
 Construct checks the plan's seal and that the files it was planned against have not changed. It then implements each instruction in order, writing any text the plan fixes exactly as declared, and proves each step that declares proof, with at most three attempts per step. It may repair its own coding mistakes, but it never changes the plan's method, scope, or decisions. After the last instruction it runs the plan's verification and compares the final diff with the plan once. It writes no state of its own, so a resumed run rereads progress from the worktree. It never edits the plan and never commits.

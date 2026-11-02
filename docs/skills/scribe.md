@@ -16,7 +16,7 @@ Scribe writes technical documentation that a reader can follow and trace back to
 Start it yourself with `/scribe`, or the agent may start it when your request matches. Writing needs your authority to create or revise the document; when the agent starts Scribe on its own, that grants no permission to write or fix anything. For example (illustrative):
 
 ```text
-/scribe : Write a deployment runbook from our docker-compose file and deploy scripts.
+/scribe : It is 3 a.m., the on-call engineer has never seen this service, and the one person who knows how to deploy it leaves on Friday. Write a deployment runbook from our docker-compose file and deploy scripts, with nothing in it that does not trace to a source.
 ```
 
 ## What happens

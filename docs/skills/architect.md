@@ -18,7 +18,7 @@ Architect decides a structural question about a codebase before anyone plans the
 Start it yourself with `/architect`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/architect : Decide whether the billing and invoicing modules should share one persistence layer.
+/architect : I inherited this repository and everyone calls it a mess, but nobody can say what to fix first, and I do not know software design. Look through it for technical debt in how it is organized, tell me the one problem that costs us the most, and decide how to fix it. If the structure is actually fine, say so. Explain it in plain words.
 ```
 
 ## What happens

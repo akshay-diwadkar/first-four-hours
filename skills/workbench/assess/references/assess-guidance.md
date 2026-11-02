@@ -75,7 +75,7 @@ Keep snapshots at paths a later re-review can read, and write refreshed ones to 
 - each open gap: any limitation of that assessment, or path or surface it left unexamined, except a path its `limitations` record as not re-inspected because an earlier assessment examined it;
 - changes from that assessment's `Base revision` to the current base that touch the change's paths or contracts, whether or not they are merged in.
 
-In `limitations`, name the assessment's head and every path you did not re-inspect because it or an earlier assessment examined it, so a `clear` reads as clear for the delta on top of that assessment, and state as a gap each open gap you did not close and anything in the delta you left unexamined. A defect you notice in unchanged code is still a finding.
+In `limitations`, name the assessment's head and each path you carry forward, recording that it was not re-inspected because an earlier assessment examined it, so a `clear` reads as clear for the delta on top of that assessment, and state as a gap each open gap you did not close and anything in the delta you left unexamined. A defect you notice in unchanged code is still a finding.
 
 Assess the whole change instead when no earlier assessment qualifies, as when the requirements changed or a rebase or amend left no such ancestor; when the delta rewrites most of the change or gives concrete reason to doubt the earlier coverage; or when the user asks.
 

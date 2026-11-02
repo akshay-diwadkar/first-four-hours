@@ -8,6 +8,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 - Tutor 1.3.0: a whole course or examination's material now has two deliveries, paced (written as you progress) or up front (all written before you start). Tutor takes yours from the request or asks once, and records it in the study plan's goal. A lesson written up front counts as not started until you study it.
 
+### Changed
+
+- Examiner 1.3.0: when the time or conditions are open, asks once whether you have an access arrangement such as extra time, and the on-screen paper's timing and instructions reflect it. It settles what your request implies or research establishes before asking you. Its audit rejects multiple-choice cueing: correct letters unevenly spread without a sourced reason, a correct option given away by length or qualification, or one question revealing another's answer. A follow-up set for diagnosed gaps uses questions new to you, on different surfaces from those that exposed the gaps.
+
 ## [2.0.1] - 2026-11-01
 
 ### Changed

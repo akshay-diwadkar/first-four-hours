@@ -1,8 +1,8 @@
 # Papers
 
-Read this before writing a paper.
+When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. Unless the student has settled the time and conditions, ask once before writing, with any such choices, whether an access arrangement such as extra time changes them; an implied real allowance leaves this open. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state each part's time with any extra time, which it is, and any arrangement. `paper-meta` follows the runtime's opening comment.
 
-When the request leaves open the practice kind, its sections or topics, the number of questions where the kind leaves it open, or the time allowed, let the student choose once, before writing. An on-screen paper always counts down, so time options are the real allowance for that part (else a labelled estimate) or a named shorter or longer departure, never untimed; the paper's instructions state the time and which it is.
+A follow-up set for diagnosed gaps uses questions new to the student, on surfaces unlike those that exposed them.
 
 ## Fidelity
 
@@ -23,11 +23,12 @@ Before delivery, solve every question from the paper alone, as a student would, 
 
 - each answer is correct and the question gives enough information to reach it;
 - each question has one defensible reading, or the scheme accepts every defensible answer;
-- each multiple-choice or multiple-response question has exactly as many correct options as its instructions state, and plausible wrong options;
+- each multiple-choice or multiple-response question has exactly as many correct options as its instructions state, plausible wrong options, and no cue: correct letters spread evenly unless a source explains otherwise, and no correct option stands out by length or qualification;
+- no question gives away another's answer;
 - marks sum to the stated totals, and numbering and section order are continuous;
 - coverage matches the request and the syllabus areas the source notes claim;
 - your solution, the answer key, and the marking scheme agree, and every explanation supports the answer it explains;
 - the key repeats each question and its options exactly as the paper labels them, and each answer control matches its question's instructions;
-- the runtime appears byte for byte and its timing data matches the instructions; in a browser when available, reloading or loading a saved answer file restores every answer.
+- the runtime appears byte for byte and its timing data, with `access`, gives each part's stated time; in a browser when available, reloading or loading a saved answer file restores every answer.
 
-Fix every failure and audit the changed questions again. An audit cannot prove difficulty or timing; keep those as labelled estimates.
+Fix every failure and audit the changed questions again.

@@ -2,7 +2,7 @@
 name: examiner
 description: "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
 metadata:
-  version: "1.2.2"
+  version: "1.3.0"
 ---
 
 # Examiner
@@ -11,7 +11,7 @@ Help a student rehearse a specific written examination with practice grounded in
 
 ## Establish the examination
 
-Identify the exact examination: awarding body or institution, qualification or course, subject, level, and the session or syllabus version where requirements differ between them. Ask only what would materially change the paper; requirements the student supplies can define a custom examination. Written examinations only: for an examination with oral or practical components, cover only its written components and say so.
+Identify the exact examination: awarding body or institution, qualification or course, subject, level, and the session or syllabus version where requirements differ between them. Settle what the request implies or research establishes; ask only what remains open and would materially change the paper; requirements the student supplies can define a custom examination. Written examinations only: for an examination with oral or practical components, cover only its written components and say so.
 
 ## Research the requirements
 
@@ -23,7 +23,7 @@ When official requirements cannot be verified, for example without research acce
 
 Produce what the student asked for: a full mock, section practice, or topic practice. Before writing a paper, read [Papers](references/papers.md). Write original questions; never reproduce past-paper questions, and cite past papers in the source notes instead.
 
-Solve and audit every question before delivery. Then summarise the paper's coverage, conditions, departures from representative conditions, and unresolved assumptions in the reply. Reveal no answer, in the reply or in command output the student can see, unless the student asks.
+Solve and audit every question before delivery. Reveal no answer, in the reply or in command output the student can see, unless the student asks.
 
 ## Attempts and marking
 

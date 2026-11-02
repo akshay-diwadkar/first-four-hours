@@ -16,7 +16,7 @@ A branch is finished and needs a pull request, or its open pull request's descri
 Type `/pr`, or ask in plain words for a pull request or a refreshed description; the agent may also start PR when your request matches. For example (illustrative):
 
 ```text
-/pr : Open a pull request for this branch against main; it implements issue #42. Write it for a reviewer who has ten minutes and only the diff.
+/pr : Open a pull request for this branch against main; it implements issue #42.
 ```
 
 ## What happens

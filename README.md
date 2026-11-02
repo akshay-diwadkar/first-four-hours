@@ -55,7 +55,7 @@ Say what is actually going wrong, what is at stake, and what must not break. For
 
 /scribe : It is 3 a.m., the on-call engineer has never seen this service, and the one person who knows how to deploy it leaves on Friday. Write a deployment runbook from our docker-compose file and deploy scripts, with nothing in it that does not trace to a source.
 
-/tutor : I have used Git daily for six years and I still copy rebase commands from the internet and hope. Teach me what rebase actually does to my commits, then make me prove it.
+/tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
 ```
 
 ## Start from the problem

@@ -42,7 +42,7 @@ Nothing starts on its own; you decide:
 If you want to learn a subject rather than change code, start with [Tutor](../skills/tutor.md) instead. For example (illustrative):
 
 ```text
-/tutor : I have used Git daily for six years and I still copy rebase commands from the internet and hope. Teach me what rebase actually does to my commits, then make me prove it.
+/tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
 ```
 
 ## How skills start

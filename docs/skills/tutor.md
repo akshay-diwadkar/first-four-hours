@@ -20,7 +20,7 @@ Choose by what you want; when the session shows a better fit, Tutor offers to sw
 Start it yourself with `/tutor`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/tutor : I have used Git daily for six years and I still copy rebase commands from the internet and hope. Teach me what rebase actually does to my commits, then make me prove it.
+/tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
 ```
 
 ## What happens

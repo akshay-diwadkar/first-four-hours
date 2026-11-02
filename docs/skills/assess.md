@@ -29,7 +29,7 @@ Assess fixes the exact target, base, and head, reads the authoritative requireme
 
 A sealed `assessment.md` in the ignored folder `.first-four-hours/assessments/<slug>/`, with one result:
 
-- `clear`: no material defect was found after sufficient examination;
+- `clear`: no material defect was found after sufficient examination. When Assess reviews only the rework since an earlier assessment, this covers that rework on top of the assessment, and the report names the head it reviewed;
 - `findings`: evidenced material defects, each with its location, consequence, and severity;
 - `blocked`: missing or contradictory authority or evidence prevents a trustworthy result.
 

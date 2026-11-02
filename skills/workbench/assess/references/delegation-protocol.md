@@ -22,7 +22,7 @@ Axes are lenses, not work units: never require one subagent per axis, a fixed re
 Each subagent receives only a curated packet:
 - the exact target, base, and head, or the bounded source;
 - snapshots of, or pointers to, the original request, the authoritative requirements, and any available Blueprint, which is authority evidence, never proof, so the delegate checks the diff against the original request as well as the plan;
-- the base-to-head diff, or on a delta re-review the earlier-head-to-head diff, each earlier finding's `required_truth`, the paths and surfaces that assessment left unexamined or limited, and its `Base revision`;
+- the base-to-head diff, or on a delta re-review the earlier-head-to-head diff, each earlier finding's `required_truth`, that assessment's open gaps as the guidance defines them, and its `Base revision`;
 - its slice or falsification question, with its exclusions; and
 - the objective stop and the compact return contract.
 

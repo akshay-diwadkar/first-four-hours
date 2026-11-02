@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-02
+
 ### Added
 
 - Tutor 1.3.0: a whole course or examination's material now has two deliveries, paced (written as you progress) or up front (all written before you start). Tutor takes yours from the request or asks once, and records it in the study plan's goal. A lesson written up front counts as not started until you study it or demonstrate its topic.

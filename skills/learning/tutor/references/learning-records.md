@@ -39,7 +39,7 @@ On every save, create or refresh in place the subject's self-contained `START_HE
 
 ## Never overwrite
 
-Never replace or delete an earlier lesson, and never rewrite its teaching material. Re-teaching a topic, revising an explanation, or retrying gets a new lesson with the next number that links back to the earlier one. The one in-place change to an earlier lesson is updating its learning record from later practice. If a chosen file name already exists, take the next number.
+Never replace or delete an earlier lesson, and never rewrite its teaching material. Re-teaching a topic, revising an explanation, or retrying gets a new lesson with the next number that links back to the earlier one. The one in-place change to an earlier lesson is updating its learning record from later study or practice. If a chosen file name already exists, take the next number.
 
 ## Lesson file
 

@@ -6,7 +6,7 @@
 - `<section id="learning-sequence">`, owned by Tutor:
   - **Sequence:** topics in order, each with its prerequisites and, once it exists, a relative link to its lesson;
   - **Schedule:** sessions or dates that fit the available time, less what other sections already schedule, and any deadline, with review of earlier topics as spaced retrieval, where the learner answers from memory at growing intervals instead of re-reading, and milestones that show progress;
-  - **Progress:** each topic as not started, taught, demonstrated, or needs revision, judged from lesson records and never from delivery alone: needs revision while a difficulty or misconception is open, even before study; else not started until the learner has studied a lesson on it; demonstrated when its records list it as Demonstrated with nothing Unresolved; otherwise taught.
+  - **Progress:** each topic as not started, taught, demonstrated, or needs revision, judged from lesson records, never delivery alone: needs revision while a difficulty or misconception is open, or demonstrated when its records list it as Demonstrated with nothing Unresolved, even before study; else not started until a lesson on it is studied; otherwise taught.
 
 Keep every other section, such as examination coverage another skill writes, exactly as it is, and change `goal` only when the learner changes it. When creating the plan, add only these two sections; when an existing plan lacks one of them, add it.
 

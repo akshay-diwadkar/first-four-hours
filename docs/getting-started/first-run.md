@@ -9,7 +9,7 @@ You start a skill by name with `/name : request`, the form these pages use. If y
 For example (illustrative):
 
 ```text
-/diagnose : Find out why the nightly export job sometimes writes an empty file.
+/diagnose : The nightly export writes an empty file about twice a month, still exits 0, and works when we rerun it by hand. Find out why.
 ```
 
 Replace the request with a real problem from your project. Diagnose traces the symptom through the project and runs only probes that change nothing. It asks before using shared or billable resources or production data, and it never edits the project.
@@ -42,7 +42,7 @@ Nothing starts on its own; you decide:
 If you want to learn a subject rather than change code, start with [Tutor](../skills/tutor.md) instead. For example (illustrative):
 
 ```text
-/tutor : Teach me how Git rebase differs from merge; I already use branches daily.
+/tutor : I have used Git daily for six years and I still copy rebase commands from the internet and hope. Teach me what rebase actually does to my commits, then make me prove it.
 ```
 
 ## How skills start

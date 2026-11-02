@@ -33,7 +33,7 @@ Size and stakes alone do not decide it. [Blueprint](../skills/blueprint.md) expl
 Someone is scraping Larder's public search endpoint. You want rate limiting without breaking the partner integrations that call it all day.
 
 ```text
-/blueprint : Plan rate limiting for Larder's public search endpoint; existing API clients must keep working unchanged.
+/blueprint : Someone is scraping Larder's public search endpoint. Plan rate limiting that stops them; existing API clients must keep working unchanged, and a cheaper model will build this tonight with nobody watching.
 ```
 
 Blueprint asks one question: should partner API keys be exempt? That is a product choice, and the answer changes the plan, so it is yours. Blueprint does not ask where the limiter should go or how to test it; it reads the middleware chain and decides. While grounding, it finds that Larder already has a trusted helper for the client address, and plans to reuse it instead of reading a header any client could forge.

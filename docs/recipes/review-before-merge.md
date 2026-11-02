@@ -28,7 +28,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 A branch adds shareable shopping lists for Larder, from issue #40. The tests pass, and the branch's notes say the feature is complete.
 
 ```text
-/assess : Assess this branch against issue #40 and the current main branch before merge.
+/assess : This branch's notes say shareable shopping lists are complete, and the tests pass. Do not take their word for it: assess it against issue #40 and the current main branch before merge.
 ```
 
 Assess reads issue #40 first and works out what the change must do before it reads anyone's claims about it. It returns `findings`:

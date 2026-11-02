@@ -17,7 +17,7 @@ When one skill obviously fits, use it directly; Router stays out of the way.
 The suite marks Router as model-invoked: the agent starts it when a task matches, and it is not meant to be started by name. Ask for the outcome in plain words. For example (illustrative):
 
 ```text
-Work out which skills I need to move our job queue from Redis to Postgres, and in what order.
+We have to move our job queue from Redis to Postgres without losing an in-flight job, and I cannot tell whether that starts with a decision, a plan, or a ticket. Work out which skills I need, and in what order.
 ```
 
 ## What happens

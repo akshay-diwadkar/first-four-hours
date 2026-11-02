@@ -39,10 +39,24 @@ In Cursor, you can install the same suite as a plugin; [Install as a Cursor plug
 Start a skill on a real problem by naming it in your agent's chat. For example (illustrative):
 
 ```text
-/diagnose : Find out why authentication tokens expire early under high concurrency.
+/diagnose : About one invoice in 4,000 comes out exactly one cent short, only on the first of the month, and re-running the job gives the right total. Nobody has touched billing in a year. Find out why.
 ```
 
 [Your first run](docs/getting-started/first-run.md) shows what a skill leaves behind and how each skill starts.
+
+## What you can ask
+
+Say what is actually going wrong, what is at stake, and what must not break. For example (illustrative):
+
+```text
+/reason : Everyone on the team agrees this API migration is backwards compatible, and that is what worries me. Challenge the claim before it reaches 300 integrators on Friday.
+
+/blueprint : Plan the migration that splits our 40-million-row orders table into monthly partitions without downtime. Checkout keeps writing throughout, last quarter's revenue report must match to the cent, and a cheaper model will build this overnight with nobody watching.
+
+/scribe : It is 3 a.m., the on-call engineer has never seen this service, and the one person who knows how to deploy it leaves on Friday. Write a deployment runbook from our docker-compose file and deploy scripts, with nothing in it that does not trace to a source.
+
+/tutor : I have used Git daily for six years and I still copy rebase commands from the internet and hope. Teach me what rebase actually does to my commits, then make me prove it.
+```
 
 ## Start from the problem
 

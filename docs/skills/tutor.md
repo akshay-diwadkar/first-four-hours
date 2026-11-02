@@ -20,7 +20,7 @@ Choose by what you want; when the session shows a better fit, Tutor offers to sw
 Start it yourself with `/tutor`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/tutor : Teach me how Git rebase differs from merge; I already use branches daily.
+/tutor : I have used Git daily for six years and I still copy rebase commands from the internet and hope. Teach me what rebase actually does to my commits, then make me prove it.
 ```
 
 ## What happens

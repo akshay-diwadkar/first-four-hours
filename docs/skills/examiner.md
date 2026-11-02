@@ -17,7 +17,7 @@ Examiner writes original practice papers for a specific written examination, gro
 Start it yourself with `/examiner`, or the agent may start it when your request matches. Name the examination as exactly as you can: awarding body, qualification, subject, level, and session. For example (illustrative):
 
 ```text
-/examiner : Write a full mock for AQA GCSE Chemistry Paper 1 for the current specification.
+/examiner : Write a full mock for AQA GCSE Chemistry Paper 1 for the current specification, as hard as the real thing, and keep the answer key out of sight until I have sat it.
 ```
 
 ## What happens

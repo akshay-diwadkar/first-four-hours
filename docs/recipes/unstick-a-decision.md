@@ -27,7 +27,7 @@ An agent that cannot decide keeps gathering context, or commits to an approach t
 Larder wants order numbers that cannot be guessed, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings.
 
 ```text
-/reason : Challenge the claim that switching Larder's order IDs from counting numbers to random IDs is safe for existing customers.
+/reason : The proposal says switching Larder's order IDs from counting numbers to random IDs is safe because the API already returns them as strings. Challenge that claim on behalf of existing customers.
 ```
 
 Reason picks `challenge` and attacks that one claim. Its answer is short:
@@ -44,7 +44,7 @@ Reason does not propose the fix. Whoever asked decides: keep the old links worki
 When a decision is stuck rather than doubtful, ask about what is blocking it:
 
 ```text
-/reason : We keep going back and forth between caching search results in the app or at the edge; what is blocking this decision?
+/reason : We have had the same argument three meetings running: cache search results in the app or at the edge. What is actually blocking this decision?
 ```
 
 ## You are done when

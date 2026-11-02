@@ -27,7 +27,7 @@ When the next skill is unclear, an agent either picks one and drifts into a side
 Larder wants to send order updates by text message as well as by email.
 
 ```text
-Work out which skills I need to add text-message order updates to Larder alongside email, and in what order.
+Larder needs to send order updates by text message as well as email, and I cannot tell whether that starts with a decision, a plan, or a ticket. Work out which skills I need, and in what order.
 ```
 
 Router reads the current state first. The job queue is already running, so "move sending onto the queue" is not a step. Larder's message code already sends through one channel interface, so adding a channel is not a structural question, and Architect is not a step either. No text-message provider is chosen yet, but that is not a separate step: Blueprint asks Ideate for the options inside its own run, and you choose there.

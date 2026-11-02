@@ -7,7 +7,7 @@ The plan is illustrative. It belongs to Larder, the made-up online grocery servi
 ## The request
 
 ```text
-/blueprint : Plan rate limiting for Larder's public search endpoint; existing API clients must keep working unchanged.
+/blueprint : Someone is scraping Larder's public search endpoint. Plan rate limiting that stops them; existing API clients must keep working unchanged, and a cheaper model will build this tonight with nobody watching.
 ```
 
 Blueprint froze these words into `request.md`, next to the plan. It asked one question, because only you could answer it and the answer changes the correct plan: should partner API keys be exempt from the limit? You said yes. It did not ask where the limiter should live, which library to use, or how to test it. Those answers are in the repository, and making you choose them would be a planning failure.

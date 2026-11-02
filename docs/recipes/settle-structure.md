@@ -27,7 +27,7 @@ When no one has decided which part of the code owns a job, agents add a new help
 Larder calls three outside services: the payment provider, the email service, and the stock supplier. Each client has its own retry loop, with its own backoff and its own idea of which errors to retry. A new delivery-slot client is next, and an agent asked to "add retries" would write a fourth.
 
 ```text
-/architect : Decide where retry logic for Larder's outbound HTTP calls should live; payments, messages, and stock each keep their own copy.
+/architect : Payments, messages, and stock each keep their own retry loop with their own idea of what is safe to retry, and a delivery-slot client is about to become the fourth. Decide where retry logic for Larder's outbound HTTP calls should live.
 ```
 
 Architect reads the three loops and finds they differ in only two ways that matter: which responses are safe to retry, and how long a call may keep trying. One difference is not a matter of taste: a payment must never be retried when the charge may already have gone through.

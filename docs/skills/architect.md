@@ -18,7 +18,7 @@ Architect decides a structural question about a codebase before anyone plans the
 Start it yourself with `/architect`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/architect : Decide whether the billing and invoicing modules should share one persistence layer.
+/architect : Billing and invoicing each grew their own persistence layer, and they now disagree about what an unpaid invoice is. Decide whether they should share one, and who owns that definition.
 ```
 
 ## What happens

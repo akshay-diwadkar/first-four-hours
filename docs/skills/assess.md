@@ -18,7 +18,7 @@ Assess reviews one exact proposed change, such as a branch or pull request, agai
 Start it yourself with `/assess`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/assess : Assess this branch against issue #42 and the current main branch before merge.
+/assess : Assess this branch against issue #42 and the current main branch before merge. The issue promises that deleting an account erases the customer's data; I want to know what survives.
 ```
 
 ## What happens

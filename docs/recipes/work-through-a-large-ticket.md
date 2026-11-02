@@ -27,7 +27,7 @@ Large work spread over several sessions loses the thread: each session rediscove
 Larder runs its scheduled work from a crontab on one server. Moving it to a job queue is too big for one session.
 
 ```text
-/ticket : persist the move of Larder's scheduled jobs from cron to a job queue on github.
+/ticket : persist the move of Larder's scheduled jobs from one server's crontab to a job queue on github, as tickets a single session can finish.
 ```
 
 Ticket proposes an epic with four children. Each is one complete job that a session can plan, build, review, and rework, rather than a "design", "build", or "test" ticket:

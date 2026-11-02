@@ -15,7 +15,7 @@ Match the real examination wherever its requirements establish it: question type
 - **Marking scheme** (`marking-scheme.html`): only when the examination uses one, in its style: point-based marks, levels of response with descriptors, or both, with accepted alternatives, and the mark bands, assessment objectives, and consequential-marking and negation signals where the examination's schemes use them.
 - **Source notes** (`source-notes.html`): each requirement used with its source and session, labelled official, inferred from past papers, requested by the student, or good practice, not an examination rule; the approximation label and its assumptions when official requirements were not verified; deliberate departures; and unresolved limitations. No answers.
 
-Make each file one self-contained HTML file a browser opens directly: CSS, SVG, and images inline, mathematics as MathML or plain text, and no network dependency for essential content. It prints cleanly, uses real text rather than text in images, gives every figure alt text or a caption, and never relies on colour alone.
+Make each file one self-contained HTML file a browser opens directly: CSS, SVG, and images inline, mathematics as MathML or plain text, and no network dependency for essential content. It prints cleanly, uses real text rather than text in images, gives every figure alt text or a caption, never relies on colour alone, and links the set's other files relatively.
 
 ## Solve and audit
 

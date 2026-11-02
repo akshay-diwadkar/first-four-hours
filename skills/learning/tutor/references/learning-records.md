@@ -1,7 +1,5 @@
 # Learning records
 
-Read this on entering continuing learning, or when the learner asks to keep an explanation.
-
 ## Layout
 
 Keep every record under `.learning/` in the folder where the learner invoked Tutor, never under `.first-four-hours/`:

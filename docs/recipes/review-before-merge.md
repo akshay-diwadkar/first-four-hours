@@ -18,7 +18,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 1. Start Assess on the branch, naming the authority (issue, specification, or sealed Blueprint) and the base.
 2. Read the result: `clear`, `findings`, or `blocked`. None of them is approval to merge.
 3. For `findings`, plan the fixes with a new Blueprint from `assessment.md`, and carry them out with a fresh Construct.
-4. Run Assess again on the reworked branch.
+4. Run Assess again on the reworked branch. It reviews the rework and the earlier findings; ask for a full review to cover the whole change again.
 5. Open the pull request with PR. It shows you the exact text and opens the pull request only after your yes. Merging stays yours.
 
 ## A worked scenario

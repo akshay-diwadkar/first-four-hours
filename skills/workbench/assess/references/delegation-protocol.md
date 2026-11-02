@@ -7,7 +7,7 @@ When another orchestrated handoff invokes Assess, it owns the independent assess
 Two delegated subagents per Assess invocation is a ceiling, not a default; zero or one is normal. Every subagent counts: a fresh self-authored review, falsification slices, a clear challenge, a replacement for an unusable delegate, a risk specialist, and any subagent a Reason consultation uses. Delegates never delegate.
 
 - **Independent session:** independence comes from the reviewing context, not from a subagent. When the Assess owner did not write or plan the change in its current context, it is already fresh-context and needs no independence delegate.
-- **Self-authored change:** when the Assess owner wrote or planned the change in its current context, fresh context reviews the whole bounded change so the author's reasoning cannot vouch for itself: one delegate for the whole change, or the two default slices below, which together cover it. This review is reserved before any other delegate, taking both slots when it uses two slices. Until its returned examined scope covers the whole change, keep the remaining slot free; a replacement fresh-context review of the unexamined part takes precedence over any other delegate. Always record any part no fresh-context delegate examined, or the whole change when none ran, as a self-review limitation, even when the owner examines it itself. Before starting this review, tell the user once that running Assess in a fresh session avoids this delegate.
+- **Self-authored change:** when the Assess owner wrote or planned the change in its current context, fresh context reviews the whole bounded change so the author's reasoning cannot vouch for itself: one delegate for the whole change, or, only when it is too large for one reviewer to cover well, the two default slices below, which together cover it. On a delta re-review, the bounded change is the delta. This review is reserved before any other delegate, taking both slots when it uses two slices. Until its returned examined scope covers the whole change, keep the remaining slot free; a replacement fresh-context review of the unexamined part takes precedence over any other delegate. Always record any part no fresh-context delegate examined, or the whole change when none ran, as a self-review limitation, even when the owner examines it itself. Before starting this review, tell the user once that running Assess in a fresh session avoids this delegate.
 - **Bounded falsification:** a read-only subagent is earned when a bounded slice improves cost, context, coverage, independent judgment, or parallelism more than briefing and verifying it costs.
 - **Clear challenge:** when completed consequential coverage would be `clear` and false-negative cost is meaningful, at most one fresh bounded challenge asks for the strongest missed material defect in that exact scope.
 
@@ -22,7 +22,7 @@ Axes are lenses, not work units: never require one subagent per axis, a fixed re
 Each subagent receives only a curated packet:
 - the exact target, base, and head, or the bounded source;
 - snapshots of, or pointers to, the original request, the authoritative requirements, and any available Blueprint, which is authority evidence, never proof, so the delegate checks the diff against the original request as well as the plan;
-- the base-to-head diff;
+- the base-to-head diff, or on a delta re-review the earlier-head-to-head diff;
 - its slice or falsification question, with its exclusions; and
 - the objective stop and the compact return contract.
 

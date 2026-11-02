@@ -6,8 +6,8 @@ Scale these lenses to the exact authority and base/head delta; never a matrix or
 
 - **Intent fidelity** — trace every material authoritative requirement through behavior, including qualifiers, scope, ordering, exceptions, and negative meaning; keywords and narration are not proof.
 - **Behavioral correctness** — material success, failure, and boundary states.
-- **Propagation** — every affected caller, consumer, contract, config, doc, and test found by the bounded sweep.
-- **Preservation** — compare base and head truth; a requested clean break is not debt.
+- **Propagation** — every affected caller, consumer, contract, config, doc, and test found by the bounded sweep. A new or changed state, status, or mode also accounts for its whole lifecycle: what enters it, what ends it, which wins where it overlaps another, and every reader, including unchanged rules that assumed the old behavior.
+- **Preservation** — compare base and head truth; a requested clean break is not debt. Every removal gets a disposition: list removals from `git diff --word-diff=porcelain` for prose or long lines, since a line diff hides a cut clause inside a rewritten line. A removal is preserved only where you open its surviving statement and it reaches the branch that needs it; a claim that something else covers it is a candidate until then.
 - **Proof adequacy** — use trustworthy exact-head proof first; run only missing focused proof that can change the result. Proof must fail when the protection is removed, and mocks must not bypass the failure. Passing tests alone do not establish that the change fulfills its intent or leaves maintainable code.
 - **Ownership and minimality** — the real owner is repaired with the smallest coherent propagation; no duplicate sources of truth, parallel machinery, or compatibility sediment.
 - **Integration readiness** — unavailable or contradictory required proof means `blocked`, never an implied pass.
@@ -26,6 +26,8 @@ The Blueprint is authority evidence, never proof of correctness. A green baselin
 ## Depth and Diagnose
 
 Tiny local changes need requirement, delta, and focused proof; skip subagents, broad proof, and clear challenges when direct lookup closes the surface. Complexity, ambiguity, fan-out, irreversibility, data/migration, concurrency, or broad contract propagation earn depth. Examine security where the change affects trust or permission boundaries, inputs, sensitive data, or risky operations; investigate earned concerns without inventing risks, and no material security concern is a valid result.
+
+Every later turn re-reads what enters context, so keep a command's verdict rather than its log, request only the PR fields you use, read the ranges a question needs, and run each proof once per head.
 
 Diagnose is earned only when evidence-grounded unknown risk beyond the bounded change could alter the merge decision. If earned and unrun for the current snapshot, hand off `/diagnose` with the risk question instead of sealing, rerun Assess with `diagnosis.md` (unavailable or contradictory output means `blocked`), and re-verify each merge-relevant consequence against the exact change.
 
@@ -64,6 +66,17 @@ Choose the level from the evidenced consequence, affected scope, reachable condi
 
 ## Reassessment and stop
 
-Each new head starts from current authority, base, head, implementation, and tests. A moved base/head or changed bound source or artifact is stale; reassess in full.
+Each new head starts from current authority, base, and head. A moved base/head or changed bound source or artifact leaves the earlier assessment stale, never a clearance.
+
+Review the delta when an earlier assessment of this change passes `check`, its result was not `blocked`, its head is an ancestor of this head, and the authoritative requirements are unchanged. The delta covers:
+
+- every change from that head to this one, under the axes, and whatever those changes propagate to;
+- whether each earlier finding's `required_truth` now holds;
+- any path or surface that assessment left unexamined or limited;
+- incoming base changes that touch the change's paths or contracts, after a merge or rebase.
+
+Name the assessment's head and every path you did not re-inspect in `limitations`, so a `clear` reads as clear for the delta on top of that assessment, and carry its limitations forward. A defect you notice in unchanged code is still a finding.
+
+Assess the whole change instead when the requirements changed, the delta rewrites most of the change, the delta gives concrete reason to doubt the earlier coverage, or the user asks.
 
 Stop when material requirements and surfaces are accounted for, candidates are verified or rejected, and further bounded inspection cannot plausibly reveal another merge-relevant defect. This is not omniscience or a whole-repository diagnosis claim; completeness is bounded to reasonably discoverable material defects in the assessed authority, surfaces, implementation, and proof.

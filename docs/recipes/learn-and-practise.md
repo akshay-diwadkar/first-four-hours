@@ -1,5 +1,7 @@
 # Learn a subject and practise for its exam
 
+Rereading feels like studying. It is comfortable and familiar, and it tells you almost nothing about what you can do in the examination hall.
+
 Studying for a written examination mixes two jobs, learning the ideas and practising the real paper, and a plan that keeps neither in view drifts or repeats what you already know. Tutor teaches and keeps the learning sequence. Examiner writes practice faithful to the real examination and marks your attempts. Both keep one shared study plan per subject. This works for any subject, technical or not.
 
 ## Use this when
@@ -24,7 +26,7 @@ Studying for a written examination mixes two jobs, learning the ideas and practi
 
 *Illustrative: a made-up student, not a recorded run.*
 
-A student has an A-level Chemistry examination in June and five hours a week to prepare.
+Leila Haddad has an A-level Chemistry examination in June, five hours a week to prepare, and a growing suspicion that curly arrows are guesswork.
 
 ```text
 /tutor : My A-level Chemistry exam is in June, I can study five hours a week, and curly arrows still look like guesswork. Teach me organic chemistry with a study plan, and do not move on until I have proved I understand.
@@ -49,6 +51,8 @@ The paper, the answer key, and the marking scheme are separate files, so the ans
 ```
 
 Examiner explains each lost mark against the scheme. In one mechanism the arrow to bromine starts on the bromine atom instead of on the carbon to bromine bond. In two questions the student chose substitution where the conditions favour elimination. That second gap is conceptual, so Examiner offers to hand it to Tutor, and updates the examination section of the shared study plan. The next lesson is already waiting in the plan.
+
+Rereading the notes would have felt like progress. It would never have shown that the arrows started in the wrong place.
 
 ## You are done when
 

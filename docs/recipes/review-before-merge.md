@@ -1,5 +1,7 @@
 # Trust a change before you merge it
 
+The tests are green. The description says complete. The reviewer has twenty minutes before the weekend. Most bad merges happen that way: not through carelessness, but through trust in the wrong signals.
+
 Review churn comes from reviews that skim the diff, or from fixes made straight from review comments that quietly reopen decisions. Assess checks the exact change against what it was supposed to do and reports every material defect it finds. Fixes go through a new plan instead of a direct edit.
 
 ## Use this when
@@ -25,7 +27,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-A branch adds shareable shopping lists for Larder, from issue #40. The tests pass, and the branch's notes say the feature is complete.
+It is Friday afternoon. Mateo Rojas's branch adds shareable shopping lists for Larder, from issue #40. The tests pass, the branch's notes say the feature is complete, and Yuki Tanaka has the review. Approving it would take five minutes, and nobody would ask why.
 
 ```text
 /assess : Assess this branch against issue #40 and the current main branch before merge.
@@ -57,7 +59,7 @@ Assess reads issue #40 first and works out what the change must do before it rea
 - Required truth: existing lists keep working and stay private.
 ```
 
-Assess kept going after the first finding. The second never shows up in tests, because the test database starts with no lists.
+Assess kept going after the first finding. The second never shows up in tests, because the test database starts with no lists. A five-minute approval would have let any customer read anyone's list, and sent everyone with a saved list to an error page.
 
 ```text
 /blueprint : Plan fixes for the findings in .first-four-hours/assessments/shared-lists/assessment.md.

@@ -1,5 +1,7 @@
 # Settle the structure before agents add parallel machinery
 
+Every codebase has a second cache. Nobody decided to build it. An agent could not find the first one, or could not tell it was allowed to use it.
+
 When no one has decided which part of the code owns a job, agents add a new helper, cache, or pipeline beside the one that already exists, and the codebase grows two ways to do one thing. Architect decides where the responsibility belongs first. Blueprint then plans around that decision instead of guessing.
 
 ## Use this when
@@ -24,7 +26,7 @@ When no one has decided which part of the code owns a job, agents add a new help
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Larder calls three outside services: the payment provider, the email service, and the stock supplier. Each client has its own retry loop, with its own backoff and its own idea of which errors to retry. A new delivery-slot client is next, and an agent asked to "add retries" would write a fourth.
+Larder calls three outside services: the payment provider, the email service, and the stock supplier. Each client has its own retry loop, with its own backoff and its own idea of which errors to retry. A new delivery-slot client is next, and an agent asked to "add retries" would write a fourth. Mateo Rojas owns payments and knows what a careless retry costs: one basket, two charges.
 
 ```text
 /architect : Payments, messages, and stock each keep their own retry loop with their own idea of what is safe to retry, and a delivery-slot client is about to become the fourth. Decide where retry logic for Larder's outbound HTTP calls should live.
@@ -42,6 +44,8 @@ Architect reads the three loops and finds they differ in only two ways that matt
 ```
 
 Architect did not name files to edit, an order of migration, or tests. That is Blueprint's job, and Blueprint plans around this decision instead of reopening it.
+
+A fourth retry loop would have taken an afternoon to write. Sooner or later, one of the four would have retried a payment.
 
 ```text
 /blueprint : Plan the change described in .first-four-hours/architectures/outbound-retry-policy/architecture.md.

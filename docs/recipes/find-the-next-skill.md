@@ -1,5 +1,7 @@
 # Find the next step when work spans several skills
 
+The hardest part of some work is the first move: which skill, in what order, and what to leave until later.
+
 When the next skill is unclear, an agent either picks one and drifts into a side quest, or lays out a long plan that is wrong as soon as the first result comes in. Router lays out the skills as far as the next steps can be known now, and stops where a step depends on a result that does not exist yet.
 
 ## Use this when
@@ -24,7 +26,7 @@ When the next skill is unclear, an agent either picks one and drifts into a side
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Larder wants to send order updates by text message as well as by email.
+Priya Raman wants Larder to send order updates by text message as well as by email. Nobody can tell yet whether that starts with a decision, a plan, or a ticket.
 
 ```text
 Larder needs to send order updates by text message as well as email, and I cannot tell whether that starts with a decision, a plan, or a ticket. Work out which skills I need, and in what order.
@@ -51,7 +53,7 @@ Router reads the current state first. The job queue is already running, so "move
    - Result: an `assessment.md` that is `clear`, `findings`, or `blocked`.
 ```
 
-Each step also carries a ready-to-copy prompt. The route stops after Assess, because what comes next depends on its result: a pull request after `clear`, or a fix after `findings`. A longer route would guess. When you get there, ask again; the fresh route starts from the new state.
+Each step also carries a ready-to-copy prompt. The route stops after Assess, because what comes next depends on its result: a pull request after `clear`, or a fix after `findings`. A longer route would guess. When you get there, ask again; the fresh route starts from the new state. A route that guessed further would have planned a pull request before anyone knew whether there were findings to fix.
 
 ## You are done when
 

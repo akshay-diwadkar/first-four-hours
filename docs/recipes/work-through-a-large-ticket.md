@@ -1,5 +1,7 @@
 # Work through a large ticket without losing the thread
 
+On Monday the session knew everything. By Thursday a new session asks the questions you answered on Monday, and you answer them again, slightly differently.
+
 Large work spread over several sessions loses the thread: each session rediscovers what was decided, or one session tries everything and stops half-done. Ticket splits the work into tickets that each fit one session and keeps their real dependencies. In each session it picks one ready ticket and checks it against the current code before planning.
 
 ## Use this when
@@ -24,7 +26,7 @@ Large work spread over several sessions loses the thread: each session rediscove
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Larder runs its scheduled work from a crontab on one server. Moving it to a job queue is too big for one session.
+Larder runs its scheduled work from a crontab on one server, and Søren Lindqvist is the only person who remembers why each line is there. Moving it to a job queue is too big for one session, and too important to leave in one person's head.
 
 ```text
 /ticket : persist the move of Larder's scheduled jobs from one server's crontab to a job queue on github, as tickets a single session can finish.
@@ -62,7 +64,7 @@ The nightly stock sync runs as a queued job at the time the crontab sets today, 
 - The abandoned-cart entry stays in the crontab until #33 moves it.
 ```
 
-Later you ask for #34 directly while #33 is still open. Ticket returns `blocked`, names the unmet dependency, and writes no handoff, so nothing is planned against work that does not exist yet.
+Later you ask for #34 directly while #33 is still open. Ticket returns `blocked`, names the unmet dependency, and writes no handoff, so nothing is planned against work that does not exist yet. Planned anyway, #34 would have removed the crontab while abandoned-cart reminders still ran from it, and the reminders would have stopped without an error anyone would notice.
 
 ```text
 /blueprint : Plan the ticket scope in .first-four-hours/ticket-scopes/move-stock-sync-to-queue/ticket-scope.md.

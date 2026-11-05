@@ -1,5 +1,7 @@
 # Fix the bug without patching the symptom
 
+You have seen this bug before. Last quarter someone patched it where it showed, the tickets stopped, and everyone moved on. Now it is back, somewhere else.
+
 When the cause is unknown, an agent tends to patch the place where the symptom shows, and the bug comes back somewhere else. Diagnose finds the cause from evidence first, without editing anything. The fix is then planned for one finding.
 
 ## Use this when
@@ -24,7 +26,9 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Larder's support inbox keeps getting the same complaint: some customers receive two order-confirmation emails. The quick patch would be a duplicate filter in the email sender. You start Diagnose instead.
+Amara Okafor leads support at Larder, and the support inbox has a new kind of complaint: two order-confirmation emails for one order. Some customers think they were charged twice. It gets worse whenever checkout is busy.
+
+Mateo Rojas, who owns checkout, could have a duplicate filter in the email sender by lunch. It would work. The emails would stop. You start Diagnose instead.
 
 ```text
 /diagnose : Support keeps hearing from Larder customers who got two order-confirmation emails for one order, and it gets worse when checkout is busy. Find out why; a duplicate filter in the sender is not an answer.
@@ -57,7 +61,7 @@ In its report, Diagnose offers two advisory directions: store the event ID befor
 /blueprint : Plan a fix for finding webhook-retry-resends-confirmation in .first-four-hours/diagnoses/duplicate-confirmation-emails/diagnosis.md.
 ```
 
-Blueprint plans the fix where the finding puts the cause: the handler stores the event ID in the same transaction as the order update, before anything is sent. Its regression test replays the same webhook twice and expects one email. Construct sees that test fail before the change and pass after it. A filter in the sender would have stopped this symptom and let the next one through, such as a duplicate refund notice.
+Blueprint plans the fix where the finding puts the cause: the handler stores the event ID in the same transaction as the order update, before anything is sent. Its regression test replays the same webhook twice and expects one email. Construct sees that test fail before the change and pass after it. A filter in the sender would have stopped this symptom and let the next one through, such as a duplicate refund notice. Mateo's filter would have closed Amara's tickets and kept the bug.
 
 ## You are done when
 

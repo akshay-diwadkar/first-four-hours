@@ -1,5 +1,7 @@
 # Get a stuck decision moving again
 
+Some decisions stall in silence: the agent reads one more file, then another. Others sail through on an assumption everyone shares and nobody has checked. Both are expensive.
+
 An agent that cannot decide keeps gathering context, or commits to an approach that rests on an assumption no one checked, and the side quest costs more than the decision. Reason is a short, bounded check: it restores a stuck decision, challenges one load-bearing claim, or asks you the one question only you can answer.
 
 ## Use this when
@@ -24,7 +26,7 @@ An agent that cannot decide keeps gathering context, or commits to an approach t
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run.*
 
-Larder wants order numbers that cannot be guessed, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings.
+Priya Raman wants Larder's order numbers to be impossible to guess, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings. Everyone nods. Amara Okafor, who reads customer emails all day, is less sure.
 
 ```text
 /reason : The proposal says switching Larder's order IDs from counting numbers to random IDs is safe because the API already returns them as strings. Challenge that claim on behalf of existing customers.
@@ -40,6 +42,8 @@ Challenge: the API returns strings, but receipt emails build order links from th
 ```
 
 Reason does not propose the fix. Whoever asked decides: keep the old links working with a redirect, or accept that they break. If Reason had found nothing, `no-material-objection` would have been a valid answer, and still not an approval.
+
+Nodding it through would have broken every order link already sitting in customers' inboxes, and Amara's team would have answered for each one.
 
 When a decision is stuck rather than doubtful, ask about what is blocking it:
 

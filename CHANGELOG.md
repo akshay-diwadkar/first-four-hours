@@ -22,6 +22,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Diagnose 1.1.0: runs evidence workers on the `ffh-evidence` subagent, or on generic subagents as before when it is missing. Diagnoses it seals record 1.1.0; Blueprint and Construct still accept every 1.x diagnosis.
 - Ideate 2.1.0: runs research workers on the `ffh-researcher` subagent, or on generic subagents as before when it is missing. Ideations it seals record 2.1.0.
 - Router 1.0.3: its capability list includes Provision.
+- Diagnose 1.2.0: can hand one finding to Architect when its fix first needs a structural decision, such as who owns a responsibility or which way a dependency points. Blueprint and Ideate remain the other next steps. Diagnoses it seals record 1.2.0; Blueprint and Construct still accept every 1.x diagnosis.
+- Router 1.1.0: routes a Diagnose finding that needs a structural decision to Architect.
 
 - Blueprint 1.3.0: costs less per plan. Blueprint now walks every draft itself. It launches a fresh challenger only for a plan that:
   - creates, changes, or deletes code that runs or the configuration it reads;

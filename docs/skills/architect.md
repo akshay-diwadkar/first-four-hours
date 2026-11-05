@@ -11,6 +11,7 @@ Architect decides a structural question about a codebase before anyone plans the
 
 - To plan file-level edits, tests, and verification for a settled structure, use [Blueprint](blueprint.md). Architect stops at architecture and never prescribes file-level edits, migration order, or tests.
 - To find the cause of a defect, use [Diagnose](diagnose.md).
+- To list several maintainability problems across a repository, start [Diagnose](diagnose.md) yourself with `/diagnose` and ask for a broad code-quality pass. Architect settles one structural target per run; bring a structural finding from that list back here.
 - To compare options for a goal that is not mainly structural, use [Ideate](ideate.md).
 
 ## How to start it

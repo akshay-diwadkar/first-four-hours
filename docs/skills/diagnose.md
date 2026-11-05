@@ -43,7 +43,7 @@ Diagnose is complete only when its `diagnosis.md` is sealed. When the evidence c
 
 ## Related skills
 
-You decide what comes next: [Ideate](ideate.md) to explore options, [Blueprint](blueprint.md) with one finding ID to plan a fix, or nothing. Diagnose starts neither. See [How skills hand work to each other](../concepts/handoffs.md).
+You decide what comes next: [Ideate](ideate.md) to explore options, [Blueprint](blueprint.md) with one finding ID to plan a fix, [Architect](architect.md) with one finding ID when the fix first needs a structural decision, such as who owns a responsibility, or nothing. Diagnose starts none of them. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

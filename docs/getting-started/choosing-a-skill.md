@@ -27,7 +27,7 @@ The table covers common situations, not every skill; [the skill index](../skills
 
 Every skill works alone. A skill's handoff makes the next step possible, but never starts it. When one skill is not enough, for example:
 
-- Diagnose finds a cause, then Blueprint plans a fix for one finding and Construct carries out the plan.
+- Diagnose finds a cause, then Blueprint plans a fix for one finding and Construct carries out the plan. When that fix first needs a structural decision, Architect settles it before Blueprint.
 - Architect settles structure, then Blueprint plans around it.
 - Charter settles what a project is for, then Ticket splits it into tickets.
 - Ticket narrows one ready ticket, then Blueprint plans it.

@@ -1,5 +1,7 @@
 # Your first run
 
+Pick the bug you have stopped mentioning in stand-up: the one that shows up twice a month, vanishes when anyone looks, and has a workaround everyone quietly applies. That is a good first problem.
+
 Try one skill on a real problem in your own project. This page uses Diagnose because it reads your project without editing it, starts only when you name it, and leaves a file you can open. Install the skills first: see [Install First Four Hours](installation.md).
 
 ## Start Diagnose

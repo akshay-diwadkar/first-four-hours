@@ -10,7 +10,11 @@
 
 > "Give me six hours to chop down a tree, and I will spend the first four sharpening the axe."
 
-Coding agents are supposed to save time. You ask for a change; the agent writes the code, runs the tests, and says it is done. Then you find the missed requirement, the decision it quietly reopened, the caller the fix broke. You explain the context again and review another patch. Those are the lost hours: the time spent turning work that looks finished into work you can trust.
+Coding agents are supposed to save time. You ask for a change. The agent writes the code, runs the tests, and says it is done.
+
+Then you find the missed requirement. The decision it quietly reopened. The caller the fix broke. You explain the context again, review another patch, and stop trusting the word "done".
+
+Those are the lost hours: the time spent turning work that looks finished into work you can trust.
 
 First Four Hours is a suite of skills for coding agents. Each skill helps an agent do one job properly before it moves on: find the real cause, settle the plan, carry the plan out faithfully, or check the result that matters. Use one skill for one job, and combine skills only when the work needs it. Small tasks stay light.
 
@@ -72,6 +76,8 @@ Say what is actually going wrong, what is at stake, and what must not break. For
 [Choose a skill](docs/getting-started/choosing-a-skill.md) covers more situations.
 
 ## The skills
+
+Each skill is one job done properly, so the next step has something solid to stand on.
 
 Every skill belongs to one of three domains. The domains only group the list: choose a skill by the task in front of you. Each name links to the skill's page; each contract link opens the `SKILL.md` its agent follows.
 

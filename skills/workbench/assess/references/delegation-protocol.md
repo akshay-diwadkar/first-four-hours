@@ -4,6 +4,8 @@ When another orchestrated handoff invokes Assess, it owns the independent assess
 
 ## Earned delegation
 
+When the harness has the matching agent and it launches, launch a fresh self-authored review or a falsification slice as `ffh-reviewer` (or `ffh_reviewer`) and a clear challenge as `ffh-challenger` (or `ffh_challenger`); otherwise, and for any other delegate, launch a generic subagent.
+
 Two delegated subagents per Assess invocation is a ceiling, not a default; zero or one is normal. Every subagent counts: a fresh self-authored review, falsification slices, a clear challenge, a replacement for an unusable delegate, a risk specialist, and any subagent a Reason consultation uses. Delegates never delegate.
 
 - **Independent session:** independence comes from the reviewing context, not from a subagent. When the Assess owner did not write or plan the change in its current context, it is already fresh-context and needs no independence delegate.

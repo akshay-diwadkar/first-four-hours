@@ -24,7 +24,7 @@ When no one has decided which part of the code owns a job, agents add a new help
 
 ## A worked scenario
 
-*Illustrative: FreshCart is a made-up project, and this is not a recorded run. Excerpts are shortened.*
+*Illustrative: FreshCart is a made-up online grocery service, and this is not a recorded run. Excerpts are shortened.*
 
 FreshCart calls three outside services: the payment provider, the email service, and the stock supplier. Each client has its own retry loop, with its own backoff and its own idea of which errors to retry. A new delivery-slot client is next, and an agent asked to "add retries" would write a fourth. Mateo Rojas, who owns checkout, knows what a careless payment retry costs: one basket, two charges.
 

@@ -24,7 +24,7 @@ To check existing documents against their sources later, ask Scribe to audit the
 
 ## A worked scenario
 
-*Illustrative: FreshCart is a made-up project, and this is not a recorded run.*
+*Illustrative: FreshCart is a made-up online grocery service, and this is not a recorded run.*
 
 FreshCart's on-call engineers restart the job-queue workers from memory, and each of them does it slightly differently. Søren Lindqvist has done it at 3 a.m. often enough to know that "slightly differently" is how incidents get longer.
 

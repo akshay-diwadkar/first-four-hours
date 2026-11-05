@@ -25,7 +25,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 
 ## A worked scenario
 
-*Illustrative: FreshCart is a made-up project, and this is not a recorded run. Excerpts are shortened.*
+*Illustrative: FreshCart is a made-up online grocery service, and this is not a recorded run. Excerpts are shortened.*
 
 It is Friday afternoon. Checkout engineer Mateo Rojas's branch adds shareable shopping lists for FreshCart, from issue #40. The tests pass, the branch's notes say the feature is complete, and reviewer Yuki Tanaka has it. Approving it would take five minutes, and nobody would ask why.
 

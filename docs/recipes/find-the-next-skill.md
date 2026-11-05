@@ -24,7 +24,7 @@ When the next skill is unclear, an agent either picks one and drifts into a side
 
 ## A worked scenario
 
-*Illustrative: FreshCart is a made-up project, and this is not a recorded run. Excerpts are shortened.*
+*Illustrative: FreshCart is a made-up online grocery service, and this is not a recorded run. Excerpts are shortened.*
 
 Priya Raman, FreshCart's product owner, wants FreshCart to send order updates by text message as well as by email. Nobody can tell yet whether that starts with a decision, a plan, or a ticket.
 

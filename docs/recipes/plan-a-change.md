@@ -30,7 +30,7 @@ Size and stakes alone do not decide it. [Blueprint](../skills/blueprint.md) expl
 
 ## A worked scenario
 
-*Illustrative: FreshCart is a made-up project, and this is not a recorded run. Excerpts are shortened.*
+*Illustrative: FreshCart is a made-up online grocery service, and this is not a recorded run. Excerpts are shortened.*
 
 Near midnight, Søren Lindqvist, on call this week, watches the search graphs climb: someone is scraping FreshCart's public search endpoint. The plan has to be ready by morning, without breaking the partner integrations that call search all day, and nobody will be awake to watch the cheaper model that builds it overnight.
 

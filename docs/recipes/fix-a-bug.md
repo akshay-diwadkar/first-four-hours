@@ -24,7 +24,7 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 
 ## A worked scenario
 
-*Illustrative: FreshCart is a made-up project, and this is not a recorded run. Excerpts are shortened.*
+*Illustrative: FreshCart is a made-up online grocery service, and this is not a recorded run. Excerpts are shortened.*
 
 Amara Okafor leads support at FreshCart, and the support inbox has a new kind of complaint: two order-confirmation emails for one order. Some customers think they were charged twice. It gets worse whenever checkout is busy.
 

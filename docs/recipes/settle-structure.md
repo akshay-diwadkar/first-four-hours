@@ -29,7 +29,10 @@ When no one has decided which part of the code owns a job, agents add a new help
 FreshCart calls three outside services: the payment provider, the email service, and the stock supplier. Each client has its own retry loop, with its own backoff and its own idea of which errors to retry. A new delivery-slot client is next, and an agent asked to "add retries" would write a fourth. Mateo Rojas, who owns checkout, knows what a careless payment retry costs: one basket, two charges.
 
 ```text
-/architect : Payments, messages, and stock each keep their own retry loop with their own idea of what is safe to retry, and a delivery-slot client is about to become the fourth. Decide where retry logic for FreshCart's outbound HTTP calls should live.
+/architect : Payments, messages, and stock each keep their own retry loop
+with their own idea of what is safe to retry, and a delivery-slot client is
+about to become the fourth. Decide where retry logic for FreshCart's
+outbound HTTP calls should live.
 ```
 
 Architect reads the three loops and finds they differ in only two ways that matter: which responses are safe to retry, and how long a call may keep trying. One difference is not a matter of taste: a payment must never be retried when the charge may already have gone through.
@@ -37,10 +40,15 @@ Architect reads the three loops and finds they differ in only two ways that matt
 ```markdown
 ## Decision
 
-- Selected architecture: one retry policy in the shared HTTP client; each service client passes its retryable responses and time budget as configuration.
-- Owner / boundary: the shared HTTP client owns how to retry; each service client owns what is safe to retry.
-- Invariants / constraints: a payment request is retried only when the provider confirms it was not received.
-- Consequences: the three loops are removed, and the delivery-slot client gets retries through configuration instead of a fourth copy.
+- Selected architecture: one retry policy in the shared HTTP client; each
+  service client passes its retryable responses and time budget as
+  configuration.
+- Owner / boundary: the shared HTTP client owns how to retry; each service
+  client owns what is safe to retry.
+- Invariants / constraints: a payment request is retried only when the
+  provider confirms it was not received.
+- Consequences: the three loops are removed, and the delivery-slot client
+  gets retries through configuration instead of a fourth copy.
 ```
 
 Architect did not name files to edit, an order of migration, or tests. That is Blueprint's job, and Blueprint plans around this decision instead of reopening it.
@@ -48,7 +56,8 @@ Architect did not name files to edit, an order of migration, or tests. That is B
 A fourth retry loop would have taken an afternoon to write. Sooner or later, one of the four would have retried a payment.
 
 ```text
-/blueprint : Plan the change described in .first-four-hours/architectures/outbound-retry-policy/architecture.md.
+/blueprint : Plan the change described in
+.first-four-hours/architectures/outbound-retry-policy/architecture.md.
 ```
 
 ## You are done when

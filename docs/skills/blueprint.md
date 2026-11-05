@@ -59,7 +59,10 @@ There is also a middle path: start in plan mode, and switch to Blueprint when th
 Start it yourself with `/blueprint`, or the agent may start it when your request matches. Say the outcome, the constraints, and what must not change. For example (illustrative):
 
 ```text
-/blueprint : Plan the migration that splits our 40-million-row orders table into monthly partitions without downtime. Checkout keeps writing throughout, last quarter's revenue report must match to the cent, and a cheaper model will build this overnight with nobody watching.
+/blueprint : Plan the migration that splits our 40-million-row orders table
+into monthly partitions without downtime. Checkout keeps writing throughout,
+last quarter's revenue report must match to the cent, and a cheaper model
+will build this overnight with nobody watching.
 ```
 
 ## What happens

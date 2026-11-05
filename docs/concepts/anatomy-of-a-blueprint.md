@@ -7,7 +7,9 @@ The plan is illustrative. It belongs to FreshCart, the made-up online grocery se
 ## The request
 
 ```text
-/blueprint : Someone is scraping FreshCart's public search endpoint. Plan rate limiting that stops them; existing API clients must keep working unchanged, and a cheaper model will build this tonight with nobody watching.
+/blueprint : Someone is scraping FreshCart's public search endpoint. Plan
+rate limiting that stops them; existing API clients must keep working
+unchanged, and a cheaper model will build this tonight with nobody watching.
 ```
 
 Blueprint froze these words into `request.md`, next to the plan. It asked one question, because only you could answer it and the answer changes the correct plan: should partner API keys be exempt from the limit? You said yes. It did not ask where the limiter should live, which library to use, or how to test it. Those answers are in the repository, and making you choose them would be a planning failure.
@@ -17,11 +19,18 @@ Blueprint froze these words into `request.md`, next to the plan. It asked one qu
 ```markdown
 ## Goal
 
-Approach: add a per-client token bucket to the existing middleware chain, keyed on the API key when one is present and on the client address otherwise. Partner keys bypass the limit. A limited request gets 429 with a Retry-After header; every other response is unchanged.
+Approach: add a per-client token bucket to the existing middleware chain,
+keyed on the API key when one is present and on the client address
+otherwise. Partner keys bypass the limit. A limited request gets 429 with a
+Retry-After header; every other response is unchanged.
 
-Load-bearing invariants: responses under the limit are exactly what they are today; partner keys are never limited; the client address comes only from the app's trusted proxy helper.
+Load-bearing invariants: responses under the limit are exactly what they are
+today; partner keys are never limited; the client address comes only from
+the app's trusted proxy helper.
 
-What changes: the middleware chain, one new module, settings, and one new test module. What does not change: the search handlers, their responses, and the public API.
+What changes: the middleware chain, one new module, settings, and one new
+test module. What does not change: the search handlers, their responses, and
+the public API.
 
 Main risk: /search/suggest shares the search handler, so it is limited too.
 ```
@@ -33,9 +42,13 @@ Main risk: /search/suggest shares the search handler, so it is limited too.
 ```markdown
 ## Current State
 
-- `freshcart/api/middleware.py::build_chain` runs authentication before any handler, so the API key is known to anything added after it.
-- `freshcart/api/client_address.py::client_address` reads the client address from the forwarded header only when the request came through the trusted proxy.
-- `/search` and `/search/suggest` both route to `freshcart/search/handlers.py::search`.
+- `freshcart/api/middleware.py::build_chain` runs authentication before any
+  handler, so the API key is known to anything added after it.
+- `freshcart/api/client_address.py::client_address` reads the client address
+  from the forwarded header only when the request came through the trusted
+  proxy.
+- `/search` and `/search/suggest` both route to
+  `freshcart/search/handlers.py::search`.
 
 **Source:** `freshcart/api/middleware.py`
 **Source:** `freshcart/api/client_address.py`
@@ -58,7 +71,14 @@ Step 2, "Limit requests after authentication", starts with its targets and then 
 **Location:** `tests/api/test_rate_limit.py`
 **State:** new
 
-Add `rate_limit` to `build_chain` immediately after `authenticate`. Allow 60 requests a minute per key, read from `settings.SEARCH_RATE_LIMIT`. Key each bucket on `request.api_key` when it is set, otherwise on `client_address(request)`; never read the forwarded header directly. Skip the bucket when the key is in `settings.PARTNER_KEYS`. When a bucket is empty, return 429 with Retry-After set to the whole seconds until the next token, and do not call the handler. Every other path returns the handler's response untouched.
+Add `rate_limit` to `build_chain` immediately after `authenticate`. Allow 60
+requests a minute per key, read from `settings.SEARCH_RATE_LIMIT`. Key each
+bucket on `request.api_key` when it is set, otherwise on
+`client_address(request)`; never read the forwarded header directly. Skip
+the bucket when the key is in `settings.PARTNER_KEYS`. When a bucket is
+empty, return 429 with Retry-After set to the whole seconds until the next
+token, and do not call the handler. Every other path returns the handler's
+response untouched.
 ```
 
 **Why it's there.** Every step names the files it touches and whether each one exists or is new. Sealing refuses a `new` file that already exists and an `existing` one that does not, so a mistyped path cannot quietly create a second module.
@@ -68,14 +88,24 @@ The instruction is prose, not code. It settles every choice a faithful executor 
 ## Proof that would catch a wrong implementation
 
 ```markdown
-Write `tests/api/test_rate_limit.py` with four cases, each through the real middleware chain:
-- the 61st search request in one minute from one key gets 429 with Retry-After set to the whole seconds until the next token, and the handler is not called (rejects a limiter that never fires or still calls the handler);
-- two keys each sending 60 requests in a minute get no 429 (rejects one bucket shared by every client);
-- a request with no API key is limited by `client_address(request)` even when it sends a forwarded header (rejects a limiter keyed on the spoofable header);
-- a key in `settings.PARTNER_KEYS` sending 100 requests in a minute gets no 429 (rejects a limiter that ignores the exemption).
+Write `tests/api/test_rate_limit.py` with four cases, each through the real
+middleware chain:
+- the 61st search request in one minute from one key gets 429 with
+  Retry-After set to the whole seconds until the next token, and the handler
+  is not called (rejects a limiter that never fires or still calls the
+  handler);
+- two keys each sending 60 requests in a minute get no 429 (rejects one
+  bucket shared by every client);
+- a request with no API key is limited by `client_address(request)` even
+  when it sends a forwarded header (rejects a limiter keyed on the spoofable
+  header);
+- a key in `settings.PARTNER_KEYS` sending 100 requests in a minute gets no
+  429 (rejects a limiter that ignores the exemption).
 
-**Proof run:** `python -m pytest -p no:cacheprovider tests/api/test_rate_limit.py -q`
-Red: today a client can send any number of search requests; the request after the limit returns 200 instead of 429.
+**Proof run:** `python -m pytest -p no:cacheprovider
+tests/api/test_rate_limit.py -q`
+Red: today a client can send any number of search requests; the request
+after the limit returns 200 instead of 429.
 Expect: exits 0 and reports 4 passed.
 ```
 
@@ -95,9 +125,13 @@ Expect: exits 0 with no failures; the existing search tests pass unchanged.
 
 ## Completion Conditions
 
-- A client over the limit on /search or /search/suggest gets 429 with Retry-After; under the limit, responses are unchanged. Shown by `python -m pytest -p no:cacheprovider tests/api tests/search -q`.
-- A partner key sending 100 requests in a minute gets no 429. Shown by `python -m pytest -p no:cacheprovider tests/api tests/search -q`.
-- Owner gate: the operations lead confirms that 60 requests a minute suits production traffic.
+- A client over the limit on /search or /search/suggest gets 429 with
+  Retry-After; under the limit, responses are unchanged. Shown by `python -m
+  pytest -p no:cacheprovider tests/api tests/search -q`.
+- A partner key sending 100 requests in a minute gets no 429. Shown by
+  `python -m pytest -p no:cacheprovider tests/api tests/search -q`.
+- Owner gate: the operations lead confirms that 60 requests a minute suits
+  production traffic.
 ```
 
 **Why it's there.** Verification is a list of exact commands, each with the result it must show. Construct runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so. Construct stops a command that changes a tracked file, an untracked file Git does not ignore, the Git index, HEAD, or any file the plan names, even an ignored one. It never reads through a directory link, and output Git ignores, such as a tool cache, never stops a run.

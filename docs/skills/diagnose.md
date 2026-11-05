@@ -18,7 +18,9 @@ Diagnose investigates a concrete problem, risk, or improvement opportunity and f
 Only you can start Diagnose: type `/diagnose`. The agent never starts it on its own. For example (illustrative):
 
 ```text
-/diagnose : About one invoice in 4,000 comes out exactly one cent short, only on the first of the month, and re-running the job gives the right total. Nobody has touched billing in a year. Find out why.
+/diagnose : About one invoice in 4,000 comes out exactly one cent short,
+only on the first of the month, and re-running the job gives the right
+total. Nobody has touched billing in a year. Find out why.
 ```
 
 ## What happens

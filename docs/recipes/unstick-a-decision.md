@@ -29,7 +29,9 @@ An agent that cannot decide keeps gathering context, or commits to an approach t
 Priya Raman, FreshCart's product owner, wants FreshCart's order numbers to be impossible to guess, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings. Everyone nods. Amara Okafor, who reads customer emails all day, is less sure.
 
 ```text
-/reason : The proposal says switching FreshCart's order IDs from counting numbers to random IDs is safe because the API already returns them as strings. Challenge that claim on behalf of existing customers.
+/reason : The proposal says switching FreshCart's order IDs from counting
+numbers to random IDs is safe because the API already returns them as
+strings. Challenge that claim on behalf of existing customers.
 ```
 
 Reason picks `challenge` and attacks that one claim. Its answer is short:
@@ -38,7 +40,8 @@ Reason picks `challenge` and attacks that one claim. Its answer is short:
 Target: the proposal to switch order IDs to random IDs.
 Disposition: material-objection
 Load-bearing claim: "order IDs are already strings, so switching is safe."
-Challenge: the API returns strings, but receipt emails build order links from the number, so links already in customers' inboxes would stop working.
+Challenge: the API returns strings, but receipt emails build order links
+from the number, so links already in customers' inboxes would stop working.
 ```
 
 Reason does not propose the fix. Whoever asked decides: keep the old links working with a redirect, or accept that they break. If Reason had found nothing, `no-material-objection` would have been a valid answer, and still not an approval.
@@ -48,7 +51,8 @@ Nodding it through would have broken every order link already sitting in custome
 When a decision is stuck rather than doubtful, ask about what is blocking it:
 
 ```text
-/reason : We have had the same argument three meetings running: cache search results in the app or at the edge. What is actually blocking this decision?
+/reason : We have had the same argument three meetings running: cache search
+results in the app or at the edge. What is actually blocking this decision?
 ```
 
 ## You are done when

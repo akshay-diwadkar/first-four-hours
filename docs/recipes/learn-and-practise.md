@@ -29,13 +29,16 @@ Studying for a written examination mixes two jobs, learning the ideas and practi
 Leila Haddad has an A-level Chemistry examination in June, five hours a week to prepare, and a growing suspicion that curly arrows are guesswork.
 
 ```text
-/tutor : My A-level Chemistry exam is in June, I can study five hours a week, and curly arrows still look like guesswork. Teach me organic chemistry with a study plan, and do not move on until I have proved I understand.
+/tutor : My A-level Chemistry exam is in June, I can study five hours a
+week, and curly arrows still look like guesswork. Teach me organic chemistry
+with a study plan, and do not move on until I have proved I understand.
 ```
 
 Tutor asks one question that changes the teaching: which topics already feel solid? Then it teaches nucleophilic substitution, and instead of asking "does that make sense?" it asks the student to draw the mechanism for bromoethane with hydroxide ions and say how sure they are. The first curly arrow starts on the carbon instead of on the hydroxide's lone pair, a common misconception, so Tutor goes back to what an arrow means: an electron pair moving. The corrected drawing repeats the problem Tutor just fixed, so it is not yet evidence. Later, Tutor asks for a different case, 1-bromopropane with cyanide ions, which the student draws correctly, and then for an explanation in their own words of why the bromide ion leaves, which is also right. The lesson record keeps what was taught apart from what the student showed: the mechanism, shown by two different tasks, is demonstrated; when elimination competes with substitution is still unresolved and comes next.
 
 ```text
-/examiner : Write a timed mock for AQA A-level Chemistry Paper 2 and add it to my study plan.
+/examiner : Write a timed mock for AQA A-level Chemistry Paper 2 and add it
+to my study plan.
 ```
 
 Examiner researches the current specification, specimen papers, and mark schemes, and keeps what is official apart from patterns it inferred from past papers. It writes original questions, solves and checks every one, and saves the set in its own folder:
@@ -47,7 +50,8 @@ Examiner researches the current specification, specimen papers, and mark schemes
 The paper, the answer key, and the marking scheme are separate files, so the answers stay out of sight until the student wants them.
 
 ```text
-/examiner : Mark my attempt at the paper in my latest practice set, and show me exactly which marks I threw away and why.
+/examiner : Mark my attempt at the paper in my latest practice set, and show
+me exactly which marks I threw away and why.
 ```
 
 Examiner explains each lost mark against the scheme. In one mechanism the arrow to bromine starts on the bromine atom instead of on the carbon to bromine bond. In two questions the student chose substitution where the conditions favour elimination. That second gap is conceptual, so Examiner offers to hand it to Tutor, and updates the examination section of the shared study plan. The next lesson is already waiting in the plan.

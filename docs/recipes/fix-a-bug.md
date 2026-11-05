@@ -31,7 +31,9 @@ Amara Okafor leads support at FreshCart, and the support inbox has a new kind of
 Mateo Rojas, who owns checkout, could have a duplicate filter in the email sender by lunch. It would work. The emails would stop. You start Diagnose instead.
 
 ```text
-/diagnose : Support keeps hearing from FreshCart customers who got two order-confirmation emails for one order, and it gets worse when checkout is busy. Find out why; a duplicate filter in the sender is not an answer.
+/diagnose : Support keeps hearing from FreshCart customers who got two
+order-confirmation emails for one order, and it gets worse when checkout is
+busy. Find out why; a duplicate filter in the sender is not an answer.
 ```
 
 Diagnose follows the email back from the sender to its caller: the payment webhook handler. The handler sends the confirmation before it records the provider's event ID. Against a local test app, Diagnose replays one captured webhook twice and gets two emails; it replays it again with that event ID already marked as seen and gets none. Changing the suspected cause moved the effect, so the cause is `demonstrated`, not just reproduced. It touches no production system and changes no code.
@@ -44,21 +46,25 @@ Diagnose follows the email back from the sender to its caller: the payment webho
 
 ### Summary
 
-The webhook handler sends the order confirmation before it stores the provider's event ID, so a retried delivery sends it again.
+The webhook handler sends the order confirmation before it stores the
+provider's event ID, so a retried delivery sends it again.
 
 ### Impact
 
-The provider retries webhooks that answer slowly, so duplicates rise with checkout load.
+The provider retries webhooks that answer slowly, so duplicates rise with
+checkout load.
 
 ### Cause / Ownership Boundary
 
-The webhook handler owns the duplicate: it acts on an event before marking it seen. The email sender only does what it is told.
+The webhook handler owns the duplicate: it acts on an event before marking
+it seen. The email sender only does what it is told.
 ```
 
 In its report, Diagnose offers two advisory directions: store the event ID before acting, or filter duplicates in the sender. It notes that the second would hide the cause rather than remove it. Neither is a decision; you pick the finding to fix.
 
 ```text
-/blueprint : Plan a fix for finding webhook-retry-resends-confirmation in .first-four-hours/diagnoses/duplicate-confirmation-emails/diagnosis.md.
+/blueprint : Plan a fix for finding webhook-retry-resends-confirmation in
+.first-four-hours/diagnoses/duplicate-confirmation-emails/diagnosis.md.
 ```
 
 Blueprint plans the fix where the finding puts the cause: the handler stores the event ID in the same transaction as the order update, before anything is sent. Its regression test replays the same webhook twice and expects one email. Construct sees that test fail before the change and pass after it. A filter in the sender would have stopped this symptom and let the next one through, such as a duplicate refund notice. Mateo's filter would have closed Amara's tickets and kept the bug.

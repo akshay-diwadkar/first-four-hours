@@ -18,7 +18,9 @@ Charter turns a rough ambition for an app, project, or large idea into one agree
 Only you can start Charter: type `/charter`. The agent never starts it on its own. For example (illustrative):
 
 ```text
-/charter : A friend's yarn shop tracks 2,000 skeins in a paper notebook only the owner can read, and every reorder is a guess. I want an app that replaces it, and I cannot yet say what done looks like.
+/charter : A friend's yarn shop tracks 2,000 skeins in a paper notebook only
+the owner can read, and every reorder is a guess. I want an app that
+replaces it, and I cannot yet say what done looks like.
 ```
 
 ## What happens

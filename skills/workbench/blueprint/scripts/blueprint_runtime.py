@@ -3509,7 +3509,8 @@ EXACT_REFERENCE_RE = re.compile(r"step (\d+)['’]s Exact text")
 def _completion_proof_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
     """Refuse a Completion Condition that names no proof the plan authors (seal and check only)."""
     lines = blueprint.text.split("\n")
-    _names, spans, _shape = _section_spans(lines, _fenced_indexes(lines))
+    fenced = _fenced_indexes(lines)
+    _names, spans, _shape = _section_spans(lines, fenced)
     if "Completion Conditions" not in spans:
         return []
     start, end = spans["Completion Conditions"]
@@ -3518,7 +3519,7 @@ def _completion_proof_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
         raw = lines[index]
         if not raw.strip():
             continue
-        if COMPLETION_ITEM_RE.match(raw) or not items:
+        if not items or (index not in fenced and COMPLETION_ITEM_RE.match(raw)):
             items.append((index + 1, [raw]))
         else:
             items[-1][1].append(raw)

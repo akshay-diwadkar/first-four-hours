@@ -259,6 +259,11 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     exact_condition = "## Completion Conditions\n- The seam edit is applied. Shown by step 1's Exact text.\n"
     assert runtime.validate_draft(proved.replace("## Completion Conditions\n", exact_condition, 1), tmp_path).valid
     assert codes(draft().replace("## Completion Conditions\n", exact_condition, 1), tmp_path) == {"completion.proof_unknown"}
+    # A column-0 list line inside a fenced block continues its condition rather than starting one.
+    fenced_condition = "## Completion Conditions\n- The listing shows the expected names:\n```text\n- alpha\n```\nShown by `python -m pytest -q tests/test_names.py`.\n"
+    assert runtime.validate_draft(draft().replace("## Completion Conditions\n", fenced_condition, 1), tmp_path).valid
+    unproven_listing = draft().replace("- Present names and unrelated callers are unchanged. Shown by `python -m pytest -q tests/test_names.py`.\n", "- Unproven listing:\n```text\n- alpha\n```\n", 1)
+    assert codes(unproven_listing, tmp_path) == {"completion.proof_missing"}
     # A command never names a file before the step that creates it.
     baseline = draft().replace("### After implementation\n", "### Before implementation\nRun: `python -m pytest -q tests/test_names.py`\nExpect: exit 0.\n\n### After implementation\n", 1)
     assert codes(baseline, tmp_path) == {"verification.target.absent"}

@@ -24,14 +24,14 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 
 ## A worked scenario
 
-*Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
+*Illustrative: FreshCart is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Amara Okafor leads support at Larder, and the support inbox has a new kind of complaint: two order-confirmation emails for one order. Some customers think they were charged twice. It gets worse whenever checkout is busy.
+Amara Okafor leads support at FreshCart, and the support inbox has a new kind of complaint: two order-confirmation emails for one order. Some customers think they were charged twice. It gets worse whenever checkout is busy.
 
 Mateo Rojas, who owns checkout, could have a duplicate filter in the email sender by lunch. It would work. The emails would stop. You start Diagnose instead.
 
 ```text
-/diagnose : Support keeps hearing from Larder customers who got two order-confirmation emails for one order, and it gets worse when checkout is busy. Find out why; a duplicate filter in the sender is not an answer.
+/diagnose : Support keeps hearing from FreshCart customers who got two order-confirmation emails for one order, and it gets worse when checkout is busy. Find out why; a duplicate filter in the sender is not an answer.
 ```
 
 Diagnose follows the email back from the sender to its caller: the payment webhook handler. The handler sends the confirmation before it records the provider's event ID. Against a local test app, Diagnose replays one captured webhook twice and gets two emails; it replays it again with that event ID already marked as seen and gets none. Changing the suspected cause moved the effect, so the cause is `demonstrated`, not just reproduced. It touches no production system and changes no code.

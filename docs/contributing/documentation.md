@@ -47,8 +47,8 @@ Explain repository validation and testing only in `contributing/`, `reference/`,
 - **Command blocks:** fenced, tagged `bash` for shell commands and `text` for requests to an agent, and runnable from the repository root unless the page says otherwise.
 - **Claims:** no measured time savings, model rankings, certification, or promise of success without linked independent evidence.
 - **Why sections:** each page in `skills/` has a `## Why it's built this way` section immediately before `## Related skills`, with three parts: the failure the skill prevents, what it refuses and why, and its floor and ceiling. Take the reasons from the owner's stated intent for the skill, recorded in [issue #3](https://github.com/akshay-diwadkar/first-four-hours/issues/3) for every skill except PR, whose reason the owner stated directly, and from the skill's current `SKILL.md`. Apply the shared principle to the skill in concrete terms; the skill index links [the skill design philosophy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/SKILL_PHILOSOPHY.md), so a section never restates the principle itself. Each part may open with a concrete moment or a short argument before its reasons, so the section reads as a point of view rather than a list of requirements.
-- **Worked scenarios:** each recipe has a `## A worked scenario` section after `## Steps`. Coding recipes follow Larder, one made-up online grocery service, so readers watch one codebase move between skills; keep Larder's names consistent with the other recipes. Label every scenario as illustrative, never present it as a recorded run, and keep artifact excerpts true to the real artifact's shape. Excerpts contain no Markdown links, because repository validation checks every link in these pages, including inside code blocks. A scenario's prose names who is hurting and why, the tempting shortcut, and what that shortcut would have cost.
-- **Cast:** people in scenarios and examples come from many parts of the world, so every reader can find themselves in the story; no single region supplies more than one recurring name. Larder's recurring cast is below. Introduce each person by role the first time they appear on a page, and add to the table rather than inventing a one-off name.
+- **Worked scenarios:** each recipe has a `## A worked scenario` section after `## Steps`. Coding recipes follow FreshCart, one made-up online grocery service, so readers watch one codebase move between skills; keep FreshCart's names consistent with the other recipes. Label every scenario as illustrative, never present it as a recorded run, and keep artifact excerpts true to the real artifact's shape. Excerpts contain no Markdown links, because repository validation checks every link in these pages, including inside code blocks. A scenario's prose names who is hurting and why, the tempting shortcut, and what that shortcut would have cost.
+- **Cast:** people in scenarios and examples come from many parts of the world, so every reader can find themselves in the story; no single region supplies more than one recurring name. FreshCart's recurring cast is below. Introduce each person by role the first time they appear on a page, and add to the table rather than inventing a one-off name.
 
     | Role | Name |
     | :--- | :--- |
@@ -57,7 +57,7 @@ Explain repository validation and testing only in `contributing/`, `reference/`,
     | Reviewer | Yuki Tanaka |
     | On-call and platform engineer | Søren Lindqvist |
     | Product owner | Priya Raman |
-    | Learner, outside Larder | Leila Haddad |
+    | Learner, outside FreshCart | Leila Haddad |
 
 ## Voice
 

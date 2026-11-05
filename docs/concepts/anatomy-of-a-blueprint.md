@@ -2,12 +2,12 @@
 
 A sealed `blueprint.md` is the file a weaker agent will carry out without making engineering decisions of its own, so every part of it has a job. This page walks through one plan, section by section, and says why each part is there.
 
-The plan is illustrative. It belongs to Larder, the made-up online grocery service the [recipes](../recipes/README.md) follow, and it is shortened. The format is real; [Blueprint's README](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/blueprint/README.md) owns its exact rules.
+The plan is illustrative. It belongs to FreshCart, the made-up online grocery service the [recipes](../recipes/README.md) follow, and it is shortened. The format is real; [Blueprint's README](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/blueprint/README.md) owns its exact rules.
 
 ## The request
 
 ```text
-/blueprint : Someone is scraping Larder's public search endpoint. Plan rate limiting that stops them; existing API clients must keep working unchanged, and a cheaper model will build this tonight with nobody watching.
+/blueprint : Someone is scraping FreshCart's public search endpoint. Plan rate limiting that stops them; existing API clients must keep working unchanged, and a cheaper model will build this tonight with nobody watching.
 ```
 
 Blueprint froze these words into `request.md`, next to the plan. It asked one question, because only you could answer it and the answer changes the correct plan: should partner API keys be exempt from the limit? You said yes. It did not ask where the limiter should live, which library to use, or how to test it. Those answers are in the repository, and making you choose them would be a planning failure.
@@ -33,13 +33,13 @@ Main risk: /search/suggest shares the search handler, so it is limited too.
 ```markdown
 ## Current State
 
-- `larder/api/middleware.py::build_chain` runs authentication before any handler, so the API key is known to anything added after it.
-- `larder/api/client_address.py::client_address` reads the client address from the forwarded header only when the request came through the trusted proxy.
-- `/search` and `/search/suggest` both route to `larder/search/handlers.py::search`.
+- `freshcart/api/middleware.py::build_chain` runs authentication before any handler, so the API key is known to anything added after it.
+- `freshcart/api/client_address.py::client_address` reads the client address from the forwarded header only when the request came through the trusted proxy.
+- `/search` and `/search/suggest` both route to `freshcart/search/handlers.py::search`.
 
-**Source:** `larder/api/middleware.py`
-**Source:** `larder/api/client_address.py`
-**Source:** `larder/search/handlers.py`
+**Source:** `freshcart/api/middleware.py`
+**Source:** `freshcart/api/client_address.py`
+**Source:** `freshcart/search/handlers.py`
 ```
 
 **Why it's there.** Each fact is one the plan depends on, read from the code rather than remembered. The second one matters: an agent writing its own limiter would likely read the forwarded header directly, and any client can forge that header. The plan reuses the trusted helper instead.
@@ -51,9 +51,9 @@ The `**Source:**` lines bind the plan to the code. Sealing records the exact byt
 Step 2, "Limit requests after authentication", starts with its targets and then settles its decisions in prose:
 
 ```markdown
-**Location:** `larder/api/rate_limit.py`
+**Location:** `freshcart/api/rate_limit.py`
 **State:** new
-**Location:** `larder/api/middleware.py::build_chain`
+**Location:** `freshcart/api/middleware.py::build_chain`
 **State:** existing
 **Location:** `tests/api/test_rate_limit.py`
 **State:** new

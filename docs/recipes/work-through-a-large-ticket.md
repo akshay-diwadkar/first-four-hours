@@ -24,12 +24,12 @@ Large work spread over several sessions loses the thread: each session rediscove
 
 ## A worked scenario
 
-*Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
+*Illustrative: FreshCart is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Larder runs its scheduled work from a crontab on one server, and Søren Lindqvist, Larder's platform engineer, is the only person who remembers why each line is there. Moving it to a job queue is too big for one session, and too important to leave in one person's head.
+FreshCart runs its scheduled work from a crontab on one server, and Søren Lindqvist, FreshCart's platform engineer, is the only person who remembers why each line is there. Moving it to a job queue is too big for one session, and too important to leave in one person's head.
 
 ```text
-/ticket : persist the move of Larder's scheduled jobs from one server's crontab to a job queue on github, as tickets a single session can finish.
+/ticket : persist the move of FreshCart's scheduled jobs from one server's crontab to a job queue on github, as tickets a single session can finish.
 ```
 
 Ticket proposes an epic with four children. Each is one complete job that a session can plan, build, review, and rework, rather than a "design", "build", or "test" ticket:
@@ -57,7 +57,7 @@ The nightly stock sync runs as a queued job at the time the crontab sets today, 
 ## Current evidence
 
 - `deploy/crontab:7` | anchor: `sync_stock` | observation: the sync runs nightly at 03:00 UTC under the name `sync_stock`, not `sync_inventory`.
-- `larder/jobs/queue.py:12` | anchor: `enqueue` | observation: the queue that #31 delivered accepts scheduled jobs.
+- `freshcart/jobs/queue.py:12` | anchor: `enqueue` | observation: the queue that #31 delivered accepts scheduled jobs.
 
 ## Protected constraints
 

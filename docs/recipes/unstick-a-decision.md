@@ -24,12 +24,12 @@ An agent that cannot decide keeps gathering context, or commits to an approach t
 
 ## A worked scenario
 
-*Illustrative: Larder is a made-up project, and this is not a recorded run.*
+*Illustrative: FreshCart is a made-up project, and this is not a recorded run.*
 
-Priya Raman, Larder's product owner, wants Larder's order numbers to be impossible to guess, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings. Everyone nods. Amara Okafor, who reads customer emails all day, is less sure.
+Priya Raman, FreshCart's product owner, wants FreshCart's order numbers to be impossible to guess, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings. Everyone nods. Amara Okafor, who reads customer emails all day, is less sure.
 
 ```text
-/reason : The proposal says switching Larder's order IDs from counting numbers to random IDs is safe because the API already returns them as strings. Challenge that claim on behalf of existing customers.
+/reason : The proposal says switching FreshCart's order IDs from counting numbers to random IDs is safe because the API already returns them as strings. Challenge that claim on behalf of existing customers.
 ```
 
 Reason picks `challenge` and attacks that one claim. Its answer is short:

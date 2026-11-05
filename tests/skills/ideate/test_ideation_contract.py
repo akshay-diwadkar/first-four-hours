@@ -158,8 +158,52 @@ def test_readable_evidence_tables_keep_row_checks(tmp_path: Path) -> None:
     assert [e.code for e in validate_ideation(body, repo_root=tmp_path)] == ["ideation.local_path_not_found"]
 
 
-def test_prohibited_direct_construct_routing():
-    follow_up = "## Suggested follow-up\nDirectly invoke construct to implement changes."
-    body = _valid_body() + "\n\n" + follow_up
-    errors = validate_ideation(body)
-    assert any(e.code == "ideation.prohibited_direct_implementation" for e in errors)
+def test_contract_rules_refuse_violations_not_lookalikes() -> None:
+    def codes(text: str) -> list[str]:
+        return [e.code for e in validate_ideation(text)]
+
+    default_prose = "Proceed with Strategy A as primary direction based on the example.com benchmark.\n"
+    experiment = (
+        "- Cheapest decisive experiment: test with 10k items; metric: hit rate; "
+        "pass/fail: >80%; duration: 1h; cost/effort: low\n"
+    )
+    candidates = "### Suggested follow-up candidates\n- none\n\n### Dropped"
+
+    # Subheadings that only start like a section heading are not that heading.
+    lookalikes = _valid_body(what_to_do="### What to do before choosing\n" + default_prose).replace(
+        "### Dropped", "### Evidence gaps\n- none\n\n### Dropped"
+    )
+    assert codes(lookalikes) == []
+    # A real duplicate section heading is still refused.
+    assert "ideation.duplicate_heading" in codes(_valid_body() + "## Evidence\n")
+    # The optional heading is matched by whole line too, for both its position and its count.
+    with_candidates = _valid_body().replace("### Dropped", candidates)
+    assert codes(with_candidates) == []
+    assert codes(with_candidates + "\n## Suggested follow-up\nAsk blueprint to plan Strategy A.\n") == []
+
+    # The construct ban matches the word, not words that contain it.
+    assert codes(_valid_body() + "\n## Suggested follow-up\nUse blueprint to reconstruct the cache plan.\n") == []
+    assert codes(_valid_body() + "\n## Suggested follow-up\nDirectly invoke construct to implement changes.\n") == [
+        "ideation.prohibited_direct_implementation"
+    ]
+
+    # Running an experiment first requires the experiment; other outcomes do not.
+    experiment_first = _valid_body(outcome="run an experiment first")
+    assert codes(experiment_first) == []
+    assert codes(experiment_first.replace(experiment, "")) == ["ideation.experiment_missing"]
+    assert codes(_valid_body().replace(experiment, "")) == []
+
+    # A decisive experiment names its action before its first ';'.
+    assert codes(_valid_body().replace("experiment: test with 10k items;", "experiment: ;")) == [
+        "ideation.decisive_experiment_incomplete"
+    ]
+    assert codes(_valid_body().replace("experiment: test with 10k items; metric:", "experiment: metric:")) == [
+        "ideation.decisive_experiment_incomplete"
+    ]
+
+    # The obvious defaults are always named.
+    assert codes(
+        _valid_body().replace(
+            "- Obvious defaults: add a database index", "- Obvious defaults: not applicable — nothing obvious"
+        )
+    ) == ["ideation.obvious_defaults_missing"]

@@ -20,7 +20,7 @@ from ideation_workspace import WORKSPACE_DIR, WORKSPACE_PARTS
 # Structural constants
 # ---------------------------------------------------------------------------
 
-IDEATE_VERSION = "2.1.0"
+IDEATE_VERSION = "2.1.1"
 
 WHAT_TO_DO_HEADING = "## What to do"
 GOAL_AND_RESEARCH_HEADING = "## Goal and research"
@@ -161,6 +161,11 @@ def _section_body(text: str, heading: str) -> str:
     return m.group(1) if m else ""
 
 
+def _heading_offsets(text: str, heading: str) -> list[int]:
+    """Return the start offset of every line that is exactly this heading."""
+    return [m.start() for m in re.finditer(rf"^{re.escape(heading)}[ \t]*$", text, re.MULTILINE)]
+
+
 def _evidence_rows(evidence_section: str) -> tuple[dict[str, list[list[str]]], list[Diagnostic]]:
     """Return evidence rows keyed by source kind, read from the fixed evidence subsections."""
     rows: dict[str, list[list[str]]] = {"local": [], "external": [], "contextual": []}
@@ -269,6 +274,14 @@ def _parse_experiment_components(value: str) -> dict[str, str]:
 def _validate_decisive_experiment(owner: str, value: str) -> list[Diagnostic]:
     """Require a metric, pass/fail rule, duration bound, and cost/effort bound."""
     errors: list[Diagnostic] = []
+    action = value.split(";", 1)[0].strip()
+    if not action or EXPERIMENT_COMPONENT_RE.match(action):
+        errors.append(
+            Diagnostic(
+                "ideation.decisive_experiment_incomplete",
+                f"{owner}: decisive experiment requires a non-empty action before its first ';'",
+            )
+        )
     components = _parse_experiment_components(value)
     for name in REQUIRED_EXPERIMENT_COMPONENTS:
         if not components.get(name, ""):
@@ -307,25 +320,28 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
     # 2. Required headings in order and exactly once
     heading_positions: list[int] = []
     for heading in REQUIRED_HEADINGS:
-        count = text.count(heading)
+        offsets = _heading_offsets(text, heading)
+        count = len(offsets)
         if count == 0:
             errors.append(Diagnostic("ideation.missing_heading", f"required heading is absent: {heading!r}"))
             heading_positions.append(-1)
         elif count > 1:
             errors.append(Diagnostic("ideation.duplicate_heading", f"required heading appears {count} times: {heading!r}"))
-            heading_positions.append(text.find(heading))
+            heading_positions.append(offsets[0])
         else:
-            heading_positions.append(text.find(heading))
+            heading_positions.append(offsets[0])
 
     valid_positions = [p for p in heading_positions if p != -1]
     if valid_positions != sorted(valid_positions):
         errors.append(Diagnostic("ideation.heading_order", "required headings must appear in canonical order"))
 
-    sec_opt_idx = text.find(SUGGESTED_FOLLOW_UP_HEADING)
+    follow_up_offsets = _heading_offsets(text, SUGGESTED_FOLLOW_UP_HEADING)
+    sec_opt_idx = follow_up_offsets[0] if follow_up_offsets else -1
     if sec_opt_idx != -1:
-        if text.count(SUGGESTED_FOLLOW_UP_HEADING) > 1:
+        if len(follow_up_offsets) > 1:
             errors.append(Diagnostic("ideation.duplicate_heading", f"optional heading {SUGGESTED_FOLLOW_UP_HEADING!r} appears multiple times"))
-        sec_change_idx = text.find(WHAT_WOULD_CHANGE_HEADING)
+        change_offsets = _heading_offsets(text, WHAT_WOULD_CHANGE_HEADING)
+        sec_change_idx = change_offsets[0] if change_offsets else -1
         if sec_change_idx != -1 and sec_opt_idx < sec_change_idx:
             errors.append(Diagnostic("ideation.heading_order", "Suggested follow-up must appear after What would change the answer"))
 
@@ -501,13 +517,32 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
                 )
             )
 
+    obvious_m = re.search(r"^- Obvious defaults:[ \t]*(.*)$", visible_exploration, re.MULTILINE)
+    if obvious_m and obvious_m.group(1).strip().casefold().startswith("not applicable"):
+        errors.append(
+            Diagnostic(
+                "ideation.obvious_defaults_missing",
+                "'- Obvious defaults:' must name at least one answer a typical agent would give first; "
+                "it is never not applicable",
+            )
+        )
+
     # Check for decisive experiments inside Exploration or document
-    for exp_m in re.finditer(
+    experiment_re = re.compile(
         r"^[ \t]*- (?:Cheapest decisive experiment|Next experiment):[ \t]*(.+)$",
-        text,
         re.MULTILINE | re.IGNORECASE,
-    ):
+    )
+    for exp_m in experiment_re.finditer(text):
         errors.extend(_validate_decisive_experiment("Exploration", exp_m.group(1)))
+    if outcome == "run an experiment first" and not experiment_re.search(HTML_COMMENT_RE.sub("", text)):
+        errors.append(
+            Diagnostic(
+                "ideation.experiment_missing",
+                "outcome 'run an experiment first' requires a '- Cheapest decisive experiment:' or "
+                "'- Next experiment:' line naming its action, metric, pass/fail rule, duration, and "
+                "cost/effort bounds",
+            )
+        )
 
     what_would_change_body = _section_body(text, WHAT_WOULD_CHANGE_HEADING)
 
@@ -542,7 +577,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
 
     # 9. Suggested follow-up routing restriction
     sec_opt_body = _section_body(text, SUGGESTED_FOLLOW_UP_HEADING)
-    if sec_opt_body and "construct" in sec_opt_body.lower():
+    if sec_opt_body and re.search(r"\bconstruct\b", sec_opt_body, re.IGNORECASE):
         errors.append(
             Diagnostic(
                 "ideation.prohibited_direct_implementation",

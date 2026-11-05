@@ -84,11 +84,11 @@ Search shape: alternative | path | path with a fork
 - Preserve baseline:
 ```
 
-A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer. The sealer checks only that each line exists outside HTML comments and is non-empty.
+A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer. The sealer checks only that each line exists outside HTML comments and is non-empty, and that `- Obvious defaults:` does not read `not applicable`.
 
 Then `### Dropped` lists each dropped candidate with a one-line reason, and each surviving candidate, ordering, or path gets its own subsection holding only what distinguishes it under the decision criteria. Path exploration, with or without a fork, describes causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
 
-Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); the sealer checks only lines with one of these labels and requires every bound non-empty. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
+Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); the sealer checks only lines with one of these labels, requires the action and every bound non-empty, and refuses `run an experiment first` with no such line outside HTML comments. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
 
 ### What would change the answer
 

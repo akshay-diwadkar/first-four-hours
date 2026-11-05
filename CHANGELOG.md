@@ -35,6 +35,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
   A request gets at most one challenger and is never rechallenged. When repairs after that challenge would replace a plan's basis, Blueprint stops without sealing and names the failing premise. The seal now refuses a completion condition that names no proof the plan authors, and a command that names a file before the step that creates it. Plans may now let a verification command write Git-ignored output such as tool caches, build output, and lock files.
 - Construct 1.3.0: a verification command that writes Git-ignored output, such as tool caches, build output, environment folders, or lock files, no longer stops the run. Construct no longer reads those folders before and after each command, so verification is faster in projects with large dependency or build folders. It still stops when a command changes tracked files, untracked files Git does not ignore, the Git index, or any file the plan names, ignored or not, and it now also stops when a command moves HEAD; a plan that relies on an ignored file must cite it. It never reads through a directory link. It ships the Blueprint 1.3.0 runtime copy, so it reports contract version 1.3.0, and still accepts every sealed 1.x plan.
 
+### Fixed
+
+- Ideate 2.1.1: the sealer no longer refuses a subheading that starts like a required heading, such as `### What to do before choosing`, or a suggested follow-up containing a word like "reconstruct". It now refuses a `run an experiment first` ideation with no decisive-experiment line, a decisive-experiment line with no action before its first `;`, and an `Obvious defaults` line that reads not applicable, as the ideation contract already required. Ideations it seals record 2.1.1.
+
 ## [2.1.0] - 2026-11-02
 
 ### Added

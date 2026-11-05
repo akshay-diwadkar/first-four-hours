@@ -32,9 +32,9 @@ Nothing starts on its own; you decide:
 
 - Plan a fix for one finding with Blueprint, then carry out the sealed plan with [Construct](../skills/construct.md). For example (illustrative):
 
-  ```text
-  /blueprint : Plan a fix for finding <finding-id> in .first-four-hours/diagnoses/<slug>/diagnosis.md.
-  ```
+    ```text
+    /blueprint : Plan a fix for finding <finding-id> in .first-four-hours/diagnoses/<slug>/diagnosis.md.
+    ```
 
 - Explore options first with [Ideate](../skills/ideate.md).
 - Stop here.

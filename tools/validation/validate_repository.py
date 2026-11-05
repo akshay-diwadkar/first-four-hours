@@ -19,6 +19,7 @@ import ast
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -1260,7 +1261,7 @@ def validate_documentation_links() -> list[str]:
                 errors.append(f"{label}: local Markdown link escapes the repository: {raw_target}")
             elif in_docs and not target.is_relative_to(docs_root):
                 errors.append(
-                    f"{label}: local Markdown link leaves docs/, which GitBook cannot follow; "
+                    f"{label}: local Markdown link leaves docs/, which the docs site cannot follow; "
                     f"link the file by its GitHub URL on main: {raw_target}"
                 )
             elif not target.exists():
@@ -1276,20 +1277,47 @@ def validate_documentation_links() -> list[str]:
     return errors
 
 
-def validate_gitbook_navigation() -> list[str]:
-    """Keep every documentation page listed in the GitBook table of contents."""
+def _nav_entries(node: object) -> list[str]:
+    """Return the page entries of a Zensical nav node, depth-first in nav order."""
+    if isinstance(node, str):
+        return [node]
+    if isinstance(node, dict):
+        return [entry for value in node.values() for entry in _nav_entries(value)]
+    if isinstance(node, list):
+        return [entry for item in node for entry in _nav_entries(item)]
+    return []
+
+
+def validate_docs_navigation() -> list[str]:
+    """Keep every documentation page, and only existing pages, in the docs site navigation."""
     docs = ROOT / "docs"
     if not docs.is_dir():
         return []
-    summary = docs / "SUMMARY.md"
-    if not summary.is_file():
-        return ["docs/SUMMARY.md: missing, so GitBook would infer its own navigation"]
-    listed = {target for _, target in _local_link_targets(summary)}
+    config = ROOT / "zensical.toml"
+    if not config.is_file():
+        return ["zensical.toml: missing, so the docs site has no navigation"]
+    try:
+        data = tomllib.loads(config.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as error:
+        return [f"zensical.toml: not valid TOML: {error}"]
+    project = data.get("project")
+    nav = project.get("nav") if isinstance(project, dict) else None
+    if not isinstance(nav, list) or not nav:
+        return ["zensical.toml: project.nav is missing, so the docs site would infer its own navigation"]
+    entries = [entry for entry in _nav_entries(nav) if "://" not in entry]
     errors: list[str] = []
+    listed: set[Path] = set()
+    for entry in entries:
+        target = docs / entry
+        if not target.is_file():
+            errors.append(f"zensical.toml: nav lists docs/{entry}, which does not exist")
+        listed.add(target.resolve())
     for page in sorted(docs.rglob("*.md"), key=lambda path: path.relative_to(docs).as_posix()):
         relative = page.relative_to(docs).as_posix()
-        if relative != "SUMMARY.md" and page.resolve() not in listed:
-            errors.append(f"docs/SUMMARY.md: does not list docs/{relative}, so it will not appear on GitBook")
+        if page.resolve() not in listed:
+            errors.append(
+                f"zensical.toml: nav does not list docs/{relative}, so it will not appear in the docs site navigation"
+            )
     return errors
 
 
@@ -1570,7 +1598,7 @@ def main() -> int:
     errors.extend(validate_changelog())
     errors.extend(validate_readme_release_link())
     errors.extend(validate_documentation_links())
-    errors.extend(validate_gitbook_navigation())
+    errors.extend(validate_docs_navigation())
     errors.extend(validate_marketplace())
     errors.extend(validate_invocation_policy(skill_dirs=skills))
     errors.extend(validate_certified_platform_coverage())

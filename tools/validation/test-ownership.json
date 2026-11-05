@@ -771,7 +771,9 @@
       "id": "documentation-publishing",
       "path_prefixes": [
         ".github/workflows/publish-wiki.yml",
-        "gitbook-docs.yaml"
+        "gitbook-docs.yaml",
+        ".github/workflows/docs.yml",
+        "zensical.toml"
       ],
       "owner": "documentation-contract"
     },
@@ -843,7 +845,8 @@
     ".cursor-plugin",
     "docs",
     ".github",
-    "gitbook-docs.yaml"
+    "gitbook-docs.yaml",
+    "zensical.toml"
   ],
   "inventory": {
     "restricted_roots": [],

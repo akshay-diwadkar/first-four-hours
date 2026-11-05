@@ -34,8 +34,8 @@ def test_reference_checks_reject_broken_skill_docs_and_links(
     assert len(errors) == 1
     assert "does not exist: skills/README.md" in errors[0]
 
-    # GitBook reads only docs/: links to other repository files use their GitHub URL on
-    # main, which must name an existing path, and docs/SUMMARY.md lists every page.
+    # The docs site reads only docs/: links to other repository files use their GitHub URL on
+    # main, which must name an existing path, and zensical.toml lists every page and only existing pages.
     repository_url = "https://github.com/akshay-diwadkar/first-four-hours"
     (tmp_path / "REPO_VERSIONING.md").write_text("# Policy\n", encoding="utf-8")
     (tmp_path / "docs" / "guide").mkdir()
@@ -47,21 +47,34 @@ def test_reference_checks_reject_broken_skill_docs_and_links(
         encoding="utf-8",
     )
     assert validator.validate_documentation_links() == [
-        "docs/README.md: local Markdown link leaves docs/, which GitBook cannot follow; "
+        "docs/README.md: local Markdown link leaves docs/, which the docs site cannot follow; "
         "link the file by its GitHub URL on main: ../REPO_VERSIONING.md",
         f"docs/README.md: GitHub link target does not exist in this repository: {repository_url}/blob/main/GONE.md",
     ]
-    summary = tmp_path / "docs" / "SUMMARY.md"
-    summary.write_text("# Table of contents\n\n* [Docs](README.md)\n", encoding="utf-8")
-    assert validator.validate_gitbook_navigation() == [
-        "docs/SUMMARY.md: does not list docs/guide/install.md, so it will not appear on GitBook"
+    config = tmp_path / "zensical.toml"
+    assert validator.validate_docs_navigation() == ["zensical.toml: missing, so the docs site has no navigation"]
+    config.write_text("[project\n", encoding="utf-8")
+    errors = validator.validate_docs_navigation()
+    assert len(errors) == 1
+    assert errors[0].startswith("zensical.toml: not valid TOML: ")
+    config.write_text('[project]\nnav = [{ "Home" = "README.md" }]\n', encoding="utf-8")
+    assert validator.validate_docs_navigation() == [
+        "zensical.toml: nav does not list docs/guide/install.md, so it will not appear in the docs site navigation"
     ]
-    summary.write_text(summary.read_text(encoding="utf-8") + "* [Install it](guide/install.md)\n", encoding="utf-8")
-    assert validator.validate_gitbook_navigation() == []
-    summary.unlink()
-    assert validator.validate_gitbook_navigation() == [
-        "docs/SUMMARY.md: missing, so GitBook would infer its own navigation"
-    ]
+    config.write_text(
+        '[project]\nnav = [\n  { "Home" = "README.md" },\n'
+        '  { "Guide" = ["guide/install.md", { "Gone" = "guide/gone.md" }] },\n'
+        '  { "Site" = "https://example.com/" },\n]\n',
+        encoding="utf-8",
+    )
+    assert validator.validate_docs_navigation() == ["zensical.toml: nav lists docs/guide/gone.md, which does not exist"]
+    config.write_text(
+        '[project]\nnav = [\n  { "Home" = "README.md" },\n'
+        '  { "Guide" = ["guide/install.md"] },\n'
+        '  { "Site" = "https://example.com/" },\n]\n',
+        encoding="utf-8",
+    )
+    assert validator.validate_docs_navigation() == []
 
     # Documentation names only declared handoff folders and active skill paths,
     # and the handoff page names every declared folder.

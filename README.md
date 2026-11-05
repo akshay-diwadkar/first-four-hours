@@ -115,7 +115,7 @@ Each skill works alone. A skill hands work on through a file, and you decide whe
 
 ## Documentation
 
-[The documentation](docs/README.md) is the full manual: getting started, how the suite works, one page per skill, recipes, a [reference](docs/reference/README.md) of exact facts, and [troubleshooting](docs/troubleshooting/README.md) by symptom.
+[The documentation](docs/README.md) is the full manual: getting started, how the suite works, one page per skill, recipes, a [reference](docs/reference/README.md) of exact facts, and [troubleshooting](docs/troubleshooting/README.md) by symptom. Read it online at [akshay-diwadkar.github.io/first-four-hours](https://akshay-diwadkar.github.io/first-four-hours/).
 
 ## Contributing
 

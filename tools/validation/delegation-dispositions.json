@@ -121,6 +121,16 @@
       "rationale": "The description depends on one coherent reading of the change; splitting it adds coordination without cheap verification."
     },
     {
+      "skill": "provision",
+      "mode": "direct",
+      "owner": "Provision owns harness setup: confirmed requirement installs and its ffh-* agent files.",
+      "lifecycle": "The invocation remains the Provision owner.",
+      "workers": "No bounded worker seam is earned.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Provision writes only confirmed package installs, a virtual environment the user confirmed, and ffh-* agent files in the harness's agent directory, and deletes only those agent files.",
+      "rationale": "Setup is one short conversation whose choices the user confirms; delegating it adds coordination without cheap verification."
+    },
+    {
       "skill": "charter",
       "mode": "direct",
       "owner": "Charter owns the definition conversation and the charter artifact.",

@@ -138,6 +138,11 @@
         "tests/skills/pr/test_pr.py"
       ]
     },
+    "provision-runtime-contract": {
+      "test_targets": [
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+      ]
+    },
     "router-runtime-contract": {
       "test_targets": [
         "tests/skills/router/test_router.py"
@@ -933,6 +938,7 @@
     "examiner": "examiner-runtime-contract",
     "ideate": "ideate-runtime-contract",
     "pr": "pr-runtime-contract",
+    "provision": "provision-runtime-contract",
     "reason": "reason-guidance-contract",
     "router": "router-runtime-contract",
     "scribe": "scribe-runtime-contract",

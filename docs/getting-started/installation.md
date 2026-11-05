@@ -63,11 +63,13 @@ python -m pip install -r .claude/skills/ticket/requirements.txt
 
 For `codex` or `github-copilot`, replace `.claude/skills` with `.agents/skills` in each command. Skip the command for a skill you do not use.
 
+Or type `/provision` in your agent: it finds these files, installs them with the agent's Python after you confirm, and also sets up the suite's subagents. See [Provision](../skills/provision.md).
+
 For the Claude Code plugin, the skill folders are under the `installPath` value from `claude plugin list --json`. For example, Scribe is in `<installPath>/skills/sensemaking/scribe`. For the local Cursor plugin, Scribe is in `~/.cursor/plugins/local/first-four-hours/skills/sensemaking/scribe`.
 
 ## Install as a Claude Code plugin
 
-On Claude Code 2.1.275 or later, you can install all 14 skills as one `first-four-hours` plugin instead of the Skills CLI.
+On Claude Code 2.1.275 or later, you can install all 15 skills as one `first-four-hours` plugin instead of the Skills CLI.
 
 Run this command in a Claude Code session:
 
@@ -85,7 +87,7 @@ The plugin has no pinned version and follows repository commits. Run `/plugin ma
 
 ## Install as a Cursor plugin
 
-In Cursor, you can install all 14 skills as one `first-four-hours` plugin instead of the Skills CLI. The Cursor route needs Git and Python 3.11 or later.
+In Cursor, you can install all 15 skills as one `first-four-hours` plugin instead of the Skills CLI. The Cursor route needs Git and Python 3.11 or later.
 
 To install the plugin for yourself, clone the repository into the local plugin folder of Cursor:
 
@@ -135,7 +137,7 @@ For `codex` or `github-copilot`, run `ls .agents/skills` instead.
 
 For a `--global` install, see the note in [Choose the agent and where skills go](#choose-the-agent-and-where-skills-go).
 
-For the Claude Code plugin, run `claude plugin list` in a terminal. The list must show `first-four-hours@first-four-hours` as enabled. To list the 14 skills of the plugin, run `claude plugin details first-four-hours@first-four-hours`.
+For the Claude Code plugin, run `claude plugin list` in a terminal. The list must show `first-four-hours@first-four-hours` as enabled. To list the 15 skills of the plugin, run `claude plugin details first-four-hours@first-four-hours`.
 
 Start a skill to verify any install. See [Your first run](first-run.md).
 

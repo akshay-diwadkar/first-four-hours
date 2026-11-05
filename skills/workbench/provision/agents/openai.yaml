@@ -1,0 +1,5 @@
+interface:
+  display_name: "Provision"
+  short_description: "Install requirements and set up subagents on chosen models"
+policy:
+  allow_implicit_invocation: false

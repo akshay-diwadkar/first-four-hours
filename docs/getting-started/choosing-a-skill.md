@@ -19,6 +19,7 @@ Start from the problem in front of you, not from how the suite is organized. Pic
 | A runbook, setup guide, error message, or other technical document that must match its sources, or a check of an existing one | [Scribe](../skills/scribe.md) |
 | A subject you want to understand | [Tutor](../skills/tutor.md) |
 | A written examination to practise for | [Examiner](../skills/examiner.md) |
+| A fresh install to finish, or subagents to set up or refresh on the models you choose | [Provision](../skills/provision.md) |
 
 The table covers common situations, not every skill; [the skill index](../skills/README.md) lists every skill, and each skill page says when to use another skill instead.
 

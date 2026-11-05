@@ -25,6 +25,7 @@
   * [Construct](skills/construct.md)
   * [Diagnose](skills/diagnose.md)
   * [PR](skills/pr.md)
+  * [Provision](skills/provision.md)
   * [Ticket](skills/ticket.md)
   * [Ideate](skills/ideate.md)
   * [Reason](skills/reason.md)

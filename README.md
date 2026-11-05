@@ -36,6 +36,8 @@ On Claude Code 2.1.275 or later, you can instead install the whole suite as the 
 
 In Cursor, you can install the same suite as a plugin; [Install as a Cursor plugin](docs/getting-started/installation.md#install-as-a-cursor-plugin) shows how.
 
+After installing, type `/provision` in your agent. After you confirm, it installs the Python packages some skills need and sets up the suite's subagents on the models you choose. Run it again in each agent harness you use, or when you want fresh model choices. See [Provision](docs/skills/provision.md).
+
 [Install First Four Hours](docs/getting-started/installation.md) covers installing one skill, choosing the agent, installing for every project, the plugin skill names, and checking that the install worked.
 
 ## First use
@@ -43,9 +45,7 @@ In Cursor, you can install the same suite as a plugin; [Install as a Cursor plug
 Start a skill on a real problem by naming it in your agent's chat. For example (illustrative):
 
 ```text
-/diagnose : About one invoice in 4,000 comes out exactly one cent short,
-only on the first of the month, and re-running the job gives the right
-total. Nobody has touched billing in a year. Find out why.
+/diagnose : About one invoice in 4,000 comes out exactly one cent short, only on the first of the month, and re-running the job gives the right total. Nobody has touched billing in a year. Find out why.
 ```
 
 [Your first run](docs/getting-started/first-run.md) shows what a skill leaves behind and how each skill starts.
@@ -55,30 +55,19 @@ total. Nobody has touched billing in a year. Find out why.
 Say what is actually going wrong, what is at stake, and what must not break. For example (illustrative):
 
 ```text
-/reason : Everyone on the team agrees this API migration is backwards
-compatible, and that is what worries me. Challenge the claim before it
-reaches 300 integrators on Friday.
+/reason : Everyone on the team agrees this API migration is backwards compatible, and that is what worries me. Challenge the claim before it reaches 300 integrators on Friday.
 ```
 
 ```text
-/blueprint : Plan the migration that splits our 40-million-row orders table
-into monthly partitions without downtime. Checkout keeps writing throughout,
-last quarter's revenue report must match to the cent, and a cheaper model
-will build this overnight with nobody watching.
+/blueprint : Plan the migration that splits our 40-million-row orders table into monthly partitions without downtime. Checkout keeps writing throughout, last quarter's revenue report must match to the cent, and a cheaper model will build this overnight with nobody watching.
 ```
 
 ```text
-/scribe : It is 3 a.m., the on-call engineer has never seen this service,
-and the one person who knows how to deploy it leaves on Friday. Write a
-deployment runbook from our docker-compose file and deploy scripts, with
-nothing in it that does not trace to a source.
+/scribe : It is 3 a.m., the on-call engineer has never seen this service, and the one person who knows how to deploy it leaves on Friday. Write a deployment runbook from our docker-compose file and deploy scripts, with nothing in it that does not trace to a source.
 ```
 
 ```text
-/tutor : I study history, and I am tired of people citing Gödel to prove
-things the theorem never said. Teach me the first incompleteness theorem
-from scratch, make me build the self-referring sentence myself, then show me
-popular claims about it and have me say which ones are wrong.
+/tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
 ```
 
 ## Start from the problem
@@ -90,6 +79,7 @@ popular claims about it and have me say which ones are wrong.
 | A finished change you need to trust before merging | `assess` |
 | A decision that is stuck, or rests on an assumption you doubt | `reason` |
 | Not knowing which skill comes next | `router` (ask in plain words) |
+| A fresh install to finish, or subagents to set up on the models you choose | `provision` |
 | A subject to learn, or a written examination to practise for | `tutor` or `examiner` |
 
 [Choose a skill](docs/getting-started/choosing-a-skill.md) covers more situations.

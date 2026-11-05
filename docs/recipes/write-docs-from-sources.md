@@ -29,10 +29,7 @@ To check existing documents against their sources later, ask Scribe to audit the
 FreshCart's on-call engineers restart the job-queue workers from memory, and each of them does it slightly differently. Søren Lindqvist has done it at 3 a.m. often enough to know that "slightly differently" is how incidents get longer.
 
 ```text
-/scribe : On-call engineers restart FreshCart's queue workers from memory,
-and no two do it the same way. Write an on-call runbook from
-deploy/worker.yaml and scripts/restart-workers.sh; where the sources go
-silent, say so instead of guessing.
+/scribe : On-call engineers restart FreshCart's queue workers from memory, and no two do it the same way. Write an on-call runbook from deploy/worker.yaml and scripts/restart-workers.sh; where the sources go silent, say so instead of guessing.
 ```
 
 Scribe asks one question the sources cannot answer: where the runbook will be published. It keeps every command, flag, and path exactly as the sources have them, and uses the `strict` profile, because the runbook holds commands and a recovery step.
@@ -42,9 +39,7 @@ One fact is missing. The restart script accepts a drain timeout, but neither sou
 Once the operations lead adds the value to `deploy/worker.yaml`, Scribe writes again and the gap closes. Months later, someone renames a flag in the script:
 
 ```text
-/scribe : This runbook is months old. Audit docs/runbooks/restart-workers.md
-against deploy/worker.yaml and scripts/restart-workers.sh and tell me what
-would fail at 3 a.m.
+/scribe : This runbook is months old. Audit docs/runbooks/restart-workers.md against deploy/worker.yaml and scripts/restart-workers.sh and tell me what would fail at 3 a.m.
 ```
 
 The audit reports the mismatch and changes nothing. Revising the runbook is a separate write, with your authority.

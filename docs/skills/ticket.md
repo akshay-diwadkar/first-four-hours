@@ -17,9 +17,7 @@ Ticket keeps work items in GitHub issues or a local Markdown store. It has two e
 Only you can start Ticket: type `/ticket`. Name the effect (`persist`, `select`, or `both`) and the backend (`github` or `local`). For example (illustrative):
 
 ```text
-/ticket : persist this on github: move every scheduled job off the one
-server whose crontab nobody dares edit, as tickets a single session can
-finish.
+/ticket : persist this on github: move every scheduled job off the one server whose crontab nobody dares edit, as tickets a single session can finish.
 ```
 
 ```text

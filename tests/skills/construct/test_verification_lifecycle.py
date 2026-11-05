@@ -513,17 +513,18 @@ def _overwrite_draft() -> str:
 # Blueprint: ignored overwrite proof
 
 ## Goal
-Reject an ignored-only overwrite while Git-visible content remains unchanged.
+Guard Git-visible and plan-bound content while ignored derived output stays free.
 
 ## Current State
 The seed file exists.
 **Source:** `seed.txt:1`
+**Source:** `scratch/bound.txt:1`
 
 ## Implementation
 
 """ + RETIRE_STEP + """
 ### 2. Create the marker
-**Location:** `marker.txt`
+**Location:** `scratch/marker.txt`
 **State:** new
 
 Create the marker file.
@@ -539,13 +540,14 @@ Expect: exit 0.
 """
 
 
-def test_verification_rejects_ignored_only_overwrite(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_verification_guards_visible_and_bound_content_only(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     overwrite = (
         "from pathlib import Path\n"
         "Path('scratch/existing.txt').write_text('changed', encoding='utf-8')\n"
     )
     repo = _repo(tmp_path, tracked={"seed.txt": "seed\n", ".gitignore": "scratch/\n", "retired.txt": "retired\n", "obsolete.txt": "obsolete\n"})
     _write(repo, "seed.txt", "seed modified\n")
+    _write(repo, "scratch/bound.txt", "bound\n")
     # Bind the pre-existing dirty evidence, rather than introducing source drift.
     blueprint = _seal(repo, "ignored-overwrite", _overwrite_draft())
     # The sealed receipt binds the planned deletion's current bytes under its own state.
@@ -591,32 +593,115 @@ def test_verification_rejects_ignored_only_overwrite(tmp_path: Path, capsys: pyt
     code, payload = _prove(capsys, repo, blueprint, 1, "green", 2)
     assert code == 0 and payload["proof"]["passed"] is True
     assert payload["proof"]["next_instruction"] == 2 and payload["proof"]["next_command"] is None
-    _write(repo, "marker.txt", "marker\n")
+    _write(repo, "scratch/marker.txt", "marker\n")
     code, payload = _prove(capsys, repo, blueprint, 2, "green", 1)
     assert code == 0 and payload["proof"]["status"] == "unprovable"
     assert payload["proof"]["next_instruction"] is None
     assert "phase=after" in payload["proof"]["next_command"]["argv"]
     assert "Confirm instruction 2 realizes its sealed behavior" in payload["proof"]["required_action"]
+    # Ignored, uncited output is never observed: rewriting it passes, beside a deleted tracked file and, on POSIX, a FIFO.
+    # Content reached through a directory link is never observed either, even when the Run first populates the folder.
+    with (repo / ".git" / "info" / "exclude").open("a", encoding="utf-8") as exclude:
+        exclude.write(".first-four-hours/\n")
     _write(repo, "scratch/existing.txt", "initial")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = repo / "ext"
+    if os.name == "nt":
+        import _winapi
+
+        _winapi.CreateJunction(str(outside), str(link))
+    else:
+        os.symlink(outside, link, target_is_directory=True)
     assert _porcelain_status(repo, "seed.txt") == " M"
     assert _porcelain_status(repo, "scratch") == ""
     sentinel_before = (repo / "seed.txt").read_bytes()
     git_before = subprocess.run(["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"], cwd=repo, capture_output=True, check=True).stdout
+    fifo = repo / "scratch" / "fifo"
+    if hasattr(os, "mkfifo"):
+        os.mkfifo(fifo)
+    _write(repo, "tests/test_overwrite.py", (
+        "from pathlib import Path\n"
+        "Path('scratch/existing.txt').write_text('changed', encoding='utf-8')\n"
+        "Path('ext/new.txt').write_text('new', encoding='utf-8')\n"
+    ))
     code, payload = _run_phase(capsys, repo, blueprint, "after")
-    assert code == 3
-    assert payload["diagnostics"][0]["code"] == "verification.mutated_workspace"
-    assert _porcelain_status(repo, "seed.txt") == " M"
-    assert _porcelain_status(repo, "scratch") == ""
-    assert (repo / "seed.txt").read_bytes() == sentinel_before
+    if hasattr(os, "mkfifo"):
+        fifo.unlink()
+    assert code == 0, payload
+    assert [item["passed"] for item in payload["verification"]["results"]] == [True]
+    assert (outside / "new.txt").read_text(encoding="utf-8") == "new"
+    assert not any(item["path"].startswith("ext/") for item in payload["verification"]["workspace"]["dirty"])
+    (outside / "new.txt").unlink()
     assert (repo / "scratch/existing.txt").read_text(encoding="utf-8") == "changed"
+    assert (repo / "seed.txt").read_bytes() == sentinel_before
     assert subprocess.run(["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"], cwd=repo, capture_output=True, check=True).stdout == git_before
-    assert payload["diagnostics"][0]["details"]["changed_paths"] == ["scratch/existing.txt"]
+    if os.name == "nt":
+        os.rmdir(link)
+    else:
+        link.unlink()
+    # A Run that only moves HEAD still stops, with no changed path, and recovery carries head_changed.
+    _write(repo, "tests/test_overwrite.py", (
+        "import subprocess\n"
+        "subprocess.run(['git', 'commit', '--allow-empty', '-qm', 'probe'], check=True)\n"
+    ))
+    code, payload = _run_phase(capsys, repo, blueprint, "after")
+    diagnostic = payload["diagnostics"][0]
+    assert (code, diagnostic["code"]) == (3, "verification.mutated_workspace")
+    assert diagnostic["details"]["changed_paths"] == []
+    assert diagnostic["details"]["head_changed"] is True and diagnostic["details"]["index_changed"] is False
     # The stop names its authored command and routes recovery to a Blueprint amendment, never an unchanged rerun.
-    assert payload["diagnostics"][0]["category"] == "unsafe_state"
-    assert any("tests/test_overwrite.py" in item for item in payload["diagnostics"][0]["supporting_evidence"])
-    assert "Blueprint amendment" in payload["diagnostics"][0]["required_action"]
-    assert "preserve unrelated work" in payload["diagnostics"][0]["required_action"]
+    assert diagnostic["category"] == "unsafe_state"
+    assert any("tests/test_overwrite.py" in item for item in diagnostic["supporting_evidence"])
+    assert "Blueprint amendment" in diagnostic["required_action"]
+    assert "preserve unrelated work" in diagnostic["required_action"]
+    assert "head_changed" in diagnostic["required_action"]
     assert payload["result"]["verification"]["results"][0]["passed"] is False
+    # A rewritten clean tracked file and a new untracked file still stop, naming exactly those paths.
+    obsolete_bytes_before = (repo / "obsolete.txt").read_bytes()
+    _write(repo, "tests/test_overwrite.py", (
+        "from pathlib import Path\n"
+        "Path('obsolete.txt').write_text('rewritten', encoding='utf-8')\n"
+        "Path('visible.txt').write_text('visible', encoding='utf-8')\n"
+    ))
+    code, payload = _run_phase(capsys, repo, blueprint, "after")
+    diagnostic = payload["diagnostics"][0]
+    assert (code, diagnostic["code"]) == (3, "verification.mutated_workspace")
+    assert diagnostic["details"]["changed_paths"] == ["obsolete.txt", "visible.txt"]
+    assert diagnostic["details"]["head_changed"] is False
+    (repo / "obsolete.txt").write_bytes(obsolete_bytes_before)
+    (repo / "visible.txt").unlink()
+    # A nested repository is listed by its own Git: its visible file is guarded, its own ignored build output is not.
+    (repo / "nested").mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=repo / "nested", check=True)
+    _write(repo, "nested/.gitignore", "build/\n")
+    _write(repo, "nested/file.txt", "nested")
+    _write(repo, "nested/build/out.txt", "old")
+    _write(repo, "tests/test_overwrite.py", (
+        "from pathlib import Path\n"
+        "Path('nested/file.txt').write_text('changed', encoding='utf-8')\n"
+        "Path('nested/build/out.txt').write_text('new', encoding='utf-8')\n"
+    ))
+    code, payload = _run_phase(capsys, repo, blueprint, "after")
+    assert (code, payload["diagnostics"][0]["code"]) == (3, "verification.mutated_workspace")
+    assert payload["diagnostics"][0]["details"]["changed_paths"] == ["nested/file.txt"]
+    # Plan-bound paths stay guarded even when Git ignores them: Sources, Locations, and the task workspace.
+    _write(repo, "tests/test_overwrite.py", (
+        "from pathlib import Path\n"
+        "Path('scratch/bound.txt').write_text('changed', encoding='utf-8')\n"
+        "Path('scratch/marker.txt').write_text('changed', encoding='utf-8')\n"
+        "for name in ('request.md', 'blueprint.md'):\n"
+        "    with Path('.first-four-hours/blueprints/ignored-overwrite', name).open('a', encoding='utf-8') as handle:\n"
+        "        handle.write('x')\n"
+    ))
+    code, payload = _run_phase(capsys, repo, blueprint, "after")
+    assert (code, payload["diagnostics"][0]["code"]) == (3, "verification.mutated_workspace")
+    assert payload["diagnostics"][0]["details"]["changed_paths"] == [
+        ".first-four-hours/blueprints/ignored-overwrite/blueprint.md",
+        ".first-four-hours/blueprints/ignored-overwrite/request.md",
+        "scratch/bound.txt",
+        "scratch/marker.txt",
+    ]
     # A carried-out deletion is started implementation: resume routes to apply, never to a red prove must refuse,
     # and prove red reports an unrecoverable gap, never a plan defect.
     red_plan = _seal(repo, "red-deletion", RED_DELETION_PLAN)

@@ -11,7 +11,7 @@ Investigate proportionally, in this order:
 
 ## Finding gate
 
-Promote a candidate only through one neutral gate: current evidenced downside, cost, constraint, friction, or directly evidenced headroom; a credible causal or ownership/boundary explanation; and a consequence sufficient to make acting on it worthwhile. Aesthetic or architecture preference, generic best practice, hypothetical cleanup, or imaginable speedup without current evidenced downside or leverage is never promoted; Architect owns structural selection.
+Promote a candidate only through one neutral gate: current evidenced downside, cost, constraint, friction, or directly evidenced headroom; a credible causal or ownership/boundary explanation; and a consequence sufficient to make acting on it worthwhile. Aesthetic or architecture preference, generic best practice, hypothetical cleanup, or imaginable speedup without current evidenced downside or leverage is never promoted; Architect owns structural selection, so a finding whose fix first needs an owner, boundary, or dependency-direction decision goes to `architect`, not `blueprint`, in a prompt asking Architect to re-verify the finding from current source rather than cite `diagnosis.md` as evidence.
 
 Before accepting any cause, even one visible in code, name the most plausible rival explanation and the observation that rules it out; record that elimination in `ruled_out` when a competent next investigator would otherwise pursue it. If no observation rules the rival out, the cause stays `inferred`: name the rival in `limitations` and add an `open_probes` entry that would separate them.
 

@@ -29,6 +29,7 @@ Router owns these composition facts, taken from each producer's current contract
 | Producer | Handoff | Consumer |
 | --- | --- | --- |
 | `diagnose` | one accepted `diagnosis.md` finding | `blueprint` |
+| `diagnose` | one accepted `diagnosis.md` finding whose fix first needs a structural decision | `architect` |
 | `architect` | `architecture.md` | `blueprint` |
 | `ticket` select | `ticket-scope.md` | `blueprint` |
 | `ideate` | `ideation.md`; the user owns selection | `blueprint` |

@@ -174,7 +174,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     ]
     assert artifact.startswith("# Assessment\n")
     receipt = artifact.splitlines()[-1]
-    assert receipt.startswith("<!-- assessment-result: 1.3.0; sha256: ")
+    assert receipt.startswith("<!-- assessment-result: 1.4.0; sha256: ")
     assert "`findings`" in artifact
     assert '- Severity: "P1"' in artifact
     assert f"{head}:service.py#L1-L1" in artifact
@@ -199,7 +199,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
         parse_result(f"{blocked}<!-- assessment-result: 1.0.0; sha256: {blocked_digest} -->\n")
     assert refused_blocked.value.code == "artifact.shape_invalid"
     assert "requires a material limitation" in refused_blocked.value.message
-    legacy = artifact.replace("<!-- assessment-result: 1.3.0; ", "<!-- assessment-result: 2.0.0; ", 1)
+    legacy = artifact.replace("<!-- assessment-result: 1.4.0; ", "<!-- assessment-result: 2.0.0; ", 1)
     output.write_text(legacy, encoding="utf-8")
     checked = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert checked.returncode != 0
@@ -215,7 +215,30 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
 
 def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:
     repo, _, _ = _repository(tmp_path, assessment_seed)
-    sealed, output = _seal(repo, tmp_path, _bundle(tmp_path, examined=[]))
+    beyond_end = {
+        "severity": "P2",
+        "defect": "The cited range does not exist in the reviewed file.",
+        "locators": [{"kind": "head-file", "path": "service.py", "start_line": 1, "end_line": 5}],
+        "consequence": "The finding cannot be bound to reviewed text.",
+        "required_truth": "Every cited range must exist in the reviewed file.",
+        "basis": "reasoned",
+    }
+    bad_locators = _bundle(
+        tmp_path,
+        result="findings",
+        findings=[beyond_end],
+        examined=[{"kind": "head-file", "path": "service.py", "start_line": 2, "end_line": 3}],
+    )
+    refused, output = _seal(repo, tmp_path, bad_locators)
+    assert refused.returncode != 0
+    locator_diagnostic = json.loads(refused.stdout)["diagnostics"][0]
+    assert locator_diagnostic["code"] == "locator.range_invalid"
+    evidence = locator_diagnostic["supporting_evidence"]
+    assert len(evidence) == 2
+    assert any("findings[0].locators[0]" in item for item in evidence)
+    assert any("examined[0]" in item for item in evidence)
+    assert not output.exists()
+    sealed, _ = _seal(repo, tmp_path, _bundle(tmp_path, examined=[]), output)
     assert sealed.returncode != 0
     assert json.loads(sealed.stdout)["diagnostics"][0]["code"] == "result.coverage_missing"
     assert not output.exists()

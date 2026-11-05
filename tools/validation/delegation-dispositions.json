@@ -53,8 +53,8 @@
       "owner": "Assess owns assessment depth, accepted findings, and the sealed assessment.md decision result.",
       "lifecycle": "When another orchestrated handoff invokes Assess, it owns the independent assessment stage and assessment.md; the upstream owner retains merge and implementation authority.",
       "workers": "Bounded read-only subagents may perform earned semantic falsification slices and return compact candidate findings or bounded-clear scope.",
-      "specialists": "A fresh-context reviewer is earned when the Assess owner wrote or planned the change in its current context; a consequential clear challenge is optional, earned, and limited to at most one fresh bounded adversarial pass; all Assess delegates together never exceed two per invocation.",
-      "writes": "Delegates are read-only; only Assess writes its ignored repository-local .first-four-hours/assessments/<slug>/assessment.md result.",
+      "specialists": "When the Assess owner wrote or planned the change in its current context, it hands the whole assessment stage to one fresh-context Assess owner that seals assessment.md; a consequential clear challenge is optional, earned, and limited to at most one fresh bounded adversarial pass; all Assess delegates together never exceed two per invocation.",
+      "writes": "Delegates are read-only; only the Assess owner, including the fresh-context owner of a self-authored handoff, writes its ignored repository-local .first-four-hours/assessments/<slug>/assessment.md result.",
       "rationale": "Assess can improve coverage and context economy through bounded candidate discovery, while final finding acceptance and result authority stay owner-owned."
     },
     {

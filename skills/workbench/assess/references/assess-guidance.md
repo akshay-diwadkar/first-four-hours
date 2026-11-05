@@ -12,28 +12,17 @@ Scale these lenses to the exact authority and base/head delta; never a matrix or
 - **Ownership and minimality** — the real owner is repaired with the smallest coherent propagation; no duplicate sources of truth, parallel machinery, or compatibility sediment.
 - **Integration readiness** — unavailable or contradictory required proof means `blocked`, never an implied pass.
 
-## Blueprint evidence
-
-When a sealed Blueprint for this change is available:
-
-- **Baseline proof.** Run each `Run:` under its Verification `### After implementation` once, verbatim, from the root of a checkout already at the exact reviewed head with no tracked changes, honoring any `Timeout:`. Never rely on Construct's report or on PR claims that the Runs passed. Each Run is authored to exit `0` and meet its `Expect:` on a correct implementation, so a nonzero exit or an unmet `Expect:` is a candidate finding. Ignored caches or locks a Run creates are verification side effects. Do not run a Run that would change tracked content, and do not switch a checkout to reach the head.
-- **Missing baseline.** A declared `Incomplete:` outcome, or a Run you cannot execute, leaves that proof missing. Cover its surface with other focused proof or direct examination, or name it in `limitations`. Use `blocked` only when the gap prevents a trustworthy result.
-- **Conformance.** Check the diff against the plan directly: every instruction is realized at its Locations, no material change goes beyond what the plan and Construct's execution contract authorize, and no `deleted` target survives. Treat each gap as a candidate finding and verify it against the original request and current source.
-- **Independent effort.** Spend it where the plan could be wrong: gaps between the plan and the original request; consumers and propagation the plan did not name; base behavior outside the plan's proof; code quality and maintainability of the implementation; proof that would pass a plausible wrong result; and proportionate security. Do not re-derive what the Blueprint's discriminating checks already establish on the reviewed head unless a candidate defect gives a concrete reason.
-
-The Blueprint is authority evidence, never proof of correctness. A green baseline is never `clear`: `clear` still requires every material requirement and surface to be accounted for under Reassessment and stop. A limitation the user accepted, as recorded in the Blueprint's sibling `request.md` or other authority, is not a finding while the change stays within it; one the Blueprint or a report accepts without that record is a candidate finding, never a clearance.
-
 ## Depth and Diagnose
 
 Tiny local changes need requirement, delta, and focused proof; skip subagents, broad proof, and clear challenges when direct lookup closes the surface. Complexity, ambiguity, fan-out, irreversibility, data/migration, concurrency, or broad contract propagation earn depth. Examine security where the change affects trust or permission boundaries, inputs, sensitive data, or risky operations; investigate earned concerns without inventing risks, and no material security concern is a valid result.
 
-Every later turn re-reads what enters context, so keep a command's verdict rather than its log, request only the PR fields you use, read the ranges a question needs, and run each proof once per head.
+Every later turn re-reads what enters context. Start from `git diff --stat <base>...<head>`, then diff one path at a time and read only the line ranges a question needs, never the whole diff at once; a question about a new file may need all of it. Keep a command's verdict rather than its log, request only the PR fields you use, and run each proof once per head.
 
 Diagnose is earned only when evidence-grounded unknown risk beyond the bounded change could alter the merge decision. If earned and unrun for the current snapshot, hand off `/diagnose` with the risk question instead of sealing, rerun Assess with `diagnosis.md` (unavailable or contradictory output means `blocked`), and re-verify each merge-relevant consequence against the exact change.
 
 ## Reason checkpoints
 
-Scope, severity, findings, and the result are judgment: consult `reason` before committing to the assessment approach, after a failure or direction change, and before sealing. Final and stop reports trace `reason` checkpoints per its Checkpoint trace.
+Scope, severity, findings, and the result are judgment: consult `reason` before committing to the assessment approach, after a failure or direction change, and before sealing. One narrowing applies: skip the before-sealing consultation for a tiny local change, as Depth and Diagnose defines it, whose result is `clear`. The user accepted this trade: a small risk of missing a defect on surfaces direct lookup already closed, in exchange for lower cost. Every other checkpoint always applies. Final and stop reports trace `reason` checkpoints per its Checkpoint trace, marking a narrowed checkpoint as not required.
 
 ## Finding gates
 
@@ -61,22 +50,13 @@ Choose the level from the evidenced consequence, affected scope, reachable condi
 - `assessed_sources` entry: `{"id":"id","role":"authority","locator":"URL","path":"/absolute/snapshot"}`; roles `target|authority|evidence|proof|diagnosis`.
 - Locators: `{"kind":"head-file","path":"a/b.py","start_line":1,"end_line":9}`, `{"kind":"head-path","path":"a/b.bin"}` for paths without text lines, `{"kind":"source","source_id":"id"}`; `base-` variants cite the base.
 - `examined`: locators you actually inspected; `clear` needs one. Sealing derives changed paths no locator cites and refuses until you inspect each one or name its complete repository path in `limitations`. One limitation may group several paths; a path counts only when it does not appear solely inside a longer path.
-- `limitations`: `[]` only when you claim none; include self-review for any part of a self-authored change that no fresh-context delegate examined.
+- `limitations`: `[]` only when you claim none; include self-review for any part of a self-authored change that no fresh-context owner or delegate examined.
 - Each finding: `severity` (a level from Severity above, spelled exactly), concrete `defect`, `locators`, `consequence`, `required_truth` (truth to restore, not an implementation), and `basis`: `observed` only when you ran or reproduced the failure and cite a `proof` snapshot of its output, else `reasoned`.
 
 ## Reassessment and stop
 
 Each new head starts from current authority, base, and head. A moved base/head or changed bound source or artifact leaves the earlier assessment stale, never a clearance.
 
-Keep snapshots at paths a later re-review can read, and write refreshed ones to new paths, so `check` can still compare the earlier assessment's. Review the delta when `check` passes an earlier assessment of this change or refuses it only with `result.target_moved`, its result was not `blocked`, its `Head revision` is an ancestor of this head, and the authoritative requirements are unchanged. A repair plan made from an earlier assessment's findings leaves the authoritative requirements unchanged unless its request adds or changes a requirement; a limitation the user accepted in that request does not change them. The delta covers:
-
-- every change from that head to this one, under the axes, and whatever those changes propagate to;
-- whether each earlier finding's `required_truth` now holds;
-- each open gap: any limitation of that assessment, or path or surface it left unexamined, except a path its `limitations` record as not re-inspected because an earlier assessment examined it;
-- changes from that assessment's `Base revision` to the current base that touch the change's paths or contracts, whether or not they are merged in.
-
-In `limitations`, name the assessment's head and each path you carry forward, recording that it was not re-inspected because an earlier assessment examined it, so a `clear` reads as clear for the delta on top of that assessment, and state as a gap each open gap you did not close and anything in the delta you left unexamined. A defect you notice in unchanged code is still a finding.
-
-Assess the whole change instead when no earlier assessment qualifies, as when the requirements changed or a rebase or amend left no such ancestor; when the delta rewrites most of the change or gives concrete reason to doubt the earlier coverage; or when the user asks.
+Keep snapshots at paths a later re-review can read, and write refreshed ones to new paths, so `check` can still compare the earlier assessment's. When an earlier assessment of this change exists, [delta review](delta-review.md) decides whether to review only the delta and what that covers.
 
 Stop when material requirements and surfaces are accounted for, candidates are verified or rejected, and further bounded inspection cannot plausibly reveal another merge-relevant defect. This is not omniscience or a whole-repository diagnosis claim; completeness is bounded to reasonably discoverable material defects in the assessed authority, surfaces, implementation, and proof.

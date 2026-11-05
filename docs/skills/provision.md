@@ -33,11 +33,11 @@ For a harness it has no notes for, it reads that harness's official documentatio
 
 ## What you get
 
-Up to five subagents in your harness's agent folder: `ffh-challenger`, `ffh-reviewer`, `ffh-conformance`, `ffh-evidence`, and `ffh-researcher`. On Codex and OpenCode their names use underscores. Their names, descriptions, permissions, and instructions are fixed; only the model and effort are yours. The report lists each subagent as loaded, or as written but unverified with the step that confirms it, such as a restart.
+Up to five subagents in your harness's agent folder: `ffh-challenger`, `ffh-reviewer`, `ffh-conformance`, `ffh-evidence`, and `ffh-researcher`. On Codex and OpenCode their names use underscores. Their names, descriptions, permissions, and instructions are fixed; only the model and effort are yours. The report lists each subagent as loaded, or as written but unverified with the step that confirms it, such as a restart. For each subagent you skipped or accepted with instruction-only limits, it names the limits the harness could not enforce.
 
 ## When it stops
 
-If the harness has no custom subagents or cannot set a model per subagent, Provision writes none and the skills keep their generic subagents. Without your yes it installs nothing. On a re-run, a subagent you now skip is removed after you confirm. To uninstall, ask Provision to remove its subagents: after you confirm, it deletes only its `ffh-` and `ffh_` agent files and leaves installed packages in place.
+If the harness has no custom subagents or cannot set a model per subagent, Provision writes none, removes any it wrote before once you confirm, and the skills keep their generic subagents. Without your yes it installs nothing. On a re-run, a subagent you now skip is removed after you confirm. To uninstall, ask Provision to remove its subagents: after you confirm, it deletes only its `ffh-` and `ffh_` agent files and leaves installed packages in place.
 
 ## Why it's built this way
 

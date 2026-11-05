@@ -9,6 +9,7 @@
     "./skills/workbench/construct",
     "./skills/workbench/diagnose",
     "./skills/workbench/pr",
+    "./skills/workbench/provision",
     "./skills/workbench/ticket",
     "./skills/sensemaking/ideate",
     "./skills/sensemaking/reason",

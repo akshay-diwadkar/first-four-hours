@@ -4,7 +4,13 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- Provision 1.0.0: a user-invoked Workbench skill, started with `/provision`, that sets up the suite in the harness it runs in. After you confirm, it installs the skills' Python requirements, then writes up to five `ffh-*` subagents (challenger, reviewer, conformance, evidence, researcher) on the model and effort you choose from your harness's current list, with its own recommendation and reason for each. Run it again to refresh stale model choices, or ask it to remove its subagents. It carries notes for Claude Code, Codex, and OpenCode and reads the documentation of any other harness. Skills do not yet call these subagents by name. The Claude Code and Cursor plugins now hold 15 skills.
+
 ### Changed
+
+- Router 1.0.3: its capability list includes Provision.
 
 - Blueprint 1.3.0: costs less per plan. Blueprint now walks every draft itself. It launches a fresh challenger only for a plan that:
   - creates, changes, or deletes code that runs or the configuration it reads;

@@ -86,6 +86,7 @@ Working on a project and its changes.
 - [Construct](docs/skills/construct.md): carry out a sealed Blueprint plan and verify the result. [Contract](skills/workbench/construct/SKILL.md)
 - [Diagnose](docs/skills/diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix. [Contract](skills/workbench/diagnose/SKILL.md)
 - [PR](docs/skills/pr.md): write a reviewer-oriented pull request description and open the pull request, or update its description, once you confirm it. [Contract](skills/workbench/pr/SKILL.md)
+- [Provision](docs/skills/provision.md): install the suite's Python requirements and set up its subagents on the models you choose. [Contract](skills/workbench/provision/SKILL.md)
 - [Ticket](docs/skills/ticket.md): split large work into session-sized tickets, or pick the next ready ticket and prepare it for planning. [Contract](skills/workbench/ticket/SKILL.md)
 
 ### Sensemaking

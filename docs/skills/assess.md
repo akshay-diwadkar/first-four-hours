@@ -43,7 +43,7 @@ When an evidence-backed risk beyond the change could alter the merge decision, A
 
 ## Why it's built this way
 
-**The failure it prevents.** Reviews that skim the diff, or trust green checks and the pull request's own description, let through changes that do not do what was asked or that quietly break a caller. Assess judges the change against what it was supposed to do (the request, the requirements, the repository's rules, and the behavior on the base branch) with a senior engineer's judgment, and it keeps going after the first defect.
+**The failure it prevents.** Green checks and a confident description are the most persuasive things in a pull request, and the least informative. Reviews that skim the diff, or trust green checks and the pull request's own description, let through changes that do not do what was asked or that quietly break a caller. Assess judges the change against what it was supposed to do (the request, the requirements, the repository's rules, and the behavior on the base branch) with a senior engineer's judgment, and it keeps going after the first defect.
 
 **What it refuses, and why.** It never fixes what it finds, approves, merges, or changes anything on GitHub. A reviewer that repairs code is no longer reviewing it, and a fix made straight from a review comment reopens decisions the planner owned. Pull request prose, earlier reviews, and passing tests can raise a concern but never clear one. When the same agent wrote the change, Assess hands the review to a fresh-context subagent, or says plainly that only a self-review examined it.
 

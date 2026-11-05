@@ -34,7 +34,7 @@ Router stops at the first step whose need depends on an unmade decision, an unkn
 
 ## Why it's built this way
 
-**The failure it prevents.** When the next skill is unclear, an agent either picks one and drifts, or lays out a long plan that is wrong as soon as the first result comes in. Router shows the path as far as it can be known now: the longest stretch with no open question in it, not just the next step and not the whole journey.
+**The failure it prevents.** A plan written before the first result arrives is mostly guesses dressed as steps. When the next skill is unclear, an agent either picks one and drifts, or lays out a long plan that is wrong as soon as the first result comes in. Router shows the path as far as it can be known now: the longest stretch with no open question in it, not just the next step and not the whole journey.
 
 **What it refuses, and why.** It never guesses past a step whose need depends on an unmade decision, an unknown result, or a fact not yet produced; a route that stops there is a correct answer. It never invents a step to fill the path, never runs a routed skill, and keeps no loops or history, so changed circumstances get a fresh route. Its validation can reject an unsafe or impossible route, but never adds, removes, or reorders steps, or decides where the route stops.
 

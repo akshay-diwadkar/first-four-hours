@@ -40,7 +40,7 @@ Examiner promises no predicted questions, official equivalence, or future scores
 
 ## Why it's built this way
 
-**The failure it prevents.** Generic practice questions rarely look like the real paper: the wrong question types, the wrong mark allocation, an invented format presented as official. A student who practises on them rehearses the wrong examination. Examiner grounds every paper in the examination's real syllabus, format, and marking scheme, and marks attempts against that scheme.
+**The failure it prevents.** A student can practise for months and still walk into the examination hall surprised by the paper. Generic practice questions rarely look like the real paper: the wrong question types, the wrong mark allocation, an invented format presented as official. A student who practises on them rehearses the wrong examination. Examiner grounds every paper in the examination's real syllabus, format, and marking scheme, and marks attempts against that scheme.
 
 **What it refuses, and why.** It never presents an inferred format as official; when it cannot verify the official requirements, it offers a clearly labelled approximation with its assumptions. It never copies past papers, and it promises no predicted questions, official equivalence, or future scores. It never delivers a question it has not solved and checked. It does not push the attempt, mark, and retry cycle on someone who only wants a paper.
 

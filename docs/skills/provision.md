@@ -41,7 +41,7 @@ If the harness has no custom subagents or cannot set a model per subagent, Provi
 
 ## Why it's built this way
 
-**The failure it prevents.** Several skills hand bounded work, such as a fresh challenge or an evidence lookup, to a subagent that runs on whatever model the session uses. Provision lets each of those roles run on the cheapest model and effort that still gives a quality result, and lets you refresh those choices as models change. The owner set this out in [issue #129](https://github.com/akshay-diwadkar/first-four-hours/issues/129).
+**The failure it prevents.** Not every job needs the most expensive model in the room, and paying for one on every lookup adds up quietly. Several skills hand bounded work, such as a fresh challenge or an evidence lookup, to a subagent that runs on whatever model the session uses. Provision lets each of those roles run on the cheapest model and effort that still gives a quality result, and lets you refresh those choices as models change. The owner set this out in [issue #129](https://github.com/akshay-diwadkar/first-four-hours/issues/129).
 
 **What it refuses, and why.** The skill names no model or effort. They come from your harness's current list and your choice, so its recommendations do not go stale inside the skill. It never changes a file other than its own subagent files and a virtual environment you confirm, never installs without your yes, and never reports a subagent as ready until the harness shows it loaded.
 

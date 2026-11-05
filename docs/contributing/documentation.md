@@ -64,7 +64,7 @@ Explain repository validation and testing only in `contributing/`, `reference/`,
 Brand voice fades with depth, but it does not vanish.
 
 - **Grounded story.** Pages in `getting-started/` and `concepts/`, recipe introductions and scenarios, and each skill's `## Why it's built this way` section start from a person and what is at stake for them: the 3 a.m. page, the Friday release, the review that will happen without the context. Use concrete detail from engineering life and short sentences. Use aphorisms sparingly: a line earns its place only when it carries an argument the page goes on to make. "Sharpen the axe first" is the promise these pages make to users.
-- **Practical.** The rest of each page in `skills/` says what to do and what to expect.
+- **Plain and practical.** The rest of each recipe is plain and direct and starts from the reader's problem. The rest of each page in `skills/` says what to do and what to expect.
 - **Dry and precise.** Pages in `reference/`, `troubleshooting/`, and `contributing/`.
 
 Story has limits, because it is the easiest place for a claim to slip in:

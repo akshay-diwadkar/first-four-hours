@@ -48,7 +48,7 @@ Before sealing, the challenger reads the draft the way a faithful executor with 
 
 Construct checks that the cited files have not changed since planning, then applies the steps in order. It writes the test from the cases the plan describes, each with its input, expected result, and the wrong implementation it rejects, sees it fail on today's code and pass after the change, runs the plan's verification, and compares the final diff with the plan. Its report ends with one pending item, the owner gate: the operations lead must confirm the limit suits production traffic. Nothing is committed until you decide.
 
-Without that one explicit decision about `/search/suggest`, a model working alone overnight would have settled it by accident, and Søren would have heard about the result from partners in the morning.
+Without that one explicit decision, the model working alone overnight would have limited `/search/suggest` too, and Søren would have woken to a behavior change nobody chose.
 
 ## You are done when
 

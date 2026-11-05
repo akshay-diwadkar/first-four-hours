@@ -16,7 +16,7 @@ from typing import Any
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.3.0"
+CONTRACT_VERSION = "1.4.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
@@ -93,7 +93,7 @@ class AssessError(ValueError):
 
     def diagnostic(self, *, phase: str) -> dict[str, Any]:
         if self.code == "result.target_moved":
-            action = "The base or head moved since this assessment. If it qualifies under Reassessment and stop in the assess guidance, review the delta; otherwise perform a fresh full assessment against the current exact base/head and assessed snapshots. Then seal a new assessment.md."
+            action = "The base or head moved since this assessment. If it qualifies under the delta review reference, review the delta; otherwise perform a fresh full assessment against the current exact base/head and assessed snapshots. Then seal a new assessment.md."
         elif self.category == "stale_evidence":
             action = "Perform a fresh full assessment against the current exact base/head and assessed snapshots, then seal a new assessment.md."
         elif self.category == "unsafe_state":
@@ -845,30 +845,45 @@ def _bind_locator(
     return {"kind": kind, "locator": f"{revision}:{locator['path']}#L{locator['start_line']}-L{locator['end_line']}"}
 
 
-def bind_locators(
+def bind_all_locators(
     bundle: dict[str, Any], binding: GitBinding, sources: tuple[SourceBinding, ...]
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     source_by_id = _source_map(sources)
-    return [
+    errors: list[AssessError] = []
+
+    def bind(locator: dict[str, Any], label: str) -> dict[str, str]:
+        try:
+            return _bind_locator(locator, label, binding, source_by_id)
+        except AssessError as exc:
+            if not exc.code.startswith("locator."):
+                raise
+            errors.append(exc)
+            return {}
+
+    findings = [
         {
             **finding,
             "locators": [
-                _bind_locator(locator, f"findings[{finding_index}].locators[{locator_index}]", binding, source_by_id)
+                bind(locator, f"findings[{finding_index}].locators[{locator_index}]")
                 for locator_index, locator in enumerate(finding["locators"])
             ],
         }
         for finding_index, finding in enumerate(bundle["findings"])
     ]
-
-
-def bind_examined(
-    bundle: dict[str, Any], binding: GitBinding, sources: tuple[SourceBinding, ...]
-) -> list[dict[str, str]]:
-    source_by_id = _source_map(sources)
-    return [
-        _bind_locator(locator, f"examined[{index}]", binding, source_by_id)
-        for index, locator in enumerate(bundle["examined"])
-    ]
+    examined = [bind(locator, f"examined[{index}]") for index, locator in enumerate(bundle["examined"])]
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        first = errors[0]
+        messages = tuple(error.message for error in errors)
+        raise _fail(
+            first.code,
+            f"{len(errors)} locators failed to bind: " + "; ".join(messages),
+            category=first.category,
+            path=first.path,
+            evidence=messages,
+        )
+    return findings, examined
 
 
 def _changed_paths(binding: GitBinding) -> list[str]:
@@ -1268,8 +1283,7 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
     binding = inspect_binding(root, bundle["base_ref"], bundle["head_ref"])
     destination = _canonical_output(Path(binding.repository_root), output)
     source_bindings = bind_sources(bundle, Path(binding.repository_root), destination)
-    findings = bind_locators(bundle, binding, source_bindings)
-    examined = bind_examined(bundle, binding, source_bindings)
+    findings, examined = bind_all_locators(bundle, binding, source_bindings)
     changed = _changed_paths(binding)
     unexamined = _unexamined_paths(bundle, changed)
     unnamed = _unnamed_paths(unexamined, changed, bundle["limitations"])

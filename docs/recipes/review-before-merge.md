@@ -30,8 +30,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 It is Friday afternoon. Checkout engineer Mateo Rojas's branch adds shareable shopping lists for FreshCart, from issue #40. The tests pass, the branch's notes say the feature is complete, and reviewer Yuki Tanaka has it. Approving it would take five minutes, and nobody would ask why.
 
 ```text
-/assess : Assess this branch against issue #40 and the current main branch
-before merge.
+/assess : Assess this branch against issue #40 and the current main branch before merge.
 ```
 
 Assess reads issue #40 first and works out what the change must do before it reads anyone's claims about it. It returns `findings`:
@@ -47,30 +46,23 @@ Assess reads issue #40 first and works out what the change must do before it rea
 
 - Severity: P1
 - Basis: reasoned
-- Defect: the share endpoint loads a list by its number without checking
-  that the caller owns it or holds its share link.
-- Consequence: any signed-in customer can read any other customer's list by
-  changing the number in the address.
-- Required truth: issue #40 allows a list to be opened only by its owner and
-  by people with its link.
+- Defect: the share endpoint loads a list by its number without checking that the caller owns it or holds its share link.
+- Consequence: any signed-in customer can read any other customer's list by changing the number in the address.
+- Required truth: issue #40 allows a list to be opened only by its owner and by people with its link.
 
 ### Finding 2
 
 - Severity: P1
 - Basis: reasoned
-- Defect: the migration adds the new sharing column with no default, so
-  every existing list reads as empty, and the list page treats that as an
-  error.
-- Consequence: customers with saved lists would see an error page after
-  deploy.
+- Defect: the migration adds the new sharing column with no default, so every existing list reads as empty, and the list page treats that as an error.
+- Consequence: customers with saved lists would see an error page after deploy.
 - Required truth: existing lists keep working and stay private.
 ```
 
 Assess kept going after the first finding. The second never shows up in tests, because the test database starts with no lists. A five-minute approval would have let any customer read anyone's list, and sent everyone with a saved list to an error page.
 
 ```text
-/blueprint : Plan fixes for the findings in
-.first-four-hours/assessments/shared-lists/assessment.md.
+/blueprint : Plan fixes for the findings in .first-four-hours/assessments/shared-lists/assessment.md.
 ```
 
 A new Blueprint and a fresh Construct fix both findings, and a second Assess returns `clear` for the rework on top of the first assessment: no material defect found after a sufficient look. Its report names the head the first assessment reviewed. That is still not permission to merge.
@@ -84,15 +76,12 @@ PR writes for the reviewer who skims and for the one who reads closely but only 
 ```markdown
 ## What changes if this merges
 
-Customers can share a shopping list by link. Only the owner and people
-holding the link can open it; anyone else gets "not found". Existing lists
-stay private. Closes #40.
+Customers can share a shopping list by link. Only the owner and people holding the link can open it; anyone else gets "not found". Existing lists stay private. Closes #40.
 
 ## Where to look first
 
 - The share endpoint: the owner-or-link check is the security boundary.
-- The migration: the new column defaults to not shared, so existing lists
-  keep working.
+- The migration: the new column defaults to not shared, so existing lists keep working.
 
 ## Verification
 

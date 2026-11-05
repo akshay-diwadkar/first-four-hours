@@ -1277,35 +1277,6 @@ def validate_documentation_links() -> list[str]:
     return errors
 
 
-DOC_FENCE_RE = re.compile(r"^\s*(?P<fence>`{3,}|~{3,})(?P<lang>\w*)")
-DOC_BLOCK_LINE_LIMIT = 80
-
-
-def validate_documentation_code_block_width() -> list[str]:
-    """Keep prompt and excerpt lines short enough to read without scrolling, since code blocks never wrap."""
-    errors: list[str] = []
-    documents = [ROOT / "README.md"] if (ROOT / "README.md").is_file() else []
-    if (ROOT / "docs").is_dir():
-        documents.extend(sorted((ROOT / "docs").rglob("*.md")))
-    for document in documents:
-        label = document.relative_to(ROOT).as_posix()
-        fence = lang = None
-        for number, line in enumerate(document.read_text(encoding="utf-8").splitlines(), 1):
-            match = DOC_FENCE_RE.match(line)
-            if match and (fence is None or (match["fence"] == fence and not line.strip()[len(fence):])):
-                fence, lang = (match["fence"], match["lang"]) if fence is None else (None, None)
-                continue
-            if lang not in ("text", "markdown") or len(line) <= DOC_BLOCK_LINE_LIMIT:
-                continue
-            if len(re.sub(r"^\s*(?:(?:[-*+]|\d+\.)\s+)?", "", line).split()) <= 1:
-                continue  # one unbreakable token, such as a long path or URL
-            errors.append(
-                f"{label}:{number}: line in a {lang} block is {len(line)} characters; "
-                "wrap prompts and excerpts at 76 so readers need not scroll"
-            )
-    return errors
-
-
 def _nav_entries(node: object) -> list[str]:
     """Return the page entries of a Zensical nav node, depth-first in nav order."""
     if isinstance(node, str):
@@ -1627,7 +1598,6 @@ def main() -> int:
     errors.extend(validate_changelog())
     errors.extend(validate_readme_release_link())
     errors.extend(validate_documentation_links())
-    errors.extend(validate_documentation_code_block_width())
     errors.extend(validate_docs_navigation())
     errors.extend(validate_marketplace())
     errors.extend(validate_invocation_policy(skill_dirs=skills))

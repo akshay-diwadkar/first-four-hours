@@ -18,9 +18,7 @@ Ideate researches the possibilities for a goal, compares them, and recommends a 
 Start it yourself with `/ideate`, or the agent may start it when your request matches. Blueprint may also call it while planning. For example (illustrative):
 
 ```text
-/ideate : CI takes 47 minutes and engineers have started merging without
-waiting for it. Find workable ways to get it under ten without dropping test
-coverage, and tell me which to try first.
+/ideate : CI takes 47 minutes and engineers have started merging without waiting for it. Find workable ways to get it under ten without dropping test coverage, and tell me which to try first.
 ```
 
 ## What happens

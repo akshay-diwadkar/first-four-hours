@@ -16,8 +16,7 @@ You have a sealed `blueprint.md` and want it implemented faithfully, possibly by
 Start it yourself with `/construct`, or the agent may start it when your request matches. It needs a Git worktree. For example:
 
 ```text
-/construct : Implement the sealed blueprint in
-.first-four-hours/blueprints/<task-slug>/blueprint.md.
+/construct : Implement the sealed blueprint in .first-four-hours/blueprints/<task-slug>/blueprint.md.
 ```
 
 The request is one line because the plan already made every decision.

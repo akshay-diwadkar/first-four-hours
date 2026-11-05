@@ -35,9 +35,7 @@ Size and stakes alone do not decide it. [Blueprint](../skills/blueprint.md) expl
 Near midnight, Søren Lindqvist, on call this week, watches the search graphs climb: someone is scraping FreshCart's public search endpoint. The plan has to be ready by morning, without breaking the partner integrations that call search all day, and nobody will be awake to watch the cheaper model that builds it overnight.
 
 ```text
-/blueprint : Someone is scraping FreshCart's public search endpoint. Plan
-rate limiting that stops them; existing API clients must keep working
-unchanged, and a cheaper model will build this tonight with nobody watching.
+/blueprint : Someone is scraping FreshCart's public search endpoint. Plan rate limiting that stops them; existing API clients must keep working unchanged, and a cheaper model will build this tonight with nobody watching.
 ```
 
 Blueprint asks one question: should partner API keys be exempt? That is a product choice, and the answer changes the plan, so it goes to a person: Priya Raman, FreshCart's product owner, says yes. Blueprint does not ask where the limiter should go or how to test it; it reads the middleware chain and decides. While grounding, it finds that FreshCart already has a trusted helper for the client address, and plans to reuse it instead of reading a header any client could forge.
@@ -45,8 +43,7 @@ Blueprint asks one question: should partner API keys be exempt? That is a produc
 Before sealing, the challenger reads the draft the way a faithful executor with no design authority would follow it, and notices that `/search/suggest` shares the search handler. A faithful executor would have limited it too, without anyone deciding to. The planner makes that explicit, then seals the plan in `.first-four-hours/blueprints/search-rate-limit/`. [Anatomy of a sealed blueprint](../concepts/anatomy-of-a-blueprint.md) walks through this plan section by section.
 
 ```text
-/construct : Implement the sealed blueprint in
-.first-four-hours/blueprints/search-rate-limit/blueprint.md.
+/construct : Implement the sealed blueprint in .first-four-hours/blueprints/search-rate-limit/blueprint.md.
 ```
 
 Construct checks that the cited files have not changed since planning, then applies the steps in order. It writes the test from the cases the plan describes, each with its input, expected result, and the wrong implementation it rejects, sees it fail on today's code and pass after the change, runs the plan's verification, and compares the final diff with the plan. Its report ends with one pending item, the owner gate: the operations lead must confirm the limit suits production traffic. Nothing is committed until you decide.

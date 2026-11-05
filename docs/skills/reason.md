@@ -19,9 +19,7 @@ Several skills also consult it on their own at their judgment points; [How skill
 Start it yourself with `/reason`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/reason : Everyone on the team agrees this API migration is backwards
-compatible, and that is what worries me. Challenge the claim before it
-reaches 300 integrators on Friday.
+/reason : Everyone on the team agrees this API migration is backwards compatible, and that is what worries me. Challenge the claim before it reaches 300 integrators on Friday.
 ```
 
 ## What happens

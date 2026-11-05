@@ -18,8 +18,7 @@ Provision sets up First Four Hours in the agent harness you run it in. After you
 Only you can start Provision: type `/provision`. The agent never starts it on its own, except on OpenCode, which ignores that setting. For example (illustrative):
 
 ```text
-/provision : I installed the suite in this project for Codex. Set up the
-subagents, and put the reviewer on the strongest model you list.
+/provision : I installed the suite in this project for Codex. Set up the subagents, and put the reviewer on the strongest model you list.
 ```
 
 ## What happens

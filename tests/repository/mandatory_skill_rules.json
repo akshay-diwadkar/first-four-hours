@@ -315,6 +315,13 @@
     "text": "your own re-read does not replace it"
   },
   {
+    "id": "plan.single-challenge",
+    "skill": "blueprint",
+    "source": "references/challenge-and-rehearsal.md",
+    "surface": "doctor",
+    "text": "One user request gets at most one fresh challenge"
+  },
+  {
     "id": "plan.resume-reread",
     "skill": "blueprint",
     "source": "references/challenge-and-rehearsal.md",

@@ -157,9 +157,9 @@ Run: `python -B tools/check.py`
 Expect: the final record reports an empty errors list.
 
 ## Completion Conditions
-- Absent names normalize to the empty string.
-- The greeting module exists.
-- Every repository check invocation prints checking to stderr.
+- Absent names normalize to the empty string. Shown by `python -B tools/check.py`.
+- The greeting module exists. Shown by `python -B tools/check.py`.
+- Every repository check invocation prints checking to stderr. Shown by `python -B tools/check.py`.
 """
 UNAVAILABLE_PLAN = blueprint_runtime.CONTRACT_MARKER + """
 # Blueprint: unavailable proof
@@ -192,7 +192,7 @@ Expect: the final record reports complete true.
 Incomplete: the final record reports complete false because the deadline was exhausted.
 
 ## Completion Conditions
-- The check passes.
+- The check passes. Shown by `python -B tools/deadline.py`.
 """
 
 
@@ -504,7 +504,7 @@ RED_DELETION_PLAN = (
     "**Proof run:** `git --version`\nRed: the obsolete file is still present\nExpect: prints the Git version.\n\n"
     "### 2. Add the later file\n**Location:** `later.txt`\n**State:** new\n\n**Exact:** `later.txt`\n~~~text\nlater\n~~~\n\n"
     "## Verification\n\n### After implementation\nRun: `git --version`\nExpect: prints the Git version.\n\n"
-    "## Completion Conditions\n- The obsolete file is gone.\n"
+    "## Completion Conditions\n- The obsolete file is gone. Shown by `git --version`.\n"
 )
 
 
@@ -535,7 +535,7 @@ Run: `python tests/test_overwrite.py`
 Expect: exit 0.
 
 ## Completion Conditions
-- The marker exists.
+- The marker exists. Shown by `python tests/test_overwrite.py`.
 """
 
 

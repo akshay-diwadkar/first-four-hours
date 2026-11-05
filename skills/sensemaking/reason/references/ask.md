@@ -2,7 +2,7 @@
 
 Inspect available repository, tools, policy, convention, supplied authority, and bounded evidence before asking. Never turn a derivable evidence gap into a preference question.
 
-Ask exactly one concise question containing the smallest missing user-owned fact, choice, preference, policy, permission, risk tolerance, scope, authority, or operational rule that changes the next action.
+Ask one concise question per user-owned blocker, containing the smallest missing user-owned fact, choice, preference, policy, permission, risk tolerance, scope, authority, or operational rule that changes the next action. Ask several together only when no answer could change another; otherwise ask the most upstream first.
 
 Recommend a default only when current evidence genuinely supports one; state the material consequence. Pure preference or authority choices stay neutral. Never invent user-owned policy, permission, risk, or scope.
 
@@ -18,4 +18,4 @@ Explicit user delegation such as "you decide" returns delegable judgment to the 
 
 ## Result
 
-A user-facing result is the one question or, when no question can be asked, the exact blocker, established truth, unresolved authority, and next move.
+A user-facing result is its questions or, when no question can be asked, the exact blocker, established truth, unresolved authority, and next move.

@@ -18,6 +18,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
   - Sealing now reports every bad locator at once. Assessments it seals record 1.4.0; `check` still accepts every 1.x assessment.
 - Assess 1.3.0: runs a fresh self-authored review and falsification slices on the `ffh-reviewer` subagent and a clear challenge on `ffh-challenger`, or on generic subagents as before when they are missing. Assessments it seals record 1.3.0.
 - Reason 1.2.0: runs a fresh challenge on the `ffh-challenger` subagent, or on a generic subagent as before when it is missing.
+- Reason 1.3.0: can ask you several questions in one turn when no answer could change another. Its decide branch now says which disposition its result line reports.
 - Architect 1.1.0: runs evidence workers on the `ffh-evidence` subagent, or on generic subagents as before when it is missing. Architecture handoffs it seals record 1.1.0.
 - Diagnose 1.1.0: runs evidence workers on the `ffh-evidence` subagent, or on generic subagents as before when it is missing. Diagnoses it seals record 1.1.0; Blueprint and Construct still accept every 1.x diagnosis.
 - Ideate 2.1.0: runs research workers on the `ffh-researcher` subagent, or on generic subagents as before when it is missing. Ideations it seals record 2.1.0.

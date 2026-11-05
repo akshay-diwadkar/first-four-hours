@@ -17,7 +17,7 @@ For competing causes or actions, seek the cheapest discriminator, using the matc
 
 After a failure, name the assumption it falsified, or record its cause as unknown and treat that as evidence-owned; retry only with new evidence, otherwise change to an approach that does not rest on a falsified assumption. Before a costly, high-consequence, or hard-to-reverse commitment, test the cheapest useful falsifier; when independent adversarial challenge is that falsifier, switch internally to challenge.
 
-Exit as soon as one defensible owned move exists.
+Exit as soon as one defensible owned move exists. The disposition is the first that applies: a switched-to branch's; missing evidence while an evidence-owned or irreducible blocker remains; material objection when the consulted approach rested on a named falsified assumption; otherwise no material concern.
 
 ## Evidence checks
 

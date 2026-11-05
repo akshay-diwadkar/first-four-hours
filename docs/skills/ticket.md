@@ -20,6 +20,9 @@ Only you can start Ticket: type `/ticket`. Name the effect (`persist`, `select`,
 /ticket : persist this on github: move every scheduled job off the one
 server whose crontab nobody dares edit, as tickets a single session can
 finish.
+```
+
+```text
 /ticket : select the next ready child of epic #4 on github.
 ```
 

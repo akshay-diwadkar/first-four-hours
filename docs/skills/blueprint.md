@@ -59,7 +59,10 @@ There is also a middle path: start in plan mode, and switch to Blueprint when th
 Start it yourself with `/blueprint`, or the agent may start it when your request matches. Say the outcome, the constraints, and what must not change. For example (illustrative):
 
 ```text
-/blueprint : Plan the migration that splits our 40-million-row orders table into monthly partitions without downtime. Checkout keeps writing throughout, last quarter's revenue report must match to the cent, and a cheaper model will build this overnight with nobody watching.
+/blueprint : Plan the migration that splits our 40-million-row orders table
+into monthly partitions without downtime. Checkout keeps writing throughout,
+last quarter's revenue report must match to the cent, and a cheaper model
+will build this overnight with nobody watching.
 ```
 
 ## What happens
@@ -94,7 +97,7 @@ The repository's tests prove the planning and execution mechanics with determini
 
 ## Why it's built this way
 
-**The failure it prevents.** An agent that starts editing before the decisions are made settles them halfway through, and every wrong one is paid for in rework. Blueprint settles every decision first, grounded in the real project, so that a fresh, weaker executor can carry out the plan without engineering choices of its own. Strong planning followed by cheaper execution, at quality comparable to a strong model doing everything, is the aim of the design, not a measured guarantee.
+**The failure it prevents.** "Update the callers" sounds like a plan. It is really a dozen decisions, made one at a time inside edits nobody reads until review. Plan mode writes an itinerary, and the same agent improvises around obstacles as it goes; Blueprint draws a schematic meant to let someone else, later, build without improvising. [Blueprint or plan mode](#blueprint-or-plan-mode) says when each is right. An agent that starts editing before the decisions are made settles them halfway through, and every wrong one is paid for in rework. Blueprint settles every decision first, grounded in the real project, so that a fresh, weaker executor can carry out the plan without engineering choices of its own. Strong planning followed by cheaper execution, at quality comparable to a strong model doing everything, is the aim of the design, not a measured guarantee.
 
 **What it refuses, and why.** It never builds or runs the planned change, not even in a scratch copy, and it never writes the implementation or its tests into the plan. Code the planner never ran would be untested code the executor copies. Decision-complete is not code-complete: prose by default, pseudocode only where prose cannot settle the control flow, and exact text only for textual data whose bytes are the decision, such as wording, configuration, or test data. The seal refuses exact text on a code or test file unless it is an anchored edit of at most two lines. It also refuses a completion condition that names no proof the plan authors, and a command that names a file before the step that creates it. It never asks you to choose a file, a seam, or a test, because those are its job. It does not seal until the draft has been read the way a faithful executor with no design authority would follow it: by Blueprint itself and, for a risky plan, also by a separate fresh-context challenger.
 

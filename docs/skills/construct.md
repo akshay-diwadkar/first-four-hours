@@ -16,7 +16,8 @@ You have a sealed `blueprint.md` and want it implemented faithfully, possibly by
 Start it yourself with `/construct`, or the agent may start it when your request matches. It needs a Git worktree. For example:
 
 ```text
-/construct : Implement the sealed blueprint in .first-four-hours/blueprints/<task-slug>/blueprint.md.
+/construct : Implement the sealed blueprint in
+.first-four-hours/blueprints/<task-slug>/blueprint.md.
 ```
 
 The request is one line because the plan already made every decision.
@@ -42,7 +43,7 @@ Your worktree with the change applied, and a report of the instructions, proof r
 
 ## Why it's built this way
 
-**The failure it prevents.** Ordinary implementation agents drift from instructions: they redesign while coding, take a shortcut the plan ruled out, or "improve" a decision they do not understand. Construct makes execution follow the plan reliably, so a weaker, cheaper executor can carry out a strong planner's decisions faithfully.
+**The failure it prevents.** The most dangerous executor is the helpful one: it meets a decision it does not understand, and improves it. Ordinary implementation agents drift from instructions: they redesign while coding, take a shortcut the plan ruled out, or "improve" a decision they do not understand. Construct makes execution follow the plan reliably, so a weaker, cheaper executor can carry out a strong planner's decisions faithfully.
 
 **What it refuses, and why.** It never changes the plan's method, scope, or decisions, and never edits the plan. It fixes its own coding mistakes, but when the plan disagrees with the actual code it stops with `plan-contradiction` and its evidence instead of improvising. An executor that quietly patches planning gaps has become the planner, without the planner's grounding or challenge. It keeps no state of its own, so a resumed run rereads progress from the worktree instead of trusting an earlier success message.
 

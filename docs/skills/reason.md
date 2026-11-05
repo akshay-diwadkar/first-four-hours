@@ -19,7 +19,9 @@ Several skills also consult it on their own at their judgment points; [How skill
 Start it yourself with `/reason`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/reason : Everyone on the team agrees this API migration is backwards compatible, and that is what worries me. Challenge the claim before it reaches 300 integrators on Friday.
+/reason : Everyone on the team agrees this API migration is backwards
+compatible, and that is what worries me. Challenge the claim before it
+reaches 300 integrators on Friday.
 ```
 
 ## What happens
@@ -44,7 +46,7 @@ A consultation is one pass, including when a fresh-context challenger runs it; t
 
 ## Why it's built this way
 
-**The failure it prevents.** A weaker agent does not notice its own blind spots. It commits to an approach that rests on an unchecked assumption, drifts into a side quest, or presents a result without questioning it. Reason helps it reason more like a stronger model from the facts, constraints, and goals it already has, at the moments that matter: before committing to an approach, after a failure or a change of direction, and before presenting a result.
+**The failure it prevents.** Nobody can see their own blind spot; that is what makes it one. A weaker agent does not notice its own blind spots. It commits to an approach that rests on an unchecked assumption, drifts into a side quest, or presents a result without questioning it. Reason helps it reason more like a stronger model from the facts, constraints, and goals it already has, at the moments that matter: before committing to an approach, after a failure or a change of direction, and before presenting a result.
 
 **What it refuses, and why.** It never takes over. It explains what needs reconsidering and why; the agent that consulted it owns the replacement and the work. It writes no file, starts no other skill, and never calls itself again, so a consultation cannot grow into a chain. Skills that rely on it consult it at those moments instead of only considering whether to, because an agent that cannot see its blind spot cannot judge whether it needs the check.
 

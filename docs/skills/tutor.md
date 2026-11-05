@@ -20,7 +20,10 @@ Choose by what you want; when the session shows a better fit, Tutor offers to sw
 Start it yourself with `/tutor`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
+/tutor : I study history, and I am tired of people citing Gödel to prove
+things the theorem never said. Teach me the first incompleteness theorem
+from scratch, make me build the self-referring sentence myself, then show me
+popular claims about it and have me say which ones are wrong.
 ```
 
 ## What happens
@@ -47,7 +50,7 @@ An explanation ends when it answers your question. A tutoring or continuing-lear
 
 ## Why it's built this way
 
-**The failure it prevents.** An explanation that is delivered is easily assumed to have landed. Tutor helps a weaker agent teach like a skilled tutor: find the learner's real goal and starting point, choose the explanation that makes the idea land, and check understanding instead of assuming it.
+**The failure it prevents.** "Does that make sense?" is the least useful question in teaching, because the answer is almost always yes. An explanation that is delivered is easily assumed to have landed. Tutor helps a weaker agent teach like a skilled tutor: find the learner's real goal and starting point, choose the explanation that makes the idea land, and check understanding instead of assuming it.
 
 **What it refuses, and why.** It never records taught material as understanding; only your own answers and work show what you understand, and how clear an explanation felt is not evidence. It uses no mandatory questionnaire, forces no exercises on a direct explanation, and follows no fixed teaching ritual. It never claims you have a learning style, a retention percentage, a brain-based explanation, or a percentage of understanding, because research does not support them. It uses visuals and motion only when they explain something words cannot; animations have playback controls and respect reduced-motion settings. It promises no automatic reminders.
 

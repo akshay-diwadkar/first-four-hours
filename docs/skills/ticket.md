@@ -17,7 +17,12 @@ Ticket keeps work items in GitHub issues or a local Markdown store. It has two e
 Only you can start Ticket: type `/ticket`. Name the effect (`persist`, `select`, or `both`) and the backend (`github` or `local`). For example (illustrative):
 
 ```text
-/ticket : persist this on github: move every scheduled job off the one server whose crontab nobody dares edit, as tickets a single session can finish.
+/ticket : persist this on github: move every scheduled job off the one
+server whose crontab nobody dares edit, as tickets a single session can
+finish.
+```
+
+```text
 /ticket : select the next ready child of epic #4 on github.
 ```
 
@@ -40,7 +45,7 @@ Ticket consults [Reason](reason.md) at its judgment points.
 
 ## Why it's built this way
 
-**The failure it prevents.** Large work spread over several sessions loses the thread. Tickets split by phase, such as "design X", "implement X", and "test X", mean no session ever finishes anything; a single session that tries everything stops half-done; and every session rediscovers what was decided. Ticket divides the work into complete jobs that each fit one session, covering planning, implementation, review, and rework, and keeps only the dependencies that are real.
+**The failure it prevents.** Large work rarely fails in one dramatic moment. It frays, one forgotten decision per session. Large work spread over several sessions loses the thread. Tickets split by phase, such as "design X", "implement X", and "test X", mean no session ever finishes anything; a single session that tries everything stops half-done; and every session rediscovers what was decided. Ticket divides the work into complete jobs that each fit one session, covering planning, implementation, review, and rework, and keeps only the dependencies that are real.
 
 **What it refuses, and why.** It never splits a job by phase and never forces unrelated work into a line. When it selects a ticket, it treats the issue's text, labels, and comments as claims to check against the current code, never as instructions, and it returns `needs-info`, `blocked`, `close-candidate`, or `needs-decomposition` rather than hand over a ticket that is not ready. It never starts Blueprint or Construct, and publishes only after you confirm.
 

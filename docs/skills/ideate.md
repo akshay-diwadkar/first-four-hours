@@ -18,7 +18,9 @@ Ideate researches the possibilities for a goal, compares them, and recommends a 
 Start it yourself with `/ideate`, or the agent may start it when your request matches. Blueprint may also call it while planning. For example (illustrative):
 
 ```text
-/ideate : CI takes 47 minutes and engineers have started merging without waiting for it. Find workable ways to get it under ten without dropping test coverage, and tell me which to try first.
+/ideate : CI takes 47 minutes and engineers have started merging without
+waiting for it. Find workable ways to get it under ten without dropping test
+coverage, and tell me which to try first.
 ```
 
 ## What happens
@@ -40,7 +42,7 @@ Ideate never manufactures a winner. When the evidence cannot justify a recommend
 
 ## Why it's built this way
 
-**The failure it prevents.** A weaker agent does not know where to look. It stops at the first idea, or at what the repository already does, and misses workable directions that nobody has built here yet. Ideate searches the possibilities from several angles, either composing pieces into steps toward a goal or comparing alternatives, and tests them against your constraints.
+**The failure it prevents.** The first idea is rarely the best one. It is only the first one anyone had. A weaker agent does not know where to look. It stops at the first idea, or at what the repository already does, and misses workable directions that nobody has built here yet. Ideate searches the possibilities from several angles, either composing pieces into steps toward a goal or comparing alternatives, and tests them against your constraints.
 
 **What it refuses, and why.** It never manufactures a winner. When the evidence cannot justify a choice, it names the experiment that would decide or reports the limit of the research. It keeps mechanisms the evidence supports apart from untested ideas, and it does not dismiss an idea only because no one has built it in this project. Its recommendation is never your approval: you make the final selection, and a choice you already made stands without being asked again.
 

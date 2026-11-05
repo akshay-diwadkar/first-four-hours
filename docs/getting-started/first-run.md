@@ -1,5 +1,7 @@
 # Your first run
 
+Pick the bug you have stopped mentioning in stand-up: the one that shows up twice a month, vanishes when anyone looks, and has a workaround everyone quietly applies. That is a good first problem.
+
 Try one skill on a real problem in your own project. This page uses Diagnose because it reads your project without editing it, starts only when you name it, and leaves a file you can open. Install the skills first: see [Install First Four Hours](installation.md).
 
 ## Start Diagnose
@@ -9,7 +11,8 @@ You start a skill by name with `/name : request`, the form these pages use. If y
 For example (illustrative):
 
 ```text
-/diagnose : The nightly export writes an empty file about twice a month, still exits 0, and works when we rerun it by hand. Find out why.
+/diagnose : The nightly export writes an empty file about twice a month,
+still exits 0, and works when we rerun it by hand. Find out why.
 ```
 
 Replace the request with a real problem from your project. Diagnose traces the symptom through the project and runs only probes that change nothing. It asks before using shared or billable resources or production data, and it never edits the project.
@@ -33,7 +36,8 @@ Nothing starts on its own; you decide:
 - Plan a fix for one finding with Blueprint, then carry out the sealed plan with [Construct](../skills/construct.md). For example (illustrative):
 
     ```text
-    /blueprint : Plan a fix for finding <finding-id> in .first-four-hours/diagnoses/<slug>/diagnosis.md.
+    /blueprint : Plan a fix for finding <finding-id> in
+    .first-four-hours/diagnoses/<slug>/diagnosis.md.
     ```
 
 - Explore options first with [Ideate](../skills/ideate.md).
@@ -42,7 +46,10 @@ Nothing starts on its own; you decide:
 If you want to learn a subject rather than change code, start with [Tutor](../skills/tutor.md) instead. For example (illustrative):
 
 ```text
-/tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
+/tutor : I study history, and I am tired of people citing Gödel to prove
+things the theorem never said. Teach me the first incompleteness theorem
+from scratch, make me build the self-referring sentence myself, then show me
+popular claims about it and have me say which ones are wrong.
 ```
 
 ## How skills start

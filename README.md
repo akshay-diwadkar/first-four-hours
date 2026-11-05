@@ -10,7 +10,11 @@
 
 > "Give me six hours to chop down a tree, and I will spend the first four sharpening the axe."
 
-Coding agents are supposed to save time. You ask for a change; the agent writes the code, runs the tests, and says it is done. Then you find the missed requirement, the decision it quietly reopened, the caller the fix broke. You explain the context again and review another patch. Those are the lost hours: the time spent turning work that looks finished into work you can trust.
+Coding agents are supposed to save time. You ask for a change. The agent writes the code, runs the tests, and says it is done.
+
+Then you find the missed requirement. The decision it quietly reopened. The caller the fix broke. You explain the context again, review another patch, and stop trusting the word "done".
+
+Those are the lost hours: the time spent turning work that looks finished into work you can trust.
 
 First Four Hours is a suite of skills for coding agents. Each skill helps an agent do one job properly before it moves on: find the real cause, settle the plan, carry the plan out faithfully, or check the result that matters. Use one skill for one job, and combine skills only when the work needs it. Small tasks stay light.
 
@@ -39,7 +43,9 @@ In Cursor, you can install the same suite as a plugin; [Install as a Cursor plug
 Start a skill on a real problem by naming it in your agent's chat. For example (illustrative):
 
 ```text
-/diagnose : About one invoice in 4,000 comes out exactly one cent short, only on the first of the month, and re-running the job gives the right total. Nobody has touched billing in a year. Find out why.
+/diagnose : About one invoice in 4,000 comes out exactly one cent short,
+only on the first of the month, and re-running the job gives the right
+total. Nobody has touched billing in a year. Find out why.
 ```
 
 [Your first run](docs/getting-started/first-run.md) shows what a skill leaves behind and how each skill starts.
@@ -49,13 +55,30 @@ Start a skill on a real problem by naming it in your agent's chat. For example (
 Say what is actually going wrong, what is at stake, and what must not break. For example (illustrative):
 
 ```text
-/reason : Everyone on the team agrees this API migration is backwards compatible, and that is what worries me. Challenge the claim before it reaches 300 integrators on Friday.
+/reason : Everyone on the team agrees this API migration is backwards
+compatible, and that is what worries me. Challenge the claim before it
+reaches 300 integrators on Friday.
+```
 
-/blueprint : Plan the migration that splits our 40-million-row orders table into monthly partitions without downtime. Checkout keeps writing throughout, last quarter's revenue report must match to the cent, and a cheaper model will build this overnight with nobody watching.
+```text
+/blueprint : Plan the migration that splits our 40-million-row orders table
+into monthly partitions without downtime. Checkout keeps writing throughout,
+last quarter's revenue report must match to the cent, and a cheaper model
+will build this overnight with nobody watching.
+```
 
-/scribe : It is 3 a.m., the on-call engineer has never seen this service, and the one person who knows how to deploy it leaves on Friday. Write a deployment runbook from our docker-compose file and deploy scripts, with nothing in it that does not trace to a source.
+```text
+/scribe : It is 3 a.m., the on-call engineer has never seen this service,
+and the one person who knows how to deploy it leaves on Friday. Write a
+deployment runbook from our docker-compose file and deploy scripts, with
+nothing in it that does not trace to a source.
+```
 
-/tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
+```text
+/tutor : I study history, and I am tired of people citing Gödel to prove
+things the theorem never said. Teach me the first incompleteness theorem
+from scratch, make me build the self-referring sentence myself, then show me
+popular claims about it and have me say which ones are wrong.
 ```
 
 ## Start from the problem
@@ -72,6 +95,8 @@ Say what is actually going wrong, what is at stake, and what must not break. For
 [Choose a skill](docs/getting-started/choosing-a-skill.md) covers more situations.
 
 ## The skills
+
+Each skill helps an agent do one job properly, so the next step has something solid to stand on.
 
 Every skill belongs to one of three domains. The domains only group the list: choose a skill by the task in front of you. Each name links to the skill's page; each contract link opens the `SKILL.md` its agent follows.
 

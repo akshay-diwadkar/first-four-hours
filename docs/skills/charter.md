@@ -18,7 +18,9 @@ Charter turns a rough ambition for an app, project, or large idea into one agree
 Only you can start Charter: type `/charter`. The agent never starts it on its own. For example (illustrative):
 
 ```text
-/charter : A friend's yarn shop tracks 2,000 skeins in a paper notebook only the owner can read, and every reorder is a guess. I want an app that replaces it, and I cannot yet say what done looks like.
+/charter : A friend's yarn shop tracks 2,000 skeins in a paper notebook only
+the owner can read, and every reorder is a guess. I want an app that
+replaces it, and I cannot yet say what done looks like.
 ```
 
 ## What happens
@@ -41,7 +43,7 @@ Charter stops in `settling` when the purpose has no observable success yet, or w
 
 ## Why it's built this way
 
-**The failure it prevents.** A project that starts from a rough idea gets split into tickets and built before anyone has agreed what it is for. Later, no one can say whether a piece of work serves the project, because the destination lives in someone's head or an old conversation. Charter turns the ambition into one agreed, resumable definition that a fresh session can judge work against without reconstructing the conversation.
+**The failure it prevents.** Ask five people what a project is for, a month in, and you get five sincere answers. A project that starts from a rough idea gets split into tickets and built before anyone has agreed what it is for. Later, no one can say whether a piece of work serves the project, because the destination lives in someone's head or an old conversation. Charter turns the ambition into one agreed, resumable definition that a fresh session can judge work against without reconstructing the conversation.
 
 **What it refuses, and why.** It never records a recommendation, or your silence, as agreement: every agreed item traces to your words, a sourced fact, or your explicit confirmation. It never treats the current code as the destination; for an existing project, the code is evidence for a direction you confirm. It never creates tickets or starts implementation, because publishing a definition and splitting it into work are separate decisions. Only you can start it, because only you can say what the project is for.
 

@@ -1,12 +1,18 @@
 # How the suite works
 
+A coding agent is a quick, willing newcomer on its first day, every day. It knows a great deal and nothing about the meeting where your team agreed what must not break. The suite is how the things that matter get written down, carried forward, and checked.
+
 ## A skill is more than a prompt
+
+You have probably pasted the careful paragraph before: check every caller, never touch the migration, ask before deleting anything. It works for a while. Then the conversation grows, the paragraph scrolls out of view, and the agent behaves as if it was never there.
 
 A prompt snippet is text you paste into a conversation and hope the agent follows. A skill is a package the agent loads when a task calls for it. Its `SKILL.md` states the outcome and the rules. Its references hold detail the agent reads only when that part of the work comes up. Many skills also ship scripts that check mechanical facts, such as whether a handoff has the required shape and still matches the files it was based on. The scripts check; the agent still does the thinking.
 
 A skill is not a mandatory workflow either. Each skill can be used on its own. A skill that consumes another skill's output says so: for example, `construct` carries out a sealed plan that `blueprint` produced. Some skills start automatically when the agent recognizes a matching task, and others start only when you invoke them by name. [The reference](../reference/README.md) lists each skill's invocation mode.
 
 ## Use the smallest skill that helps
+
+Process has a price, and it is paid on every task it touches, including the ones that never needed it. A ceremony around a one-line fix is not care; it is another way to lose an hour.
 
 Start from the task or the problem in front of you, not from how the suite is organized. Ask what is most likely to cost you time later, and reach for the skill that addresses it. A clear, small request may need no skill at all.
 
@@ -21,11 +27,15 @@ When the next step is unclear, or the work spans several skills, `router` lays o
 
 ## Composition is optional
 
+Sessions end. Context fills up. The agent that understood your problem at noon is gone by evening, and the one that replaces it starts from nothing. Files don't forget.
+
 Skills hand work to each other through files, not through your conversation history. A skill that hands work on writes it to its own folder under `.first-four-hours/` at the repository root, which Git ignores, so a later agent or session can pick it up. Deliverables you asked for stay in your project as ordinary files: for example, a document from `scribe`, or the Learning skills' lesson records and practice papers under `.learning/`.
 
 Starting a separate skill on a handoff is your decision: a handoff makes the next step possible, but never starts it. Some skills do bring in another skill within their own run, as their contract describes. For example, `blueprint` may ask `ideate` for options while planning, and the direction remains your choice; several skills also consult `reason` at judgment points. [How skills hand work to each other](handoffs.md) describes each real handoff.
 
 ## How the suite is organized
+
+A map helps you understand the ground. It does not tell you where to walk.
 
 Every skill belongs to one of three domains. The domains help you understand the suite; they are not a step in choosing a skill. Choose by task first.
 

@@ -1,6 +1,6 @@
 # First Four Hours documentation
 
-These pages are for people who use First Four Hours. The skills themselves are instructions for coding agents; this documentation explains what they are for and how they fit together.
+These pages are for the people who will still own the work after the agent says it is done. If that is you, start with [why the suite exists](concepts/why-first-four-hours.md). The skills themselves are instructions for coding agents; this documentation explains what they are for and how they fit together.
 
 ## Get started
 

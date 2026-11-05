@@ -18,7 +18,9 @@ Diagnose investigates a concrete problem, risk, or improvement opportunity and f
 Only you can start Diagnose: type `/diagnose`. The agent never starts it on its own. For example (illustrative):
 
 ```text
-/diagnose : About one invoice in 4,000 comes out exactly one cent short, only on the first of the month, and re-running the job gives the right total. Nobody has touched billing in a year. Find out why.
+/diagnose : About one invoice in 4,000 comes out exactly one cent short,
+only on the first of the month, and re-running the job gives the right
+total. Nobody has touched billing in a year. Find out why.
 ```
 
 ## What happens
@@ -35,9 +37,9 @@ Diagnose is complete only when its `diagnosis.md` is sealed. When the evidence c
 
 ## Why it's built this way
 
-**The failure it prevents.** When the cause is unknown, agents patch the place where the symptom shows, or answer with generic advice such as "add caching" or "raise the timeout", and the problem returns somewhere else. Diagnose investigates with a senior diagnostic specialist's depth: it traces the symptom through the project and explains what each piece of evidence establishes and how it connects to the symptom.
+**The failure it prevents.** The symptom is where a bug is noticed, which is rarely where it lives. When the cause is unknown, agents patch the place where the symptom shows, or answer with generic advice such as "add caching" or "raise the timeout", and the problem returns somewhere else. Diagnose investigates with a senior diagnostic specialist's depth: it traces the symptom through the project and explains what each piece of evidence establishes and how it connects to the symptom.
 
-**What it refuses, and why.** It never edits the project and never chooses a fix. Its advisory directions are leads, not a recommendation, a design, or a plan. An investigation that is also allowed to fix tends to stop at the first plausible cause. It never states a cause more strongly than the evidence supports: a cause is `demonstrated` only when executed evidence shows that changing it moves the effect, and documentation or another project's incident can support a mechanism but never prove this project's cause. When evidence is missing, it names what is missing instead of guessing. Only you start it, and you decide what follows.
+**What it refuses, and why.** An investigation that is also allowed to fix tends to stop at the first plausible cause. It never edits the project and never chooses a fix. Its advisory directions are leads, not a recommendation, a design, or a plan. It never states a cause more strongly than the evidence supports: a cause is `demonstrated` only when executed evidence shows that changing it moves the effect, and documentation or another project's incident can support a mechanism but never prove this project's cause. When evidence is missing, it names what is missing instead of guessing. Only you start it, and you decide what follows.
 
 **Floor and ceiling.** A weaker agent must back every finding with current, inspectable evidence and explain what each citation shows, because a citation alone explains nothing. A stronger agent chooses its own techniques, probes, and version-specific documentation, and widens the investigation when the evidence earns it.
 

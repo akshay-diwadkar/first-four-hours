@@ -19,7 +19,11 @@ Architect decides a structural question about a codebase before anyone plans the
 Start it yourself with `/architect`, or the agent may start it when your request matches. For example (illustrative):
 
 ```text
-/architect : I inherited this repository and everyone calls it a mess, but nobody can say what to fix first, and I do not know software design. Look through it for technical debt in how it is organized, tell me the one problem that costs us the most, and decide how to fix it. If the structure is actually fine, say so. Explain it in plain words.
+/architect : I inherited this repository and everyone calls it a mess, but
+nobody can say what to fix first, and I do not know software design. Look
+through it for technical debt in how it is organized, tell me the one
+problem that costs us the most, and decide how to fix it. If the structure
+is actually fine, say so. Explain it in plain words.
 ```
 
 ## What happens
@@ -36,7 +40,7 @@ Architect can end with a blocker instead of a design when evidence or a policy o
 
 ## Why it's built this way
 
-**The failure it prevents.** When nobody has decided where a responsibility lives, each agent decides on its own, and the codebase grows a second cache, a third retry helper, or a parallel pipeline. Each one looks reasonable in its own diff. Architect makes the structural decision once, with experienced engineering judgment, so the plans that follow build on it instead of guessing.
+**The failure it prevents.** Open any codebase old enough and you will find two ways to do the same thing, each added by someone who could not see the other. When nobody has decided where a responsibility lives, each agent decides on its own, and the codebase grows a second cache, a third retry helper, or a parallel pipeline. Each one looks reasonable in its own diff. Architect makes the structural decision once, with experienced engineering judgment, so the plans that follow build on it instead of guessing.
 
 **What it refuses, and why.** It never prescribes file-level edits, migration order, or tests. Those belong to Blueprint, and a decision that also plans the change cannot be challenged as a plan. It does not add patterns for their own sake: the simplest structure that meets the goal wins, and "no design change" is a complete answer.
 

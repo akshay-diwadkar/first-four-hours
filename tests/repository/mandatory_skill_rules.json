@@ -340,7 +340,7 @@
     "skill": "blueprint",
     "source": "references/planning-contract.md",
     "surface": "doctor",
-    "text": "so an authored command writes nothing in the worktree or `.git`"
+    "text": "so an authored command writes no Git-visible or plan-bound content and nothing in `.git`"
   },
   {
     "id": "pr.confirmed-publication",

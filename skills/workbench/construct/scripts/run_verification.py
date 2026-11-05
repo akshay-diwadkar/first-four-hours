@@ -3,8 +3,9 @@
 Stateless Construct runner: validates the sealed Blueprint (full establishment
 at phase `before`, authority checks otherwise), executes exactly the requested
 authored commands with timeout, process-tree cleanup, and a mutation guard that
-binds the Git index and all worktree content, including ignored entries (bytes,
-size, mode, kind), and returns each command's full output. Phase `after` first
+binds the Git index, HEAD, Git-visible content (nested repositories and submodules
+listed by their own Git), and plan-bound paths, ignored or not (bytes, size, mode,
+kind), never observing other Git-ignored content, and returns each command's full output. Phase `after` first
 proves every Exact/Frozen block. `prove` observes one instruction's declared red
 or its bounded green attempts, then names the next in-run action; `status` derives
 resume progress from the sealed plan and current worktree. A repair-only `reverify` selection
@@ -24,7 +25,7 @@ import stat
 import subprocess
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Sequence
 
 import blueprint_runtime
@@ -184,33 +185,40 @@ def _entry_identity(root: Path, relative: str) -> dict[str, Any]:
     return {"kind": "file", "sha256": digest, "size": metadata.st_size, "mode": mode}
 
 
-def _worktree_fingerprint(root: Path) -> dict[str, dict[str, Any]]:
-    """Observe ignored content too, without traversing Git metadata or links."""
-    entries: dict[str, dict[str, Any]] = {}
+def _git_visible(root: Path, prefix: str) -> set[str]:
+    """List Git-visible paths under prefix, recursing into nested repositories with their own Git."""
+    listed = _checked_git_bytes(root / prefix, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ".")
+    names: set[str] = set()
+    for raw in listed.split(b"\0"):
+        if not raw:
+            continue
+        name = os.fsdecode(raw)
+        if name.endswith("/"):
+            name = name[:-1]
+        name = prefix + name
+        names.add(name)
+        if _entry_identity(root, name)["kind"] == "directory" and os.path.lexists(root / name / ".git"):
+            names |= _git_visible(root, name + "/")
+    return names
 
-    def failed(error: OSError) -> None:
-        raise error
 
+def _guarded_fingerprint(root: Path, bound: frozenset[str]) -> dict[str, dict[str, Any]]:
+    """Observe the Git-visible and plan-bound content the guard binds; other ignored content is never read."""
     try:
-        for current, directories, files in os.walk(root, followlinks=False, onerror=failed):
-            for name in directories[:] + files:
-                if name.casefold() == ".git":
-                    if name in directories:
-                        directories.remove(name)
-                    continue
-                relative = (Path(current) / name).relative_to(root).as_posix()
-                identity = _entry_identity(root, relative)
-                if identity["kind"] == "absent":
-                    raise OSError(f"worktree entry disappeared during observation: {relative}")
-                entries[relative] = identity
-                if name in directories and identity["kind"] != "directory":
-                    directories.remove(name)
+        return {name: _entry_identity(root, name) for name in sorted(_git_visible(root, "") | bound)}
     except OSError as exc:
         raise ConstructError("workspace.snapshot_unavailable", str(exc), category="unsafe_state") from exc
-    return entries
 
 
-def _workspace_observation(root: Path) -> dict[str, Any]:
+def _plan_bound_paths(root: Path, path: Path, blueprint: blueprint_runtime.Blueprint) -> frozenset[str]:
+    """Locations, Sources, and this task's workspace files: guarded even when Git ignores them."""
+    bound = {PurePosixPath(item.path).as_posix() for item in (*blueprint.locations, *blueprint.sources)}
+    bound.add(path.relative_to(root).as_posix())
+    bound.add(path.with_name("request.md").relative_to(root).as_posix())
+    return frozenset(bound)
+
+
+def _workspace_observation(root: Path, bound: frozenset[str]) -> dict[str, Any]:
     entries = _git_dirty_entries(root)
     try:
         dirty = [{"path": path, "status": entries[path], **_entry_identity(root, path)} for path in sorted(entries)]
@@ -218,7 +226,7 @@ def _workspace_observation(root: Path) -> dict[str, Any]:
         raise ConstructError("workspace.snapshot_unavailable", str(exc), category="unsafe_state") from exc
     return {
         "git_head": _git_head(root),
-        "worktree_sha256": _sha256(_canonical_json(_worktree_fingerprint(root)).encode("utf-8", errors="surrogateescape")),
+        "worktree_sha256": _sha256(_canonical_json(_guarded_fingerprint(root, bound)).encode("utf-8", errors="surrogateescape")),
         "dirty": dirty,
     }
 
@@ -827,11 +835,12 @@ def _load(repo_root: Path, blueprint_path: Path) -> tuple[Path, Path, str, bytes
 
 
 def _run_guarded(
-    root: Path, step: blueprint_runtime.VerificationStep, results: list[dict[str, Any]], phase: str
+    root: Path, bound: frozenset[str], step: blueprint_runtime.VerificationStep, results: list[dict[str, Any]], phase: str
 ) -> dict[str, Any]:
     """Execute one authored command under the timeout and mutation guard; append its full result."""
     index_before = _git_index_sha256(root)
-    content_before = _worktree_fingerprint(root)
+    head_before = _git_head(root)
+    content_before = _guarded_fingerprint(root, bound)
     _receipt, summary = _execute_exact_step(step, root)
     results.append(_result_entry(summary))
     partial = {"verification": {"phase": phase, "results": results, "notices": _notices(results)}}
@@ -845,13 +854,14 @@ def _run_guarded(
         )
     try:
         index_after = _git_index_sha256(root)
+        head_after = _git_head(root)
         _git_dirty_entries(root)
-        content_after = _worktree_fingerprint(root)
+        content_after = _guarded_fingerprint(root, bound)
     except ConstructError as exc:
         results[-1]["passed"] = False
         exc.result = partial
         raise
-    if index_before != index_after or content_before != content_after:
+    if index_before != index_after or head_before != head_after or content_before != content_after:
         results[-1]["passed"] = False
         changed_paths = sorted(path for path in content_before.keys() | content_after.keys() if content_before.get(path) != content_after.get(path))
         raise ConstructError(
@@ -860,7 +870,7 @@ def _run_guarded(
             category="unsafe_state",
             evidence=[json.dumps(summary["step"], sort_keys=True)],
             result=partial,
-            details={"changed_paths": changed_paths, "index_changed": index_before != index_after},
+            details={"changed_paths": changed_paths, "index_changed": index_before != index_after, "head_changed": head_before != head_after},
             valid_repairs=(
                 "Stop as safety-contradiction and preserve unrelated work, including the changed paths. Outside this run, "
                 "the caller establishes a trusted state with explicit authority, then takes this authored command, "
@@ -975,8 +985,9 @@ def run_verification(
     steps = [step for step in blueprint.verification if step.phase == authored_phase]
     steps = _selected_steps(steps, from_line)
     results: list[dict[str, Any]] = []
+    bound = _plan_bound_paths(root, path, blueprint)
     for step in steps:
-        summary = _run_guarded(root, step, results, phase)
+        summary = _run_guarded(root, bound, step, results, phase)
         partial = {"verification": {"phase": phase, "results": results, "notices": _notices(results)}}
         outcome = _outcome(summary)
         if outcome == "unavailable":
@@ -1035,7 +1046,7 @@ def run_verification(
             "phase": phase,
             "results": results,
             "notices": _notices(results),
-            "workspace": _workspace_observation(root),
+            "workspace": _workspace_observation(root, bound),
         }
     }
 
@@ -1118,7 +1129,7 @@ def prove(repo_root: Path, blueprint_path: Path, number: int, check: str, attemp
                     root, path, step, found, _prove_command(root, path, number, "red", attempt), red_pending=True
                 ),
             )
-        summary = _run_guarded(root, step.proof, results, f"instruction {number} red")
+        summary = _run_guarded(root, _plan_bound_paths(root, path, blueprint), step.proof, results, f"instruction {number} red")
         proof["result"] = results[-1]
         proof["notices"] = _notices(results)
         outcome = _outcome(summary)
@@ -1203,7 +1214,7 @@ def prove(repo_root: Path, blueprint_path: Path, number: int, check: str, attemp
     found = _mismatches(assessment, [block for block in step.blocks if block.kind == "exact"]) + _deletion_mismatches(view, [step])
     passed = not found
     if step.proof is not None:
-        summary = _run_guarded(root, step.proof, results, f"instruction {number} green")
+        summary = _run_guarded(root, _plan_bound_paths(root, path, blueprint), step.proof, results, f"instruction {number} green")
         proof["result"] = results[-1]
         proof["notices"] = _notices(results)
         outcome = _outcome(summary)
@@ -1455,6 +1466,7 @@ def status(
         _validate_attempt(attempt)
     root, path, text, request_bytes, view = _load(repo_root, blueprint_path)
     blueprint = _authority_blueprint(text, root, request_bytes, view)
+    bound = _plan_bound_paths(root, path, blueprint)
     if instruction is not None:
         _instruction(blueprint, instruction)
     match = blueprint_runtime.PROOF_RE.search(text)
@@ -1512,7 +1524,7 @@ def status(
             )
         passing = not found
         if passing and step.proof is not None:
-            outcome = _outcome(_run_guarded(root, step.proof, results, f"instruction {step.number} status"))
+            outcome = _outcome(_run_guarded(root, bound, step.proof, results, f"instruction {step.number} status"))
             entry["result"] = results[-1]
             progress["notices"] = _notices(results)
             if outcome == "unavailable":

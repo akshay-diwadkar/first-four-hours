@@ -4,6 +4,8 @@ Read this when [challenge details](challenge.md) puts a challenge pass in fresh 
 
 ## Brief
 
+When the harness has an `ffh-challenger` agent (or `ffh_challenger`) that launches, launch the challenger as that agent; otherwise launch a generic subagent.
+
 Launch one separate subagent with fresh context. Give it only the exact target (the proposal, result, or claim and the action it could change); the authoritative request, requirements, and settled decisions, or pointers to them; the evidence pointers and source identity the target rests on; [challenge details](challenge.md); its scope and exclusions; and read-only authority. Never give it your transcript, reasoning, self-assessment, or a conclusion to confirm: say what to read, not what to find. It runs this one challenge pass itself, launches no subagent, and stops at one disposition.
 
 ## Return and consumption

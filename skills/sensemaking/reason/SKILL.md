@@ -2,7 +2,7 @@
 name: reason
 description: "Consult at every judgment checkpoint: before committing to an approach, after a failure or direction change, and before presenting a result. Also unblocks decisions, challenges consequential claims, or asks irreducible user-owned questions. Skip only mechanical work with nothing left to judge."
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # Reason

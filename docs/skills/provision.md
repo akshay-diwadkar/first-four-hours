@@ -49,7 +49,7 @@ If the harness has no custom subagents or cannot set a model per subagent, Provi
 
 ## Related skills
 
-Blueprint, Reason, Assess, Construct, Architect, Diagnose, and Ideate delegate the kinds of work these subagents are for, but they do not yet call them by name. See [How skills hand work to each other](../concepts/handoffs.md).
+Blueprint, Reason, Assess, Construct, Architect, Diagnose, and Ideate use these subagents by name for the work each is for, and a generic subagent, as before, when one is missing. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

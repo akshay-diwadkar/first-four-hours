@@ -12,7 +12,7 @@ A draft is **elevated** when it shows any of these, and **standard** otherwise:
 - an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service);
 - a change to Blueprint's or Construct's seal runtime.
 
-A Location changing only a skill version (`metadata.version` or a declaration validation checks against it) raises no signal. Read these signals from the draft, never from how easy the work seems; one you cannot rule out counts. The tier alone decides whether the fresh challenge runs; run it on a model at least as capable as the planner when models are selectable.
+A Location changing only a skill version (`metadata.version` or a declaration validation checks against it) raises no signal. Read these signals from the draft, never from how easy the work seems; one you cannot rule out counts. The tier alone decides whether the fresh challenge runs; run it as the harness's `ffh-challenger` agent (or `ffh_challenger`) when it has one that launches, otherwise on a model at least as capable as the planner when models are selectable.
 
 ## One fresh challenge
 

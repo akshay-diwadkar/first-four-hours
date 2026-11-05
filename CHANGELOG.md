@@ -6,10 +6,17 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Added
 
-- Provision 1.0.0: a user-invoked Workbench skill, started with `/provision`, that sets up the suite in the harness it runs in. After you confirm, it installs the skills' Python requirements, then writes up to five `ffh-*` subagents (challenger, reviewer, conformance, evidence, researcher) on the model and effort you choose from your harness's current list, with its own recommendation and reason for each. Run it again to refresh stale model choices, or ask it to remove its subagents. It carries notes for Claude Code, Codex, and OpenCode and reads the documentation of any other harness. Skills do not yet call these subagents by name. The Claude Code and Cursor plugins now hold 15 skills.
+- Provision 1.0.0: a user-invoked Workbench skill, started with `/provision`, that sets up the suite in the harness it runs in. After you confirm, it installs the skills' Python requirements, then writes up to five `ffh-*` subagents (challenger, reviewer, conformance, evidence, researcher) on the model and effort you choose from your harness's current list, with its own recommendation and reason for each. Run it again to refresh stale model choices, or ask it to remove its subagents. It carries notes for Claude Code, Codex, and OpenCode and reads the documentation of any other harness. The Claude Code and Cursor plugins now hold 15 skills.
 
 ### Changed
 
+- Blueprint 1.4.0: runs exploration questions that only read and search files on the `ffh-evidence` subagent Provision writes, and the fresh challenge on `ffh-challenger`, whose model is then the one you chose in Provision rather than one at least as capable as the planner. This entry and the six after it, through Ideate 2.1.0, also find the `ffh_` names Codex and OpenCode use, and treat a listed subagent that fails to launch as missing. Without these subagents, Blueprint delegates as before. It seals plans with contract version 1.4.0 and ships the Architect 1.1.0 handoff verifier.
+- Construct 1.4.0: runs an earned conformance review on the `ffh-conformance` subagent, or on a generic subagent as before when it is missing. It ships the Blueprint 1.4.0 runtime copy, so it reports contract version 1.4.0, and still accepts every sealed 1.x plan.
+- Assess 1.3.0: runs a fresh self-authored review and falsification slices on the `ffh-reviewer` subagent and a clear challenge on `ffh-challenger`, or on generic subagents as before when they are missing. Assessments it seals record 1.3.0.
+- Reason 1.2.0: runs a fresh challenge on the `ffh-challenger` subagent, or on a generic subagent as before when it is missing.
+- Architect 1.1.0: runs evidence workers on the `ffh-evidence` subagent, or on generic subagents as before when it is missing. Architecture handoffs it seals record 1.1.0.
+- Diagnose 1.1.0: runs evidence workers on the `ffh-evidence` subagent, or on generic subagents as before when it is missing. Diagnoses it seals record 1.1.0; Blueprint and Construct still accept every 1.x diagnosis.
+- Ideate 2.1.0: runs research workers on the `ffh-researcher` subagent, or on generic subagents as before when it is missing. Ideations it seals record 2.1.0.
 - Router 1.0.3: its capability list includes Provision.
 
 - Blueprint 1.3.0: costs less per plan. Blueprint now walks every draft itself. It launches a fresh challenger only for a plan that:

@@ -100,7 +100,7 @@ Expect: exits 0 with no failures; the existing search tests pass unchanged.
 - Owner gate: the operations lead confirms that 60 requests a minute suits production traffic.
 ```
 
-**Why it's there.** Verification is a list of exact commands, each with the result it must show. Construct runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so. Each command only reads: Construct stops one that writes anything inside the worktree, caches included, which is why the example turns pytest's cache off with `-p no:cacheprovider`.
+**Why it's there.** Verification is a list of exact commands, each with the result it must show. Construct runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so. Construct stops a command that changes a tracked file, an untracked file Git does not ignore, the Git index, HEAD, or any file the plan names, even an ignored one. It never reads through a directory link, and output Git ignores, such as a tool cache, never stops a run.
 
 Completion conditions state outcomes, not tasks. The Goal summarizes the approach and what must stay true; the concrete outcomes, each ending with the command whose result shows it, appear only here, so a condition no check can show stands out as a missing check. The last one starts with `Owner gate:` because no command can settle it; a person has to. Construct lists it as pending for its owner and never claims it.
 

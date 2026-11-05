@@ -600,9 +600,19 @@ def test_verification_guards_visible_and_bound_content_only(tmp_path: Path, caps
     assert "phase=after" in payload["proof"]["next_command"]["argv"]
     assert "Confirm instruction 2 realizes its sealed behavior" in payload["proof"]["required_action"]
     # Ignored, uncited output is never observed: rewriting it passes, beside a deleted tracked file and, on POSIX, a FIFO.
+    # Content reached through a directory link is never observed either, even when the Run first populates the folder.
     with (repo / ".git" / "info" / "exclude").open("a", encoding="utf-8") as exclude:
         exclude.write(".first-four-hours/\n")
     _write(repo, "scratch/existing.txt", "initial")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = repo / "ext"
+    if os.name == "nt":
+        import _winapi
+
+        _winapi.CreateJunction(str(outside), str(link))
+    else:
+        os.symlink(outside, link, target_is_directory=True)
     assert _porcelain_status(repo, "seed.txt") == " M"
     assert _porcelain_status(repo, "scratch") == ""
     sentinel_before = (repo / "seed.txt").read_bytes()
@@ -610,31 +620,56 @@ def test_verification_guards_visible_and_bound_content_only(tmp_path: Path, caps
     fifo = repo / "scratch" / "fifo"
     if hasattr(os, "mkfifo"):
         os.mkfifo(fifo)
+    _write(repo, "tests/test_overwrite.py", (
+        "from pathlib import Path\n"
+        "Path('scratch/existing.txt').write_text('changed', encoding='utf-8')\n"
+        "Path('ext/new.txt').write_text('new', encoding='utf-8')\n"
+    ))
     code, payload = _run_phase(capsys, repo, blueprint, "after")
     if hasattr(os, "mkfifo"):
         fifo.unlink()
     assert code == 0, payload
     assert [item["passed"] for item in payload["verification"]["results"]] == [True]
+    assert (outside / "new.txt").read_text(encoding="utf-8") == "new"
+    assert not any(item["path"].startswith("ext/") for item in payload["verification"]["workspace"]["dirty"])
+    (outside / "new.txt").unlink()
     assert (repo / "scratch/existing.txt").read_text(encoding="utf-8") == "changed"
     assert (repo / "seed.txt").read_bytes() == sentinel_before
     assert subprocess.run(["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"], cwd=repo, capture_output=True, check=True).stdout == git_before
-    # A Git-visible write and a moved HEAD still stop, naming only the guarded path.
+    if os.name == "nt":
+        os.rmdir(link)
+    else:
+        link.unlink()
+    # A Run that only moves HEAD still stops, with no changed path, and recovery carries head_changed.
     _write(repo, "tests/test_overwrite.py", (
-        "import subprocess\nfrom pathlib import Path\n"
-        "Path('visible.txt').write_text('visible', encoding='utf-8')\n"
+        "import subprocess\n"
         "subprocess.run(['git', 'commit', '--allow-empty', '-qm', 'probe'], check=True)\n"
     ))
     code, payload = _run_phase(capsys, repo, blueprint, "after")
     diagnostic = payload["diagnostics"][0]
     assert (code, diagnostic["code"]) == (3, "verification.mutated_workspace")
-    assert diagnostic["details"]["changed_paths"] == ["visible.txt"]
+    assert diagnostic["details"]["changed_paths"] == []
     assert diagnostic["details"]["head_changed"] is True and diagnostic["details"]["index_changed"] is False
     # The stop names its authored command and routes recovery to a Blueprint amendment, never an unchanged rerun.
     assert diagnostic["category"] == "unsafe_state"
     assert any("tests/test_overwrite.py" in item for item in diagnostic["supporting_evidence"])
     assert "Blueprint amendment" in diagnostic["required_action"]
     assert "preserve unrelated work" in diagnostic["required_action"]
+    assert "head_changed" in diagnostic["required_action"]
     assert payload["result"]["verification"]["results"][0]["passed"] is False
+    # A rewritten clean tracked file and a new untracked file still stop, naming exactly those paths.
+    obsolete_bytes_before = (repo / "obsolete.txt").read_bytes()
+    _write(repo, "tests/test_overwrite.py", (
+        "from pathlib import Path\n"
+        "Path('obsolete.txt').write_text('rewritten', encoding='utf-8')\n"
+        "Path('visible.txt').write_text('visible', encoding='utf-8')\n"
+    ))
+    code, payload = _run_phase(capsys, repo, blueprint, "after")
+    diagnostic = payload["diagnostics"][0]
+    assert (code, diagnostic["code"]) == (3, "verification.mutated_workspace")
+    assert diagnostic["details"]["changed_paths"] == ["obsolete.txt", "visible.txt"]
+    assert diagnostic["details"]["head_changed"] is False
+    (repo / "obsolete.txt").write_bytes(obsolete_bytes_before)
     (repo / "visible.txt").unlink()
     # A nested repository is listed by its own Git: its visible file is guarded, its own ignored build output is not.
     (repo / "nested").mkdir()

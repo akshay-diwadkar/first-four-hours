@@ -165,6 +165,24 @@ def _git_dirty_entries(root: Path) -> dict[str, str]:
     return entries
 
 
+def _is_link(metadata: os.stat_result) -> bool:
+    return bool(stat.S_ISLNK(metadata.st_mode) or stat.S_ISDIR(metadata.st_mode) and getattr(metadata, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
+def _under_link(root: Path, relative: str, cache: dict[str, bool]) -> bool:
+    """Whether any proper ancestor of the root-relative path is a symlink or junction."""
+    for ancestor in reversed(PurePosixPath(relative.rstrip("/")).parents[:-1]):
+        key = ancestor.as_posix()
+        if key not in cache:
+            try:
+                cache[key] = _is_link((root / key).lstat())
+            except FileNotFoundError:
+                cache[key] = False
+        if cache[key]:
+            return True
+    return False
+
+
 def _entry_identity(root: Path, relative: str) -> dict[str, Any]:
     path = root / relative
     try:
@@ -172,7 +190,7 @@ def _entry_identity(root: Path, relative: str) -> dict[str, Any]:
     except FileNotFoundError:
         return {"kind": "absent", "sha256": None, "size": None, "mode": None}
     mode = stat.S_IMODE(metadata.st_mode)
-    if stat.S_ISLNK(metadata.st_mode) or stat.S_ISDIR(metadata.st_mode) and getattr(metadata, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+    if _is_link(metadata):
         value = os.readlink(path)
         data = os.fsencode(value)
         return {"kind": "symlink", "sha256": _sha256(data), "size": len(data), "mode": mode}
@@ -185,8 +203,10 @@ def _entry_identity(root: Path, relative: str) -> dict[str, Any]:
     return {"kind": "file", "sha256": digest, "size": metadata.st_size, "mode": mode}
 
 
-def _git_visible(root: Path, prefix: str) -> set[str]:
-    """List Git-visible paths under prefix, recursing into nested repositories with their own Git."""
+def _git_visible(root: Path, prefix: str, *, cache: dict[str, bool] | None = None) -> set[str]:
+    """List Git-visible paths under prefix, recursing into nested repositories with their own Git,
+    never following a directory link."""
+    cache = {} if cache is None else cache
     listed = _checked_git_bytes(root / prefix, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ".")
     names: set[str] = set()
     for raw in listed.split(b"\0"):
@@ -196,9 +216,15 @@ def _git_visible(root: Path, prefix: str) -> set[str]:
         if name.endswith("/"):
             name = name[:-1]
         name = prefix + name
+        if _under_link(root, name, cache):
+            continue
         names.add(name)
-        if _entry_identity(root, name)["kind"] == "directory" and os.path.lexists(root / name / ".git"):
-            names |= _git_visible(root, name + "/")
+        try:
+            metadata = (root / name).lstat()
+        except FileNotFoundError:
+            continue
+        if not _is_link(metadata) and stat.S_ISDIR(metadata.st_mode) and os.path.lexists(root / name / ".git"):
+            names |= _git_visible(root, name + "/", cache=cache)
     return names
 
 
@@ -219,14 +245,20 @@ def _plan_bound_paths(root: Path, path: Path, blueprint: blueprint_runtime.Bluep
 
 
 def _workspace_observation(root: Path, bound: frozenset[str]) -> dict[str, Any]:
+    fingerprint = _guarded_fingerprint(root, bound)
     entries = _git_dirty_entries(root)
+    cache: dict[str, bool] = {}
     try:
-        dirty = [{"path": path, "status": entries[path], **_entry_identity(root, path)} for path in sorted(entries)]
+        dirty = [
+            {"path": path, "status": entries[path], **(fingerprint[path] if path in fingerprint else _entry_identity(root, path))}
+            for path in sorted(entries)
+            if not _under_link(root, path, cache)
+        ]
     except OSError as exc:
         raise ConstructError("workspace.snapshot_unavailable", str(exc), category="unsafe_state") from exc
     return {
         "git_head": _git_head(root),
-        "worktree_sha256": _sha256(_canonical_json(_guarded_fingerprint(root, bound)).encode("utf-8", errors="surrogateescape")),
+        "worktree_sha256": _sha256(_canonical_json(fingerprint).encode("utf-8", errors="surrogateescape")),
         "dirty": dirty,
     }
 
@@ -874,7 +906,7 @@ def _run_guarded(
             valid_repairs=(
                 "Stop as safety-contradiction and preserve unrelated work, including the changed paths. Outside this run, "
                 "the caller establishes a trusted state with explicit authority, then takes this authored command, "
-                "changed_paths, and index_changed to a Blueprint amendment; never rerun this sealed plan unchanged.",
+                "changed_paths, index_changed, and head_changed to a Blueprint amendment; never rerun this sealed plan unchanged.",
             ),
         )
     return summary

@@ -77,7 +77,7 @@ Say what is actually going wrong, what is at stake, and what must not break. For
 
 ## The skills
 
-Each skill is one job done properly, so the next step has something solid to stand on.
+Each skill helps an agent do one job properly, so the next step has something solid to stand on.
 
 Every skill belongs to one of three domains. The domains only group the list: choose a skill by the task in front of you. Each name links to the skill's page; each contract link opens the `SKILL.md` its agent follows.
 

@@ -26,7 +26,7 @@ When the next skill is unclear, an agent either picks one and drifts into a side
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Priya Raman wants Larder to send order updates by text message as well as by email. Nobody can tell yet whether that starts with a decision, a plan, or a ticket.
+Priya Raman, Larder's product owner, wants Larder to send order updates by text message as well as by email. Nobody can tell yet whether that starts with a decision, a plan, or a ticket.
 
 ```text
 Larder needs to send order updates by text message as well as email, and I cannot tell whether that starts with a decision, a plan, or a ticket. Work out which skills I need, and in what order.

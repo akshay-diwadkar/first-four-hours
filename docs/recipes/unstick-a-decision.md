@@ -26,7 +26,7 @@ An agent that cannot decide keeps gathering context, or commits to an approach t
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run.*
 
-Priya Raman wants Larder's order numbers to be impossible to guess, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings. Everyone nods. Amara Okafor, who reads customer emails all day, is less sure.
+Priya Raman, Larder's product owner, wants Larder's order numbers to be impossible to guess, so the plan is to switch from counting numbers to random IDs. The proposal says the switch is safe, because the API already returns order IDs as strings. Everyone nods. Amara Okafor, who reads customer emails all day, is less sure.
 
 ```text
 /reason : The proposal says switching Larder's order IDs from counting numbers to random IDs is safe because the API already returns them as strings. Challenge that claim on behalf of existing customers.

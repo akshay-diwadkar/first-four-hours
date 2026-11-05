@@ -26,7 +26,7 @@ Large work spread over several sessions loses the thread: each session rediscove
 
 *Illustrative: Larder is a made-up project, and this is not a recorded run. Excerpts are shortened.*
 
-Larder runs its scheduled work from a crontab on one server, and Søren Lindqvist is the only person who remembers why each line is there. Moving it to a job queue is too big for one session, and too important to leave in one person's head.
+Larder runs its scheduled work from a crontab on one server, and Søren Lindqvist, Larder's platform engineer, is the only person who remembers why each line is there. Moving it to a job queue is too big for one session, and too important to leave in one person's head.
 
 ```text
 /ticket : persist the move of Larder's scheduled jobs from one server's crontab to a job queue on github, as tickets a single session can finish.

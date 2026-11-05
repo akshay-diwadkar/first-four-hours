@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.2.1"
+CONTRACT_VERSION = "1.3.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -3502,6 +3502,106 @@ def _executable_text_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
     return diagnostics
 
 
+COMPLETION_ITEM_RE = re.compile(r"^(?:[-*] |\d+\. )")
+EXACT_REFERENCE_RE = re.compile(r"step (\d+)['’]s Exact text")
+
+
+def _completion_proof_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
+    """Refuse a Completion Condition that names no proof the plan authors (seal and check only)."""
+    lines = blueprint.text.split("\n")
+    fenced = _fenced_indexes(lines)
+    _names, spans, _shape = _section_spans(lines, fenced)
+    if "Completion Conditions" not in spans:
+        return []
+    start, end = spans["Completion Conditions"]
+    items: list[tuple[int, list[str]]] = []
+    for index in range(start, end):
+        raw = lines[index]
+        if not raw.strip():
+            continue
+        if not items or (index not in fenced and COMPLETION_ITEM_RE.match(raw)):
+            items.append((index + 1, [raw]))
+        else:
+            items[-1][1].append(raw)
+    commands = {step.argv for step in blueprint.verification}
+    commands.update(step.proof.argv for step in blueprint.steps if step.proof is not None)
+    exact_steps = {step.number for step in blueprint.steps if any(block.kind == "exact" for block in step.blocks)}
+    diagnostics: list[Diagnostic] = []
+    for line, parts in items:
+        text = " ".join(" ".join(parts).split())
+        if COMPLETION_ITEM_RE.sub("", text, count=1).startswith("Owner gate:"):
+            continue
+        if "Shown by" not in text:
+            diagnostics.append(_error(
+                "completion.proof_missing",
+                f"Completion condition on line {line} names no proof.",
+                "End it with Shown by and the exact backticked Run or Proof run command, or step N's Exact text, "
+                "or start it with Owner gate:.",
+                line=line,
+            ))
+            continue
+        reference = text.rsplit("Shown by", 1)[1].lstrip()
+        known = False
+        if reference.startswith("`"):
+            span = reference[1:].split("`", 1)
+            if len(span) == 2:
+                try:
+                    known = tuple(shlex.split(span[0], posix=True)) in commands
+                except ValueError:
+                    known = False
+        else:
+            match = EXACT_REFERENCE_RE.match(reference)
+            known = match is not None and int(match.group(1)) in exact_steps
+        if not known:
+            diagnostics.append(_error(
+                "completion.proof_unknown",
+                f"Completion condition on line {line} names proof the plan does not author.",
+                "Name an authored Run or Proof run command verbatim, or step N's Exact text of a step that declares one.",
+                line=line,
+            ))
+    return diagnostics
+
+
+def _normalized_target(token: str) -> str:
+    value = token.split("::", 1)[0].replace("\\", "/")
+    while value.startswith("./"):
+        value = value[2:]
+    return value
+
+
+def _phase_target_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
+    """Refuse a command naming a planned-new path before the step that creates it (seal and check only)."""
+    created: dict[str, int] = {}
+    for step in blueprint.steps:
+        for location in step.locations:
+            if location.state == "new":
+                created.setdefault(_normalized_target(location.path), step.number)
+    diagnostics: list[Diagnostic] = []
+
+    def check(command: VerificationStep, after_step: int | None) -> None:
+        for token in command.argv:
+            path = _normalized_target(token)
+            creator = created.get(path)
+            if creator is None or (after_step is not None and creator <= after_step):
+                continue
+            diagnostics.append(_error(
+                "verification.target.absent",
+                f"Command on line {command.line} names {path}, which step {creator} creates later.",
+                f"Run it only after step {creator}, or name an existing target.",
+                path=path,
+                line=command.line,
+            ))
+            return
+
+    for command in blueprint.verification:
+        if command.phase == "Before implementation":
+            check(command, None)
+    for step in blueprint.steps:
+        if step.proof is not None:
+            check(step.proof, step.number)
+    return diagnostics
+
+
 def validate_draft(
     text: str, repo_root: Path, *, view: RepositoryView | None = None, **_kwargs: Any
 ) -> ValidationResult:
@@ -3516,6 +3616,8 @@ def validate_draft(
     diagnostics.extend(_deletion_diagnostics(blueprint, repository))
     diagnostics.extend(_block_sequence_diagnostics(blueprint, repository))
     diagnostics.extend(_executable_text_diagnostics(blueprint))
+    diagnostics.extend(_completion_proof_diagnostics(blueprint))
+    diagnostics.extend(_phase_target_diagnostics(blueprint))
     return ValidationResult(blueprint if not diagnostics else None, tuple(diagnostics), repository)
 
 
@@ -3561,6 +3663,8 @@ def build_proof(
     diagnostics.extend(_deletion_diagnostics(blueprint, view))
     diagnostics.extend(_block_sequence_diagnostics(blueprint, view))
     diagnostics.extend(_executable_text_diagnostics(blueprint))
+    diagnostics.extend(_completion_proof_diagnostics(blueprint))
+    diagnostics.extend(_phase_target_diagnostics(blueprint))
     if diagnostics:
         _raise(diagnostics)
     source = request_source or detect_request_source(request_bytes, repo_root=view.repo_root)

@@ -46,8 +46,8 @@ Run: `python tests/test_names.py`
 Expect: exit 0 and the absent-name case passes.
 
 ## Completion Conditions
-- Absent names normalize to the requested empty value.
-- Present names and unrelated callers are unchanged.
+- Absent names normalize to the requested empty value. Shown by `python tests/test_names.py`.
+- Present names and unrelated callers are unchanged. Shown by `python tests/test_names.py`.
 """
 
 

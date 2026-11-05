@@ -48,7 +48,7 @@ Three skills produce work that Blueprint can plan from, and you decide whether t
 Blueprint brings in other help within its own run, not as separate stages:
 
 - It asks [Ideate](../skills/ideate.md) for options only when no viable solution is apparent or the evidence cannot rank the directions. You make the final selection unless you already chose or delegated it.
-- A separate fresh-context subagent challenges the draft before sealing. Without one, Blueprint does not seal.
+- Blueprint attacks its own draft before sealing. A risky plan also gets one separate fresh-context challenger, and without one Blueprint does not seal that plan.
 
 ## Reason checkpoints
 

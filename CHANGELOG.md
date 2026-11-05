@@ -4,6 +4,18 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Changed
+
+- Blueprint 1.3.0: costs less per plan. Blueprint now walks every draft itself. It launches a fresh challenger only for a plan that:
+  - creates, changes, or deletes code that runs or the configuration it reads;
+  - changes a time or size budget, or could use up the room left under one;
+  - spreads to other skills or packages;
+  - has irreversible or outward-facing effects; or
+  - changes the seal runtime.
+
+  A request gets at most one challenger and is never rechallenged. When repairs after that challenge would replace a plan's basis, Blueprint stops without sealing and names the failing premise. The seal now refuses a completion condition that names no proof the plan authors, and a command that names a file before the step that creates it.
+- Construct 1.2.2: ships the Blueprint 1.3.0 runtime copy, so it reports contract version 1.3.0. It still accepts every sealed 1.x plan.
+
 ## [2.1.0] - 2026-11-02
 
 ### Added

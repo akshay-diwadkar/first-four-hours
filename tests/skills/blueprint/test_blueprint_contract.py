@@ -92,8 +92,8 @@ def draft(*, risks: bool = False, source: str = "src/names.py:1-3") -> str:
             "Expect: exit 0 and the absent-name case passes.",
             "",
             "## Completion Conditions",
-            "- The absent name normalizes to the requested empty value.",
-            "- Present names and unrelated callers are unchanged.",
+            "- The absent name normalizes to the requested empty value. Shown by `python -m pytest -q tests/test_names.py`.",
+            "- Present names and unrelated callers are unchanged. Shown by `python -m pytest -q tests/test_names.py`.",
         ]
     )
     if risks:
@@ -249,6 +249,30 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     # rather than binding to the earlier Run.
     between = draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "Run: `python -m pytest -q tests/test_names.py`\nIncomplete: deadline exhausted\nExpect: exit 0.\n", 1)
     assert "verification.incomplete.orphan" in codes(between, tmp_path)
+    # Every Completion Condition names proof the plan authors, or is an owner gate.
+    shown = " Shown by `python -m pytest -q tests/test_names.py`."
+    no_proof = draft().replace(shown + "\n- Present", ".\n- Present", 1)
+    assert codes(no_proof, tmp_path) == {"completion.proof_missing"}
+    assert codes(draft().replace(shown, " Shown by `python -m pytest -q tests/test_other.py`.", 1), tmp_path) == {"completion.proof_unknown"}
+    owner_gate = draft().replace("## Completion Conditions\n", "## Completion Conditions\n- Owner gate: the maintainer confirms the wording.\n", 1)
+    assert runtime.validate_draft(owner_gate, tmp_path).valid
+    exact_condition = "## Completion Conditions\n- The seam edit is applied. Shown by step 1's Exact text.\n"
+    assert runtime.validate_draft(proved.replace("## Completion Conditions\n", exact_condition, 1), tmp_path).valid
+    assert codes(draft().replace("## Completion Conditions\n", exact_condition, 1), tmp_path) == {"completion.proof_unknown"}
+    # A column-0 list line inside a fenced block continues its condition rather than starting one.
+    fenced_condition = "## Completion Conditions\n- The listing shows the expected names:\n```text\n- alpha\n```\nShown by `python -m pytest -q tests/test_names.py`.\n"
+    assert runtime.validate_draft(draft().replace("## Completion Conditions\n", fenced_condition, 1), tmp_path).valid
+    unproven_listing = draft().replace("- Present names and unrelated callers are unchanged. Shown by `python -m pytest -q tests/test_names.py`.\n", "- Unproven listing:\n```text\n- alpha\n```\n", 1)
+    assert codes(unproven_listing, tmp_path) == {"completion.proof_missing"}
+    # A command never names a file before the step that creates it.
+    baseline = draft().replace("### After implementation\n", "### Before implementation\nRun: `python -m pytest -q tests/test_names.py`\nExpect: exit 0.\n\n### After implementation\n", 1)
+    assert codes(baseline, tmp_path) == {"verification.target.absent"}
+    early_proof = draft().replace(STEP_ONE_STATE, STEP_ONE_STATE + "\n**Proof run:** `python -m pytest -q tests/test_names.py::test_absent`\nExpect: 1 passed.\n", 1)
+    assert codes(early_proof, tmp_path) == {"verification.target.absent"}
+    # Sealed plans are never re-judged by these seal-only checks.
+    for sealed_shape in (no_proof, early_proof):
+        assert not {item.code for item in runtime.parse_blueprint(sealed_shape)[1]
+                    if item.code.startswith(("completion.", "verification.target."))}
     # A planned deletion seals against an existing regular file.
     (tmp_path / "src" / "retired.py").write_text("RETIRED = True\n", encoding="utf-8")
     deleted = "**Location:** `src/retired.py`\n**State:** deleted\n"
@@ -267,6 +291,12 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
         runtime.seal_blueprint(tmp_path, request, draft_file)
     named = [item for item in getattr(refused.value, "diagnostics", ()) if item.code == "source.deleted"]
     assert len(named) == 1 and named[0].path == "./src/retired.py" and "./src/retired.py" in named[0].message
+    # The seal itself, which check shares, refuses unproven conditions and commands naming a later-created file.
+    for refused_text, code in ((no_proof, "completion.proof_missing"), (early_proof, "verification.target.absent")):
+        draft_file.write_text(refused_text, encoding="utf-8")
+        with pytest.raises(ValueError) as refused:
+            runtime.seal_blueprint(tmp_path, request, draft_file)
+        assert code in {item.code for item in getattr(refused.value, "diagnostics", ())}
     # A Source reaching the deleted file through a directory link is the same file and is refused too.
     alias = tmp_path / "alias"
     if sys.platform == "win32":

@@ -37,11 +37,12 @@ Deliverables you asked for are not handoffs and stay committable: Scribe's docum
 
 ## Inputs to planning
 
-Three skills produce work that Blueprint can plan from, and you decide whether to start it:
+Four skills produce work that Blueprint can plan from, and you decide whether to start it:
 
 - [Diagnose](../skills/diagnose.md) finds causes. Name one finding when you ask Blueprint to plan a fix, or ask Architect first when that fix needs a structural decision. Diagnose's advisory directions are leads, not a chosen design.
 - [Architect](../skills/architect.md) decides structure. Blueprint plans around that decision instead of reopening it.
 - [Ticket](../skills/ticket.md) `select` narrows one ready ticket into a `plan-ready` scope.
+- [Assess](../skills/assess.md) reviews a change. When its result is `findings`, Blueprint plans the repair from the sealed `assessment.md`: every finding, or only the ones you name.
 
 ## Inside a Blueprint run
 

@@ -6,7 +6,7 @@ Sealing appends two generated HTML-comment receipts as the final two lines, afte
 
 The proof is the settled downstream contract; Construct consumes it without guessing:
 
-- `binding` — `repository_id` (non-empty string), `git_head` (null or 40/64-char lowercase hex; provenance only, never compared for freshness), `request_sha256` (64-hex), and `source_item` (diagnosis handoffs only);
+- `binding` — `repository_id` (non-empty string), `git_head` (null or 40/64-char lowercase hex; provenance only, never compared for freshness), `request_sha256` (64-hex), and `source_item` (diagnosis and assessment handoffs only: the finding ID, or ascending comma-joined finding numbers);
 - `locations` — for `state: "existing"` or `state: "deleted"`, exactly `path`, `symbol` (when authored), `state`, and `sha256` of the exact worktree bytes; for `state: "new"`, exactly `path` and `state`;
 - `sources` — exactly `path` and `sha256` per declared decision-critical source.
 

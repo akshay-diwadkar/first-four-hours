@@ -57,6 +57,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- Ticket 1.0.1: no longer declares the unused `tree-sitter` packages, so it needs no extra Python packages and `/provision` no longer installs them. Scopes it seals record 1.0.1.
 - Ideate 2.1.1: the sealer no longer refuses a subheading that starts like a required heading, such as `### What to do before choosing`, or a suggested follow-up containing a word like "reconstruct". It now refuses a `run an experiment first` ideation with no decisive-experiment line, a decisive-experiment line with no action before its first `;`, and an `Obvious defaults` line that reads not applicable, as the ideation contract already required. Ideations it seals record 2.1.1.
 
 ## [2.1.0] - 2026-11-02

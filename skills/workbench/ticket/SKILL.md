@@ -3,7 +3,7 @@ name: ticket
 description: Persist work items to GitHub or a local store, or select one ready ticket and narrow it into a Blueprint handoff. Use when a request spans several major changes that need session-sized, dependency-ordered tickets, or when choosing the next ready ticket to plan.
 disable-model-invocation: true
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Ticket

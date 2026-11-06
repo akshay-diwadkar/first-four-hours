@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.4.0"
+CONTRACT_VERSION = "1.5.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -71,8 +71,9 @@ RECEIPT_PREFIX_RE = re.compile(r"<!--\s*blueprint-(?:proof|validation)\b", re.IG
 DIAGNOSIS_HANDOFF_VERSION = "1.0.0"
 ARCHITECTURE_HANDOFF_VERSION = "1.0.0"
 TICKET_SCOPE_HANDOFF_VERSION = "1.0.0"
+ASSESSMENT_HANDOFF_VERSION = "1.4.0"
 HANDOFF_RECEIPT_RE = re.compile(
-    r"^<!-- (?P<marker>diagnosis|architecture|ticket-scope): "
+    r"^<!-- (?P<marker>diagnosis|architecture|ticket-scope|assessment-result): "
     r"(?P<version>[^;\s]+); sha256: (?P<digest>[0-9a-f]{64}) -->$"
 )
 CANONICAL_HANDOFF_MARKER_RE = re.compile(
@@ -80,8 +81,9 @@ CANONICAL_HANDOFF_MARKER_RE = re.compile(
     re.IGNORECASE,
 )
 HANDOFF_LIKE_RE = re.compile(r"^<!-- [^>]*handoff[^>]*-->$", re.IGNORECASE)
+ASSESSMENT_MARKER_RE = re.compile(r"^<!--\s*assessment-result\b", re.IGNORECASE)
 RECEIPT_SHAPED_RE = re.compile(
-    r"^<!--\s*(?:diagnosis|architecture|ticket-scope|optimization)"
+    r"^<!--\s*(?:diagnosis|architecture|ticket-scope|optimization|assessment-result)"
     r"(?:\s*:\s*\d+(?:\.\d+)*\s*(?:;|-->)|(?=\s|:)[^\n]*\bsha256\b)",
     re.IGNORECASE,
 )
@@ -3060,7 +3062,7 @@ def _proof_binding_diagnostics(binding: Any) -> list[Diagnostic]:
         diagnostics.append(
             _error(
                 "proof.binding.source_item",
-                "Blueprint proof source_item must be a non-empty diagnosis finding ID.",
+                "Blueprint proof source_item must be a non-empty selected finding ID or finding list.",
                 "Use the exact output from seal_blueprint.py.",
                 category="stale_evidence",
             )
@@ -3262,8 +3264,13 @@ def detect_request_source(
     *,
     repo_root: Path | None = None,
     check_sources: bool = True,
+    assessments: bool = True,
 ) -> dict[str, Any]:
-    """Verify the repository's existing typed handoff envelope."""
+    """Verify the repository's existing typed handoff envelope.
+
+    With ``assessments`` false, assessment receipts count as no receipt, so a
+    request resolves as it did before assessment handoffs existed.
+    """
     try:
         text = request_bytes.decode("utf-8")
     except UnicodeDecodeError as exc:
@@ -3273,6 +3280,8 @@ def detect_request_source(
     final = final.rstrip("\r")
     body = head + "\n" if footer_separator else ""
     match = HANDOFF_RECEIPT_RE.fullmatch(final)
+    if not assessments and match is not None and match.group("marker") == "assessment-result":
+        match = None
     cleaned = _clean_architecture_view(text)
     has_raw = _has_unquoted_architecture_raw(cleaned)
     has_source = _has_unquoted_architecture_source(cleaned)
@@ -3330,9 +3339,10 @@ def detect_request_source(
         raw_lines = text.split("\n")
         if (
             CANONICAL_HANDOFF_MARKER_RE.match(first)
-            or RECEIPT_SHAPED_RE.match(final)
+            or (RECEIPT_SHAPED_RE.match(final) and (assessments or not ASSESSMENT_MARKER_RE.match(final)))
             or any(
                 (receipt := HANDOFF_RECEIPT_RE.fullmatch(line.rstrip("\r"))) is not None
+                and (assessments or receipt.group("marker") != "assessment-result")
                 and _sha256("".join(previous + "\n" for previous in raw_lines[:index]).encode("utf-8"))
                 == receipt.group("digest")
                 for index, line in enumerate(raw_lines)
@@ -3343,7 +3353,9 @@ def detect_request_source(
                 "A typed handoff receipt must be the exact final line; reseal the handoff with its producing skill.",
             )
         if handoff_item is not None:
-            raise _request_error("handoff.item.unexpected", "handoff_item is valid only for diagnosis handoffs.")
+            raise _request_error(
+                "handoff.item.unexpected", "handoff_item is valid only for diagnosis and assessment handoffs."
+            )
         if HANDOFF_LIKE_RE.fullmatch(first) or (HANDOFF_LIKE_RE.fullmatch(final) and "sha256:" in final):
             raise _request_error(
                 "handoff.marker.unsupported", "The request uses an unknown or unsupported handoff marker."
@@ -3357,12 +3369,13 @@ def detect_request_source(
     if not footer_separator:
         raise _request_error("handoff.receipt.malformed", "Typed handoff content is missing before its receipt.")
     marker = match.group("marker")
-    kind = "issue" if marker == "ticket-scope" else marker
+    kind = {"ticket-scope": "issue", "assessment-result": "assessment"}.get(marker, marker)
     version = match.group("version")
     expected_version = {
         "diagnosis": DIAGNOSIS_HANDOFF_VERSION,
         "architecture": ARCHITECTURE_HANDOFF_VERSION,
         "issue": TICKET_SCOPE_HANDOFF_VERSION,
+        "assessment": ASSESSMENT_HANDOFF_VERSION,
     }[kind]
     if not compatible_version(version, expected_version):
         raise _request_error(
@@ -3371,8 +3384,10 @@ def detect_request_source(
         )
     if _sha256(body.encode("utf-8")) != match.group("digest"):
         raise _request_error("handoff.receipt.stale", "Typed handoff receipt does not match its content.")
-    if kind != "diagnosis" and handoff_item is not None:
-        raise _request_error("handoff.item.unexpected", "handoff_item is valid only for diagnosis handoffs.")
+    if kind not in {"diagnosis", "assessment"} and handoff_item is not None:
+        raise _request_error(
+            "handoff.item.unexpected", "handoff_item is valid only for diagnosis and assessment handoffs."
+        )
     selected: str | None = None
     if kind == "architecture" and check_sources:
         try:
@@ -3395,6 +3410,32 @@ def detect_request_source(
         selected = handoff_item or findings[0]
         if selected not in findings:
             raise _request_error("handoff.item.unknown", f"Diagnosis does not contain finding {selected!r}.")
+    elif kind == "assessment":
+        lines = body.splitlines()
+        result_value = None
+        for index, line in enumerate(lines):
+            if line.strip() == "## Result":
+                following = next((item.strip() for item in lines[index + 1:] if item.strip()), "")
+                token = re.fullmatch(r"`([^`]*)`", following)
+                result_value = token.group(1) if token else None
+                break
+        numbers = re.findall(r"^### Finding (\d+)\s*$", body, re.MULTILINE)
+        if result_value != "findings" or not numbers:
+            raise _request_error(
+                "handoff.not_actionable", "Only an assessment whose result is findings has findings to plan."
+            )
+        if handoff_item is None:
+            chosen = list(numbers)
+        else:
+            chosen = []
+            for piece in (part.strip() for part in handoff_item.split(",")):
+                if not piece or piece not in numbers or piece in chosen:
+                    raise _request_error(
+                        "handoff.item.unknown",
+                        f"Assessment selection piece {piece!r} is empty, repeated, or not a finding number.",
+                    )
+                chosen.append(piece)
+        selected = ",".join(sorted(chosen, key=int))
     elif kind == "issue":
         metadata_match = re.search(r"<!-- ticket-scope-metadata -->\s*```json\s*(\{.*?\})\s*```", body, re.DOTALL)
         try:
@@ -3646,7 +3687,7 @@ def _request_binding(view: RepositoryView, request_bytes: bytes, request_source:
         "git_head": git_head,
         "request_sha256": _sha256(request_bytes),
     }
-    if request_source.get("kind") == "diagnosis":
+    if request_source.get("kind") in {"diagnosis", "assessment"}:
         binding["source_item"] = request_source.get("item")
     return binding
 
@@ -3897,9 +3938,14 @@ def verify_sealed_blueprint(
     diagnostics.extend(schema_diagnostics)
     request_source: dict[str, Any] | None = None
     sealed_source_item = binding.get("source_item") if isinstance(binding, dict) else None
+    legacy = False
+    proof_version = proof.get("version") if isinstance(proof, dict) else None
+    if isinstance(proof_version, str) and re.fullmatch(r"\d+\.\d+\.\d+", proof_version):
+        major, minor, _patch = (int(part) for part in proof_version.split("."))
+        legacy = (major, minor) < (1, 5)
     try:
         request_source = detect_request_source(
-            request_bytes, handoff_item, repo_root=repo_root, check_sources=False
+            request_bytes, handoff_item, repo_root=repo_root, check_sources=False, assessments=not legacy
         )
     except ValueError as exc:
         source_diagnostics = tuple(getattr(exc, "diagnostics", ()))
@@ -3910,12 +3956,34 @@ def verify_sealed_blueprint(
         ):
             try:
                 request_source = detect_request_source(
-                    request_bytes, sealed_source_item, repo_root=repo_root, check_sources=False
+                    request_bytes,
+                    sealed_source_item,
+                    repo_root=repo_root,
+                    check_sources=False,
+                    assessments=not legacy,
                 )
             except ValueError as retry_exc:
                 diagnostics.extend(getattr(retry_exc, "diagnostics", ()))
         else:
             diagnostics.extend(source_diagnostics)
+    if (
+        handoff_item is None
+        and request_source is not None
+        and request_source.get("kind") == "assessment"
+        and isinstance(sealed_source_item, str)
+        and sealed_source_item
+    ):
+        try:
+            request_source = detect_request_source(
+                request_bytes,
+                sealed_source_item,
+                repo_root=repo_root,
+                check_sources=False,
+                assessments=not legacy,
+            )
+        except ValueError as selection_exc:
+            request_source = None
+            diagnostics.extend(getattr(selection_exc, "diagnostics", ()))
     if not schema_diagnostics and isinstance(binding, dict):
         repository_id, _current_head = view.repository_identity()
         if binding.get("repository_id") != repository_id:
@@ -3929,12 +3997,12 @@ def verify_sealed_blueprint(
             )
         if request_source is not None:
             source_item = binding.get("source_item")
-            if request_source.get("kind") == "diagnosis":
+            if request_source.get("kind") in {"diagnosis", "assessment"}:
                 if source_item != request_source.get("item"):
                     diagnostics.append(
                         _error(
                             "binding.request.source_item",
-                            "Blueprint selected diagnosis finding does not match the supplied request selection.",
+                            "Blueprint selected handoff findings do not match the supplied request selection.",
                             "Use the request and handoff item that were sealed with this Blueprint, or reseal from the plain draft.",
                             category="stale_evidence",
                         )
@@ -3943,7 +4011,7 @@ def verify_sealed_blueprint(
                 diagnostics.append(
                     _error(
                         "binding.request.source_item_unexpected",
-                        "Blueprint request binding includes a diagnosis finding for a non-diagnosis request.",
+                        "Blueprint request binding includes a finding selection for a request that is not a diagnosis or assessment handoff.",
                         "Reseal the Blueprint from the authoritative request.",
                         category="contract_contradiction",
                     )

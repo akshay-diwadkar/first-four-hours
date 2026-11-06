@@ -437,6 +437,53 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
     with pytest.raises(ValueError) as refused_hidden:
         runtime.detect_request_source(hidden.encode("utf-8"))
     assert [item.code for item in getattr(refused_hidden.value, "diagnostics", ())] == ["handoff.receipt.malformed"]
+    # A sealed findings assessment is a typed request whose selection is canonical and checked.
+    assessment_body = (
+        "# Assessment\n\n## Result\n\n`findings`\n\n## Findings\n\n"
+        "### Finding 1\n\n- Defect: one\n\n### Finding 2\n\n- Defect: two\n"
+    )
+    assessment = (
+        assessment_body
+        + f"<!-- assessment-result: 1.4.0; sha256: {runtime._sha256(assessment_body.encode('utf-8'))} -->\n"
+    ).encode("utf-8")
+    typed = runtime.detect_request_source(assessment)
+    assert (typed["kind"], typed["item"]) == ("assessment", "1,2")
+    assert runtime.detect_request_source(assessment, "2,1")["item"] == "1,2"
+    assert runtime.detect_request_source(assessment, "2")["item"] == "2"
+    for bad_selection in ("3", "1,1"):
+        with pytest.raises(ValueError) as refused_selection:
+            runtime.detect_request_source(assessment, bad_selection)
+        assert [item.code for item in getattr(refused_selection.value, "diagnostics", ())] == ["handoff.item.unknown"]
+    clear_body = "# Assessment\n\n## Result\n\n`clear`\n\n## Findings\n\n"
+    clear = clear_body + f"<!-- assessment-result: 1.4.0; sha256: {runtime._sha256(clear_body.encode('utf-8'))} -->\n"
+    with pytest.raises(ValueError) as refused_clear:
+        runtime.detect_request_source(clear.encode("utf-8"))
+    assert [item.code for item in getattr(refused_clear.value, "diagnostics", ())] == ["handoff.not_actionable"]
+    # The seal binds the selection; Construct's no-item verify accepts it, a different item does not.
+    assess_repo = tmp_path / "assess-repo"
+    assess_repo.mkdir()
+    assess_request, assess_draft = write_request_and_draft(assess_repo, draft())
+    assess_request.write_bytes(assessment)
+    assess_sealed = runtime.seal_blueprint(assess_repo, assess_request, assess_draft, handoff_item="2").text
+    assert _sealed_proof(assess_sealed)["binding"]["source_item"] == "2"
+    _bp, no_item, _view = runtime.verify_sealed_blueprint(assess_sealed, assess_repo, request_bytes=assessment)
+    assert no_item == []
+    _bp, other_item, _view = runtime.verify_sealed_blueprint(
+        assess_sealed, assess_repo, request_bytes=assessment, handoff_item="1"
+    )
+    assert "binding.request.source_item" in {item.code for item in other_item}
+    # A pre-1.5.0 plan sealed the assessment as generic; it still verifies, but only below 1.5.
+    unbound = _sealed_proof(assess_sealed)
+    del unbound["binding"]["source_item"]
+    sealed_version = unbound["version"]
+    unbound["version"] = "1.4.0"
+    legacy = runtime.render_sealed_blueprint(draft(), unbound)
+    _bp, legacy_diagnostics, _view = runtime.verify_sealed_blueprint(legacy, assess_repo, request_bytes=assessment)
+    assert legacy_diagnostics == []
+    unbound["version"] = sealed_version
+    current = runtime.render_sealed_blueprint(draft(), unbound)
+    _bp, current_diagnostics, _view = runtime.verify_sealed_blueprint(current, assess_repo, request_bytes=assessment)
+    assert "binding.request.source_item" in {item.code for item in current_diagnostics}
     blueprint, diagnostics = runtime.parse_blueprint(sealed)
     assert diagnostics == []
     assert blueprint is not None
@@ -460,10 +507,42 @@ def test_relevant_byte_drift_fails_closed_after_seal(tmp_path: Path) -> None:
     source = repo / "src" / "names.py"
     source.parent.mkdir(parents=True)
     source.write_text("def normalize(value):\n    return value\n    # evidence\n", encoding="utf-8")
-    request, draft_file = write_request_and_draft(repo, draft())
+    (repo / "src" / "other.py").write_text("OTHER = 1\n", encoding="utf-8")
+    plan = draft().replace(
+        "**Source:** `src/names.py:1-3`\n", "**Source:** `src/names.py:1-3`\n**Source:** `src/other.py`\n", 1
+    )
+    request, draft_file = write_request_and_draft(repo, plan)
     sealed = runtime.seal_blueprint(repo, request, draft_file).text
     source.write_text("def normalize(value):\n    return value  # drifted\n    # evidence\n", encoding="utf-8")
     _blueprint, diagnostics, _view = runtime.verify_sealed_blueprint(
         sealed, repo, request_bytes=request.read_bytes()
     )
     assert {"proof.sources.stale", "proof.locations.stale"} <= {item.code for item in diagnostics}
+    # carryover reports each bound file's status through the real CLI, never an import.
+    draft_file.write_bytes(sealed.encode("utf-8"))
+
+    def carryover(predecessor: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS / "cli.py"), "--repo-root", str(repo), "--input",
+             f"predecessor_file={predecessor}", "--format", "json", "carryover"],
+            capture_output=True, text=True, check=False,
+        )
+
+    def statuses(completed: subprocess.CompletedProcess[str]) -> dict[tuple[str, str], str]:
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+        entries = json.loads(completed.stdout)["result"]["entries"]
+        return {(entry["path"], entry["role"]): entry["status"] for entry in entries}
+
+    assert statuses(carryover(draft_file)) == {
+        ("src/names.py", "source"): "changed",
+        ("src/other.py", "source"): "unchanged",
+        ("src/names.py", "location"): "changed",
+    }
+    (repo / "src" / "other.py").unlink()
+    assert statuses(carryover(draft_file))[("src/other.py", "source")] == "missing"
+    edited = repo / "edited" / "blueprint.md"
+    edited.parent.mkdir()
+    edited.write_bytes(sealed.replace("Make absent names", "Make missing names", 1).encode("utf-8"))
+    refused = carryover(edited)
+    assert refused.returncode != 0
+    assert json.loads(refused.stdout)["blocking_reasons"] == ["proof.stale"]

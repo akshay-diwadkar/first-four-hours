@@ -32,15 +32,46 @@
       "name": "handoff_item",
       "kind": "string",
       "required": false,
-      "repeatable": true,
-      "description": "Selected diagnosis finding ID; rejected for every other request kind.",
+      "repeatable": false,
+      "description": "Selected diagnosis finding ID, or comma-separated assessment finding numbers (all when omitted); rejected for every other request kind.",
       "choices": [],
       "accepted_for": ["run", "check"]
+    },
+    {
+      "name": "predecessor_file",
+      "kind": "path",
+      "required": true,
+      "repeatable": false,
+      "description": "Existing absolute path to an earlier sealed blueprint.md whose bound files carryover compares with the current worktree.",
+      "choices": [],
+      "path_policy": "existing",
+      "required_for": ["carryover"],
+      "accepted_for": ["carryover"]
     }
   ],
   "artifacts": [],
   "phases": {},
   "commands": {
+    "carryover": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/carryover_sources.py",
+            "--repo-root",
+            "{repo_root}",
+            "--predecessor",
+            "{input.predecessor_file}"
+          ],
+          "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
     "check": {
       "allowed_phases": [],
       "success_phase": null,

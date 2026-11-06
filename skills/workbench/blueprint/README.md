@@ -2,7 +2,7 @@
 
 `blueprint` turns an authorized request into one sealed, implementation-complete `.first-four-hours/blueprints/<task-slug>/{request.md,blueprint.md}`. [SKILL.md](SKILL.md) owns the planning workflow; this file owns the workspace commands and the sealed shape.
 
-Prepare the task-scoped workspace, which freezes the resolved request bytes into the sibling `request.md`, writes the initial `blueprint.md` scaffold from the task name, and returns canonical paths; preparation never replaces an existing `blueprint.md`. In a Git repository it also adds, when missing, the `.git/info/exclude` rule that keeps `.first-four-hours/blueprints/` ignored. The `--request-file` input is pre-planning input, not planning output: pass an upstream handoff where it was sealed, and write a request Blueprint resolves (user answers, an Ideate selection, an architecture source declaration) outside the repository, which stays read-only apart from the writes `SKILL.md` lists:
+Prepare the task-scoped workspace, which freezes the resolved request bytes into the sibling `request.md`, writes the initial `blueprint.md` scaffold from the task name, and returns canonical paths; preparation never replaces an existing `blueprint.md`. The `--request-file` input is pre-planning input, not planning output: pass an upstream handoff where it was sealed, and write a request Blueprint resolves (user answers, an Ideate selection, an architecture source declaration) outside the repository, which stays read-only apart from the writes `SKILL.md` lists. A sealed Assess `assessment.md` with result `findings` is such a handoff: pass `--input handoff_item=1,3` to every `check` and `run` to plan only those findings, all when omitted. Its selected findings are the request's clauses and settled evidence: cite none again in Current State, and re-confirm only that each defect still occurs in the current tree:
 
 ```bash
 python scripts/prepare_blueprint_workspace.py \
@@ -20,6 +20,14 @@ python scripts/cli.py --repo-root /absolute/repo \
 ```
 
 A successful seal's `result.blueprint_path` is the sealed file's absolute path; its frozen `request.md` is the sibling. The envelope lists no `artifacts`.
+
+For a replan, `carryover` reports an earlier sealed plan's bound files, writing nothing and refusing an edited plan:
+
+```bash
+python scripts/cli.py --repo-root /absolute/repo --input predecessor_file=/absolute/earlier/blueprint.md --format json carryover
+```
+
+`result.entries` gives each Source's and existing or deleted Location's `path`, `role`, and `status`: `unchanged`, `changed`, or `missing`.
 
 A sealed Blueprint is immutable; progressed execution fails closed, so request meaning changes need a fresh draft and workspace.
 
@@ -39,8 +47,6 @@ Line 1 is the HTML-comment contract marker `blueprint-contract: <version>`, wher
 An instruction may also declare step proof that Construct checks mechanically: `**Exact:**` textual data or anchored edits, or `**Frozen:**` proof data, for one of its own Location paths, and at most one `**Proof run:**` with its `Expect:`. The [planning contract](references/planning-contract.md) decides when each is earned, and [Declared text](references/declared-text.md) owns their grammar, reserved-label spelling, the seal's simulation, and when a `Red:` or break-the-code check is earned.
 
 Sealing appends two generated receipts as the final two lines; never author a receipt-prefixed line. [Seal receipts](references/seal-receipts.md) owns their format and the proof Construct consumes.
-
-The seal enforces authored State as the planning contract states it, with every target repository-contained and a broken symlink counting as occupying a `new` path, so a mistyped path fails closed instead of silently becoming a create. A `deleted` target's spelling crosses no link or alias (`location.deleted.link`), because Construct proves that spelling absent. A `**Source:**` naming a deleted file through any spelling, link, or case or Unicode normalization variant the filesystem folds to the same directory entry fails as `source.deleted`; a hardlinked twin is a separate surviving entry and stays citable.
 
 Exactly one implementation-complete plan per task directory. The document must be simple to consume: no planner transcript, exploration report, challenge report, or internal reasoning enters it.
 

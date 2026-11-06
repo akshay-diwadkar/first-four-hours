@@ -6,10 +6,20 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Added
 
+- Blueprint 1.5.0: a read-only `carryover` command tells a replan which files an earlier sealed plan relied on are unchanged, so it can reuse what it read from them instead of reading them again. Probes, measurements, and any fact a finding or stop disputed are still redone.
+
 - Provision 1.0.0: a user-invoked Workbench skill, started with `/provision`, that sets up the suite in the harness it runs in. After you confirm, it installs the skills' Python requirements, then writes up to five `ffh-*` subagents (challenger, reviewer, conformance, evidence, researcher) on the model and effort you choose from your harness's current list, with its own recommendation and reason for each. Run it again to refresh stale model choices, or ask it to remove its subagents. It carries notes for Claude Code, Codex, and OpenCode and reads the documentation of any other harness. The Claude Code and Cursor plugins now hold 15 skills.
 
 ### Changed
 
+- Blueprint 1.5.0: costs less on small plans.
+  - In a tiny fix, code that is one source file plus tests or fixtures exercising only it no longer earns a fresh challenger on its own. A tiny fix is one or two files, not counting docs, changelog, or version lines, with no integration, environment, or test-selection fan-out. A budget change, a cross-skill change, an irreversible effect, a seal-runtime change, or a validator, runtime, or configuration that other code reads still earns one. Blueprint still walks every draft itself, and every Reason checkpoint still runs.
+  - A question that one file read or search answers no longer loads the delegation reference first.
+  - A sealed Assess `assessment.md` with `findings` can be the request itself. Blueprint verifies its receipt, plans every finding or only the numbers you pass as `handoff_item` (such as `1,3`), and binds that choice into the seal. A repeated `handoff_item` is now refused instead of keeping only the last value.
+  - Exact text that a validator, loader, or schema reads, such as a manifest, config, or fixture, must now pass that reader's rules, checked from source when planning, and match the keys of an existing entry of the same kind. When a rejection would block later steps, the plan adds a cheap check through that reader so Construct stops at that step. The challenger treats data its reader would reject as a finding.
+  - It seals plans with contract version 1.5.0.
+- Construct 1.5.0: ships the Blueprint 1.5.0 runtime copy, so it reports contract version 1.5.0 and accepts plans sealed from an Assess assessment. It still accepts every sealed 1.x plan.
+- Router 1.2.0: routes a sealed Assess assessment whose result is `findings` to Blueprint.
 - Blueprint 1.4.0: runs exploration questions that only read and search files on the `ffh-evidence` subagent Provision writes, and the fresh challenge on `ffh-challenger`, whose model is then the one you chose in Provision rather than one at least as capable as the planner. This entry and the six after it, through Ideate 2.1.0, also find the `ffh_` names Codex and OpenCode use, and treat a listed subagent that fails to launch as missing. Without these subagents, Blueprint delegates as before. It seals plans with contract version 1.4.0 and ships the Architect 1.1.0 handoff verifier.
 - Construct 1.4.0: runs an earned conformance review on the `ffh-conformance` subagent, or on a generic subagent as before when it is missing. It ships the Blueprint 1.4.0 runtime copy, so it reports contract version 1.4.0, and still accepts every sealed 1.x plan.
 - Assess 1.4.0: costs less per review.

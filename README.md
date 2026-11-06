@@ -10,15 +10,50 @@
 
 > "Give me six hours to chop down a tree, and I will spend the first four sharpening the axe."
 
+The four hours are a metaphor, not a schedule. Sharpening takes minutes on a small fix, and more only when a mistake would be costly to find later.
+
 Coding agents are supposed to save time. You ask for a change. The agent writes the code, runs the tests, and says it is done.
 
 Then you find the missed requirement. The decision it quietly reopened. The caller the fix broke. You explain the context again, review another patch, and stop trusting the word "done".
 
 Those are the lost hours: the time spent turning work that looks finished into work you can trust.
 
-First Four Hours is a suite of skills for coding agents. Each skill helps an agent do one job properly before it moves on: find the real cause, settle the plan, carry the plan out faithfully, or check the result that matters. Use one skill for one job, and combine skills only when the work needs it. Small tasks stay light.
+First Four Hours is a suite of skills for coding agents. Each skill does one job before the work moves on, and leaves a file you can open and check:
 
-It does not make every task faster, and it makes no measured claim about time saved. [Why First Four Hours exists](docs/concepts/why-first-four-hours.md) explains what it aims for and what it does not promise.
+- **Diagnose** finds the cause of a defect and writes `diagnosis.md`: each finding with how well its cause is established, and what evidence is still missing.
+- **Blueprint** settles every decision before anyone edits and seals `blueprint.md`, a plan another agent, even a cheaper model, carries out without reopening those decisions.
+- **Assess** reviews the exact change and writes `assessment.md`: each finding with its location, the steps that show it going wrong, and its consequence.
+
+Use one skill for one job, and combine skills only when the work needs it. Small tasks stay light.
+
+## What a skill leaves behind
+
+The Goal at the top of a sealed plan, shortened (illustrative; FreshCart is a made-up online grocery service):
+
+```markdown
+## Goal
+
+Approach: add a per-client token bucket to the existing middleware chain, keyed on the API key when one is present and on the client address otherwise. Partner keys bypass the limit. A limited request gets 429 with a Retry-After header; every other response is unchanged.
+
+Load-bearing invariants: responses under the limit are exactly what they are today; partner keys are never limited; the client address comes only from the app's trusted proxy helper.
+
+Main risk: /search/suggest shares the search handler, so it is limited too.
+```
+
+You read and approve these few lines before anything else. Below them, the plan cites the files its facts come from, gives ordered instructions, and names the check that proves each outcome. [Anatomy of a sealed blueprint](docs/concepts/anatomy-of-a-blueprint.md) walks through the whole plan.
+
+## Built with itself
+
+This repository is planned, built, and reviewed with its own skills. When [pull request #132](https://github.com/akshay-diwadkar/first-four-hours/pull/132) added Provision, the first Assess review returned four findings. They went into a sealed repair Blueprint and were fixed before the merge.
+
+## When not to use it
+
+- A small, clear task may need no skill at all.
+- If the same agent will carry out the plan in the same session while you watch, and mistakes surface within minutes, your agent's plan mode is enough. [Blueprint](docs/skills/blueprint.md) explains when.
+- No skill replaces your review. You still own the decisions that are yours, and every commit, pull request, and merge.
+- It makes no measured claim about time saved, and no claim that one model or agent beats another.
+
+[Why First Four Hours exists](docs/concepts/why-first-four-hours.md) explains what it aims for and what it does not promise.
 
 ## Install
 
@@ -48,7 +83,29 @@ Start a skill on a real problem by naming it in your agent's chat. For example (
 /diagnose : About one invoice in 4,000 comes out exactly one cent short, only on the first of the month, and re-running the job gives the right total. Nobody has touched billing in a year. Find out why.
 ```
 
-[Your first run](docs/getting-started/first-run.md) shows what a skill leaves behind and how each skill starts.
+Diagnose reads your project without editing it, and leaves a sealed `diagnosis.md` in `.first-four-hours/diagnoses/<slug>/`, a folder Git ignores. [Your first run](docs/getting-started/first-run.md) shows what to do with it and how each skill starts.
+
+## Start from the problem
+
+| You are dealing with | Start with |
+| :--- | :--- |
+| Something is wrong and you do not know why | `diagnose` |
+| A change another session, agent, or cheaper model will carry out, whose mistakes would show up late, or whose decisions must outlast the session | `blueprint`, then `construct` to carry out the plan |
+| A finished change you need to trust before merging | `assess` |
+| A decision that is stuck, or rests on an assumption you doubt | `reason` |
+| Not knowing which skill comes next | `router` (ask in plain words) |
+| A fresh install to finish, or subagents to set up on the models you choose | `provision` |
+| A subject to learn, or a written examination to practise for | `tutor` or `examiner` |
+
+[Choose a skill](docs/getting-started/choosing-a-skill.md) covers more situations.
+
+## Common workflows
+
+- **Fix a bug at its cause.** Diagnose finds the evidence-backed cause, Blueprint plans the fix for one finding, and Construct carries out the plan. See [Fix the bug without patching the symptom](docs/recipes/fix-a-bug.md).
+- **Plan before editing.** Blueprint settles every decision and seals a plan, and Construct carries it out without reopening it, possibly with a cheaper model. Reach for it when someone else will carry the change out, a mistake would show up late, or the decisions must outlast the session, not because the change looks big; [Blueprint](docs/skills/blueprint.md) explains when your agent's plan mode is enough. See [Plan a change before your agent starts editing](docs/recipes/plan-a-change.md).
+- **Trust a change before merging.** Assess reviews the exact change, and its findings go to a new Blueprint run rather than a direct edit. See [Trust a change before you merge it](docs/recipes/review-before-merge.md).
+
+Each skill works alone. A skill hands work on through a file, and you decide when the next skill starts; see [How skills hand work to each other](docs/concepts/handoffs.md). [Recipes](docs/recipes/README.md) cover more recurring problems.
 
 ## What you can ask
 
@@ -69,20 +126,6 @@ Say what is actually going wrong, what is at stake, and what must not break. For
 ```text
 /tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.
 ```
-
-## Start from the problem
-
-| You are dealing with | Start with |
-| :--- | :--- |
-| Something is wrong and you do not know why | `diagnose` |
-| A change another session, agent, or cheaper model will carry out, whose mistakes would show up late, or whose decisions must outlast the session | `blueprint`, then `construct` to carry out the plan |
-| A finished change you need to trust before merging | `assess` |
-| A decision that is stuck, or rests on an assumption you doubt | `reason` |
-| Not knowing which skill comes next | `router` (ask in plain words) |
-| A fresh install to finish, or subagents to set up on the models you choose | `provision` |
-| A subject to learn, or a written examination to practise for | `tutor` or `examiner` |
-
-[Choose a skill](docs/getting-started/choosing-a-skill.md) covers more situations.
 
 ## The skills
 
@@ -119,14 +162,6 @@ Building your own knowledge and ability in any subject.
 
 - [Examiner](docs/skills/examiner.md): write practice papers for a specific written examination and mark attempts. [Contract](skills/learning/examiner/SKILL.md)
 - [Tutor](docs/skills/tutor.md): learn any subject through an explanation, interactive tutoring, or a continuing series. [Contract](skills/learning/tutor/SKILL.md)
-
-## Common workflows
-
-- **Fix a bug at its cause.** Diagnose finds the evidence-backed cause, Blueprint plans the fix for one finding, and Construct carries out the plan. See [Fix the bug without patching the symptom](docs/recipes/fix-a-bug.md).
-- **Plan before editing.** Blueprint settles every decision and seals a plan, and Construct carries it out without reopening it, possibly with a cheaper model. Reach for it when someone else will carry the change out, a mistake would show up late, or the decisions must outlast the session, not because the change looks big; [Blueprint](docs/skills/blueprint.md) explains when your agent's plan mode is enough. See [Plan a change before your agent starts editing](docs/recipes/plan-a-change.md).
-- **Trust a change before merging.** Assess reviews the exact change, and its findings go to a new Blueprint run rather than a direct edit. See [Trust a change before you merge it](docs/recipes/review-before-merge.md).
-
-Each skill works alone. A skill hands work on through a file, and you decide when the next skill starts; see [How skills hand work to each other](docs/concepts/handoffs.md). [Recipes](docs/recipes/README.md) cover more recurring problems.
 
 ## Documentation
 

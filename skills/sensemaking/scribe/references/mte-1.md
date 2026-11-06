@@ -23,3 +23,5 @@ MTE-1 is an original controlled-English specification inspired by the goals of A
 ## Deterministic Boundary
 
 The parser uses regular expressions and supplied glossary data. A rule finding is a reproducible pattern match, not a probability. The parser can miss meanings that are not represented by text patterns. Review supplied source material when a rule result conflicts with technical intent.
+
+The rules read prose, list items, and table cells, and skip fenced code and gap markers. Inline code counts as one neutral word, except that the hazardous-action rule still reads it. A warning covers later hazardous actions in its section and that section's subsections. A `stop` with no object, as in "If the check fails, stop.", is not a hazardous action.

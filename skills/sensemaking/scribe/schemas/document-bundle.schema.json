@@ -111,6 +111,7 @@
               "properties": {
                 "id": {"type": "string", "pattern": "^PRE-[1-9][0-9]*$"},
                 "marker": {"type": "string", "minLength": 1},
+                "procedure": {"type": "string", "pattern": "^PROC-[1-9][0-9]*$"},
                 "section": {"type": "string", "minLength": 1}
               }
             }

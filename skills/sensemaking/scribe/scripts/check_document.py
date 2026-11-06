@@ -10,7 +10,14 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from _diagnostic_contract import normalize_diagnostic
-from _document_contract import BUNDLE_FILENAME, WORKSPACE_DIR, require_canonical_name
+from _document_contract import (
+    BUNDLE_FILENAME,
+    GAP_MARKER,
+    GAP_OPENING,
+    INLINE_CODE,
+    WORKSPACE_DIR,
+    require_canonical_name,
+)
 from _skill_protocol_runtime import compatible_version
 from bundle_workspace import WorkspaceError, in_namespace, require_external_bundle
 from check_document_language import collect_diagnostics
@@ -18,14 +25,17 @@ from jsonschema import Draft7Validator
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 BUNDLE_SCHEMA = SKILL_ROOT / "schemas" / "document-bundle.schema.json"
-BUNDLE_CONTRACT_VERSION = "1.0.1"
+BUNDLE_CONTRACT_VERSION = "1.1.0"
 # Source-binding repairs point at the bundle or source, never the audited document.
 SOURCE_REPAIRS = {
-    "unsafe_source_path": "Bind a repository-relative source path inside the repository root.",
+    "unsafe_source_path": (
+        "Bind a repository-relative path inside the repository root, or an absolute path to captured evidence "
+        "inside the bundle's directory; bind repository files only by repository-relative path."
+    ),
     "namespace_source": f"Bind a source outside {WORKSPACE_DIR}/; Scribe audit reports are never evidence.",
     "missing_source": (
-        "Bind an existing source file, or report the missing fact as an unresolved gap; "
-        "never create a source to satisfy the bundle or edit the document to unblock it."
+        "Bind an existing source file, recapture supplied evidence verbatim beside the bundle, or report the missing "
+        "fact as an unresolved gap; never invent a source or edit the document to unblock it."
     ),
     "source_hash_mismatch": (
         "Re-extract the bound facts from the current source, then record its new hash; "
@@ -33,6 +43,35 @@ SOURCE_REPAIRS = {
     ),
     "undeclared_source": "Declare the cited source in sources with its hash, or remove the reference.",
 }
+# Document-check repairs: code -> (category, required action).
+DOCUMENT_REPAIRS = {
+    "ambiguous_section": (
+        "malformed_input",
+        "Give the heading a name that occurs once in the document, or remove the record's section value.",
+    ),
+    "unsupported_section": (
+        "malformed_input",
+        "Remove the section value; only .md, .markdown, and .txt documents have sections.",
+    ),
+    "ambiguous_marker": (
+        "contract_contradiction",
+        "Scope the record to the one section that holds the step, or bind marker text that occurs once in that scope.",
+    ),
+    "unknown_procedure": (
+        "contract_contradiction",
+        "Name a procedure id this document declares, or remove the prerequisite's procedure value.",
+    ),
+    "prerequisite_order": ("contract_contradiction", "Move the prerequisite before the first step of its procedure."),
+    "recovery_order": ("contract_contradiction", "Put the recovery step after its trigger."),
+    "malformed_gap": ("malformed_input", "Write the gap on one line as [GAP: <missing fact>; owner: <next owner>]."),
+    "unresolved_gap": (
+        "missing_evidence",
+        "Bind a source that settles the missing fact and replace the marker, or take the gap to its named owner; "
+        "never fill it by guessing.",
+    ),
+}
+PROSE_SUFFIXES = frozenset({".md", ".markdown", ".txt"})
+HEADING = re.compile(r"^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$")
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -82,23 +121,102 @@ def load_bundle(path: Path) -> dict[str, Any]:
     return data
 
 
-def _section_bounds(text: str) -> dict[str, tuple[int, int]]:
-    headings = list(re.finditer(r"(?m)^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$", text))
-    sections: dict[str, tuple[int, int]] = {"document": (0, len(text))}
-    for index, match in enumerate(headings):
-        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
-        sections[match.group(1).strip().casefold()] = (match.end(), end)
+def _lines(text: str) -> list[tuple[int, str, bool]]:
+    """Return (offset, line, in_code) for each line; fence lines and the lines between them are code."""
+    result = []
+    offset = 0
+    fenced = False
+    for line in text.splitlines(keepends=True):
+        stripped = line.strip()
+        fence = stripped.startswith("```") or stripped.startswith("~~~")
+        result.append((offset, line, fenced or fence))
+        if fence:
+            fenced = not fenced
+        offset += len(line)
+    return result
+
+
+def _section_bounds(text: str) -> dict[str, list[tuple[int, int]]]:
+    """Map each casefolded heading to its occurrences; a section ends at the next heading of its level or higher."""
+    headings = []
+    for offset, line, in_code in _lines(text):
+        match = None if in_code else HEADING.match(line.rstrip("\r\n"))
+        if match:
+            headings.append((offset, offset + len(line), len(match.group(1)), match.group(2).strip().casefold()))
+    sections: dict[str, list[tuple[int, int]]] = {}
+    for index, (_, body, level, name) in enumerate(headings):
+        end = next((later[0] for later in headings[index + 1 :] if later[2] <= level), len(text))
+        sections.setdefault(name, []).append((body, end))
     return sections
 
 
-def _scope(text: str, section: str | None, sections: dict[str, tuple[int, int]]) -> tuple[str, int, str]:
+def _scope(
+    text: str, record: dict[str, Any], sections: dict[str, list[tuple[int, int]]], prose: bool
+) -> tuple[str, int, str, dict[str, str] | None]:
+    section = record.get("section")
     if not section:
-        return text, 0, "document"
+        return text, 0, "document", None
+    location = f"section {section}"
+    record_id = record.get("id", "record")
+    if not prose:
+        message = f"{record_id} sets a section, but only .md, .markdown, and .txt documents have sections"
+        return "", 0, location, _error("unsupported_section", location, "critical", message)
     bounds = sections.get(section.casefold())
     if bounds is None:
-        return "", 0, f"section {section}"
-    start, end = bounds
-    return text[start:end], start, f"section {section}"
+        return "", 0, location, None
+    if len(bounds) > 1:
+        message = f"{record_id} names heading {section}, which occurs more than once"
+        return "", 0, location, _error("ambiguous_section", location, "critical", message)
+    start, end = bounds[0]
+    return text[start:end], start, location, None
+
+
+def _is_word(character: str) -> bool:
+    return character.isalnum() or character == "_"
+
+
+def _normalize(text: str) -> tuple[str, list[int]]:
+    """Drop backticks and emphasis delimiters, collapse whitespace, and map each kept character to its raw offset."""
+    characters: list[str] = []
+    offsets: list[int] = []
+    index = 0
+    while index < len(text):
+        character = text[index]
+        if character == "`":
+            index += 1
+            continue
+        if text.startswith("**", index) or text.startswith("__", index):
+            index += 2
+            continue
+        if character in "*_":
+            before = index > 0 and _is_word(text[index - 1])
+            after = index + 1 < len(text) and _is_word(text[index + 1])
+            if before != after:
+                index += 1
+                continue
+        if character.isspace():
+            if not characters or characters[-1] != " ":
+                characters.append(" ")
+                offsets.append(index)
+            index += 1
+            continue
+        characters.append(character)
+        offsets.append(index)
+        index += 1
+    return "".join(characters), offsets
+
+
+def _phrase(value: str) -> str:
+    return _normalize(value)[0].strip()
+
+
+def _occurrences(normalized: str, phrase: str) -> list[int]:
+    positions = []
+    start = normalized.find(phrase)
+    while phrase and start >= 0:
+        positions.append(start)
+        start = normalized.find(phrase, start + len(phrase))
+    return positions
 
 
 def _tokenize_command(value: str) -> list[str]:
@@ -131,18 +249,40 @@ def _safe_source(repo_root: Path, relative: str) -> Path | None:
     return candidate
 
 
-def validate_sources(bundle: dict[str, Any], repo_root: Path) -> list[dict[str, str]]:
+def _captured_evidence(root: Path, bundle_path: Path, raw: str) -> Path | None:
+    """Resolve an absolute evidence path beside the bundle, outside the repository, other than the bundle itself."""
+    path = Path(raw).resolve()
+    bundle = bundle_path.resolve()
+    try:
+        path.relative_to(bundle.parent)
+    except ValueError:
+        return None
+    if path == bundle:
+        return None
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return path
+    return None
+
+
+def validate_sources(bundle: dict[str, Any], repo_root: Path, bundle_path: Path) -> list[dict[str, str]]:
     """Return stable source-binding diagnostics for the whole bundle without modifying any input."""
     root = repo_root.resolve()
     errors: list[dict[str, str]] = []
 
     for source in bundle["sources"]:
         location = f"source {source['id']}"
-        path = _safe_source(root, source["path"])
+        absolute = Path(source["path"]).is_absolute()
+        path = _captured_evidence(root, bundle_path, source["path"]) if absolute else _safe_source(root, source["path"])
         if path is None:
-            errors.append(_error("unsafe_source_path", location, "critical", f"Source path escapes repo root: {source['path']}"))
+            message = (
+                "Source path is neither repository-relative inside the repository root nor captured evidence "
+                f"beside the bundle: {source['path']}"
+            )
+            errors.append(_error("unsafe_source_path", location, "critical", message))
             continue
-        if in_namespace(root, path):
+        if not absolute and in_namespace(root, path):
             errors.append(
                 _error(
                     "namespace_source",
@@ -170,18 +310,36 @@ def validate_sources(bundle: dict[str, Any], repo_root: Path) -> list[dict[str, 
     return sorted(errors, key=lambda item: (item["location"], item["type"], item["message"]))
 
 
-def validate_document(text: str, document: dict[str, Any]) -> list[dict[str, str]]:
+def validate_document(text: str, document: dict[str, Any], *, prose: bool = True) -> list[dict[str, str]]:
     """Return stable semantic diagnostics for one listed document without modifying any input."""
-    sections = _section_bounds(text)
+    sections = _section_bounds(text) if prose else {}
     errors: list[dict[str, str]] = []
 
+    def scope(record: dict[str, Any]) -> tuple[str, int, str, str, list[int]] | None:
+        scoped, start, location, error = _scope(text, record, sections, prose)
+        if error is not None:
+            errors.append(error)
+            return None
+        normalized, offsets = _normalize(scoped)
+        return scoped, start, location, normalized, offsets
+
+    def ambiguous(location: str, record_id: str, marker: str) -> None:
+        message = f"{record_id} marker occurs more than once in its scope: {marker}"
+        errors.append(_error("ambiguous_marker", location, "critical", message))
+
     for fact in document.get("required_facts", []):
-        scoped, _, location = _scope(text, fact.get("section"), sections)
-        if fact["claim"] not in scoped:
+        scoped_fact = scope(fact)
+        if scoped_fact is None:
+            continue
+        _, _, location, normalized, _ = scoped_fact
+        if not _occurrences(normalized, _phrase(fact["claim"])):
             errors.append(_error("missing_required_fact", location, "error", f"Missing fact {fact['id']}: {fact['claim']}"))
 
     for item in document.get("integrity_literals", []):
-        scoped, _, location = _scope(text, item.get("section"), sections)
+        scoped_literal = scope(item)
+        if scoped_literal is None:
+            continue
+        scoped, _, location, _, _ = scoped_literal
         if item["literal"] in scoped:
             continue
         error_type = f"changed_{item['kind']}"
@@ -191,42 +349,98 @@ def validate_document(text: str, document: dict[str, Any]) -> list[dict[str, str
             error_type = f"missing_{item['kind']}"
         errors.append(_error(error_type, location, "critical", f"Required {item['kind']} changed or is missing: {item['literal']}"))
 
+    procedure_ids = {procedure["id"] for procedure in document.get("procedures", [])}
+    procedure_starts: dict[str, int] = {}
     for procedure in document.get("procedures", []):
-        scoped, _, location = _scope(text, procedure.get("section"), sections)
-        positions = [scoped.find(marker) for marker in procedure["ordered_markers"]]
-        missing = [marker for marker, position in zip(procedure["ordered_markers"], positions, strict=True) if position < 0]
+        scoped_procedure = scope(procedure)
+        if scoped_procedure is None:
+            continue
+        _, start, location, normalized, offsets = scoped_procedure
+        markers = procedure["ordered_markers"]
+        found = [_occurrences(normalized, _phrase(marker)) for marker in markers]
+        missing = [marker for marker, positions in zip(markers, found, strict=True) if not positions]
+        repeated = [marker for marker, positions in zip(markers, found, strict=True) if len(positions) > 1]
         if missing:
             errors.append(_error("missing_procedure_step", location, "critical", f"Procedure {procedure['id']} is missing: {missing[0]}"))
-        elif positions != sorted(positions):
+            continue
+        if repeated:
+            ambiguous(location, procedure["id"], repeated[0])
+            continue
+        firsts = [positions[0] for positions in found]
+        if any(later <= earlier for earlier, later in zip(firsts, firsts[1:])):
             errors.append(_error("procedure_order", location, "critical", f"Procedure {procedure['id']} is out of order"))
+            continue
+        procedure_starts[procedure["id"]] = start + offsets[firsts[0]]
 
     for warning in document.get("warnings", []):
-        scoped, _, location = _scope(text, warning.get("section"), sections)
-        warning_at = scoped.find(warning["warning"])
-        action_at = scoped.find(warning["dangerous_action"])
-        if action_at < 0:
+        scoped_warning = scope(warning)
+        if scoped_warning is None:
+            continue
+        _, _, location, normalized, _ = scoped_warning
+        warnings_at = _occurrences(normalized, _phrase(warning["warning"]))
+        actions_at = _occurrences(normalized, _phrase(warning["dangerous_action"]))
+        if not actions_at:
             errors.append(_error("missing_dangerous_action", location, "error", f"Bound action is missing: {warning['dangerous_action']}"))
-        elif warning_at < 0:
+        elif not warnings_at:
             errors.append(_error("missing_warning", location, "critical", f"Warning {warning['id']} is missing"))
-        elif warning_at > action_at:
+        elif len(warnings_at) > 1 or len(actions_at) > 1:
+            ambiguous(location, warning["id"], warning["warning"] if len(warnings_at) > 1 else warning["dangerous_action"])
+        elif warnings_at[0] > actions_at[0]:
             errors.append(_error("warning_order", location, "critical", f"Warning {warning['id']} follows the dangerous action"))
 
     for recovery in document.get("recovery_steps", []):
-        scoped, _, location = _scope(text, recovery.get("section"), sections)
-        if recovery["step"] not in scoped:
+        scoped_recovery = scope(recovery)
+        if scoped_recovery is None:
+            continue
+        _, _, location, normalized, _ = scoped_recovery
+        triggers_at = _occurrences(normalized, _phrase(recovery["trigger"]))
+        steps_at = _occurrences(normalized, _phrase(recovery["step"]))
+        if not triggers_at:
+            errors.append(
+                _error("missing_recovery_trigger", location, "critical", f"No recovery trigger for {recovery['id']}: {recovery['trigger']}")
+            )
+        if not steps_at:
             errors.append(_error("missing_recovery_step", location, "critical", f"No recovery step for {recovery['id']}: {recovery['step']}"))
+        if triggers_at and steps_at:
+            if len(triggers_at) > 1 or len(steps_at) > 1:
+                ambiguous(location, recovery["id"], recovery["trigger"] if len(triggers_at) > 1 else recovery["step"])
+            elif steps_at[0] <= triggers_at[0]:
+                message = f"Recovery step {recovery['id']} does not follow its trigger: {recovery['trigger']}"
+                errors.append(_error("recovery_order", location, "critical", message))
 
     for prerequisite in document.get("prerequisites", []):
-        scoped, _, location = _scope(text, prerequisite.get("section"), sections)
-        if prerequisite["marker"] not in scoped:
+        scoped_prerequisite = scope(prerequisite)
+        if scoped_prerequisite is None:
+            continue
+        _, start, location, normalized, offsets = scoped_prerequisite
+        found_at = _occurrences(normalized, _phrase(prerequisite["marker"]))
+        if not found_at:
             errors.append(_error("missing_prerequisite", location, "critical", f"Missing prerequisite {prerequisite['id']}"))
+            continue
+        procedure_id = prerequisite.get("procedure")
+        if not procedure_id:
+            continue
+        if procedure_id not in procedure_ids:
+            message = f"{prerequisite['id']} names undeclared procedure {procedure_id}"
+            errors.append(_error("unknown_procedure", location, "critical", message))
+            continue
+        if procedure_id not in procedure_starts:
+            continue
+        if len(found_at) > 1:
+            ambiguous(location, prerequisite["id"], prerequisite["marker"])
+        elif start + offsets[found_at[0]] >= procedure_starts[procedure_id]:
+            message = f"Prerequisite {prerequisite['id']} does not precede procedure {procedure_id}"
+            errors.append(_error("prerequisite_order", location, "critical", message))
 
     for branch in document.get("branches", []):
-        scoped, _, location = _scope(text, branch.get("section"), sections)
-        if branch["condition"] not in scoped:
+        scoped_branch = scope(branch)
+        if scoped_branch is None:
+            continue
+        _, _, location, normalized, _ = scoped_branch
+        if not _occurrences(normalized, _phrase(branch["condition"])):
             errors.append(_error("missing_branch", location, "critical", f"Missing branch condition {branch['id']}: {branch['condition']}"))
         for marker in branch["required_markers"]:
-            if marker not in scoped:
+            if not _occurrences(normalized, _phrase(marker)):
                 errors.append(_error("incomplete_branch", location, "critical", f"Branch {branch['id']} is missing: {marker}"))
 
     return sorted(errors, key=lambda item: (item["location"], item["type"], item["message"]))
@@ -259,7 +473,7 @@ def inspect_bundle(repo_root: Path, bundle_path: Path) -> tuple[list[dict[str, s
     root = repo_root.resolve()
     bundle = load_bundle(require_external_bundle(root, bundle_path))
     paths = resolve_documents(bundle, root)
-    sources = validate_sources(bundle, root)
+    sources = validate_sources(bundle, root, bundle_path)
     records = []
     for spec, path in zip(bundle["documents"], paths, strict=True):
         try:
@@ -267,17 +481,53 @@ def inspect_bundle(repo_root: Path, bundle_path: Path) -> tuple[list[dict[str, s
             text = data.decode("utf-8")
         except (OSError, UnicodeError) as exc:
             raise ValueError(f"cannot read document {path}: {exc}") from exc
+        prose = path.suffix.casefold() in PROSE_SUFFIXES
+        gaps, malformed = _find_gaps(_gap_search_text(text, prose))
+        semantic = validate_document(text, spec, prose=prose) + malformed
         records.append(
             {
                 "path": path,
                 "profile": spec["profile"],
                 "document_sha256": "sha256:" + sha256_bytes(data),
-                "language": collect_diagnostics(text, spec["profile"], bundle["glossary"]),
-                "semantic": validate_document(text, spec),
+                "language": collect_diagnostics(text, spec["profile"], bundle["glossary"]) if prose else [],
+                "semantic": sorted(semantic, key=lambda item: (item["location"], item["type"], item["message"])),
                 "reader_findings": spec.get("reader_findings", []),
+                "gaps": gaps,
+                "language_checked": prose,
             }
         )
     return sources, records
+
+
+def _blank(value: str) -> str:
+    return re.sub(r"[^\n]", " ", value)
+
+
+def _gap_search_text(text: str, prose: bool) -> str:
+    """Return text where gap markers count: a prose document hides fenced and inline code; other files search everything."""
+    if not prose:
+        return text
+    parts = []
+    for _, line, in_code in _lines(text):
+        parts.append(_blank(line) if in_code else INLINE_CODE.sub(lambda match: _blank(match.group()), line))
+    return "".join(parts)
+
+
+def _find_gaps(text: str) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    """Return well-formed gap markers in document order and a malformed_gap error for every other opening."""
+    gaps: list[dict[str, Any]] = []
+    starts = set()
+    for match in GAP_MARKER.finditer(text):
+        starts.add(match.start())
+        line = text.count("\n", 0, match.start()) + 1
+        gaps.append({"line": line, "missing": match.group("missing").strip(), "owner": match.group("owner").strip()})
+    malformed = []
+    for match in GAP_OPENING.finditer(text):
+        if match.start() not in starts:
+            line = text.count("\n", 0, match.start()) + 1
+            message = f"Gap marker on line {line} is not [GAP: <missing fact>; owner: <next owner>]"
+            malformed.append(_error("malformed_gap", f"line {line}", "critical", message))
+    return gaps, malformed
 
 
 def repair_diagnostics(
@@ -319,6 +569,15 @@ def repair_diagnostics(
                 **(
                     {"required_action": SOURCE_REPAIRS[item["type"]], "valid_repairs": [SOURCE_REPAIRS[item["type"]]]}
                     if item["type"] in SOURCE_REPAIRS
+                    else {}
+                ),
+                **(
+                    {
+                        "category": DOCUMENT_REPAIRS[item["type"]][0],
+                        "required_action": DOCUMENT_REPAIRS[item["type"]][1],
+                        "valid_repairs": [DOCUMENT_REPAIRS[item["type"]][1]],
+                    }
+                    if item["type"] in DOCUMENT_REPAIRS
                     else {}
                 ),
                 **named,

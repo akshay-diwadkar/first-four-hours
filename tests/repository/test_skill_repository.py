@@ -91,17 +91,30 @@ def test_invocation_metadata_rejects_unsafe_or_contradictory_declarations(tmp_pa
     shutil.copytree(REPO_ROOT / "skills", parity_root / "skills", ignore=shutil.ignore_patterns("__pycache__"))
     assert validator.validate_contract_versions(parity_root) == []
     ticket_md = parity_root / "skills" / "workbench" / "ticket" / "SKILL.md"
-    ticket_md.write_text(ticket_md.read_text(encoding="utf-8").replace('version: "1.0.0"', 'version: "1.1.0"', 1), encoding="utf-8")
+    version = re.search(r'^  version: "(\d+)\.(\d+)\.(\d+)"$', ticket_md.read_text(encoding="utf-8"), re.M)
+    assert version, "Ticket SKILL.md must declare a plain MAJOR.MINOR.PATCH metadata.version"
+    major, minor_part = int(version.group(1)), int(version.group(2))
+    current = ".".join(version.groups())
+    minor = f"{major}.{minor_part + 1}.0"
+    breaking = f"{major + 1}.0.0"
+    prerelease = f"{current}-rc.1"
+
+    def rewrite(path: Path, old: str, new: str) -> None:
+        text = path.read_text(encoding="utf-8")
+        assert text.count(old) == 1, (path, old)
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    rewrite(ticket_md, f'version: "{current}"', f'version: "{minor}"')
     drifted = validator.validate_contract_versions(parity_root)
     assert any(error.startswith("skills/workbench/ticket/scripts/github_common.py:") for error in drifted), drifted
     assert not any("blueprint_runtime.py" in error for error in drifted), drifted
-    ticket_md.write_text(ticket_md.read_text(encoding="utf-8").replace('version: "1.1.0"', 'version: "2.0.0"', 1), encoding="utf-8")
+    rewrite(ticket_md, f'version: "{minor}"', f'version: "{breaking}"')
     broken = validator.validate_contract_versions(parity_root)
     assert sum("blueprint_runtime.py" in error for error in broken) == 2, broken
     # A skill version contract consumers cannot accept fails parity even when its exact declaration matches it.
     github_common = parity_root / "skills" / "workbench" / "ticket" / "scripts" / "github_common.py"
-    ticket_md.write_text(ticket_md.read_text(encoding="utf-8").replace('version: "2.0.0"', 'version: "1.0.0-rc.1"', 1), encoding="utf-8")
-    github_common.write_text(github_common.read_text(encoding="utf-8").replace('TICKET_VERSION = "1.0.0"', 'TICKET_VERSION = "1.0.0-rc.1"', 1), encoding="utf-8")
-    assert 'TICKET_VERSION = "1.0.0-rc.1"' in github_common.read_text(encoding="utf-8")
+    rewrite(ticket_md, f'version: "{breaking}"', f'version: "{prerelease}"')
+    rewrite(github_common, f'TICKET_VERSION = "{current}"', f'TICKET_VERSION = "{prerelease}"')
+    assert f'TICKET_VERSION = "{prerelease}"' in github_common.read_text(encoding="utf-8")
     prerelease = validator.validate_contract_versions(parity_root)
     assert any(error.startswith("skills/workbench/ticket/scripts/github_common.py:") for error in prerelease), prerelease

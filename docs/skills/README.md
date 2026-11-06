@@ -19,7 +19,7 @@ Each page also says why the skill is built the way it is: the failure it exists 
 ## Sensemaking
 
 - [Ideate](ideate.md): research and compare options for a goal and recommend a direction you choose from.
-- [Reason](reason.md): check a judgment at the moments it matters, or ask the one question only you can answer.
+- [Reason](reason.md): check a judgment at the moments it matters, or ask what only you can answer.
 - [Router](router.md): lay out which skills to use, in what order, as far as that can be known now.
 - [Scribe](scribe.md): write or audit technical documentation that carries its sources faithfully.
 

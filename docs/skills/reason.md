@@ -1,6 +1,6 @@
 # Reason
 
-Reason is a short, bounded check of a judgment: before an agent commits to an approach, after a failure or a change of direction, and before it presents a result. It can also restore a stuck decision or ask you the one question only you can answer. It belongs to the Sensemaking domain.
+Reason is a short, bounded check of a judgment: before an agent commits to an approach, after a failure or a change of direction, and before it presents a result. It can also restore a stuck decision or ask you what only you can answer. It belongs to the Sensemaking domain.
 
 ## When to use it
 
@@ -28,7 +28,7 @@ Reason picks the smallest branch that fits the concern:
 
 - `decide` restores readiness when no defensible next move exists;
 - `challenge` attacks one load-bearing claim in a concrete proposal or result, preferring an observation whose expected result it states first, such as a file read, a search, or a run it names for the agent, over rereading the agent's own reasoning, and saying so when its result rests on no observation;
-- `ask` puts one smallest action-changing question to you when progress depends on a fact or choice only you can supply.
+- `ask` puts the smallest action-changing question to you when progress depends on a fact or choice only you can supply, or several at once when no answer could change another.
 
 The agent that consulted it weighs the result, fixes supported gaps, and chooses any replacement itself.
 

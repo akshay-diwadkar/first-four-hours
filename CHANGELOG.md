@@ -12,6 +12,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Changed
 
+- Assess 1.5.0: each finding now shows how the problem happens.
+  - A finding carries a `scenario`: short steps from a trigger to the wrong outcome, set against what should happen, each resting on the finding's cited evidence. Its defect is one plain sentence, and its consequence says who is affected and how badly.
+  - The final report gives each finding's scenario with its severity and defect.
+  - An assessment bundle must now give each finding a non-empty `scenario` array, and sealing refuses one without it. Assessments it seals record 1.5.0, and `check`, re-reviews, and Blueprint still accept every 1.x assessment, including ones without scenarios.
 - Blueprint 1.5.0: costs less on small plans.
   - In a tiny fix, code that is one source file plus tests or fixtures exercising only it no longer earns a fresh challenger on its own. A tiny fix is one or two files, not counting docs, changelog, or version lines, with no integration, environment, or test-selection fan-out. A budget change, a cross-skill change, an irreversible effect, a seal-runtime change, or a validator, runtime, or configuration that other code reads still earns one. Blueprint still walks every draft itself, and every Reason checkpoint still runs.
   - A question that one file read or search answers no longer loads the delegation reference first.

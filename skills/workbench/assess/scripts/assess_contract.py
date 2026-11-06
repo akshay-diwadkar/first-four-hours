@@ -16,7 +16,7 @@ from typing import Any
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.4.0"
+CONTRACT_VERSION = "1.5.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
@@ -41,6 +41,7 @@ FINDING_FIELDS = {
     "severity",
     "basis",
     "defect",
+    "scenario",
     "locators",
     "consequence",
     "required_truth",
@@ -615,11 +616,16 @@ def validate_bundle(raw: Any) -> dict[str, Any]:
                 "finding.basis_unproven",
                 f"{label}.basis observed requires a source locator whose assessed source role is proof",
             )
+        raw_scenario = finding["scenario"]
+        if not isinstance(raw_scenario, list) or not raw_scenario:
+            raise _fail("finding.scenario_missing", f"{label}.scenario must be a non-empty array of steps")
+        scenario = _string_list(raw_scenario, f"{label}.scenario")
         findings.append(
             {
                 "severity": severity,
                 "basis": basis,
                 "defect": _string(finding["defect"], f"{label}.defect"),
+                "scenario": scenario,
                 "locators": locators,
                 "consequence": _string(finding["consequence"], f"{label}.consequence"),
                 "required_truth": _string(finding["required_truth"], f"{label}.required_truth"),
@@ -976,6 +982,8 @@ def render_result(
                 f"- Severity: {_scalar(finding['severity'])}",
                 f"- Basis: {_scalar(finding['basis'])}",
                 f"- Defect: {_scalar(finding['defect'])}",
+                "- Scenario:",
+                *[f"  - {_scalar(step)}" for step in finding["scenario"]],
                 "- Evidence / authority:",
                 *[f"  - {_scalar(locator)}" for locator in finding["locators"]],
                 f"- Consequence: {_scalar(finding['consequence'])}",

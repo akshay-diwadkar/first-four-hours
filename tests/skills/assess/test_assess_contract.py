@@ -127,6 +127,10 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     finding = {
         "severity": "P1",
         "defect": "The changed value violates the governing requirement.",
+        "scenario": [
+            "A caller reads the changed value in service.py.",
+            "The value breaks the rule issue-382 sets, which the base value met.",
+        ],
         "locators": [
             {"kind": "base-file", "path": "service.py", "start_line": 1, "end_line": 1},
             {"kind": "head-file", "path": "service.py", "start_line": 1, "end_line": 1},
@@ -145,6 +149,16 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
         assert refused.value.code == "finding.severity_invalid"
         assert "findings[0].severity" in refused.value.message
         assert "P0, P1, P2, P3" in refused.value.message
+    unexplained = {key: value for key, value in finding.items() if key != "scenario"}
+    for candidate, code, label in (
+        (unexplained, "bundle.field_missing", "scenario"),
+        ({**finding, "scenario": []}, "finding.scenario_missing", "findings[0].scenario"),
+        ({**finding, "scenario": ["   "]}, "bundle.string_invalid", "findings[0].scenario[0]"),
+    ):
+        with pytest.raises(AssessError) as refused:
+            validate_bundle(_bundle(tmp_path, assessed_sources=sources, result="findings", findings=[candidate]))
+        assert refused.value.code == code
+        assert "findings[0]" in refused.value.message and label in refused.value.message
     output = prepare_assessment_workspace(repo, "case").output_path
     high = _bundle(tmp_path, assessed_sources=sources, result="findings", findings=[unsupported[0]])
     refused_seal, _ = _seal(repo, tmp_path, high, output)
@@ -174,13 +188,20 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     ]
     assert artifact.startswith("# Assessment\n")
     receipt = artifact.splitlines()[-1]
-    assert receipt.startswith("<!-- assessment-result: 1.4.0; sha256: ")
+    assert receipt.startswith("<!-- assessment-result: 1.5.0; sha256: ")
     assert "`findings`" in artifact
     assert '- Severity: "P1"' in artifact
     assert f"{head}:service.py#L1-L1" in artifact
     assert "source_id" in artifact and "issue-382" in artifact
     assert "implementation_plan" not in artifact
     assert '- Basis: "reasoned"' in artifact
+    assert (
+        '- Defect: "The changed value violates the governing requirement."\n'
+        "- Scenario:\n"
+        '  - "A caller reads the changed value in service.py."\n'
+        '  - "The value breaks the rule issue-382 sets, which the base value met."\n'
+        "- Evidence / authority:\n"
+    ) in artifact
     current = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert current.returncode == 0, current.stdout + current.stderr
     body = artifact.removesuffix("\n").rpartition("\n")[0] + "\n"
@@ -199,7 +220,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
         parse_result(f"{blocked}<!-- assessment-result: 1.0.0; sha256: {blocked_digest} -->\n")
     assert refused_blocked.value.code == "artifact.shape_invalid"
     assert "requires a material limitation" in refused_blocked.value.message
-    legacy = artifact.replace("<!-- assessment-result: 1.4.0; ", "<!-- assessment-result: 2.0.0; ", 1)
+    legacy = artifact.replace("<!-- assessment-result: 1.5.0; ", "<!-- assessment-result: 2.0.0; ", 1)
     output.write_text(legacy, encoding="utf-8")
     checked = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert checked.returncode != 0
@@ -207,6 +228,14 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     assert retired["code"] == "artifact.version_unsupported"
     assert retired["category"] == "stale_evidence"
     assert output.read_text(encoding="utf-8") == legacy
+    # An assessment sealed before findings carried a scenario still checks.
+    lines = body.splitlines(keepends=True)
+    start = lines.index("- Scenario:\n")
+    unscripted = "".join(lines[:start] + lines[start + 3 :])
+    unscripted_digest = hashlib.sha256(unscripted.encode("utf-8")).hexdigest()
+    output.write_text(f"{unscripted}<!-- assessment-result: 1.4.0; sha256: {unscripted_digest} -->\n", encoding="utf-8")
+    earlier = _run(repo, "--input", f"output={output}", "--format", "json", "check")
+    assert earlier.returncode == 0, earlier.stdout + earlier.stderr
     # A receipt that leads the document instead of ending it is refused.
     output.write_text(receipt + "\n" + body, encoding="utf-8")
     displaced = _run(repo, "--input", f"output={output}", "--format", "json", "check")
@@ -218,6 +247,10 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     beyond_end = {
         "severity": "P2",
         "defect": "The cited range does not exist in the reviewed file.",
+        "scenario": [
+            "The finding cites lines 1-5 of service.py.",
+            "The reviewed file has fewer lines, so the range cannot be bound.",
+        ],
         "locators": [{"kind": "head-file", "path": "service.py", "start_line": 1, "end_line": 5}],
         "consequence": "The finding cannot be bound to reviewed text.",
         "required_truth": "Every cited range must exist in the reviewed file.",

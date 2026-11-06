@@ -47,15 +47,23 @@ Assess reads issue #40 first and works out what the change must do before it rea
 - Severity: P1
 - Basis: reasoned
 - Defect: the share endpoint loads a list by its number without checking that the caller owns it or holds its share link.
-- Consequence: any signed-in customer can read any other customer's list by changing the number in the address.
+- Scenario:
+  - Signed-in customer Amara opens list 41, one of Amara's own shared lists.
+  - Amara changes 41 to 42 in the address; list 42 belongs to Lars and was never shared with Amara.
+  - The endpoint returns Lars's list. Issue #40 says Amara should be refused.
+- Consequence: every customer's private lists are readable by any other signed-in customer.
 - Required truth: issue #40 allows a list to be opened only by its owner and by people with its link.
 
 ### Finding 2
 
 - Severity: P1
 - Basis: reasoned
-- Defect: the migration adds the new sharing column with no default, so every existing list reads as empty, and the list page treats that as an error.
-- Consequence: customers with saved lists would see an error page after deploy.
+- Defect: the migration adds the new sharing column with no default.
+- Scenario:
+  - Before deploy, a customer has a saved list.
+  - The migration adds the sharing column, so the list's value in it is empty.
+  - The list page treats the empty value as an error, and the customer gets an error page instead of the list.
+- Consequence: every customer with a saved list loses access to it after deploy.
 - Required truth: existing lists keep working and stay private.
 ```
 

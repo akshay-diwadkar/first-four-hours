@@ -30,7 +30,7 @@ Before sealing, ask of each material requirement, surface, candidate, or delegat
 
 - A finding at any severity, including `P0`, changes the result, not the coverage stop: continue through every remaining material requirement and materially affected surface inside the bounded assessment, give each material requirement and materially affected surface an evidence or behavior disposition, and report every independently material defect discovered before concluding.
 - Merge observations only when one underlying defect and one concrete repair or truth to restore would resolve them all; shared severity, axis, file, generic consequence, or blocking status does not merge independent defects, nor does a shared reviewer or slice.
-- Style preference, speculative risk or cleanup, optional enhancement, or architecture taste without current material consequence is not a finding and receives no severity. A `P3` finding still needs a concrete defect, locators, evidence, consequence, and required truth; low severity never admits a nit.
+- Style preference, speculative risk or cleanup, optional enhancement, or architecture taste without current material consequence is not a finding and receives no severity. A `P3` finding still needs a concrete defect, scenario, locators, evidence, consequence, and required truth; low severity never admits a nit.
 
 ## Severity
 
@@ -43,7 +43,7 @@ Each finding's `severity` is exactly one of these levels, ordered from most to l
 | `P2` | Medium: a concrete material defect with bounded impact or limited triggering conditions that warrants a normal engineering fix. | Address through ordinary planned work; no emergency is implied. |
 | `P3` | Low: a smaller but real actionable correctness, code-quality, or maintainability defect with evidenced consequence. | Address when practical; it remains a finding worth acting on. |
 
-Choose the level from the evidenced consequence, affected scope, reachable conditions, and urgency, and explain material triggering conditions in the finding's `defect` or `consequence`. Never infer it from a security label, confidence, reviewer count, a failing-test requirement, or the vocabulary describing the defect. Severity informs the user's prioritization and merge or release decision; it never grants approval, merge, execution, or remediation authority. Any accepted finding, including `P3`, keeps the `findings` result; `blocked` still means the assessment cannot be completed trustworthily, never a severity.
+Choose the level from the evidenced consequence, affected scope, reachable conditions, and urgency, and explain material triggering conditions in the finding's `scenario`. Never infer it from a security label, confidence, reviewer count, a failing-test requirement, or the vocabulary describing the defect. Severity informs the user's prioritization and merge or release decision; it never grants approval, merge, execution, or remediation authority. Any accepted finding, including `P3`, keeps the `findings` result; `blocked` still means the assessment cannot be completed trustworthily, never a severity.
 
 ## Bundle fields
 
@@ -51,7 +51,9 @@ Choose the level from the evidenced consequence, affected scope, reachable condi
 - Locators: `{"kind":"head-file","path":"a/b.py","start_line":1,"end_line":9}`, `{"kind":"head-path","path":"a/b.bin"}` for paths without text lines, `{"kind":"source","source_id":"id"}`; `base-` variants cite the base.
 - `examined`: locators you actually inspected; `clear` needs one. Sealing derives changed paths no locator cites and refuses until you inspect each one or name its complete repository path in `limitations`. One limitation may group several paths; a path counts only when it does not appear solely inside a longer path.
 - `limitations`: `[]` only when you claim none; include self-review for any part of a self-authored change that no fresh-context owner or delegate examined.
-- Each finding: `severity` (a level from Severity above, spelled exactly), concrete `defect`, `locators`, `consequence`, `required_truth` (truth to restore, not an implementation), and `basis`: `observed` only when you ran or reproduced the failure and cite a `proof` snapshot of its output, else `reasoned`.
+- Each finding: `severity` (a level from Severity above, spelled exactly), `defect`, `scenario`, `locators`, `consequence`, `required_truth` (truth to restore, not an implementation), and `basis`: `observed` only when you ran or reproduced the failure and cite a `proof` snapshot of its output, else `reasoned`.
+  - `defect` is one plain sentence stating what is wrong; `consequence` says only who is affected and how badly.
+  - `scenario` is a non-empty array of short steps a reader can follow from a concrete trigger to the wrong outcome, set against what should happen, each resting on the finding's locators. For a missing protection, show its absence going unnoticed, such as removing the guard while the suite still passes. Scale it to the finding: two or three steps suit a `P3`.
 
 ## Reassessment and stop
 

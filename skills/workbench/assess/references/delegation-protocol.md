@@ -38,7 +38,7 @@ Each subagent receives only a curated packet:
 
 Never give a subagent the owner's transcript or exploration notes, the implementer's narrative or self-assessment, PR prose, or prior findings beyond those delta items. It reviews adversarially inside that slice, continues after the strongest defect until independently material defects in scope are exhausted, returns material ambiguity or contradiction instead of broadening authority, and does not delegate.
 
-It always returns its examined scope and any material ambiguity, plus either candidate findings or a compact bounded-clear statement, and nothing else. A candidate finding contains concrete defect, material consequence, exact authority locator, and exact implementation/proof locator, plus whether it was observed by execution or reasoned; no essays, transcripts, plans, matrices, scores, or confidence.
+It always returns its examined scope and any material ambiguity, plus either candidate findings or a compact bounded-clear statement, and nothing else. A candidate finding contains concrete defect, the short steps from trigger to wrong outcome, material consequence, exact authority locator, and exact implementation/proof locator, plus whether it was observed by execution or reasoned; no essays, transcripts, plans, matrices, scores, or confidence.
 
 ## Owner verification
 

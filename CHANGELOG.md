@@ -6,6 +6,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- Blueprint 1.5.3: its instructions are easier to follow. The steps now come first, the read-only boundaries come after them, and every step ends on a check that tells the planner when it is done. Challenge and repair is done only when every finding is repaired, rejected on evidence, or returned to you, and every check the plan authors that a repair changed has been re-applied to every file, name, and text it scans. SKILL.md and its references are both shorter than before. An unverified claim now has one name, prediction, in place of three. It seals plans with contract version 1.5.3.
+- Construct 1.5.3: ships the Blueprint 1.5.3 runtime copy, so it reports contract version 1.5.3. It still accepts every sealed 1.x plan.
 - Blueprint 1.5.2: a repair that widens what a plan's own check matches no longer seals a plan that check fails. When a repair changes what a check matches or rejects, Blueprint now re-applies that check to every file, name, and text it scans, not only the repaired lines, and the fresh challenger looks for a check that would fail on text or names the plan drafts. It seals plans with contract version 1.5.2.
 - Construct 1.5.2: ships the Blueprint 1.5.2 runtime copy, so it reports contract version 1.5.2. It still accepts every sealed 1.x plan.
 - Blueprint 1.5.1: a plan no longer seals an unchecked guess about an external tool's output as fact.

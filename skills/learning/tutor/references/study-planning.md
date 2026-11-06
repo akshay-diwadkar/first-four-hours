@@ -4,11 +4,13 @@
 
 - `<section id="goal">`, shared by every skill that uses the plan: what the learner wants to be able to do, any deadline or examination date, the time available, and any whole-course delivery, as the learner states it.
 - `<section id="learning-sequence">`, owned by Tutor:
-  - **Sequence:** topics in order, each with its prerequisites and, once it exists, a relative link to its lesson;
+  - **Sequence:** topics in order, each with its prerequisites and, once it exists, a relative link to its lesson; for an examination goal, each topic's name starts with the syllabus area it belongs to, as any examination coverage names that area, followed by the topic's own name when the area holds several, and names every area a topic spans; renaming an earlier topic here leaves its lesson file's name unchanged;
   - **Schedule:** sessions or dates that fit the available time, less what other sections already schedule, and any deadline, with review of earlier topics as spaced retrieval, where the learner answers from memory at growing intervals instead of re-reading, and milestones that show progress;
   - **Progress:** each topic as not started, taught, demonstrated, or needs revision, judged from lesson records, never delivery alone: needs revision while a difficulty or misconception is open, or demonstrated when its records list it as Demonstrated with nothing Unresolved, even before study; else not started until a lesson on it is studied; otherwise taught.
 
 Keep every other section, such as examination coverage another skill writes, exactly as it is, and change `goal` only when the learner changes it. When creating the plan, add only these two sections; when an existing plan lacks one of them, add it.
+
+When the plan also has examination coverage, say once in this section that Progress shows understanding while coverage shows examination performance. They disagree on an area when coverage, from marked attempts, rates it secure while one of its topics needs revision, or needs work while it has topics and all are demonstrated. On every write to this section, add, update, or remove a note beside the affected topics' progress so it names each current disagreement, and let the next step you schedule or offer follow the coverage. When you change this section's schedule, check that every section's sessions together still fit the time available; when they do not, say so and offer choices instead of changing another section.
 
 Before writing a course up front, say whether each lesson will be an outline, guided notes, or a complete lesson with worked examples and checked exercises; each learning record says not yet studied until the learner works through it with you or says they studied it.
 

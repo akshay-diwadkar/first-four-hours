@@ -28,6 +28,33 @@ Many coding agents have a built-in plan mode: the agent proposes a plan, you app
 
 A blueprint is a house's construction drawings. When the crew finds the lot two metres shorter than the drawings show where the porch goes, they do not shrink the porch themselves. The porch's size may matter for reasons the crew cannot see, such as drainage, the permit, or what the owner asked for, so they stop work and the architect redraws. In return, any crew can build from the drawings, hired months later, without ever meeting the architect, because every decision is on paper. Blueprint plans the same way. Every decision is settled before editing, Blueprint attacks it against the code (a risky plan also gets a fresh-context challenger), and it is sealed with the proof of completion fixed in advance: verification commands with their expected results, and a named check, or a named owner, behind each completion condition. Construct is the crew. When the code disagrees with the plan, it does not adjust the plan; it stops with `plan-contradiction`, and a new `/blueprint` redraws it.
 
+**Questions to ask before you start.** The choice comes before the work, so ask questions that predict rather than judge in hindsight:
+
+1. "If the executor hits a fork halfway, who decides?" If the agent can decide while you watch, plan mode is enough. If nobody should have to, use Blueprint.
+2. "If this is wrong, when will I find out?" Within minutes points to plan mode. In review, in production, or never points to Blueprint.
+3. "Will whoever builds this remember why?" The same agent in the same session will. Anyone else, or any later session, needs the decisions written down.
+
+**The same change, planned both ways.** *Illustrative and shortened: FreshCart is a made-up online grocery service, and this is the rate-limit plan that [Anatomy of a sealed blueprint](../concepts/anatomy-of-a-blueprint.md) walks through, not a recorded run.* Someone is scraping FreshCart's public search endpoint, and a cheaper model will build the fix overnight with nobody watching. A plan-mode plan for it could read:
+
+```markdown
+1. Add rate-limiting middleware for the search endpoint.
+2. Return 429 when a client goes over the limit.
+3. Exempt partner API keys.
+4. Add tests.
+```
+
+For an agent you are watching, that is a good plan. But each line hides a fork the agent would settle in the middle of an edit. The sealed blueprint settles each one before anyone edits:
+
+| Plan-mode line | The fork inside it | The blueprint's decision |
+| :--- | :--- | :--- |
+| Add rate-limiting middleware | Where in the chain, and which client does each limit count? | Right after `authenticate`, keyed on the API key, or else on the address from the trusted `client_address` helper. Never the forwarded header, which any client can forge. |
+| for the search endpoint | `/search/suggest` shares the search handler. Is it limited too? | Yes, stated in the Goal and the completion conditions after the challenger noticed it. |
+| Return 429 | What else does the response carry, and does the handler still run? | 429 with Retry-After set to the whole seconds until the next token, and the handler is not called. |
+| Exempt partner API keys | How does the code know a partner key? | Any key in `settings.PARTNER_KEYS` skips the limit. |
+| Add tests | Which tests would catch a wrong limiter? | Four cases, each naming the wrong implementation it rejects: a limiter that never fires, one bucket shared by every client, a limit keyed on the forgeable header, and an ignored exemption. The new test must fail on today's code before the change. |
+
+With you watching, the agent settling these forks as it goes is fine, because you would see the forwarded header in the diff. Overnight, each fork is a guess nobody reviews until morning. One wrong guess opens the limit to anyone who forges a header, and another limits `/search/suggest` without anyone deciding to.
+
 **Where judgment lives.** In plan mode, judgment happens during execution, hidden in the edits. "Update the callers" is enough of a plan, because the agent finds the callers and decides each one as it goes. In Blueprint, judgment happens before execution, and it is attacked rather than only approved by you: Blueprint's own pre-mortem walk, plus a fresh-context challenger for a risky plan, hunts for the input, exit path, or consumer the plan missed.
 
 **What the cost buys.** Plan mode does not avoid the cost of judgment. It defers it and hides it inside the work, where a wrong turn costs the most. Blueprint pays that cost up front and makes it visible, even when the change would have gone fine. It can be cheaper overall when execution is delegated, repeated, or resumed, because the judgment is paid once and the execution can use a cheaper model; like the cheaper-model aim above, that is not a measured result. Stakes alone do not decide it: a low-stakes change handed to a cheaper model still benefits from construction drawings, and a high-stakes change you steer live, diff by diff, may be well served by marching orders.
@@ -47,12 +74,6 @@ A blueprint is a house's construction drawings. When the crew finds the lot two 
 - Mistakes surface within minutes.
 - The change is local and easy to reverse.
 - Building is how you learn.
-
-**Questions to ask before you start.** The choice comes before the work, so ask questions that predict rather than judge in hindsight:
-
-1. "If the executor hits a fork halfway, who decides?" If the agent can decide while you watch, plan mode is enough. If nobody should have to, use Blueprint.
-2. "If this is wrong, when will I find out?" Within minutes points to plan mode. In review, in production, or never points to Blueprint.
-3. "Will whoever builds this remember why?" The same agent in the same session will. Anyone else, or any later session, needs the decisions written down.
 
 There is also a middle path: start in plan mode, and switch to Blueprint when the plan grows "I'll check whether…" clauses, touches consumers you had not counted, or reaches a choice that is yours rather than an engineering detail.
 

@@ -19,7 +19,9 @@ def check(repo_root: Path, bundle_path: Path) -> tuple[int, dict[str, Any]]:
     diagnostics = repair_diagnostics([], sources, phase="write", path=bundle_path)
     warnings: list[dict[str, Any]] = []
     documents = []
+    gaps = []
     for record in records:
+        gaps += [{"document": str(record["path"]), **gap} for gap in record["gaps"]]
         blocking = [item for item in record["language"] if item["severity"] == "error"]
         others = [item for item in record["language"] if item["severity"] != "error"]
         diagnostics += repair_diagnostics(
@@ -29,6 +31,8 @@ def check(repo_root: Path, bundle_path: Path) -> tuple[int, dict[str, Any]]:
         documents.append({"path": str(record["path"]), "document_sha256": record["document_sha256"]})
     if diagnostics:
         return 1, {"status": "blocked", "diagnostics": diagnostics, "warnings": warnings}
+    if gaps:
+        return 0, {"status": "incomplete", "documents": documents, "gaps": gaps, "warnings": warnings}
     return 0, {"status": "complete", "documents": documents, "warnings": warnings}
 
 

@@ -21,11 +21,11 @@ Start it yourself with `/scribe`, or the agent may start it when your request ma
 
 ## What happens
 
-Scribe works out the audience and the reader's job from your request and sources, and asks you only about publication or content-policy choices the sources cannot settle. A fact missing from the sources stays a recorded gap; it is never filled in. Its language checks apply MTE-1, an original controlled-language contract inspired by ASD-STE100; Scribe claims no official ASD-STE100 compliance. The `strict` profile is for hazardous procedures, commands, warnings, notices, and recovery; everything else uses `standard`. Scribe consults [Reason](reason.md) at its judgment points.
+Scribe works out the audience and the reader's job from your request and sources, and asks you only about publication or content-policy choices the sources cannot settle. Facts you paste into the chat are saved as evidence beside the temporary bundle, outside your repository. A fact missing from the sources stays a recorded gap, marked in the document as `[GAP: <missing fact>; owner: <next owner>]`; it is never filled in. Its language checks apply MTE-1, an original controlled-language contract inspired by ASD-STE100; Scribe claims no official ASD-STE100 compliance. The `strict` profile is for hazardous procedures, commands, warnings, notices, and recovery; everything else uses `standard`. Language checks run only on Markdown and plain-text documents; error messages in source code get the fact and command checks alone. Scribe consults [Reason](reason.md) at its judgment points.
 
 ## What you get
 
-- Write: each document you asked for, created or edited in place where you want it and committable. One run can write several documents; the final check changes no file. The support bundle, `document-bundle.json`, is a temporary file outside the repository.
+- Write: each document you asked for, created or edited in place where you want it and committable. One run can write several documents; the final check changes no file. The support bundle, `document-bundle.json`, is a temporary file outside the repository. When only recorded gaps remain, the check reports `incomplete` and lists each gap with its owner.
 - Audit: `.first-four-hours/scribes/<slug>/scribe-audit.md`, an ignored report with one section per audited document: its hash, every finding, and the agent's reader judgment, labeled apart from the checks. An audit never modifies the documents, their bundle, or their sources.
 
 A passing check shows only that the facts the bundle binds, such as commands, paths, values, warnings, and recovery steps, still match their sources and the document. It does not prove that the sources are correct or that they support every claim; that judgment stays with the agent.

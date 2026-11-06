@@ -36,6 +36,7 @@ def render(slug: str, reports: list[dict[str, Any]]) -> str:
             "",
             f"- Document SHA-256: `{_line(report['document_sha256'])}`",
             f"- Profile: `{_line(report['profile'])}`",
+            *([] if report["language_checked"] else ["- Language checks: skipped (not Markdown or plain text)"]),
             f"- Material findings: {'yes' if report['material_findings'] else 'no'}",
             "",
             "### Findings",
@@ -75,8 +76,17 @@ def audit(repo_root: Path, bundle_path: Path, slug: str) -> tuple[int, dict[str,
         return 1, {"status": "blocked", "diagnostics": repair_diagnostics([], sources, phase="audit", path=bundle_path)}
     reports = []
     for record in records:
+        gaps = [
+            {
+                "type": "unresolved_gap",
+                "location": f"line {gap['line']}",
+                "severity": "error",
+                "message": f"Unresolved gap: {gap['missing']}; owner: {gap['owner']}",
+            }
+            for gap in record["gaps"]
+        ]
         findings = repair_diagnostics(
-            record["language"], record["semantic"], phase="audit", path=record["path"], document=record["path"]
+            record["language"], record["semantic"] + gaps, phase="audit", path=record["path"], document=record["path"]
         )
         reports.append(
             {
@@ -86,6 +96,7 @@ def audit(repo_root: Path, bundle_path: Path, slug: str) -> tuple[int, dict[str,
                 "findings": findings,
                 "material_findings": any(item["severity"] in {"error", "critical"} for item in findings),
                 "reader_findings": record["reader_findings"],
+                "language_checked": record["language_checked"],
             }
         )
     try:

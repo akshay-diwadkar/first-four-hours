@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 from bundle_workspace import WorkspaceError, prepare_workspace
 from check_document import validate_document, validate_sources
+from check_document_language import collect_diagnostics
 
 from tools.validation.git_test_support import seed_git
 from tools.validation.python_test_support import run_python
@@ -28,8 +29,8 @@ def cli(repo: Path, command: str, **inputs: str) -> tuple[int, dict[str, Any]]:
     return result.returncode, json.loads(result.stdout)
 
 
-def source_types(bundle: dict[str, Any], repo: Path) -> set[str]:
-    return {item["type"] for item in validate_sources(bundle, repo)}
+def source_types(bundle: dict[str, Any], repo: Path, bundle_path: Path) -> set[str]:
+    return {item["type"] for item in validate_sources(bundle, repo, bundle_path)}
 
 
 def snapshot(*paths: Path) -> dict[Path, tuple[bytes, int]]:
@@ -75,16 +76,17 @@ def test_write_checks_every_listed_document_without_writing(document_case: tuple
     repo, documents, bundle = document_case
     runbook, reference = documents / "runbook.md", documents / "reference.md"
     # Source validation on the untouched bundle: stale hashes, audit-namespace sources, and undeclared sources.
-    assert source_types(bundle, repo) == set()
+    temp_bundle = repo.parent / "temp" / "document-bundle.json"
+    assert source_types(bundle, repo, temp_bundle) == set()
     assert validate_document(runbook.read_text(encoding="utf-8"), bundle["documents"][0]) == []
     stale = copy.deepcopy(bundle)
     stale["sources"][0]["sha256"] = "0" * 64
-    assert "source_hash_mismatch" in source_types(stale, repo)
+    assert "source_hash_mismatch" in source_types(stale, repo, temp_bundle)
     report = copy.deepcopy(bundle)
     report["sources"].append(
         {"id": "SRC-2", "path": ".first-four-hours/scribes/runbook/scribe-audit.md", "sha256": "0" * 64, "authority": "audit report"}
     )
-    assert "namespace_source" in source_types(report, repo)
+    assert "namespace_source" in source_types(report, repo, temp_bundle)
     undeclared = copy.deepcopy(bundle)
     undeclared["documents"][1]["required_facts"] = [
         {"id": "FACT-1", "claim": "Run the service.", "source_ids": ["SRC-1", "SRC-9"]}
@@ -92,7 +94,7 @@ def test_write_checks_every_listed_document_without_writing(document_case: tuple
     undeclared["documents"][1]["integrity_literals"] = [
         {"id": "LIT-1", "kind": "value", "literal": "service", "source_ids": ["SRC-1"]}
     ]
-    errors = validate_sources(undeclared, repo)
+    errors = validate_sources(undeclared, repo, temp_bundle)
     assert [(item["type"], item["location"]) for item in errors] == [("undeclared_source", "source SRC-9")]
 
     bundle_path = write_bundle(repo.parent / "temp", with_fact(bundle))
@@ -148,6 +150,70 @@ def test_write_checks_every_listed_document_without_writing(document_case: tuple
         ("missing_path", runbook.resolve())
     ]
 
+    # Pasted evidence beside the bundle, a non-Markdown document, and gap markers.
+    evidence = repo.parent / "evidence"
+    evidence.mkdir()
+    pasted = evidence / "pasted.txt"
+    pasted.write_text("Drain for 30 seconds.\n", encoding="utf-8")
+    errors_doc = documents / "errors.py"
+    errors_doc.write_text('MESSAGE = "Drain for 30 seconds. Check it in the LOG."\n', encoding="utf-8")
+    gapped = documents / "gapped.md"
+    gapped.write_text(
+        "# Procedure\n\nRun the service.\n\nSet the drain timeout. [GAP: safe drain timeout; owner: operations lead]\n"
+        "Write a gap as `[GAP: <missing fact>; owner: <next owner>]`.\n",
+        encoding="utf-8",
+    )
+    captured = json.loads(bundle_path.read_text(encoding="utf-8"))
+    captured["sources"].append(
+        {
+            "id": "SRC-2",
+            "path": str(pasted.resolve()),
+            "sha256": hashlib.sha256(pasted.read_bytes()).hexdigest(),
+            "authority": "pasted by the user",
+        }
+    )
+    captured["documents"] += [
+        {
+            "path": str(errors_doc),
+            "profile": "strict",
+            "required_facts": [{"id": "FACT-1", "claim": "Drain for 30 seconds.", "source_ids": ["SRC-2"]}],
+        },
+        {"path": str(gapped), "profile": "strict"},
+    ]
+    evidence_bundle = write_bundle(evidence, captured)
+    assert validate_sources(captured, repo, evidence_bundle) == []
+    code, open_gaps = cli(repo, "write", bundle=str(evidence_bundle))
+    assert code == 0, open_gaps
+    assert open_gaps["result"]["status"] == "incomplete"
+    assert open_gaps["result"]["gaps"] == [
+        {"document": str(gapped.resolve()), "line": 5, "missing": "safe drain timeout", "owner": "operations lead"}
+    ]
+    assert len(open_gaps["result"]["documents"]) == 4
+    assert str(errors_doc.resolve()) in [item["path"] for item in open_gaps["result"]["documents"]]
+
+    gapped.write_text(
+        gapped.read_text(encoding="utf-8").replace("[GAP: safe drain timeout; owner: operations lead]", "[GAP: safe drain timeout]"),
+        encoding="utf-8",
+    )
+    errors_doc.write_text('MESSAGE = "Drain later."\n', encoding="utf-8")
+    code, unmarked = cli(repo, "write", bundle=str(evidence_bundle))
+    assert code == 3, unmarked
+    assert "malformed_gap" in codes(unmarked)
+    assert any(
+        item["code"] == "missing_required_fact" and Path(item["document"]) == errors_doc.resolve()
+        for item in unmarked["diagnostics"]
+    )
+
+    for replacement, checked_bundle in (
+        (str(runbook.resolve()), evidence_bundle),
+        (str(evidence_bundle.resolve()), evidence_bundle),
+        (str((repo / "source.txt").resolve()), repo.parent / "document-bundle.json"),
+    ):
+        unsafe = copy.deepcopy(captured)
+        unsafe["sources"][1]["path"] = replacement
+        unsafe["sources"][1]["sha256"] = hashlib.sha256(Path(replacement).read_bytes()).hexdigest()
+        assert "unsafe_source_path" in source_types(unsafe, repo, checked_bundle)
+
     bundle_path.write_text("[" * 50000 + "]" * 50000, encoding="utf-8")
     code, malformed = cli(repo, "write", bundle=str(bundle_path))
     assert code == 3, malformed
@@ -198,6 +264,9 @@ def test_audit_writes_one_report_for_every_listed_document(document_case: tuple[
     repo, documents, bundle = document_case
     runbook, reference = documents / "runbook.md", documents / "reference.md"
     add_fact(runbook)
+    reference.write_text(
+        reference.read_text(encoding="utf-8") + "\n[GAP: restart timeout; owner: operations lead]\n", encoding="utf-8"
+    )
     with_fact(bundle)["documents"][1]["reader_findings"] = [
         {
             "location": "Procedure",
@@ -221,7 +290,7 @@ def test_audit_writes_one_report_for_every_listed_document(document_case: tuple[
     assert result["material_findings"] is True
     assert [item["path"] for item in result["documents"]] == [str(runbook.resolve()), str(reference.resolve())]
     assert [item["material_findings"] for item in result["documents"]] == [False, True]
-    assert "missing_required_fact" in {item["code"] for item in result["documents"][1]["findings"]}
+    assert {"missing_required_fact", "unresolved_gap"} <= {item["code"] for item in result["documents"][1]["findings"]}
     assert snapshot(*inputs) == before
     assert exclude.read_bytes() == seeded + b"\r\n/.first-four-hours/scribes/\r\n"
     assert ".first-four-hours" not in git_status(repo)
@@ -231,6 +300,7 @@ def test_audit_writes_one_report_for_every_listed_document(document_case: tuple[
         assert item["path"] in section.splitlines()[0]
         assert item["document_sha256"] in section
     assert "missing_required_fact" in sections[1] and "missing_required_fact" not in sections[0]
+    assert "unresolved_gap" in sections[1] and "unresolved_gap" not in sections[0]
     assert "The reader cannot tell whether the service started." in sections[1]
     assert "The reader cannot tell" not in sections[0]
 
@@ -286,3 +356,126 @@ def test_audit_writes_one_report_for_every_listed_document(document_case: tuple[
         plain.resolve() / ".first-four-hours" / "scribes" / "runbook" / "scribe-audit.md",
         False,
     )
+
+
+STRUCTURED = """# Runbook
+
+## Overview
+
+If the check fails, the runbook ends. The restore window is between 2 and 4. The cable is red. The limit is two hundred requests.
+
+## Prerequisites
+
+- Confirm the backup exists in the `BACKUPS` folder.
+- If the backup is missing, stop.
+
+## Rollback
+
+WARNING: The restore replaces the current data.
+
+### Database
+
+1. Stop the worker.
+2. If the migration fails, run the restore with
+   `restore.sh --db`.
+3. Check the **service is
+   healthy** message.
+4. If the check fails, stop.
+
+```bash
+# Restore the database
+restore.sh --db
+```
+
+5. Verify the worker is *running*.
+
+## Reference
+
+| Command | Effect |
+| --- | --- |
+| `purge.sh` | Purge the queue. |
+| `systemctl stop worker` | The worker is stopped. |
+"""
+EMPTY_GLOSSARY: dict[str, Any] = {"terms": [], "abbreviations": {}, "action_verbs": [], "phrasal_verbs": [], "hazardous_actions": []}
+
+
+def types(text: str, spec: dict[str, Any], **options: bool) -> list[str]:
+    return sorted(item["type"] for item in validate_document(text, spec, **options))
+
+
+def test_checks_follow_document_structure() -> None:
+    source = ["SRC-1"]
+    fact = {"id": "FACT-1", "claim": "Check the service is healthy message.", "source_ids": source, "section": "Database"}
+    spec: dict[str, Any] = {
+        "required_facts": [
+            fact,
+            {"id": "FACT-2", "claim": "Verify the worker is running.", "source_ids": source, "section": "Database"},
+        ],
+        "integrity_literals": [
+            {"id": "LIT-1", "kind": "command", "literal": "restore.sh --db", "source_ids": source, "section": "Database"}
+        ],
+        "procedures": [
+            {
+                "id": "PROC-1",
+                "ordered_markers": ["Stop the worker", "run the restore with restore.sh --db", "Verify the worker is running"],
+                "section": "Rollback",
+            }
+        ],
+        "warnings": [
+            {
+                "id": "WARN-1",
+                "warning": "WARNING: The restore replaces the current data.",
+                "dangerous_action": "Stop the worker",
+                "section": "Rollback",
+            }
+        ],
+        "recovery_steps": [
+            {"id": "REC-1", "trigger": "If the migration fails", "step": "run the restore with restore.sh --db", "section": "Database"}
+        ],
+        "prerequisites": [{"id": "PRE-1", "marker": "Confirm the backup exists", "procedure": "PROC-1"}],
+        "branches": [{"id": "BR-1", "condition": "If the check fails", "required_markers": ["stop"], "section": "Database"}],
+    }
+    # Sections cover subsections and fenced `#` lines; wraps, bold, and italics do not break matching.
+    assert validate_document(STRUCTURED, spec) == []
+
+    def variant(field: str, records: list[dict[str, Any]]) -> list[str]:
+        changed = copy.deepcopy(spec)
+        changed[field] = records
+        return types(STRUCTURED, changed)
+
+    recovery = {"id": "REC-1", "section": "Database"}
+    assert variant("recovery_steps", [{**recovery, "trigger": "If the check fails", "step": "Stop the worker"}]) == ["recovery_order"]
+    assert variant(
+        "recovery_steps", [{**recovery, "trigger": "If the disk fills", "step": "run the restore with restore.sh --db"}]
+    ) == ["missing_recovery_trigger"]
+    assert variant("prerequisites", [{"id": "PRE-1", "marker": "If the check fails, stop", "procedure": "PROC-1"}]) == [
+        "prerequisite_order"
+    ]
+    assert variant("prerequisites", [{"id": "PRE-1", "marker": "Confirm the backup exists", "procedure": "PROC-9"}]) == [
+        "unknown_procedure"
+    ]
+    reordered = {"id": "PROC-1", "ordered_markers": ["Verify the worker is running", "Stop the worker"], "section": "Database"}
+    assert variant("procedures", [reordered]) == ["procedure_order"]
+    # The overview mentions "If the check fails" first, which first-mention ordering would have accepted.
+    overview = {"id": "PROC-2", "ordered_markers": ["If the check fails", "Stop the worker"]}
+    assert variant("procedures", [*spec["procedures"], overview]) == ["ambiguous_marker"]
+    wrapped = {"id": "LIT-1", "kind": "value", "literal": "run the restore with restore.sh", "source_ids": source, "section": "Database"}
+    assert variant("integrity_literals", [wrapped]) == ["missing_value"]
+
+    duplicate = "# Notes\n\n## Steps\n\nRun the job.\n\n## Steps\n\nRun the job.\n"
+    assert types(duplicate, {"required_facts": [{**fact, "claim": "Run the job.", "section": "Steps"}]}) == ["ambiguous_section"]
+    assert types(STRUCTURED, {"required_facts": [fact]}, prose=False) == ["unsupported_section"]
+    mentioned = "## Overview\n\nStop the worker first.\n\n## Steps\n\nWARNING: Stop ends the work.\n\n1. Stop the worker.\n"
+    warning = {"id": "WARN-1", "warning": "WARNING: Stop ends the work.", "dangerous_action": "Stop the worker"}
+    assert types(mentioned, {"warnings": [warning]}) == ["ambiguous_marker"]
+
+    siblings = "## Steps\n\nWARNING: The stop ends work.\n\nStop the worker.\n\n## Steps\n\nStop the worker.\n"
+    sibling_warnings = {item["line"] for item in collect_diagnostics(siblings, "strict", EMPTY_GLOSSARY) if item["rule_id"] == "MTE-WARN-001"}
+    assert sibling_warnings == {9}
+
+    found = {(item["rule_id"], item["line"]) for item in collect_diagnostics(STRUCTURED, "strict", EMPTY_GLOSSARY)}
+    for absent in (("MTE-ABBR-001", 9), ("MTE-WARN-001", 10), ("MTE-VOICE-001", 5), ("MTE-WARN-001", 18)):
+        assert absent not in found, absent
+    for present in (("MTE-WARN-001", 36), ("MTE-WARN-001", 37), ("MTE-VOICE-001", 37)):
+        assert present in found, present
+    assert not {line for _, line in found} & {34, 35}

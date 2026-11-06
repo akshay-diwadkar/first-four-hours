@@ -2,7 +2,7 @@
 name: scribe
 description: Write source-grounded technical documentation such as runbooks, procedures, setup guides, notices, error messages, and reference pages, or audit an existing document read-only. Use when a document must faithfully carry supplied commands, paths, values, warnings, and recovery without invented facts.
 metadata:
-  version: "1.0.1"
+  version: "1.1.0"
 ---
 
 # Scribe
@@ -30,4 +30,4 @@ To audit, follow [Audit](references/audit.md): run `audit` the same way with `--
 
 ## Completion
 
-Write completes only when `write` returns `status: complete`; repair the document each diagnostic's `document` names, or the bundle, as its `required_action` directs, then rerun. Audit completes only when `audit` returns `status: complete`; report the `scribe-audit.md` path and each document's `document_sha256` and findings. A passing result is not completion while a material reader job stays unsupported: report the exact gap and its next owner. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.
+Write completes only when `write` returns `result.status: complete`. On `incomplete`, only the listed `gaps` remain: report each with its owner. Otherwise repair the document each diagnostic's `document` names, or the bundle, as its `required_action` directs, then rerun. Audit completes only when `audit` returns `status: complete`; report the `scribe-audit.md` path and each document's `document_sha256` and findings. A passing result is not completion while a material reader job stays unsupported: report the exact gap and its next owner. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.

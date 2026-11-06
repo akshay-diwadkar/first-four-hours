@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from _document_contract import GAP_MARKER, INLINE_CODE
+
 DEFAULT_ACTIONS = {
     "add",
     "apply",
@@ -47,6 +49,7 @@ KNOWN_DEMONSTRATIVE_NOUNS = {
     "action",
     "command",
     "file",
+    "literal",
     "manual",
     "operator",
     "package",
@@ -58,6 +61,19 @@ KNOWN_DEMONSTRATIVE_NOUNS = {
     "system",
     "value",
 }
+OBJECTLESS_STOP_FOLLOWERS = set(CONDITION_WORDS) | {"and", "here", "then", "now", "immediately"}
+IRREGULAR_PARTICIPLES = (
+    "begun", "broken", "built", "chosen", "done", "drawn", "driven", "eaten", "fallen", "forgotten", "found",
+    "frozen", "given", "gotten", "held", "hidden", "kept", "known", "lost", "made", "paid", "run", "seen", "sent",
+    "set", "shown", "shut", "spent", "split", "stolen", "taken", "thrown", "told", "written",
+)
+NON_PARTICIPLES = ("bleed", "breed", "embed", "feed", "hundred", "indeed", "need", "seed", "shed", "speed")
+PASSIVE = re.compile(
+    r"\b(?:am|is|are|was|were|be|been|being)\s+(?:\w+\s+){0,2}"
+    r"(?!(?:" + "|".join(NON_PARTICIPLES) + r")\b)"
+    r"(?:\w{2,}ed|" + "|".join(IRREGULAR_PARTICIPLES) + r")\b"
+)
+TABLE_DELIMITER_CELL = re.compile(r"^:?-+:?$")
 STYLE_WARNINGS_STANDARD = {"MTE-VOICE-001", "MTE-PHRASAL-001", "MTE-NOM-001"}
 RULE_TEXT = {
     "MTE-SENT-001": ("Multiple actions in one sentence", "Split the actions into separate sentences"),
@@ -77,7 +93,7 @@ RULE_TEXT = {
 class Sentence:
     text: str
     line: int
-    section: str
+    scopes: tuple[int, ...]
     procedural: bool
     index: int
 
@@ -92,7 +108,27 @@ def _strip_markdown_prefix(line: str) -> tuple[str, bool]:
     return (match.group(1), True) if match else (text.strip(), False)
 
 
-def _split_block(text: str, line: int, section: str, procedural: bool, start_index: int) -> list[Sentence]:
+def _table_cells(line: str) -> list[str]:
+    """Split one table row at pipes outside inline code spans and not escaped with a backslash."""
+    spans = [match.span() for match in INLINE_CODE.finditer(line)]
+    cells: list[str] = []
+    current: list[str] = []
+    for index, character in enumerate(line):
+        inside = any(start <= index < end for start, end in spans)
+        if character == "|" and not inside and (index == 0 or line[index - 1] != "\\"):
+            cells.append("".join(current))
+            current = []
+        else:
+            current.append(character)
+    cells.append("".join(current))
+    if cells and not cells[0].strip():
+        cells = cells[1:]
+    if cells and not cells[-1].strip():
+        cells = cells[:-1]
+    return [cell.strip() for cell in cells]
+
+
+def _split_block(text: str, line: int, section: tuple[int, ...], procedural: bool, start_index: int) -> list[Sentence]:
     result: list[Sentence] = []
     pattern = re.compile(r".+?[.!?](?=\s+[A-Z0-9`]|\s*$)|.+$", re.DOTALL)
     for match in pattern.finditer(text):
@@ -111,7 +147,9 @@ def parse_markdown(text: str, actions: set[str]) -> list[Sentence]:
     sentences: list[Sentence] = []
     paragraph: list[str] = []
     paragraph_line = 0
-    section = "document"
+    stack: list[tuple[int, int]] = [(0, 0)]
+    next_id = 1
+    section: tuple[int, ...] = (0,)
     fenced = False
     frontmatter = False
 
@@ -139,12 +177,29 @@ def parse_markdown(text: str, actions: set[str]) -> list[Sentence]:
             continue
         if fenced:
             continue
-        heading = re.match(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$", raw)
+        heading = re.match(r"^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$", raw)
         if heading:
             flush()
-            section = heading.group(1)
+            level = len(heading.group(1))
+            while len(stack) > 1 and stack[-1][0] >= level:
+                stack.pop()
+            stack.append((level, next_id))
+            next_id += 1
+            section = tuple(identifier for _, identifier in stack)
             continue
-        if not stripped or re.match(r"^\s*\|.*\|\s*$", raw) or re.match(r"^\s{4}\S", raw):
+        if re.match(r"^\s*\|.*\|\s*$", raw):
+            flush()
+            cells = _table_cells(raw.strip())
+            if cells and all(TABLE_DELIMITER_CELL.match(cell) for cell in cells):
+                continue
+            for cell in cells:
+                if not cell:
+                    continue
+                first = _words(cell)
+                procedural = bool(first and (first[0].casefold() in actions or first[0].casefold() in CONDITION_WORDS))
+                sentences.extend(_split_block(cell, number, section, procedural, len(sentences)))
+            continue
+        if not stripped or re.match(r"^\s{4}\S", raw):
             flush()
             continue
         cleaned, is_list = _strip_markdown_prefix(raw)
@@ -181,31 +236,45 @@ def _diagnostic(sentence: Sentence, profile: str, rule_id: str, detail: str = ""
     }
 
 
+def _hazardous(lower: str, hazard: str) -> bool:
+    """Return whether lower names the hazard as an action; an objectless stop is not one."""
+    for match in re.finditer(rf"\b{re.escape(hazard)}\b", lower):
+        if hazard != "stop":
+            return True
+        following = _words(lower[match.end() :])
+        if following and following[0] not in OBJECTLESS_STOP_FOLLOWERS:
+            return True
+    return False
+
+
 def collect_diagnostics(text: str, profile: str, glossary: dict[str, Any]) -> list[dict[str, Any]]:
     actions = DEFAULT_ACTIONS | {str(item).casefold() for item in glossary.get("action_verbs", [])}
     phrasal = DEFAULT_PHRASAL | {str(item).casefold() for item in glossary.get("phrasal_verbs", [])}
     hazards = DEFAULT_HAZARDS | {str(item).casefold() for item in glossary.get("hazardous_actions", [])}
+    text = GAP_MARKER.sub(lambda match: " " * len(match.group()), text)
     sentences = parse_markdown(text, actions)
     diagnostics: list[dict[str, Any]] = []
     defined_abbreviations = {str(key) for key in glossary.get("abbreviations", {})}
-    prior_warnings: dict[str, int] = {}
+    warned: set[int] = set()
 
     for sentence in sentences:
-        lower = sentence.text.casefold()
-        words = [word.casefold() for word in _words(sentence.text)]
+        raw_lower = sentence.text.casefold()
+        plain = INLINE_CODE.sub("literal", sentence.text)
+        lower = plain.casefold()
+        words = [word.casefold() for word in _words(plain)]
         action_positions = [index for index, word in enumerate(words) if word in actions]
         if len(action_positions) > 1:
             between = " ".join(words[action_positions[0] : action_positions[-1] + 1])
-            if re.search(r"\b(?:and|then|next)\b", between) or ";" in sentence.text or "," in sentence.text:
+            if re.search(r"\b(?:and|then|next)\b", between) or ";" in plain or "," in plain:
                 diagnostics.append(_diagnostic(sentence, profile, "MTE-SENT-001"))
 
         for term in glossary.get("terms", []):
             preferred = str(term["preferred"])
             for variant in term.get("forbidden", []):
-                if re.search(rf"(?<![\w-]){re.escape(str(variant))}(?![\w-])", sentence.text, re.IGNORECASE):
+                if re.search(rf"(?<![\w-]){re.escape(str(variant))}(?![\w-])", plain, re.IGNORECASE):
                     diagnostics.append(_diagnostic(sentence, profile, "MTE-TERM-001", f"use '{preferred}'"))
 
-        if re.search(r"\b(?:am|is|are|was|were|be|been|being)\s+(?:\w+\s+){0,2}\w+(?:ed|en)\b", lower):
+        if PASSIVE.search(lower):
             diagnostics.append(_diagnostic(sentence, profile, "MTE-VOICE-001"))
 
         vague = bool(re.search(r"\bit\b", lower))
@@ -223,16 +292,14 @@ def collect_diagnostics(text: str, profile: str, glossary: dict[str, Any]) -> li
         if condition_matches and condition_matches[0].start() > 0 and not lower.startswith(("warning:", "caution:")):
             diagnostics.append(_diagnostic(sentence, profile, "MTE-COND-001"))
 
-        if lower.startswith(("warning:", "caution:")):
-            prior_warnings[sentence.section.casefold()] = sentence.index
-        elif any(re.search(rf"\b{re.escape(hazard)}\b", lower) for hazard in hazards):
-            if prior_warnings.get(sentence.section.casefold(), -1) >= sentence.index:
-                prior_warnings.pop(sentence.section.casefold(), None)
-            if sentence.section.casefold() not in prior_warnings:
+        if raw_lower.startswith(("warning:", "caution:")):
+            warned.add(sentence.scopes[-1])
+        elif any(_hazardous(raw_lower, hazard) for hazard in hazards):
+            if not warned.intersection(sentence.scopes):
                 diagnostics.append(_diagnostic(sentence, profile, "MTE-WARN-001"))
 
-        definitions = set(re.findall(r"\(([A-Z][A-Z0-9-]{1,7})\)", sentence.text))
-        for abbreviation in re.findall(r"\b[A-Z][A-Z0-9-]{1,7}\b", sentence.text):
+        definitions = set(re.findall(r"\(([A-Z][A-Z0-9-]{1,7})\)", plain))
+        for abbreviation in re.findall(r"\b[A-Z][A-Z0-9-]{1,7}\b", plain):
             if (
                 abbreviation not in {"CAUTION", "NOTE", "WARNING"}
                 and abbreviation not in defined_abbreviations
@@ -247,7 +314,7 @@ def collect_diagnostics(text: str, profile: str, glossary: dict[str, Any]) -> li
 
         if profile == "strict":
             limit = 20 if sentence.procedural else 25
-            if len(_words(sentence.text)) > limit:
+            if len(_words(plain)) > limit:
                 diagnostics.append(_diagnostic(sentence, profile, "MTE-LEN-001", f"limit is {limit} words"))
 
     unique = {(item["rule_id"], item["line"], item["sentence"], item["issue"]): item for item in diagnostics}

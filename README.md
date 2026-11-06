@@ -109,7 +109,7 @@ Working on a project and its changes.
 Getting ready to decide.
 
 - [Ideate](docs/skills/ideate.md): research and compare options for a goal and recommend a direction you choose from. [Contract](skills/sensemaking/ideate/SKILL.md)
-- [Reason](docs/skills/reason.md): check a judgment at the moments it matters, or ask the one question only you can answer. [Contract](skills/sensemaking/reason/SKILL.md)
+- [Reason](docs/skills/reason.md): check a judgment at the moments it matters, or ask what only you can answer. [Contract](skills/sensemaking/reason/SKILL.md)
 - [Router](docs/skills/router.md): lay out which skills to use, in what order, as far as that can be known now. [Contract](skills/sensemaking/router/SKILL.md)
 - [Scribe](docs/skills/scribe.md): write or audit technical documentation that carries its sources faithfully. [Contract](skills/sensemaking/scribe/SKILL.md)
 

@@ -2,7 +2,7 @@
 
 Some decisions stall in silence: the agent reads one more file, then another. Others sail through on an assumption everyone shares and nobody has checked. Both are expensive.
 
-An agent that cannot decide keeps gathering context, or commits to an approach that rests on an assumption no one checked, and the side quest costs more than the decision. Reason is a short, bounded check: it restores a stuck decision, challenges one load-bearing claim, or asks you the one question only you can answer.
+An agent that cannot decide keeps gathering context, or commits to an approach that rests on an assumption no one checked, and the side quest costs more than the decision. Reason is a short, bounded check: it restores a stuck decision, challenges one load-bearing claim, or asks you what only you can answer.
 
 ## Use this when
 

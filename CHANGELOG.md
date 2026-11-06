@@ -4,6 +4,15 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Fixed
+
+- Blueprint 1.5.1: a plan no longer seals an unchecked guess about an external tool's output as fact.
+  - A tool behavior that a check or verification result depends on, such as how a minifier or obfuscator writes text a check looks for, counts as fact only when a probe of the current project shows it or the plan quotes it from the documentation or source of the tool version in use. Anything inferred beyond that is labeled and carried as a risk with a decided branch, and such a check prefers a marker the tool leaves intact, often one without spaces or special characters.
+  - Before sealing, each untested limit the challenger or Blueprint's own walk states that a verification result depends on must be verified, given a decided branch, or removed by narrowing that result. An unresolved one blocks the seal, as an open finding does.
+  - Probes still install nothing.
+  - It seals plans with contract version 1.5.1.
+- Construct 1.5.1: ships the Blueprint 1.5.1 runtime copy, so it reports contract version 1.5.1. It still accepts every sealed 1.x plan.
+
 ## [2.2.0] - 2026-11-06
 
 ### Added

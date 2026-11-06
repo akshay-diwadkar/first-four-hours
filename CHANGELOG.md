@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-06
+
 ### Added
 
 - Blueprint 1.5.0: a read-only `carryover` command tells a replan which files an earlier sealed plan relied on are unchanged, so it can reuse what it read from them instead of reading them again. Probes, measurements, and any fact a finding or stop disputed are still redone.

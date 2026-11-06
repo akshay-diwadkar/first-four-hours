@@ -6,6 +6,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- Blueprint 1.5.2: a repair that widens what a plan's own check matches no longer seals a plan that check fails. When a repair changes what a check matches or rejects, Blueprint now re-applies that check to every file, name, and text it scans, not only the repaired lines, and the fresh challenger looks for a check that would fail on text or names the plan drafts. It seals plans with contract version 1.5.2.
+- Construct 1.5.2: ships the Blueprint 1.5.2 runtime copy, so it reports contract version 1.5.2. It still accepts every sealed 1.x plan.
 - Blueprint 1.5.1: a plan no longer seals an unchecked guess about an external tool's output as fact.
   - A tool behavior that a check or verification result depends on, such as how a minifier or obfuscator writes text a check looks for, counts as fact only when a probe of the current project shows it or the plan quotes it from the documentation or source of the tool version in use. Anything inferred beyond that is labeled and carried as a risk with a decided branch, and such a check prefers a marker the tool leaves intact, often one without spaces or special characters.
   - Before sealing, each untested limit the challenger or Blueprint's own walk states that a verification result depends on must be verified, given a decided branch, or removed by narrowing that result. An unresolved one blocks the seal, as an open finding does.

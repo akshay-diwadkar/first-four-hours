@@ -46,10 +46,10 @@ You read and approve these few lines before anything else. Below them, the plan 
 
 This repository is planned, built, and reviewed with its own skills, and its pull requests keep the record:
 
-- **Review findings go back through a plan.** When [#132](https://github.com/akshay-diwadkar/first-four-hours/pull/132) added Provision, the first Assess review returned four findings. The review of [#128](https://github.com/akshay-diwadkar/first-four-hours/pull/128) returned six minor ones. Each set went into its own sealed repair Blueprint and was fixed before the merge.
-- **A removed safeguard came back.** In [#88](https://github.com/akshay-diwadkar/first-four-hours/pull/88), the first commit removed one of the challenger's checks on the claim that a new rule covered it. Assess found the new rule did not cover it, and the check was restored before the merge.
+- **A slow guard, start to finish.** Construct hashed the whole worktree, ignored folders included, before and after every command, and verifying one change took 332 seconds while its tests took 42. In [#128](https://github.com/akshay-diwadkar/first-four-hours/pull/128), Architect settled what the guard should cover, Blueprint planned it, and Construct built it. Assess's six minor findings went through their own repair plan before the merge.
 - **The builder stopped instead of improvising.** While building [#141](https://github.com/akshay-diwadkar/first-four-hours/pull/141), Construct stopped at step 4 with `plan-contradiction`: the plan's data lacked a key the runtime requires. An amended plan repaired that step and carried the rest over unchanged, and Blueprint now checks such data against its reader while planning.
-- **The skills learn from their own record.** For [#124](https://github.com/akshay-diwadkar/first-four-hours/pull/124), the 11 findings in two earlier PRs' sealed assessments were compared with Git history. Eight had been present before the review round that reported them, so Assess now checks every removal and the lifecycle of any new state on the first pass.
+- **Not only skill code.** The old docs site lost the bodies of 36 of its 41 pages while every sync reported success. [#134](https://github.com/akshay-diwadkar/first-four-hours/pull/134) moved the docs to GitHub Pages from a sealed Blueprint.
+- **The skills learn from their own record.** For [#124](https://github.com/akshay-diwadkar/first-four-hours/pull/124), the 11 findings in two earlier reviews were compared with Git history. Eight had been present before the round that reported them, so Assess now checks every removal and the lifecycle of any new state on the first pass.
 
 ## When not to use it
 

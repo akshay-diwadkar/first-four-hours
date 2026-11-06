@@ -2,7 +2,7 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "1.5.4"
+  version: "1.5.5"
 ---
 
 ## Workflow
@@ -12,8 +12,8 @@ metadata:
 3. **Solve the engineering problem.** Settle every decision the planning contract requires, and [attack the problem](references/planning-contract.md#attack-the-problem). Trace [command dispatch](references/executable-contracts.md) when it can change correctness. When designs remain plausible, gather the smallest discriminating fact and decide yourself; when viable solutions must first be found, invoke `ideate` per [Ideate in planning](references/ideate-in-planning.md). Done when one supported solution accounts for current obligations and meaningful verification.
 4. **Bound the delta.** Apply the planning contract's [rent rule](references/planning-contract.md#the-rent-rule); done when every material planned addition passes it.
 5. **Write the plan.** Prepare the workspace exactly as in [README](README.md), then fill its `blueprint.md` scaffold with [Declared text](references/declared-text.md) and [Incomplete gates](references/incomplete-gates.md) as the planning contract routes. Done when `check` reports no diagnostics.
-6. **Challenge and repair.** Read [Challenge and rehearsal](references/challenge-and-rehearsal.md); walk the draft yourself with [Challenger brief](references/challenger-brief.md), and for an elevated draft one fresh-context subagent also challenges it with that brief plus [Elevated attack](references/elevated-attack.md). Done when every finding is repaired, rejected on evidence, or returned to the user, and every plan-authored check a repair changed is re-applied to every file, name, and text it scans.
-7. **Seal.** Once the [Seal gate](references/challenge-and-rehearsal.md#seal-gate) holds, check and seal exactly as in [README](README.md), reading [Seal receipts](references/seal-receipts.md) on a receipt diagnostic. Done when your report names the sealed path and distinguishes mechanical seal success, your evidence-backed readiness judgment, and unstarted implementation and verification.
+6. **Challenge and repair.** Read [Challenge and rehearsal](references/challenge-and-rehearsal.md); walk the draft yourself with [Challenger brief](references/challenger-brief.md), and for an elevated draft one fresh-context subagent also challenges it with that brief. Done when every finding is repaired, rejected on evidence, or returned to the user, and every plan-authored check a repair changed is re-applied to every file, name, and text it scans.
+7. **Seal.** Once the [Seal gate](references/challenge-and-rehearsal.md#seal-gate) holds, check and seal exactly as in [README](README.md). Done when your report names the sealed path and distinguishes mechanical seal success, your evidence-backed readiness judgment, and unstarted implementation and verification.
 
 Consult `reason` before committing to an approach, after a failure or direction change, and before challenge and seal. Seal and stop reports trace `reason` checkpoints per its Checkpoint trace and end with one optional next step fitting the outcome, after a stop the unblocking one: a fenced, self-contained prompt naming the repository and any issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names.
 

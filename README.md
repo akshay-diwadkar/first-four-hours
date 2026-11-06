@@ -44,7 +44,11 @@ You read and approve these few lines before anything else. Below them, the plan 
 
 ## Built with itself
 
-This repository is planned, built, and reviewed with its own skills. When [pull request #132](https://github.com/akshay-diwadkar/first-four-hours/pull/132) added Provision, the first Assess review returned four findings. They went into a sealed repair Blueprint and were fixed before the merge.
+This repository is planned, built, and reviewed with its own skills, and its pull requests keep the record:
+
+- **Research to a finished epic.** One Ideate run researched how real examinations and good tutors work. It found, for example, that learning styles have no support and that learners in active lessons often learn more while feeling they learned less. Ticket turned it into epic [#27](https://github.com/akshay-diwadkar/first-four-hours/issues/27) with four issues, closed by [#46](https://github.com/akshay-diwadkar/first-four-hours/pull/46), [#50](https://github.com/akshay-diwadkar/first-four-hours/pull/50), [#51](https://github.com/akshay-diwadkar/first-four-hours/pull/51), and [#52](https://github.com/akshay-diwadkar/first-four-hours/pull/52): practice papers that behave like the real examination, marking by its own rules, and teaching methods chosen from that evidence.
+- **Structure settled first.** Construct's safety check hashed the whole worktree, ignored folders included, before and after every command, and one verification took 332 seconds while its tests took 42. In [#128](https://github.com/akshay-diwadkar/first-four-hours/pull/128), Architect settled what the check should cover before Blueprint planned it, and Assess's six minor findings went through their own repair plan.
+- **A plan that drifted from the request.** Two changes in one epic each needed extra plan, build, and review rounds. Every finding was a gap between what the plan delivered and what the request asked; none was a build or test failure. Since [#88](https://github.com/akshay-diwadkar/first-four-hours/pull/88), Blueprint judges each deliverable against every clause of the request before it seals.
 
 ## When not to use it
 

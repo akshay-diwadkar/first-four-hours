@@ -12,6 +12,17 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Changed
 
+- Tutor 1.4.0: keeps teaching in step with your course and with examination practice.
+  - A continuing session starts with any review the study plan has due, before new material.
+  - When you follow a course and share its materials, Tutor uses their notation and terms.
+  - Work that looks assessed, such as homework or a take-home examination, gets teaching toward it: Tutor teaches the method on a parallel example and guides your own attempt, never writes the submission, and says why once. Work you say is not assessed gets ordinary help.
+  - For an examination goal, each topic's name starts with its syllabus area. The study plan says what each section shows. Where Tutor's progress and Examiner's coverage disagree on an area, each notes it in its own section and the next step follows the coverage. A schedule change that no longer fits beside the plan's other sections is raised with you, with choices, instead of changing them.
+  - Its guidance context budget rises to fit these rules.
+- Examiner 1.4.0: practice results no longer overstate what a student has secured.
+  - An area is secure, and a diagnosed gap resolved, only from marked answers to more than one question new to the student. Questions the student has seen before, such as in a retry, never count, and the plan's results mark each retry.
+  - When topics are left open, it recommends first the areas the plan lists as needing work and those of topics Tutor's lessons list as unresolved, and it reads the examination's earlier papers so no question repeats one the student has seen.
+  - Its section says what coverage shows and notes any disagreement with Tutor's progress, with the next step following its coverage. A schedule change that no longer fits is raised with the student, with choices, as Tutor does.
+  - Its guidance context budget rises to fit these rules.
 - Assess 1.5.0: each finding now shows how the problem happens.
   - A finding carries a `scenario`: short steps from a trigger to the wrong outcome, set against what should happen, each resting on the finding's cited evidence. Its defect is one plain sentence, and its consequence says who is affected and how badly.
   - The final report gives each finding's scenario with its severity and defect.

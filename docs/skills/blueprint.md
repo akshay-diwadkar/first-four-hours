@@ -30,8 +30,8 @@ A blueprint is a house's construction drawings. When the crew finds the lot two 
 
 **Questions to ask before you start.** The choice comes before the work, so ask questions that predict rather than judge in hindsight:
 
-1. "If the executor hits a fork halfway, who decides?" If the agent can decide while you watch, plan mode is enough. If nobody should have to, use Blueprint.
-2. "If this is wrong, when will I find out?" Within minutes points to plan mode. In review, in production, or never points to Blueprint.
+1. "If the executor hits a fork halfway, who decides?" If the agent can decide while you watch, plan mode is enough. If nobody should be deciding in the middle of an edit, use Blueprint to settle the fork before editing starts.
+2. "If a decision here goes wrong, how soon would it show?" If within minutes, while you watch, plan mode catches it in time. If it would only show in review, in production, or never, that is too late to catch it in the work: use Blueprint, which attacks the decisions before anyone edits.
 3. "Will whoever builds this remember why?" The same agent in the same session will. Anyone else, or any later session, needs the decisions written down.
 
 **The same change, planned both ways.** *Illustrative and shortened: FreshCart is a made-up online grocery service, and this is the rate-limit plan that [Anatomy of a sealed blueprint](../concepts/anatomy-of-a-blueprint.md) walks through, not a recorded run.* Someone is scraping FreshCart's public search endpoint, and a cheaper model will build the fix overnight with nobody watching. A plan-mode plan for it could read:

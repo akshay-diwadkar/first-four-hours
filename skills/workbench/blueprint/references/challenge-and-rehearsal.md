@@ -41,10 +41,10 @@ Seal only when all are true:
 - the plan is minimum-sufficient;
 - every decision takes the planning contract's required form;
 - every acceptance condition not marked `Owner gate:` has an executable path;
-- supported adversarial findings have evidence-backed closure in the repaired plan;
+- supported adversarial findings, and each stated untested limit an `Expect:` rests on, have evidence-backed closure in the repaired plan;
 - the owner walk ran, and an elevated draft's one fresh challenge;
 - every repair was re-traced and its changed blocks reread;
-- every authored Run and Proof run meets the planning contract's Verification purity, so Construct cannot stop on its writes;
+- every authored Run and Proof run meets the planning contract's Verification purity;
 - no step or Run forces the executor to discover or choose an additional repair, scope, policy or authority, ownership, validation or typing scope, exception or budget override, compatibility, or other semantic decision;
 - verification is discriminating and proportionate.
 

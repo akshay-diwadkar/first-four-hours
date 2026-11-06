@@ -44,7 +44,7 @@ Line 1 is the HTML-comment contract marker `blueprint-contract: <version>`, wher
 - `Completion Conditions` — each required outcome's one statement, as a concrete example ending `Shown by` its proof, or an `Owner gate:` condition, in the form the [planning contract](references/planning-contract.md#verification-and-completion) sets; and
 - `Risks / Recovery` — only when a real recovery path is earned.
 
-An instruction may also declare step proof that Construct checks mechanically: `**Exact:**` textual data or anchored edits, or `**Frozen:**` proof data, for one of its own Location paths, and at most one `**Proof run:**` with its `Expect:`. The [planning contract](references/planning-contract.md) decides when each is earned, and [Declared text](references/declared-text.md) owns their grammar, reserved-label spelling, the seal's simulation, and when a `Red:` or break-the-code check is earned.
+An instruction may also declare step proof that Construct checks mechanically: `**Exact:**` textual data or anchored edits, or `**Frozen:**` proof data, for one of its own Location paths, and at most one `**Proof run:**` with its `Expect:`. The [planning contract](references/planning-contract.md)'s Step proof decides when step proof is earned, and [Declared text](references/declared-text.md) when Exact text is; Declared text owns their grammar, reserved-label spelling, the seal's simulation, and when a `Red:` or break-the-code check is earned.
 
 Sealing appends two generated receipts as the final two lines; never author a receipt-prefixed line. [Seal receipts](references/seal-receipts.md) owns their format and the proof Construct consumes.
 

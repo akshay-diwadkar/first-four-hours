@@ -37,6 +37,8 @@ A sealed `assessment.md` in the ignored folder `.first-four-hours/assessments/<s
 
 No result is approval, certification, or permission to merge.
 
+When the result is `findings` and the change is a pull request, Assess offers to post them there as one comment, so its author can see each defect, the steps that show it, and the truth to restore. It first shows you the exact comment, and posts it only after you say yes; declining posts nothing, and the assessment stays the same either way. The comment names the head commit it reviewed and says it is not an approval or a merge decision. If the pull request has moved to a newer head, Assess refuses to post until that head is assessed.
+
 ## When it stops
 
 Assess returns `blocked` when it cannot establish the authority or evidence it needs, for example when it cannot confirm that an external source is current.
@@ -49,7 +51,7 @@ When an evidence-backed risk beyond the change could alter the merge decision, A
 
 **The failure it prevents.** Green checks and a confident description are the most persuasive things in a pull request, and the least informative. Reviews that skim the diff, or trust green checks and the pull request's own description, let through changes that do not do what was asked or that quietly break a caller. Assess judges the change against what it was supposed to do (the request, the requirements, the repository's rules, and the behavior on the base branch) with a senior engineer's judgment, and it keeps going after the first defect.
 
-**What it refuses, and why.** It never fixes what it finds, approves, merges, or changes anything on GitHub. A reviewer that repairs code is no longer reviewing it, and a fix made straight from a review comment reopens decisions the planner owned. Pull request prose, earlier reviews, and passing tests can raise a concern but never clear one. When the same agent wrote the change, Assess hands the review to a fresh-context subagent, or says plainly that only a self-review examined it.
+**What it refuses, and why.** It never fixes what it finds, approves, or merges, and it changes nothing on GitHub except a findings comment you confirmed. A reviewer that repairs code is no longer reviewing it, and a fix made straight from a review comment reopens decisions the planner owned. Pull request prose, earlier reviews, and passing tests can raise a concern but never clear one. When the same agent wrote the change, Assess hands the review to a fresh-context subagent, or says plainly that only a self-review examined it.
 
 **Floor and ceiling.** A weaker agent must work out what the change has to do before it reads anyone's claims about it, check every candidate finding against evidence, and disclose what it did not examine. A stronger agent decides how deep to go, judges severity from consequence, and looks at security only where the change touches it. `clear` after a sufficient look is a valid result. The scripts check identity, freshness, and evidence; they never grade the review.
 

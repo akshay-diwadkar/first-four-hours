@@ -14,7 +14,7 @@
       "repeatable": false,
       "description": "Prepared .first-four-hours/assessments/<slug>/assessment.md inside the assessed repository; any other path is refused.",
       "choices": [],
-      "accepted_for": ["run", "check"]
+      "accepted_for": ["run", "check", "publish"]
     },
     {
       "name": "bundle",
@@ -35,6 +35,15 @@
       "choices": [],
       "required_for": ["prepare"],
       "accepted_for": ["prepare"]
+    },
+    {
+      "name": "confirm",
+      "kind": "string",
+      "required": false,
+      "repeatable": false,
+      "description": "body_sha256 that a publish preview returned for the exact comment the user explicitly confirmed.",
+      "choices": [],
+      "accepted_for": ["publish"]
     }
   ],
   "artifacts": [
@@ -105,6 +114,26 @@
             "{input.output}"
           ],
           "repeat": [],
+          "capture_stdout": null,
+          "diagnostics_json": true,
+          "failure": "blocked"
+        }
+      ]
+    },
+    "publish": {
+      "allowed_phases": [],
+      "success_phase": null,
+      "steps": [
+        {
+          "argv": [
+            "{python}",
+            "{skill_dir}/scripts/publish_findings.py",
+            "--repo-root",
+            "{repo_root}",
+            "--output",
+            "{input.output}"
+          ],
+          "repeat": [{"input": "confirm", "flag": "--confirm"}],
           "capture_stdout": null,
           "diagnostics_json": true,
           "failure": "blocked"

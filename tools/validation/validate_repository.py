@@ -90,8 +90,11 @@ SEALED_BLUEPRINT_AUTHORITY = "sealed-blueprint"
 SEALED_BLUEPRINT_SKILL = "construct"
 SEALED_BLUEPRINT_INPUTS = {"blueprint_file"}
 IMPLICIT_EXTERNAL_OUTPUT_SKILLS = {"architect", "assess"}
-# PR may start implicitly by the user's decision; its explicit-yes rule, not this check, guards publish and update.
-IMPLICIT_CONFIRMED_PUBLICATION_SKILLS = {"pr": {"external-write", "publication", "repository-write"}}
+# PR's and Assess's explicit-yes rules, not this check, guard their publication.
+IMPLICIT_CONFIRMED_PUBLICATION_SKILLS = {
+    "pr": {"external-write", "publication", "repository-write"},
+    "assess": {"external-write", "publication"},
+}
 CONSTRUCT_VERIFY_ARGV = (
     "{python}",
     "{skill_dir}/scripts/run_verification.py",

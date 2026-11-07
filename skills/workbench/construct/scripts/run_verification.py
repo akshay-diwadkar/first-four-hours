@@ -238,7 +238,8 @@ def _guarded_fingerprint(root: Path, bound: frozenset[str]) -> dict[str, dict[st
 
 def _plan_bound_paths(root: Path, path: Path, blueprint: blueprint_runtime.Blueprint) -> frozenset[str]:
     """Locations, Sources, and this task's workspace files: guarded even when Git ignores them."""
-    bound = {PurePosixPath(item.path).as_posix() for item in (*blueprint.locations, *blueprint.sources)}
+    paths = [location.path for location in blueprint.locations] + [source.path for source in blueprint.sources]
+    bound = {PurePosixPath(item).as_posix() for item in paths}
     bound.add(path.relative_to(root).as_posix())
     bound.add(path.with_name("request.md").relative_to(root).as_posix())
     return frozenset(bound)

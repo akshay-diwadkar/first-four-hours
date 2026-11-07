@@ -2,7 +2,7 @@
 name: assess
 description: Assess a PR or code change against its issue/spec, acceptance criteria, repository rules, tests, and base behavior for correctness, code quality, maintainability, and proportionate security. Use for PR review, re-review, acceptance-criteria checks, or merge readiness.
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
 ---
 
 # Assess
@@ -17,7 +17,7 @@ The assessment is read-only: never repair, edit the target, merge, approve, or m
 
 If you wrote or planned this change in this context, hand the whole stage to a fresh-context owner per the [Bounded Delegation Protocol](references/delegation-protocol.md), reading nothing else; read it before any other delegation too.
 
-Otherwise first read [assess guidance](references/assess-guidance.md), plus [Blueprint evidence](references/blueprint-evidence.md) when a sealed Blueprint exists and [delta review](references/delta-review.md) when an earlier assessment does. Establish exact target/base/head, current authority, base truth, and requested delta once. Derive requirements from authority and the change from base/head before reading PR prose, comments, audits, or prior reviews; those are hints that may add candidates, never clear one.
+Otherwise first read [assess guidance](references/assess-guidance.md), plus [Blueprint evidence](references/blueprint-evidence.md) when a sealed Blueprint exists, [delta review](references/delta-review.md) when an earlier assessment does, and [pull requests](references/pull-requests.md) when the target pull request's head may be missing from the current repository. Establish exact target/base/head, current authority, base truth, and requested delta once. Derive requirements from authority and the change from base/head before reading PR prose, comments, audits, or prior reviews; those are hints that may add candidates, never clear one.
 
 ## Author and seal
 

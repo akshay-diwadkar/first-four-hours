@@ -6,6 +6,11 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Added
 
+- Blueprint 1.10.0: a plan runs one fewer judgment pass.
+  - An elevated draft's owner walk now rehearses Construct's Verification and re-derives the load-bearing premise, and leaves the Challenger brief to its one fresh challenger. Before, the planner ran the same brief itself first. A standard draft's walk still runs the brief.
+  - Blueprint now consults Reason before sealing, not also before the challenge. That matches Reason's own checkpoints: before committing to an approach, after a failure, and before presenting a result.
+  - It seals plans with contract version 1.10.0.
+- Construct 1.10.0: ships the Blueprint 1.10.0 runtime copy, so it reports contract version 1.10.0. It still accepts every sealed 1.x plan.
 - Construct 1.9.0: a passing run costs fewer tokens.
   - `verify` keeps full output for a failing Run. For a passing Run it no longer returns the whole output twice: JSON output comes back only parsed in `stdout_json`, trimmed to its final records when large with `stdout_json_omitted` giving the count dropped, and other stdout and stderr keep their final 4000 characters behind an omission note. When anything is trimmed, `full_output` names a temporary file outside the repository holding both streams whole, so an `Expect:` about omitted output can still be judged, and `notices` still lists every record the check marked slow. Previously a passing Run returned its complete output, plus a parsed copy for JSON.
   - The execution contract read at every intake is about 40% shorter. Failing Runs, `reverify`, the mutation-guard details, resume, and stopping move to a new Failure, resume, and stopping reference read only when a Run or green proof fails, on `status` resume, or before stopping. Two duplicate sentences are removed, and the references budget is unchanged.

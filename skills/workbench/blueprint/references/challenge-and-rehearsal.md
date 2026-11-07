@@ -1,6 +1,6 @@
 # Challenge and rehearsal
 
-Every draft gets an owner walk, your pre-challenge `reason` consultation: run the [Challenger brief](challenger-brief.md) and Construct's Verification section yourself, re-deriving the load-bearing premise from source and backing each compliant-but-bad case with a fresh observation. An elevated draft also gets one fresh challenge.
+Every draft gets an owner walk: rehearse Construct's Verification section yourself, re-deriving the load-bearing premise from source. A standard draft's walk also runs the [Challenger brief](challenger-brief.md), backing each compliant-but-bad case with a fresh observation; an elevated draft leaves the brief to its one fresh challenge.
 
 ## Tier
 

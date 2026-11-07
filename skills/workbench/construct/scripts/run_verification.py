@@ -5,13 +5,14 @@ at phase `before`, authority checks otherwise), executes exactly the requested
 authored commands with timeout, process-tree cleanup, and a mutation guard that
 binds the Git index, HEAD, Git-visible content (nested repositories and submodules
 listed by their own Git), and plan-bound paths, ignored or not (bytes, size, mode,
-kind), never observing other Git-ignored content, and returns each command's full output. Phase `after` first
+kind), never observing other Git-ignored content, and returns each command's output (a
+trimmed pass also names a temporary file holding it whole). Phase `after` first
 proves every Exact/Frozen block. `prove` observes one instruction's declared red
 or its bounded green attempts, then names the next in-run action; `status` derives
 resume progress from the sealed plan and current worktree. A repair-only `reverify` selection
 reruns one authored after-implementation Run and every later entry. `apply` writes one
 instruction's declared Exact/Frozen text into its Location files, or nothing. It writes no
-artifact and persists no state.
+artifact and persists no state; a trimmed pass's output copy lives only in the system temp directory.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ import os
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path, PurePosixPath
 from typing import Any, Sequence
@@ -437,14 +439,35 @@ def _passed_text(text: str) -> str:
     return f"[{len(text) - PASSED_OUTPUT_LIMIT} earlier characters omitted]\n{text[-PASSED_OUTPUT_LIMIT:]}"
 
 
+def _slow_records(parsed: Any) -> list[dict[str, Any]]:
+    """Records a check itself declared slow, read from its whole parsed output."""
+    records = parsed if isinstance(parsed, list) else [parsed]
+    return [record for record in records if isinstance(record, dict) and record.get("slow") is True]
+
+
+def _full_output_file(stdout: str, stderr: str) -> str | None:
+    """Keep a trimmed pass's whole output in a temporary file outside the repository; None when unwritable."""
+    try:
+        handle, name = tempfile.mkstemp(prefix="construct-run-", suffix=".txt")
+        with os.fdopen(handle, "w", encoding="utf-8", newline="") as stream:
+            stream.write(f"== stdout ==\n{stdout}\n== stderr ==\n{stderr}")
+    except OSError:
+        return None
+    return name
+
+
 def _result_entry(summary: dict[str, Any]) -> dict[str, Any]:
     """One Run's result: failures keep full output; a pass keeps output enough to judge Expect, once.
 
     Every later turn re-reads what a result returns, so a passing Run's stdout
     appears either parsed in ``stdout_json`` (its trailing JSON lines within the
-    limit) or as bounded text, never both, and stderr is bounded.
+    limit) or as bounded text, never both, and stderr is bounded. When anything is
+    trimmed, ``full_output`` names a temporary file holding both streams whole, so
+    an Expect about omitted output can still be judged; if that file cannot be
+    written, the pass keeps its full output instead.
     """
     stdout = summary["stdout_full"]
+    stderr = summary["stderr_full"]
     entry: dict[str, Any] = {
         "step": summary["step"],
         "returncode": summary["returncode"],
@@ -453,14 +476,23 @@ def _result_entry(summary: dict[str, Any]) -> dict[str, Any]:
         "passed": summary["passed"],
         "elapsed_ms": summary["elapsed_ms"],
         "stdout": stdout,
-        "stderr": summary["stderr_full"],
+        "stderr": stderr,
     }
     parsed = _stdout_json(stdout)
     if parsed is not None:
         entry["stdout_json"] = parsed
     if not summary["passed"]:
         return entry
-    entry["stderr"] = _passed_text(summary["stderr_full"])
+    full_output = None
+    if len(stdout) > PASSED_OUTPUT_LIMIT or len(stderr) > PASSED_OUTPUT_LIMIT:
+        full_output = _full_output_file(stdout, stderr)
+        if full_output is None:
+            return entry
+        entry["full_output"] = full_output
+        slow = _slow_records(parsed)
+        if slow:
+            entry["slow_records"] = slow
+    entry["stderr"] = _passed_text(stderr)
     if parsed is None or (isinstance(parsed, dict) and len(stdout) > PASSED_OUTPUT_LIMIT):
         entry.pop("stdout_json", None)
         entry["stdout"] = _passed_text(stdout)
@@ -480,14 +512,11 @@ def _result_entry(summary: dict[str, Any]) -> dict[str, Any]:
 
 
 def _notices(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Surface records a check itself declared slow; they never change pass/fail."""
-    notices = []
+    """Surface records a check itself declared slow, whatever trimming kept; they never change pass/fail."""
+    notices: list[dict[str, Any]] = []
     for result in results:
-        parsed = result.get("stdout_json")
-        records = parsed if isinstance(parsed, list) else [parsed]
-        for record in records:
-            if isinstance(record, dict) and record.get("slow") is True:
-                notices.append({"line": result["step"]["line"], "slow": True, "record": record})
+        records = result["slow_records"] if "slow_records" in result else _slow_records(result.get("stdout_json"))
+        notices.extend({"line": result["step"]["line"], "slow": True, "record": record} for record in records)
     return notices
 
 

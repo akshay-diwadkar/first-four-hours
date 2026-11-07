@@ -513,13 +513,30 @@ def test_relevant_byte_drift_fails_closed_after_seal(tmp_path: Path) -> None:
     )
     request, draft_file = write_request_and_draft(repo, plan)
     sealed = runtime.seal_blueprint(repo, request, draft_file).text
+    draft_file.write_bytes(sealed.encode("utf-8"))
+    # Before any bound file moves, an amended request replaces request.md in place and reopens the plan as a draft.
+    amended = tmp_path / "amended.md"
+    amended.write_text("Normalize names; callers passing None keep None.\n", encoding="utf-8")
+    reopened = runtime.prepare_blueprint_workspace(repo, "test-task", amended, amend=True)
+    assert reopened.blueprint_path.resolve() == draft_file.resolve()
+    assert request.read_bytes() == amended.read_bytes()
+    assert draft_file.read_text(encoding="utf-8") == runtime.canonical_body(sealed)
+    sealed = runtime.seal_blueprint(repo, request, draft_file).text
+    assert _sealed_proof(sealed)["binding"]["request_sha256"] == runtime._sha256(amended.read_bytes())
+    draft_file.write_bytes(sealed.encode("utf-8"))
     source.write_text("def normalize(value):\n    return value  # drifted\n    # evidence\n", encoding="utf-8")
     _blueprint, diagnostics, _view = runtime.verify_sealed_blueprint(
         sealed, repo, request_bytes=request.read_bytes()
     )
     assert {"proof.sources.stale", "proof.locations.stale"} <= {item.code for item in diagnostics}
+    # Once a bound file moves, Construct may have started: amending refuses and leaves the workspace intact.
+    amended.write_text("Normalize names differently.\n", encoding="utf-8")
+    with pytest.raises(ValueError) as progressed:
+        runtime.prepare_blueprint_workspace(repo, "test-task", amended, amend=True)
+    assert [item.code for item in getattr(progressed.value, "diagnostics", ())] == ["workspace.amend.progressed"]
+    assert request.read_text(encoding="utf-8") == "Normalize names; callers passing None keep None.\n"
+    assert draft_file.read_text(encoding="utf-8") == sealed
     # carryover reports each bound file's status through the real CLI, never an import.
-    draft_file.write_bytes(sealed.encode("utf-8"))
 
     def carryover(predecessor: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(

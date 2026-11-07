@@ -513,13 +513,48 @@ def test_relevant_byte_drift_fails_closed_after_seal(tmp_path: Path) -> None:
     )
     request, draft_file = write_request_and_draft(repo, plan)
     sealed = runtime.seal_blueprint(repo, request, draft_file).text
+    draft_file.write_bytes(sealed.encode("utf-8"))
+    # Before any bound file moves, an amended request replaces request.md in place and reopens the plan as a draft.
+    amended = tmp_path / "amended.md"
+    amended.write_text("Normalize names; callers passing None keep None.\n", encoding="utf-8")
+    reopened = runtime.prepare_blueprint_workspace(repo, "test-task", amended, amend=draft_file)
+    assert reopened.blueprint_path.resolve() == draft_file.resolve()
+    assert request.read_bytes() == amended.read_bytes()
+    assert draft_file.read_text(encoding="utf-8") == runtime.canonical_body(sealed)
+    sealed = runtime.seal_blueprint(repo, request, draft_file).text
+    assert _sealed_proof(sealed)["binding"]["request_sha256"] == runtime._sha256(amended.read_bytes())
+    draft_file.write_bytes(sealed.encode("utf-8"))
+    sealed_request = request.read_bytes()
+    # A planned-new Location that now exists means Construct may have started, though no hashed file moved.
+    created = repo / "tests" / "test_names.py"
+    created.parent.mkdir(exist_ok=True)
+    created.write_text("assert True\n", encoding="utf-8")
+    amended.write_text("Normalize names differently.\n", encoding="utf-8")
+    with pytest.raises(ValueError) as created_refusal:
+        runtime.prepare_blueprint_workspace(repo, "test-task", amended, amend=draft_file)
+    assert [item.code for item in getattr(created_refusal.value, "diagnostics", ())] == ["workspace.amend.progressed"]
+    created.unlink()
+    # --amend changes only the workspace it names: a collision-suffixed one, never the base slug's sealed plan.
+    other = runtime.prepare_blueprint_workspace(repo, "test-task", amended)
+    assert other.blueprint_path.parent.resolve() != draft_file.parent.resolve()
+    other_amended = tmp_path / "other-amended.md"
+    other_amended.write_text("Normalize names for the other caller.\n", encoding="utf-8")
+    runtime.prepare_blueprint_workspace(repo, "test-task", other_amended, amend=other.blueprint_path)
+    assert other.request_path.read_bytes() == other_amended.read_bytes()
+    assert request.read_bytes() == sealed_request and draft_file.read_text(encoding="utf-8") == sealed
     source.write_text("def normalize(value):\n    return value  # drifted\n    # evidence\n", encoding="utf-8")
     _blueprint, diagnostics, _view = runtime.verify_sealed_blueprint(
         sealed, repo, request_bytes=request.read_bytes()
     )
     assert {"proof.sources.stale", "proof.locations.stale"} <= {item.code for item in diagnostics}
+    # Once a bound file moves, Construct may have started: amending refuses and leaves the workspace intact.
+    amended.write_text("Normalize names differently.\n", encoding="utf-8")
+    with pytest.raises(ValueError) as progressed:
+        runtime.prepare_blueprint_workspace(repo, "test-task", amended, amend=draft_file)
+    assert [item.code for item in getattr(progressed.value, "diagnostics", ())] == ["workspace.amend.progressed"]
+    assert request.read_text(encoding="utf-8") == "Normalize names; callers passing None keep None.\n"
+    assert draft_file.read_text(encoding="utf-8") == sealed
     # carryover reports each bound file's status through the real CLI, never an import.
-    draft_file.write_bytes(sealed.encode("utf-8"))
 
     def carryover(predecessor: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(

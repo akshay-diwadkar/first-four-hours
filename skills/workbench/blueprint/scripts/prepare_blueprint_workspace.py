@@ -15,9 +15,12 @@ def main() -> int:
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--request-file", type=Path, required=True)
     parser.add_argument("--task-name", required=True)
+    parser.add_argument(
+        "--amend", type=Path, metavar="BLUEPRINT", help="Replace the request of the workspace holding this blueprint.md in place."
+    )
     args = parser.parse_args()
     try:
-        reservation = prepare_blueprint_workspace(args.repo_root, args.task_name, args.request_file)
+        reservation = prepare_blueprint_workspace(args.repo_root, args.task_name, args.request_file, amend=args.amend)
     except (OSError, UnicodeError, ValueError) as exc:
         diagnostics = getattr(exc, "diagnostics", None)
         if not diagnostics:

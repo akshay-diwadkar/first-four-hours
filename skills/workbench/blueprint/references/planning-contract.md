@@ -12,7 +12,7 @@ Future usefulness, genericity, symmetry, elegance, imagined callers, and "while 
 
 Repository-derived engineering details (seam, owner, file, helper, data flow, representation, ordering, test and verification shape) are always Blueprint's. For a child of a parent or epic issue, copy each constraint the parent sets for its children verbatim into the request before preparing and give the challenger the parent's text.
 
-Close every known gap or get the user's recorded acceptance: a requested outcome or load-bearing invariant failing for some producible input, state, configuration, or environment, including one a supported finding names, is a gap however rare or low-consequence. Record the user's answer in a new request outside the repository and prepare a fresh workspace, carrying the draft over (a draft changed only by that record and Goal's summary of the gap keeps its challenge); acceptance only in chat, Goal, a report, a non-goal, or a risk is unrecorded. A prediction carried by authored verification is not a gap.
+Close every known gap or get the user's recorded acceptance: a requested outcome or load-bearing invariant failing for some producible input, state, configuration, or environment, including one a supported finding names, is a gap however rare or low-consequence. Record the user's answer by amending the request in place ([README](../README.md)); acceptance only in chat, Goal, a report, a non-goal, or a risk is unrecorded. A prediction carried by authored verification is not a gap.
 
 ## Approach and scope
 

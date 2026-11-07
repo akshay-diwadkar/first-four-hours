@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.6.0"
+CONTRACT_VERSION = "1.7.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -1055,8 +1055,67 @@ def _select_workspace_directory(root: Path, slug: str, binding: dict[str, Any], 
     )
 
 
-def prepare_blueprint_workspace(repo_root: Path, task_name: str, request_file: Path) -> WorkspaceReservation:
-    """Reserve one task directory, write the initial Blueprint shell, and the narrow local untracked boundary."""
+def _planned_new_present(view: RepositoryView, path: str) -> bool:
+    """Whether a planned-new Location now occupies its path; an unsafe or unreadable path counts as present."""
+    try:
+        entry = view.entry_path(path)
+        return entry.is_symlink() or entry.exists()
+    except (OSError, ValueError):
+        return True
+
+
+def _amend_workspace(root: Path, blueprint: Path, request_bytes: bytes) -> Path:
+    """Replace the named workspace's request in place while no bound file moved since its seal.
+
+    ``blueprint`` is the workspace's own ``blueprint.md``, so a collision-suffixed
+    workspace is reached exactly. A sealed plan loses its receipts and becomes a
+    draft again; an existing or deleted Location or Source whose bytes changed,
+    or a planned-new Location that now exists, means Construct may have started,
+    so the workspace stays untouched.
+    """
+    task_directory = canonical_blueprint_path(root, blueprint, require_existing=True).parent
+    _workspace_task_directory(task_directory, require_request=True)
+    request_path = task_directory / REQUEST_FILENAME
+    existing_request = request_path.read_bytes()
+    if existing_request == request_bytes:
+        return task_directory
+    blueprint_path = task_directory / BLUEPRINT_FILENAME
+    text = blueprint_path.read_bytes().decode("utf-8") if blueprint_path.is_file() else ""
+    if RECEIPT_PREFIX_RE.search(text):
+        candidate = _sealed_binding(text)
+        if candidate is None or candidate.get("request_sha256") != _sha256(existing_request):
+            raise _workspace_error(
+                "workspace.amend.unsealed_receipts",
+                f"{BLUEPRINT_FILENAME} carries receipts that do not prove its sealed request: {blueprint_path}",
+                "Preserve the workspace and prepare a fresh one under a new task name.",
+            )
+        carryover_sources = import_module("carryover_sources")
+        moved = [entry["path"] for entry in carryover_sources.carryover(root, text) if entry["status"] != "unchanged"]
+        view = RepositoryView(root)
+        moved += [
+            record["path"]
+            for record in carryover_sources._proven_proof(text)["locations"]
+            if record.get("state") == "new" and _planned_new_present(view, record["path"])
+        ]
+        if moved:
+            raise _workspace_error(
+                "workspace.amend.progressed",
+                "bound files changed since the seal, so Construct may have started: " + ", ".join(sorted(set(moved))),
+                "Leave this workspace intact; prepare a fresh one and reuse the plan per Earlier plans.",
+            )
+        _atomic_write_text(blueprint_path, canonical_body(text))
+    _atomic_write_bytes(request_path, request_bytes)
+    return task_directory
+
+
+def prepare_blueprint_workspace(
+    repo_root: Path, task_name: str, request_file: Path, *, amend: Path | None = None
+) -> WorkspaceReservation:
+    """Reserve one task directory, write the initial Blueprint shell, and the narrow local untracked boundary.
+
+    ``amend`` names an existing workspace's ``blueprint.md`` whose request is replaced in place
+    instead of reserving a new directory.
+    """
     root = repo_root.resolve()
     if not root.is_dir():
         raise _workspace_error(
@@ -1103,7 +1162,10 @@ def prepare_blueprint_workspace(repo_root: Path, task_name: str, request_file: P
     slug = normalize_task_slug(task_name)
     _ensure_namespace(root, slug)
     binding = _workspace_binding(root, request_bytes)
-    task_directory = _select_workspace_directory(root, slug, binding, request_bytes)
+    if amend is not None:
+        task_directory = _amend_workspace(root, amend, request_bytes)
+    else:
+        task_directory = _select_workspace_directory(root, slug, binding, request_bytes)
     if not task_directory.exists():
         try:
             task_directory.mkdir()

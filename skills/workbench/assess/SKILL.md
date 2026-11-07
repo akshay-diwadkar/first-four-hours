@@ -2,7 +2,7 @@
 name: assess
 description: Assess a PR or code change against its issue/spec, acceptance criteria, repository rules, tests, and base behavior for correctness, code quality, maintainability, and proportionate security. Use for PR review, re-review, acceptance-criteria checks, or merge readiness.
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 # Assess
@@ -11,7 +11,7 @@ metadata:
 
 Assess reconciles one exact target/base/head with the original user request, authoritative requirements, any available Blueprint, repository rules, tests, and base behavior. Snapshot every used external target, authority, evidence, proof, or diagnosis; Git/repository-local truth needs none. Unknown required external currentness means `blocked`.
 
-The assessment is read-only: never repair, edit the target, merge, approve, or mutate GitHub. Construct owns implementation; Diagnose owns broader defect/risk investigation. `assessment.md` is a result, never approval, certification, or merge authority.
+The assessment is read-only: never repair, edit the target, merge, approve, or mutate GitHub. Construct owns implementation; Diagnose owns broader defect/risk investigation. `assessment.md` is a result, never approval, certification, or merge authority. Posting its findings is a separate step after `check`, only on the user's explicit yes.
 
 ## Assessment
 
@@ -40,4 +40,4 @@ python /absolute/skill-root/scripts/cli.py --repo-root /absolute/repo \
   --input output=<prepared output_path> --format json check
 ```
 
-Report the sealed result, path, and each finding's severity, defect, and scenario as sealed, with no approval or readiness claim beyond it. Stop after one current `assessment.md` is sealed and checked. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.
+Report the sealed result, path, and each finding's severity, defect, and scenario as sealed, with no approval or readiness claim beyond it. When the result is `findings` and `target` is a pull request's URL, read [publishing](references/publishing.md) and offer to post them. Stop after one current `assessment.md` is sealed and checked and any offer is settled. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.

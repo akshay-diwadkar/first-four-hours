@@ -12,11 +12,12 @@ import subprocess
 import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any
+from urllib.parse import quote
 
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.6.0"
+CONTRACT_VERSION = "1.7.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
@@ -71,6 +72,32 @@ PATH_CHAR_RE = re.compile(r"[\w./\\-]")
 PATH_CONTINUATION_RE = re.compile(r"[\w/\\-]|\.[\w/\\-]")
 GIT_TIMEOUT_SECONDS = 10
 SKILL_ROOT = Path(__file__).resolve().parent.parent
+PUBLISH_ACTIONS = {
+    "publish.result_not_findings": "Nothing was posted. Only a findings assessment can be posted.",
+    "publish.target_not_pull_request": (
+        "Nothing was posted. To post, reassess with the pull request's url from gh pr view --json url as target, "
+        "then seal and check it."
+    ),
+    "publish.unconfirmed": (
+        "Nothing was posted. Preview again without confirm, show the user the exact body, and pass its body_sha256 "
+        "only after an explicit yes."
+    ),
+    "publish.pull_request_unreadable": (
+        "Nothing was posted. Repair gh access to the pull request (installation, authentication, or an account that "
+        "can read it), then preview again."
+    ),
+    "publish.pull_request_mismatch": (
+        "Nothing was posted. gh resolves a different pull request than the assessed target; reassess the intended "
+        "pull request with its gh url as target."
+    ),
+    "publish.head_moved": (
+        "Nothing was posted. Assess the pull request's current head, using delta review when it qualifies, seal and "
+        "check it, then preview again."
+    ),
+    "publish.failed": (
+        "The comment may or may not exist. Look at the pull request's conversation before offering to post again."
+    ),
+}
 
 
 class AssessError(ValueError):
@@ -93,7 +120,9 @@ class AssessError(ValueError):
         self.evidence = evidence or (message,)
 
     def diagnostic(self, *, phase: str) -> dict[str, Any]:
-        if self.code == "result.target_moved":
+        if self.code in PUBLISH_ACTIONS:
+            action = PUBLISH_ACTIONS[self.code]
+        elif self.code == "result.target_moved":
             action = "The base or head moved since this assessment. If it qualifies under the delta review reference, review the delta; otherwise perform a fresh full assessment against the current exact base/head and assessed snapshots. Then seal a new assessment.md."
         elif self.category == "stale_evidence":
             action = "Perform a fresh full assessment against the current exact base/head and assessed snapshots, then seal a new assessment.md."
@@ -1163,6 +1192,270 @@ def parse_result(text: str) -> dict[str, Any]:
         "head_revision": head_revision,
         "assessed_sources": _parse_sources(body),
         "result": result,
+    }
+
+
+FINDING_VALUE_LABELS = {
+    "Severity": "severity",
+    "Basis": "basis",
+    "Defect": "defect",
+    "Consequence": "consequence",
+    "Required truth": "required_truth",
+}
+FINDING_LIST_LABELS = {"Scenario": "scenario", "Evidence / authority": "evidence"}
+FINDING_HEADING_RE = re.compile(r"^### Finding [1-9][0-9]*$")
+
+
+def _parse_findings(body: str) -> list[dict[str, Any]]:
+    section = body.split("\n## Findings\n\n", 1)[1].split("\n## Limitations\n", 1)[0]
+    blocks: list[list[str]] = []
+    for line in section.splitlines():
+        if FINDING_HEADING_RE.fullmatch(line):
+            blocks.append([])
+        elif blocks:
+            blocks[-1].append(line)
+        elif line:
+            raise _fail(
+                "artifact.shape_invalid", "assessment.md finding 1 cannot be read for publishing: text before it"
+            )
+    findings: list[dict[str, Any]] = []
+    for index, block in enumerate(blocks, start=1):
+
+        def bad(reason: str, index: int = index) -> AssessError:
+            return _fail(
+                "artifact.shape_invalid", f"assessment.md finding {index} cannot be read for publishing: {reason}"
+            )
+
+        def load(raw: str, label: str) -> Any:
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError as exc:
+                raise bad(f"{label} is malformed JSON") from exc
+
+        finding: dict[str, Any] = {}
+        open_list: str | None = None
+        for line in block:
+            if not line:
+                continue
+            if line.startswith("  - "):
+                if open_list is None:
+                    raise bad(f"unexpected line {line!r}")
+                item = load(line[4:], open_list)
+                if open_list == "scenario" and (not isinstance(item, str) or not item):
+                    raise bad("scenario items must be non-empty strings")
+                if open_list == "evidence" and not isinstance(item, dict):
+                    raise bad("evidence items must be objects")
+                finding[open_list].append(item)
+                continue
+            open_list = None
+            label, separator, raw = line[2:].partition(":") if line.startswith("- ") else ("", "", "")
+            if separator and label in FINDING_VALUE_LABELS and raw.startswith(" "):
+                key = FINDING_VALUE_LABELS[label]
+                if key in finding:
+                    raise bad(f"duplicate {label} field")
+                value = load(raw[1:], label)
+                if not isinstance(value, str) or not value:
+                    raise bad(f"{label} must be a non-empty string")
+                finding[key] = value
+            elif separator and label in FINDING_LIST_LABELS and not raw:
+                key = FINDING_LIST_LABELS[label]
+                if key in finding:
+                    raise bad(f"duplicate {label} field")
+                finding[key] = []
+                open_list = key
+            else:
+                raise bad(f"unexpected line {line!r}")
+        finding.setdefault("scenario", [])
+        required = {**FINDING_VALUE_LABELS, "Evidence / authority": "evidence"}
+        missing = [label for label, key in required.items() if key not in finding]
+        if missing:
+            raise bad("missing " + ", ".join(missing))
+        findings.append(
+            {
+                key: finding[key]
+                for key in ("severity", "basis", "defect", "scenario", "evidence", "consequence", "required_truth")
+            }
+        )
+    return findings
+
+
+def _evidence_line(evidence: dict[str, Any], target_parts: tuple[str, str, str]) -> str:
+    host, owner, repo = target_parts
+    kind = evidence.get("kind")
+    locator = evidence.get("locator")
+    if kind == "source":
+        source_id, role = evidence.get("source_id"), evidence.get("role")
+        fields = (source_id, role, locator)
+        if not isinstance(locator, str) or not all(isinstance(value, str) and value for value in fields):
+            raise _fail("artifact.shape_invalid", "assessment.md source evidence cannot be read for publishing")
+        line = f"Source `{source_id}` ({role})"
+        return f"{line}: {locator}" if locator.startswith("https://") else line
+    if kind not in FILE_LOCATOR_KINDS | PATH_LOCATOR_KINDS or not isinstance(locator, str):
+        raise _fail("artifact.shape_invalid", f"assessment.md evidence kind cannot be published: {kind!r}")
+    revision, separator, rest = locator.partition(":")
+    if not separator or not revision or not rest:
+        raise _fail("artifact.shape_invalid", f"assessment.md evidence locator cannot be split: {locator!r}")
+    side = "head" if kind.startswith("head-") else "base"
+    if kind in PATH_LOCATOR_KINDS:
+        path, anchor = rest, ""
+    else:
+        path, separator, span = rest.rpartition("#L")
+        start, dash, end = span.partition("-L")
+        if not separator or not path or not dash or not start.isdigit() or not end.isdigit():
+            raise _fail("artifact.shape_invalid", f"assessment.md evidence locator cannot be split: {locator!r}")
+        anchor = f"#L{start}-L{end}"
+    url = f"https://{host}/{owner}/{repo}/blob/{revision}/{quote(path, safe='/')}{anchor}"
+    if not anchor:
+        text = path
+    elif start == end:
+        text = f"{path} line {start}"
+    else:
+        text = f"{path} lines {start}-{end}"
+    return f"[{text}]({url}) at {side} commit `{revision[:12]}`"
+
+
+def render_comment(
+    target_parts: tuple[str, str, str], base_revision: str, head_revision: str, findings: list[dict[str, Any]]
+) -> str:
+    count = "1 finding" if len(findings) == 1 else f"{len(findings)} findings"
+    sections = [
+        "## Assess findings",
+        f"Assess reviewed head commit `{head_revision}` of this pull request against base commit `{base_revision}` "
+        f"and found {count}. These findings cover that head commit only, not any later push.",
+        "This comment shares review findings only. It is not an approval, a change request, or a statement that "
+        "this pull request is ready to merge.",
+    ]
+    for index, finding in enumerate(findings, start=1):
+        sections.extend([f"### Finding {index}: {finding['severity']}", f"**Defect:** {finding['defect']}"])
+        if finding["scenario"]:
+            sections.append("**Scenario:**")
+            steps = enumerate(finding["scenario"], start=1)
+            sections.append("\n".join(f"{step_index}. {step}" for step_index, step in steps))
+        sections.append("**Evidence:**")
+        sections.append("\n".join(f"- {_evidence_line(item, target_parts)}" for item in finding["evidence"]))
+        sections.extend(
+            [
+                f"**Consequence:** {finding['consequence']}",
+                f"**Truth to restore:** {finding['required_truth']}",
+                f"**Basis:** {finding['basis']}",
+            ]
+        )
+    return "\n\n".join(sections) + "\n"
+
+
+PULL_REQUEST_URL_RE = re.compile(r"^https://([A-Za-z0-9.-]+)/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/pull/([1-9][0-9]*)$")
+
+
+def run_gh(argv: list[str], cwd: Path, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
+    completed = subprocess.run(
+        argv,
+        cwd=cwd,
+        input=None if stdin is None else stdin.encode("utf-8"),
+        capture_output=True,
+        check=False,
+        timeout=120,
+    )
+    return subprocess.CompletedProcess(
+        argv,
+        completed.returncode,
+        completed.stdout.decode("utf-8", "replace"),
+        completed.stderr.decode("utf-8", "replace"),
+    )
+
+
+def _gh_detail(completed: subprocess.CompletedProcess[str]) -> str:
+    return completed.stderr.strip() or completed.stdout.strip()
+
+
+def publish_findings(repo_root: Path, output: Path, confirm: str | None) -> dict[str, Any]:
+    root = repo_root.resolve()
+    checked = check_result(repo_root, output)
+    text = Path(checked["path"]).read_text(encoding="utf-8")
+    stored = parse_result(text)
+    if stored["head_revision"] != checked["head_revision"] or stored["base_revision"] != checked["base_revision"]:
+        raise _fail("result.stale", "assessment.md changed while publishing", category="stale_evidence")
+    if stored["result"] != "findings":
+        raise _fail(
+            "publish.result_not_findings",
+            f"only a findings assessment can be posted; this one is `{stored['result']}`",
+            category="contract_contradiction",
+        )
+    target = stored["target"]
+    target_match = PULL_REQUEST_URL_RE.fullmatch(target)
+    if target_match is None:
+        raise _fail(
+            "publish.target_not_pull_request",
+            f"assessment target is not a pull request URL: {target}",
+            category="contract_contradiction",
+        )
+    text_body = text.removesuffix("\n").rpartition("\n")[0] + "\n"
+    body = render_comment(
+        (target_match.group(1), target_match.group(2), target_match.group(3)),
+        stored["base_revision"],
+        stored["head_revision"],
+        _parse_findings(text_body),
+    )
+    digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    if confirm is not None and confirm != digest:
+        raise _fail(
+            "publish.unconfirmed",
+            "confirm does not match the body_sha256 of the comment this assessment renders, "
+            "so it is not the text the user confirmed",
+            category="contract_contradiction",
+        )
+    try:
+        viewed = run_gh(["gh", "pr", "view", target, "--json", "url,headRefOid"], root)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise _fail(
+            "publish.pull_request_unreadable",
+            f"gh pr view could not read {target}: {exc}",
+            category="unavailable_prerequisite",
+        ) from exc
+    try:
+        view = json.loads(viewed.stdout) if viewed.returncode == 0 else None
+    except json.JSONDecodeError:
+        view = None
+    if not (isinstance(view, dict) and isinstance(view.get("url"), str) and isinstance(view.get("headRefOid"), str)):
+        raise _fail(
+            "publish.pull_request_unreadable",
+            f"gh pr view could not read {target}: {_gh_detail(viewed)}",
+            category="unavailable_prerequisite",
+        )
+    if view["url"] != target:
+        raise _fail(
+            "publish.pull_request_mismatch", f"gh resolves {target} to {view['url']}", category="contract_contradiction"
+        )
+    if view["headRefOid"] != stored["head_revision"]:
+        raise _fail(
+            "publish.head_moved",
+            f"pull request head is {view['headRefOid']}, but the assessment covers {stored['head_revision']}",
+            category="stale_evidence",
+        )
+    if confirm is None:
+        return {
+            "status": "preview",
+            "posted": False,
+            "target": target,
+            "head_revision": stored["head_revision"],
+            "body": body,
+            "body_sha256": digest,
+        }
+    try:
+        posted = run_gh(["gh", "pr", "comment", target, "--body-file", "-"], root, stdin=body)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise _fail("publish.failed", f"gh pr comment failed: {exc}", category="unavailable_prerequisite") from exc
+    if posted.returncode != 0:
+        raise _fail(
+            "publish.failed", f"gh pr comment failed: {_gh_detail(posted)}", category="unavailable_prerequisite"
+        )
+    stdout_lines = [line.strip() for line in posted.stdout.splitlines() if line.strip()]
+    return {
+        "status": "posted",
+        "posted": True,
+        "target": target,
+        "head_revision": stored["head_revision"],
+        "body_sha256": digest,
+        "comment_url": stdout_lines[-1] if stdout_lines else "",
     }
 
 

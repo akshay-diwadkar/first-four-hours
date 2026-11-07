@@ -61,7 +61,7 @@ Architect, Assess, Blueprint, Charter, Diagnose, Ticket, Ideate, Scribe, Tutor, 
 
 ## Review and pull requests
 
-[Assess](../skills/assess.md) is read-only and grants no approval or merge authority. [PR](../skills/pr.md) opens a pull request, or updates its description, only after you confirm its exact text, and never merges. Every commit and merge stays yours.
+[Assess](../skills/assess.md) is read-only and grants no approval or merge authority; it posts its findings to a pull request only after you confirm the exact comment. [PR](../skills/pr.md) opens a pull request, or updates its description, only after you confirm its exact text, and never merges. Every commit and merge stays yours.
 
 ## Learning
 

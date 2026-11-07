@@ -28,6 +28,13 @@
     "text": "with no approval or readiness claim beyond it"
   },
   {
+    "id": "assess.confirmed-publication",
+    "skill": "assess",
+    "source": "references/publishing.md",
+    "surface": "doctor",
+    "text": "Only an explicit yes to that exact text authorizes posting; silence or an earlier approval does not."
+  },
+  {
     "id": "diagnosis.read-only",
     "skill": "diagnose",
     "source": "SKILL.md",

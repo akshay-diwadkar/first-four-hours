@@ -121,8 +121,10 @@ def _seal(
     )
 
 
-def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:
-    repo, _base, head = _repository(tmp_path, assessment_seed)
+def test_findings_result_binds_file_and_assessed_source_locators(
+    tmp_path: Path, assessment_seed: tuple[Path, str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo, base, head = _repository(tmp_path, assessment_seed)
     snapshot = _snapshot(tmp_path)
     finding = {
         "severity": "P1",
@@ -204,6 +206,96 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     ) in artifact
     current = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert current.returncode == 0, current.stdout + current.stderr
+    # Only a checked findings assessment of a pull request whose live head is the assessed head is posted.
+    local_bytes = output.read_bytes()
+    not_pull = _run(repo, "--input", f"output={output}", "--format", "json", "publish")
+    assert not_pull.returncode != 0
+    assert json.loads(not_pull.stdout)["diagnostics"][0]["code"] == "publish.target_not_pull_request"
+    assert output.read_bytes() == local_bytes
+    target = "https://github.com/acme/widget/pull/7"
+    resealed, _ = _seal(
+        repo,
+        tmp_path,
+        _bundle(tmp_path, target=target, assessed_sources=sources, result="findings", findings=[finding]),
+        output,
+    )
+    assert resealed.returncode == 0, resealed.stdout + resealed.stderr
+    sealed_bytes = output.read_bytes()
+    calls: list[tuple[list[str], str | None]] = []
+    live_head = head
+
+    def fake_gh(argv: list[str], cwd: Path, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
+        calls.append((argv, stdin))
+        if argv[:3] == ["gh", "pr", "view"]:
+            return subprocess.CompletedProcess(argv, 0, json.dumps({"url": target, "headRefOid": live_head}), "")
+        assert argv[:3] == ["gh", "pr", "comment"]
+        return subprocess.CompletedProcess(argv, 0, "https://github.com/acme/widget/pull/7#issuecomment-1\n", "")
+
+    monkeypatch.setattr(contract, "run_gh", fake_gh)
+    preview = contract.publish_findings(repo, output, None)
+    comment = preview["body"]
+    digest = preview["body_sha256"]
+    assert preview["status"] == "preview" and preview["posted"] is False
+    assert digest == hashlib.sha256(comment.encode("utf-8")).hexdigest()
+    assert calls == [(["gh", "pr", "view", target, "--json", "url,headRefOid"], None)]
+    for expected in (
+        f"head commit `{head}`",
+        f"base commit `{base}`",
+        "found 1 finding.",
+        "It is not an approval, a change request, or a statement that this pull request is ready to merge.",
+        "### Finding 1: P1",
+        "**Defect:** The changed value violates the governing requirement.",
+        "1. A caller reads the changed value in service.py.\n"
+        "2. The value breaks the rule issue-382 sets, which the base value met.",
+        f"(https://github.com/acme/widget/blob/{head}/service.py#L1-L1)",
+        f"(https://github.com/acme/widget/blob/{base}/service.py#L1-L1)",
+        "Source `issue-382` (authority): https://github.com/akshay-diwadkar/first-four-hours/issues/382",
+        "**Consequence:** The proposed change cannot proceed without restoring the requirement.",
+        "**Truth to restore:** The committed value must satisfy the governing requirement.",
+    ):
+        assert expected in comment
+    assert str(tmp_path) not in comment and "Limitations" not in comment
+    sealed_text = sealed_bytes.decode("utf-8")
+    parsed = contract._parse_findings(sealed_text.removesuffix("\n").rpartition("\n")[0] + "\n")[0]
+    local_evidence = [
+        {**item, "locator": str(snapshot)} if item["kind"] == "source" else item for item in parsed["evidence"]
+    ]
+    local_comment = contract.render_comment(
+        ("github.com", "acme", "widget"), base, head, [{**parsed, "evidence": local_evidence}]
+    )
+    assert "Source `issue-382` (authority)\n" in local_comment and str(snapshot) not in local_comment
+    with pytest.raises(AssessError) as unconfirmed:
+        contract.publish_findings(repo, output, "0" * 64)
+    assert unconfirmed.value.code == "publish.unconfirmed" and len(calls) == 1
+    live_head = "f" * 40
+    with pytest.raises(AssessError) as moved:
+        contract.publish_findings(repo, output, digest)
+    assert moved.value.code == "publish.head_moved"
+    assert not [argv for argv, _ in calls if argv[:3] == ["gh", "pr", "comment"]]
+    live_head = head
+    posted = contract.publish_findings(repo, output, digest)
+    assert posted["status"] == "posted"
+    assert posted["comment_url"] == "https://github.com/acme/widget/pull/7#issuecomment-1"
+    assert calls[-1] == (["gh", "pr", "comment", target, "--body-file", "-"], comment)
+    assert output.read_bytes() == sealed_bytes
+    recorded = len(calls)
+    clear_output = prepare_assessment_workspace(repo, "clear-case").output_path
+    clear_sealed, _ = _seal(repo, tmp_path, _bundle(tmp_path, target=target), clear_output)
+    assert clear_sealed.returncode == 0, clear_sealed.stdout + clear_sealed.stderr
+    with pytest.raises(AssessError) as not_findings:
+        contract.publish_findings(repo, clear_output, None)
+    assert not_findings.value.code == "publish.result_not_findings" and len(calls) == recorded
+    output.write_bytes(sealed_bytes.replace(b'- Severity: "P1"', b'- Severity: "P3"', 1))
+    with pytest.raises(AssessError) as tampered:
+        contract.publish_findings(repo, output, digest)
+    assert tampered.value.code == "artifact.integrity_stale" and len(calls) == recorded
+    output.write_bytes(sealed_bytes)
+    snapshot_bytes = snapshot.read_bytes()
+    snapshot.write_text("# Issue 382\nChanged acceptance.\n", encoding="utf-8")
+    with pytest.raises(AssessError) as changed_source:
+        contract.publish_findings(repo, output, digest)
+    assert changed_source.value.code == "result.stale" and len(calls) == recorded
+    snapshot.write_bytes(snapshot_bytes)
     body = artifact.removesuffix("\n").rpartition("\n")[0] + "\n"
     title, *sections = body.split("\n## ")
     by_heading = {section.split("\n", 1)[0]: section for section in sections}

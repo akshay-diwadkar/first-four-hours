@@ -4,7 +4,14 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- Blueprint 1.6.0: amending a plan after a Construct stop no longer forces you to reseal an unchanged architecture. An `architecture-source` declaration may now name the implemented plan as `"predecessor"`, the absolute path of its sealed `blueprint.md`. Intake checks that the plan is unedited, belongs to this repository, and was planned from the same architecture. It then leaves that plan's Location paths out of the architecture's snapshot comparison. Any other change to the repository, or to the evidence the architecture cites, is still refused. This works for Git snapshots whose HEAD has not moved, when those paths were unchanged at the architecture's seal. A refused source now names the recovery steps: reseal with Architect, then write a fresh request with the new digest, or declare the predecessor. It seals plans with contract version 1.6.0.
+- Construct 1.6.0: ships the Blueprint 1.6.0 runtime copy, so it reports contract version 1.6.0 and reads requests that declare a predecessor. It still accepts every sealed 1.x plan.
+
 ### Fixed
+
+- Architect 1.1.1: the shared architecture verifier can leave a verified predecessor plan's Location paths out of a Git snapshot comparison, for Blueprint 1.6.0's amendment intake. Architect's own sealing and checks are unchanged. New handoffs record `scope_version` 1.1.1.
 
 - Blueprint 1.5.6: its guidance is reworded to follow research on how agents read instructions, with no rule added or removed. The most consequential rule now leads each section, rules say what to do rather than only what to avoid, and syntax that `check` enforces is stated once and points to its diagnostics. The last workflow step is now Seal or stop: when the seal gate cannot hold, Blueprint stops unsealed and reports why rather than weakening an outcome, check, or proof to seal. The guidance stays about the same size, and the SKILL.md budget drops from 945 to 935 tokens. It seals plans with contract version 1.5.6.
 - Construct 1.5.6: ships the Blueprint 1.5.6 runtime copy, so it reports contract version 1.5.6. It still accepts every sealed 1.x plan.

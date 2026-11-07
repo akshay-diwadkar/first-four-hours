@@ -15,7 +15,7 @@ from architecture_contract import BLUEPRINT_WORKSPACE_PARTS, WORKSPACE_DIR, WORK
 
 BLUEPRINT_WORKSPACE_DIR = "/".join(BLUEPRINT_WORKSPACE_PARTS)
 
-ARCHITECT_VERSION = "1.1.0"
+ARCHITECT_VERSION = "1.1.1"
 # First Architect version whose no-HEAD Git snapshot skips Git-ignored files.
 NO_HEAD_GIT_SCOPE_SINCE = (1, 0, 1)
 RECEIPT_RE = re.compile(rf"^<!-- architecture: {compatible_version_pattern(ARCHITECT_VERSION)}; sha256: ([0-9a-f]{{64}}) -->$")
@@ -24,6 +24,13 @@ LEADING_HANDOFF_RECEIPT_RE = re.compile(
     r"^<!--\s*(?:diagnosis|architecture|optimization|ticket-scope|ticket-handoff|issue-handoff|audit-handoff|design-handoff|optimization-handoff)(?=\s|:|-->|$)",
     re.IGNORECASE,
 )
+STALE_EVIDENCE_CODES = frozenset(
+    {"evidence.sha256.mismatch", "evidence.path.missing", "evidence.lines.invalid", "evidence.anchor.missing"}
+)
+
+
+class StaleArchitecture(ValueError):
+    """The sealed decision no longer matches the repository or its cited evidence; reseal it."""
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -62,14 +69,21 @@ def _record_untracked_entry(
     _record_untracked_path(repo_root, candidate, untracked)
 
 
-def _dirty_fingerprint(repo_root: Path, *, git_root: Path | None = None) -> str | None:
-    status = _git(repo_root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", ".", f":(exclude){BLUEPRINT_WORKSPACE_DIR}")
+def _dirty_fingerprint(
+    repo_root: Path, *, git_root: Path | None = None, exclude: tuple[str, ...] = ()
+) -> str | None:
+    # Excluded paths are a predecessor plan's sealed Locations; without them every command is unchanged.
+    excluded = [f":(exclude,literal){path}" for path in exclude]
+    status = _git(
+        repo_root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", ".", f":(exclude){BLUEPRINT_WORKSPACE_DIR}", *excluded
+    )
     if status.returncode != 0:
         raise ValueError("cannot establish Git status for architecture snapshot: " + status.stderr.strip())
     if not status.stdout:
         return None
-    unstaged = subprocess.run(["git", "diff", "--binary"], cwd=repo_root, capture_output=True, check=False)
-    staged = subprocess.run(["git", "diff", "--cached", "--binary"], cwd=repo_root, capture_output=True, check=False)
+    diff_scope = ["--", ":/", *excluded] if excluded else []
+    unstaged = subprocess.run(["git", "diff", "--binary", *diff_scope], cwd=repo_root, capture_output=True, check=False)
+    staged = subprocess.run(["git", "diff", "--cached", "--binary", *diff_scope], cwd=repo_root, capture_output=True, check=False)
     if unstaged.returncode != 0 or staged.returncode != 0:
         raise ValueError("cannot establish Git diff for architecture snapshot")
     untracked: list[list[str]] = []
@@ -218,7 +232,14 @@ def _proof_line(snapshot: dict[str, Any]) -> str:
     )
 
 
-def _receipt_free(text: str, repo_root: Path | None = None) -> str:
+def _implemented_snapshot(repo_root: Path, current: dict[str, Any], implemented: frozenset[str]) -> dict[str, Any]:
+    """Recompute a Git snapshot without a predecessor plan's sealed Location paths."""
+    root = repo_root.resolve()
+    dirty = _dirty_fingerprint(root, exclude=tuple(sorted(implemented)))
+    return {**current, "dirty": dirty is not None, "dirty_fingerprint": dirty}
+
+
+def _receipt_free(text: str, repo_root: Path | None = None, implemented: frozenset[str] = frozenset()) -> str:
     head, separator, final = text.removesuffix("\n").rpartition("\n")
     final_line = final.rstrip("\r")
     match = RECEIPT_RE.fullmatch(final_line)
@@ -250,6 +271,15 @@ def _receipt_free(text: str, repo_root: Path | None = None) -> str:
         raise ValueError("architecture proof snapshot shape is invalid")
     recorded = {key: item for key, item in proof["snapshot"].items() if key != "scope_version"}
     current = {key: item for key, item in _snapshot(repo_root).items() if key != "scope_version"}
+    if (
+        recorded != current
+        and implemented
+        and recorded.get("kind") == "git"
+        and current.get("kind") == "git"
+        and recorded.get("revision") == current.get("revision")
+    ):
+        # Writes a sealed predecessor plan authorized are not architecture drift; anything else still is.
+        current = _implemented_snapshot(repo_root, current, implemented)
     if recorded != current:
         if (
             recorded.get("kind") == "filesystem"
@@ -257,12 +287,12 @@ def _receipt_free(text: str, repo_root: Path | None = None) -> str:
             and tuple(int(part) for part in proof["snapshot"]["scope_version"].split(".")) < NO_HEAD_GIT_SCOPE_SINCE
             and _inside_git_worktree(repo_root.resolve())
         ):
-            raise ValueError(
+            raise StaleArchitecture(
                 "architecture proof snapshot does not match the current repository and was sealed before "
                 "Architect 1.0.1 limited no-HEAD Git snapshots to tracked and non-ignored untracked files; "
                 "reseal the receipt-free decision with Architect"
             )
-        raise ValueError("architecture proof snapshot does not match the current repository")
+        raise StaleArchitecture("architecture proof snapshot does not match the current repository")
     return decision
 
 
@@ -353,14 +383,21 @@ def read_primary(path: Path, repo_root: Path) -> bytes:
     return resolved.read_bytes()
 
 
-def verify_handoff(data: bytes, repo_root: Path, *, check_sources: bool = True) -> None:
-    """Verify declared truth. Semantic actionability remains Blueprint-owned."""
+def verify_handoff(
+    data: bytes, repo_root: Path, *, check_sources: bool = True, implemented: frozenset[str] = frozenset()
+) -> None:
+    """Verify declared truth. Semantic actionability remains Blueprint-owned.
+
+    ``implemented`` names a verified predecessor plan's Location paths, which a
+    Git snapshot with an unchanged HEAD leaves out of its comparison.
+    """
     text = data.decode("utf-8")
     if not RECEIPT_RE.fullmatch(text.removesuffix("\n").rpartition("\n")[2].rstrip("\r")):
         raise ValueError("architecture input requires an exact supported receipt")
-    body = _receipt_free(text, repo_root if check_sources else None)
+    body = _receipt_free(text, repo_root if check_sources else None, implemented)
     if not check_sources:
         return
     parsed, diagnostics = validate_handoff(body, repo_root, require_evidence_hashes=True)
     if diagnostics:
-        raise ValueError("architecture evidence/shape invalid: " + "; ".join(item.message for item in diagnostics))
+        error = StaleArchitecture if any(item.code in STALE_EVIDENCE_CODES for item in diagnostics) else ValueError
+        raise error("architecture evidence/shape invalid: " + "; ".join(item.message for item in diagnostics))

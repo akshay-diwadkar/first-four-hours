@@ -23,6 +23,41 @@ ROOT = Path(__file__).resolve().parents[3]
 SKILL = ROOT / "skills" / "workbench" / "architect"
 SEALER = SKILL / "scripts" / "seal_assessment.py"
 PREPARE = ROOT / "skills" / "workbench" / "blueprint" / "scripts" / "prepare_blueprint_workspace.py"
+STALE_RESEAL = "architecture proof snapshot does not match the current repository; reseal the receipt-free decision with Architect"
+BLUEPRINT_CLI = ROOT / "skills" / "workbench" / "blueprint" / "scripts" / "cli.py"
+BLUEPRINT_DRAFT = """{marker}
+# Blueprint: payment retry limit
+
+## Goal
+Add a payment retry limit behind the payment boundary without touching callers.
+
+## Current State
+The payment configuration holds the provider timeout.
+**Source:** `payments/config.py:1`
+
+## Implementation
+
+### 1. Declare the retry limit
+**Location:** `payments/config.py`
+**State:** existing
+
+Add `RETRY_LIMIT = 3` after the timeout.
+
+### 2. Add the retry module
+**Location:** `payments/retry.py`
+**State:** new
+
+Import the retry limit for the payment service.
+
+## Verification
+
+### After implementation
+Run: `python -m pytest -q tests/test_checkout.py`
+Expect: exit 0 and checkout still passes.
+
+## Completion Conditions
+- The retry limit is declared once for the payment service. Shown by `python -m pytest -q tests/test_checkout.py`.
+"""
 
 
 def _link_dir(link: Path, target: Path) -> None:
@@ -66,6 +101,7 @@ def make_repo(root: Path) -> Path:
         "\n",
         encoding="utf-8",
     )
+    (root / "payments" / "config.py").write_text("TIMEOUT_SECONDS = 30\n", encoding="utf-8")
     (root / "subscriptions" / "renew.py").write_text(
         "from payments.service import charge_payment\n"
         "\n"
@@ -165,6 +201,46 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     assert noted_prepare.returncode == 0, noted_prepare.stdout
     notes.unlink()
 
+    # After Construct implements a plan built on the architecture, an amendment that declares
+    # that plan as predecessor keeps the unchanged architecture; any other drift still stales it.
+    plan_file = repo / ".first-four-hours" / "blueprints" / "payment-boundary" / "blueprint.md"
+    marker = plan_file.read_text(encoding="utf-8").splitlines()[0]
+    plan_file.write_text(BLUEPRINT_DRAFT.replace("{marker}", marker), encoding="utf-8")
+    sealed_plan = run_python(
+        [sys.executable, str(BLUEPRINT_CLI), "--repo-root", str(repo), "--input", f"request_file={plan_file.parent / 'request.md'}",
+         "--input", f"draft_file={plan_file}", "--format", "json", "run"],
+        capture_output=True, text=True,
+    )
+    assert sealed_plan.returncode == 0, sealed_plan.stdout + sealed_plan.stderr
+    (repo / "payments" / "config.py").write_text("TIMEOUT_SECONDS = 30\nRETRY_LIMIT = 3\n", encoding="utf-8")
+    (repo / "payments" / "retry.py").write_text("from payments.config import RETRY_LIMIT\n", encoding="utf-8")
+    source = {"path": str(handoff), "sha256": hashlib.sha256(handoff.read_bytes()).hexdigest()}
+
+    def amend(task: str, declaration: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        request = tmp_path / f"{task}.md"
+        request.write_text(
+            f"<!-- architecture-source: {json.dumps(declaration, separators=(',', ':'))} -->\n"
+            "Amend the payment boundary plan after the Construct stop.\n",
+            encoding="utf-8",
+        )
+        return run_python(prepare_command(repo, request, task), capture_output=True, text=True)
+
+    undeclared = amend("amend-undeclared", source)
+    assert undeclared.returncode == 1
+    undeclared_diagnostic = json.loads(undeclared.stdout)["diagnostics"][0]
+    assert undeclared_diagnostic["code"] == "handoff.architecture.source"
+    assert "reseal" in undeclared_diagnostic["message"] and "fresh request" in undeclared_diagnostic["message"]
+    assert "predecessor" in undeclared_diagnostic["message"]
+    declared = {**source, "predecessor": str(plan_file)}
+    amended = amend("amend-declared", declared)
+    assert amended.returncode == 0, amended.stdout
+    extra = repo / "checkout" / "extra.py"
+    extra.write_text("EXTRA = 1\n", encoding="utf-8")
+    drifted = amend("amend-drifted", declared)
+    assert drifted.returncode == 1
+    assert json.loads(drifted.stdout)["diagnostics"][0]["code"] == "handoff.architecture.source"
+    extra.unlink()
+
     (repo / "unrelated.txt").write_text("new head\n", encoding="utf-8")
     run_python(["git", "add", "."], cwd=repo, capture_output=True, text=True, check=True)
     run_python(["git", "commit", "-m", "second"], cwd=repo, capture_output=True, text=True, check=True)
@@ -227,7 +303,7 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     assert "sealed before Architect 1.0.1" in old_diagnostic["message"]
     refused_plain = run_python(prepare_command(plain, forge_pre_scope(plain_handoff), "pre-scope"), capture_output=True, text=True)
     assert refused_plain.returncode == 1
-    assert json.loads(refused_plain.stdout)["diagnostics"][0]["message"] == "architecture proof snapshot does not match the current repository"
+    assert json.loads(refused_plain.stdout)["diagnostics"][0]["message"] == STALE_RESEAL
 
     # A non-ignored file written after sealing, even with a non-ASCII name, still stales the no-HEAD handoff.
     (unborn / "scaffold-é.txt").write_text("new source\n", encoding="utf-8")
@@ -235,7 +311,7 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     assert scaffolded.returncode == 1
     scaffold_diagnostic = json.loads(scaffolded.stdout)["diagnostics"][0]
     assert scaffold_diagnostic["code"] == "handoff.architecture.invalid"
-    assert scaffold_diagnostic["message"] == "architecture proof snapshot does not match the current repository"
+    assert scaffold_diagnostic["message"] == STALE_RESEAL
 
 
 def test_git_status_failure_never_seals_a_clean_snapshot(tmp_path: Path) -> None:

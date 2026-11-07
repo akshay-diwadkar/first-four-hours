@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.5.6"
+CONTRACT_VERSION = "1.6.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -3307,8 +3307,8 @@ def detect_request_source(
         declaration = re.fullmatch(r"<!-- architecture-source: (\{.*\}) -->", provenance[0].rstrip("\r"))
         try:
             record = json.loads(declaration.group(1)) if declaration else None
-            if not isinstance(record, dict) or set(record) != {"path", "sha256"}:
-                raise ValueError("Architecture source needs exactly path and sha256.")
+            if not isinstance(record, dict) or set(record) not in ({"path", "sha256"}, {"path", "sha256", "predecessor"}):
+                raise ValueError("Architecture source needs exactly path, sha256, and an optional predecessor.")
             if (
                 not isinstance(record["path"], str)
                 or not Path(record["path"]).is_absolute()
@@ -3317,6 +3317,13 @@ def detect_request_source(
                 raise ValueError("Architecture source path must name an absolute architecture.md.")
             if not isinstance(record["sha256"], str) or re.fullmatch(r"[0-9a-f]{64}", record["sha256"]) is None:
                 raise ValueError("Architecture source sha256 must bind exact file bytes.")
+            predecessor = record.get("predecessor")
+            if predecessor is not None and (
+                not isinstance(predecessor, str)
+                or not Path(predecessor).is_absolute()
+                or Path(predecessor).name != BLUEPRINT_FILENAME
+            ):
+                raise ValueError("Architecture source predecessor must name an absolute sealed blueprint.md.")
             if check_sources:
                 if repo_root is None:
                     raise ValueError("Architecture source verification requires the repository root.")
@@ -3327,7 +3334,24 @@ def detect_request_source(
                 data = read_primary(Path(record["path"]), repo_root)
                 if _sha256(data) != record["sha256"]:
                     raise ValueError("Architecture source digest changed after request resolution.")
-                verify_handoff(data, repo_root)
+                implemented: frozenset[str] = frozenset()
+                if predecessor is not None:
+                    implemented = import_module("carryover_sources").implemented_locations(
+                        Path(predecessor), record["sha256"], repo_root
+                    )
+                try:
+                    verify_handoff(data, repo_root, implemented=implemented)
+                except architecture_handoff.StaleArchitecture as stale:
+                    recovery = (
+                        "; reseal the receipt-free decision with Architect, then write a fresh request "
+                        "whose architecture-source sha256 is the resealed file's digest"
+                    )
+                    if predecessor is None:
+                        recovery += (
+                            ", or, if Construct implemented a plan from this architecture, declare that "
+                            "sealed blueprint.md as the source's predecessor"
+                        )
+                    raise ValueError(f"{stale}{recovery}") from stale
         except (OSError, ValueError) as exc:
             raise _request_error("handoff.architecture.source", str(exc)) from exc
         return {"kind": "architecture", "contract_version": ARCHITECTURE_HANDOFF_VERSION, "item": None}
@@ -3396,7 +3420,12 @@ def detect_request_source(
             if repo_root is None:
                 raise ValueError("Architecture verification requires the repository root.")
 
-            verify_handoff(request_bytes, repo_root, check_sources=True)
+            try:
+                verify_handoff(request_bytes, repo_root, check_sources=True)
+            except architecture_handoff.StaleArchitecture as stale:
+                if "reseal" in str(stale):
+                    raise
+                raise ValueError(f"{stale}; reseal the receipt-free decision with Architect") from stale
         except (OSError, ValueError) as exc:
             raise _request_error("handoff.architecture.invalid", str(exc)) from exc
     elif kind == "diagnosis":

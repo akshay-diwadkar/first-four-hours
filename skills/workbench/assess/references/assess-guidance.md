@@ -14,7 +14,7 @@ Scale these lenses to the exact authority and base/head delta; never a matrix or
 
 ## Depth and Diagnose
 
-Tiny local changes need requirement, delta, and focused proof; skip subagents, broad proof, and clear challenges when direct lookup closes the surface. Complexity, ambiguity, fan-out, irreversibility, data/migration, concurrency, or broad contract propagation earn depth. Examine security where the change affects trust or permission boundaries, inputs, sensitive data, or risky operations; investigate earned concerns without inventing risks, and no material security concern is a valid result.
+Tiny local changes need requirement, delta, and focused proof; skip subagents, broad proof, and clear challenges when direct lookup closes the surface. Complexity, ambiguity, fan-out, irreversibility, data/migration, concurrency, or broad contract propagation earn depth. A change reaching past one package or directory and its own tests (versions and changelog aside), or showing one of these signals, gets one Behavior/Proof falsification slice per the [delegation protocol](delegation-protocol.md); if none can launch, cover it yourself and say so in `limitations`. Examine security where the change affects trust or permission boundaries, inputs, sensitive data, or risky operations; investigate earned concerns without inventing risks, and no material security concern is a valid result.
 
 Every later turn re-reads what enters context. Start from `git diff --stat <base>...<head>`, then diff one path at a time and read only the line ranges a question needs, never the whole diff at once; a question about a new file may need all of it. Keep a command's verdict rather than its log, request only the PR fields you use, and run each proof once per head.
 

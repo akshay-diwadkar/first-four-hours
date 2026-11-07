@@ -24,7 +24,7 @@ Exploration establishes facts; you make the decisions. [Bounded exploration](del
 
 ## Repository traps
 
-Account for every trap the change touches in the repository's own planning-trap list, when its guidance names one. Search the repository for each edited path and any tool writing a hash, receipt, or copy of it, for the old value of any changed version or identifier others compare against, and for the registrations, allowlists, and vendored copies of any reused mechanism; plan each refresh as a step.
+Account for every trap the change touches in the repository's own planning-trap list, when its guidance names one. Search the repository for each edited path and any tool writing a hash, receipt, or copy of it; for each check, validator, loader, or packaging rule enumerating any directory holding a new, deleted, or renamed path, or its file type; for the old value of any changed version or identifier others compare against; and for the registrations, allowlists, and vendored copies of any reused mechanism; plan each refresh or companion edit as a step.
 
 ## Attack the problem
 

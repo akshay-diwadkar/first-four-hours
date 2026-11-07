@@ -215,6 +215,8 @@ Skill documents naturally accumulate **sediment**: rules that were once useful, 
 
 Prune during every meaningful change.
 
+**Growth must pay for itself.** A skill change leaves the skill's guidance no larger, unless the addition prevents a named failure that pruning cannot. Remove sediment in the same change to make up for what you add. Each skill's context budget sits just above its measured size, so `measure_context_load.py --check` fails unpaid growth; raise a budget only for a named failure, and state it.
+
 For each line, ask:
 
 - Does it change agent behavior?

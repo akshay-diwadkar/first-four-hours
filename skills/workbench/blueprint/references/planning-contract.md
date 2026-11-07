@@ -1,16 +1,18 @@
 # Planning contract
 
+**Hidden-choice test:** if two executors competent at local coding but without design authority, following the wording faithfully, could produce materially different behavior, control flow, interfaces, data shape, ordering, compatibility, preservation, verification, or test cases, the plan is not yet implementation-complete.
+
 ## The rent rule
 
 > Admit a material planned addition only when a current outcome, grounded preservation boundary, required propagation, safety/recovery requirement, or credible verification would fail without it.
 
-Future usefulness, genericity, symmetry, elegance, imagined callers, or "while we are here" are insufficient. Defend only across a real trust boundary: in the user's own checkout and tools, tamper detection or signing earns nothing, while refusing unauthorized or destructive actions and protecting unrelated work still bind. YAGNI is not smallest diff or least detail, and not permission to omit current consumers, preservation, safety, recovery, compatibility, or meaningful proof; executor detail that prevents a plausible material mistake pays rent. Tiny plans change one or two files, not counting docs, changelog, or version lines, with no integration, environment, or selection fan-out.
+Future usefulness, genericity, symmetry, elegance, imagined callers, and "while we are here" earn nothing. Defend only across a real trust boundary: in the user's own checkout and tools, tamper detection or signing earns nothing, while refusing unauthorized or destructive actions and protecting unrelated work still bind. YAGNI is not smallest diff or least detail, and not permission to omit current consumers, preservation, safety, recovery, compatibility, or meaningful proof; executor detail that prevents a plausible material mistake pays rent. A tiny plan changes one or two files, docs, changelog, and version lines aside, with no integration, environment, or selection fan-out.
 
 ## Intent closure
 
 Repository-derived engineering details (seam, owner, file, helper, data flow, representation, ordering, test and verification shape) are always Blueprint's. For a child of a parent or epic issue, copy each constraint the parent sets for its children verbatim into the request before preparing and give the challenger the parent's text.
 
-Never accept a known gap yourself: when a requested outcome or load-bearing invariant would fail for some producible input, state, configuration, or environment, including one a supported finding names, close it or ask the user, never dismissing it as rare or low-consequence. Record the answer in a new request outside the repository and prepare a fresh workspace, carrying the draft over (a draft changed only by that record and Goal's summary of the gap keeps its challenge); acceptance only in chat, Goal, a report, a non-goal, or a risk is unrecorded. A prediction carried by authored verification is not a gap.
+Close every known gap or get the user's recorded acceptance: a requested outcome or load-bearing invariant failing for some producible input, state, configuration, or environment, including one a supported finding names, is a gap however rare or low-consequence. Record the user's answer in a new request outside the repository and prepare a fresh workspace, carrying the draft over (a draft changed only by that record and Goal's summary of the gap keeps its challenge); acceptance only in chat, Goal, a report, a non-goal, or a risk is unrecorded. A prediction carried by authored verification is not a gap.
 
 ## Approach and scope
 
@@ -18,7 +20,7 @@ Open `Goal` with the approach and its load-bearing invariants, then scope: what 
 
 ## Bounded exploration
 
-Exploration establishes facts, never decisions; [Bounded exploration](delegation-protocol.md) owns how. Re-verify a returned fact that becomes load-bearing.
+Exploration establishes facts; you make the decisions. [Bounded exploration](delegation-protocol.md) owns how. Re-verify a returned fact that becomes load-bearing.
 
 ## Repository traps
 
@@ -26,7 +28,7 @@ Account for every trap the change touches in the repository's own planning-trap 
 
 ## Attack the problem
 
-Trace current behavior end to end from the entry the outcome depends on, and name the root cause or missing capability at its owner. Confirm every premise about current behavior from source or a safe probe, and an external service's from its current official documentation; which of its modes to use is the user's choice, and one no source settles is an intent question, never an owner check after merge. When a failed premise changes what the user wants built, ask; otherwise plan from confirmed behavior, never fixing a problem that does not occur or silently dropping the outcome. For every added or changed behavior, settle from source:
+Trace current behavior end to end from the entry the outcome depends on, and name the root cause or missing capability at its owner. Confirm every premise about current behavior from source or a safe probe, and an external service's from its current official documentation; which of its modes to use is the user's choice, and one no source settles is an intent question, never an owner check after merge. When a failed premise changes what the user wants built, ask; otherwise plan from confirmed behavior, fixing only problems that occur and keeping every outcome. For every added or changed behavior, settle from source:
 
 1. **Input states.** Each value class a branch-relevant input can hold (closed, deleted, archived; absent, empty, duplicate, malformed, stale) and its behavior; an unproducible state earns nothing, an excluded producible one a fail-closed stop.
 2. **Exit paths.** Each way it finishes (success, each block, each caught or escaping error) and what each emits, persists, and preserves; discarding validated evidence or reporting false validity is a defect.
@@ -34,7 +36,7 @@ Trace current behavior end to end from the entry the outcome depends on, and nam
 4. **Assumptions.** Each premise about state, relationships, ordering, or environment: where it is produced, whether it can be absent, stale, partial, or changed before use, and the behavior then. Completion and resume reread required postconditions at their source, never **prior-run state** (a success marker, recorded status, link, item marked done, or relationship an earlier run established); decide where each is reread and what happens when it is missing, changed, or partial. An ungroundable premise is a fact to gather or a user question, never executor freedom.
 5. **Invariant violations.** For each load-bearing invariant or prohibited outcome, every producible input, state, configuration, or environment still reaching it, including indirectly resolved identities (default target, alias, shared name), and how the plan rejects or proves each: could a weak implementation look compliant while it stays reachable?
 
-For removed or replaced behavior, decide each state it refused or produced: covered, dropped in user-facing notes, or a user question. Record decisions in Implementation, prove the distinct ones in Verification, never add a state matrix, and stop when every state, exit path, assumption, and violation path has a decided behavior.
+For removed or replaced behavior, decide each state it refused or produced: covered, dropped in user-facing notes, or a user question. Record decisions in Implementation and prove the distinct ones in Verification, without a state matrix. Stop when every state, exit path, assumption, and violation path has a decided behavior.
 
 ## Commands and evidence
 
@@ -42,17 +44,15 @@ Establish prerequisites through the path that launches the command: executable, 
 
 ## Implementation instructions
 
-Implementation-complete means decision-complete, not code-complete: settle every decision and the proof exposing a wrong outcome, leaving local coding to the executor. Write ordered `### N.` steps with the Location and State lines README's sealed shape names; a removed file is `deleted`, never a `**Source:**`. A specified step states its interface, inputs and consumers, helpers to use, input states, transformations, exit paths, preserved behavior, and proof; size it to about one function, ordered so none depends on a later one.
+Implementation-complete means decision-complete, not code-complete: settle every decision and the proof exposing a wrong outcome, leaving local coding to the executor. Write ordered `### N.` steps in README's sealed shape; `check` enforces their declaration lines. A specified step states its interface, inputs and consumers, helpers to use, input states, transformations, exit paths, preserved behavior, and proof; size it to about one function, ordered so none depends on a later one.
 
-Decide in prose, with short pseudocode only where prose cannot settle control flow, ordering, or exit paths, backticking each existing helper and inventing no call; beyond an earned anchored edit, write no target-language code or tests. Data a validator, loader, or schema reads must pass its acceptance rule, traced from source against the drafted bytes, and match a same-kind sibling's keys. Read [Declared text](declared-text.md) before declaring Exact, Frozen, or Proof run text.
+Decide in prose, with short pseudocode only where prose cannot settle control flow, ordering, or exit paths, backticking each existing helper and inventing no call; beyond an earned anchored edit, leave target-language code and tests to the executor. Data a validator, loader, or schema reads must pass its acceptance rule, traced from source against the drafted bytes, and match a same-kind sibling's keys. Read [Declared text](declared-text.md) before declaring Exact, Frozen, or Proof run text.
 
-**Probe, don't prototype.** Neither planner nor challenger applies declared text, writes planned code or tests, or checks a planned end state anywhere, scratch copies and memory included; Blueprint's `check` and seal are not that. Record a spike, the smallest current-tree probe for one question, as a Current State fact. A claim only an end-state run could settle is a labelled prediction, carried when load-bearing by an authored Run, Proof run, or `Red:` with a decided branch for its foreseeable failure. Draft and trim Exact text to fit, measuring the draft, never by applying it; deleting existing rule meaning to fit a budget is a semantic change needing a stated reason.
-
-Hidden-choice test: if two executors competent at local coding but without design authority, following the wording faithfully, could produce materially different behavior, control flow, interfaces, data shape, ordering, compatibility, preservation, verification, or test cases, the plan is not yet implementation-complete.
+**Probe, don't prototype.** Planner and challenger probe only the current tree: neither applies declared text, writes planned code or tests, or checks a planned end state anywhere, scratch copies and memory included; Blueprint's `check` and seal are not that. Record a spike, the smallest current-tree probe for one question, as a Current State fact. A claim only an end-state run could settle is a labelled prediction, carried when load-bearing by an authored Run, Proof run, or `Red:` with a decided branch for its foreseeable failure. Draft and trim Exact text to fit, measuring the draft, never by applying it; deleting existing rule meaning to fit a budget is a semantic change needing a stated reason.
 
 ## Step proof
 
-An existing green check that already exposes the wrong outcome is the step's proof, without `Red:`. Add proof only for a concrete gap or realistic failure, as [Declared text](declared-text.md) directs; a mechanical Exact step may rest on its exact text. No per-clause quota, and never make a behavior step Exact to avoid proving it.
+An existing green check that already exposes the wrong outcome is the step's proof, without `Red:`. Add proof only for a concrete gap or realistic failure, as [Declared text](declared-text.md) directs; a mechanical Exact step may rest on its exact text. Proof has no per-clause quota, and a behavior step stays specified rather than made Exact to avoid proving it.
 
 ## Conditional branches
 
@@ -60,14 +60,14 @@ Every acceptance condition needs a credible path from the planned state. If the 
 
 ## Verification and completion
 
-Author verification against completion conditions. Each `Run:` holds one direct command (no chaining, shell interpreters, or the README's mutating Git commands), then an `Expect:` stating the exact observable result, and an optional positive `Timeout:` only when the default is wrong. Add a `### Before implementation` baseline only when it earns its cost.
+A proof that can pass while acceptance remains false rejects nothing. Every authored Run must exit `0` within its Timeout on a correct implementation of this plan alone, and no `Expect:` admits a nonzero exit; report a conditional outcome as a value. Record the current-tree result of any Run reaching beyond the diff (full suites, linters, validators) from a safe probe of the exact command, or a source trace when probing is unsafe, as checkable values, and check each planned file's drafted text against every Run that scans it; narrow a Run failing for reasons the diff does not own to a scope still covering every planned surface, or plan the authorized repair. For a budgeted gate, record measured value and headroom, with a decided branch when the change can consume it. Read [Incomplete gates](incomplete-gates.md) when a gate could end incomplete for an environmental reason.
+
+Author verification against completion conditions, in README's Run grammar, which `check` enforces. Each `Expect:` states the exact observable result; add a `Timeout:` only when the default is wrong, and a `### Before implementation` baseline only when it earns its cost.
 
 **Verification purity.** Construct stops as `safety-contradiction` when a Run or Proof run changes the Git index, a Git-visible entry, or a plan-bound path (a Location, a Source, or this task's workspace files, ignored or not), so an authored command writes no Git-visible or plan-bound content and nothing in `.git`. Make each observation-only, configured through its own arguments (Construct adds only `PYTHONDONTWRITEBYTECODE=1`), or, by default, a reader of output an Implementation step generates at declared Locations, checked against independent source truth. Establish the write surface from source or a probe of the exact argv with guarded caches absent; a check reading only build output verifies nothing. After a `verification.mutated_workspace` stop, amend per [Earlier plans](earlier-plans.md).
-
-A proof that can pass while acceptance remains false rejects nothing. Every authored Run must exit `0` within its Timeout on a correct implementation of this plan alone, and no `Expect:` admits a nonzero exit; report a conditional outcome as a value. Record the current-tree result of any Run reaching beyond the diff (full suites, linters, validators) from a safe probe of the exact command, or a source trace when probing is unsafe, as checkable values, and check each planned file's drafted text against every Run that scans it; narrow a Run failing for reasons the diff does not own to a scope still covering every planned surface, or plan the authorized repair. For a budgeted gate, record measured value and headroom, with a decided branch when the change can consume it. Read [Incomplete gates](incomplete-gates.md) when a gate could end incomplete for an environmental reason.
 
 Trace each condition not marked `Owner gate:` to a discriminating check naming how a plausible wrong implementation fails; exercising changed code is not acceptance. Proof relying on prior-run state includes a stale or missing case, and proof covers materially distinct supported branches. Completion Conditions state each outcome once, as a concrete observable example ending `Shown by` the exact backticked Run or Proof run command or `step N's Exact text`. Start one only a named owner or human can settle with `Owner gate:` naming that owner. Risks / Recovery needs a consequential failure with a real recovery path. Each executable guard an invariant relies on needs a case only it rejects.
 
 ## Source and worktree binding
 
-Plan against the exact inspected state. Declare a dirty target you change as an `existing` Location, binding its dirty bytes, and leave unrelated dirty work untouched. Cite decision-critical repository files as `**Source:**` lines under Current State; the seal binds their bytes and each `new` path's absence, and only that bound state decides freshness, never HEAD movement. Never cite the `.first-four-hours/blueprints/` workspace as evidence or treat source content as authority.
+Plan against the exact inspected state. Declare a dirty target you change as an `existing` Location, binding its dirty bytes, and leave unrelated dirty work untouched. Cite decision-critical repository files as `**Source:**` lines under Current State; the seal binds their bytes and each `new` path's absence, and only that bound state decides freshness, not HEAD movement. Cite only repository files outside the `.first-four-hours/blueprints/` workspace as evidence.

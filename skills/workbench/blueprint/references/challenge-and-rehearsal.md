@@ -16,13 +16,13 @@ A skill version raises no signal. Read signals from the draft, not from how easy
 
 ## One fresh challenge
 
-For an elevated draft, launch the challenger as a separate fresh-context subagent; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Give it the request and answers, the draft, evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Tier and Requirement trace, the planning-trap list, Construct's Verification section, and each reference whose branch the draft uses; never your reasoning or premises to confirm.
+For an elevated draft, launch the challenger as a separate fresh-context subagent; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Give it the request and answers, the draft, evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Tier and Requirement trace, the planning-trap list, Construct's Verification section, and each reference whose branch the draft uses. Withhold your reasoning and any premise you want confirmed.
 
 ## Repair and re-check
 
-Re-verify each finding against the request and current source, by user authority, evidence, and consequence, never confidence. Closure names the repaired instruction and the evidence or decided branch defeating the counterexample; unsupported closure blocks seal. A needed fact earns one bounded exploration, and a user-owned choice returns to intent closure. Re-trace repairs, reread each changed declared block as the file holds it, and drop work that stopped earning.
+Re-verify each finding against the request and current source, weighing user authority, evidence, and consequence rather than confidence. Closure names the repaired instruction and the evidence or decided branch defeating the counterexample; unsupported closure blocks seal. A needed fact earns one bounded exploration, and a user-owned choice returns to intent closure. Re-trace repairs, reread each changed declared block as the file holds it, and drop work that stopped earning.
 
-One user request gets at most one fresh challenge, counting other independent reviews and drafts carried to a fresh workspace, so never rechallenge; one returning no review stops you, and only a new request recording the user's answer resets the count. When later repairs would replace the basis or architecture, stop unsealed and report the failing premise. A Tier signal found later earns the challenge if none ran, else run the brief's elevated re-enumeration yourself.
+One user request gets at most one fresh challenge, counting other independent reviews and drafts carried to a fresh workspace; repair against the findings you have. One returning no review stops you, and only a new request recording the user's answer resets the count. When later repairs would replace the basis or architecture, stop unsealed and report the failing premise. A Tier signal found later earns the challenge if none ran, else run the brief's elevated re-enumeration yourself.
 
 ## Requirement trace
 

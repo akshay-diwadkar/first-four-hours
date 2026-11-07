@@ -6,6 +6,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Added
 
+- Blueprint 1.11.0: fewer plans pay for a fresh challenger. Code confined to one package or directory and exercised directly by its own tests no longer makes a plan elevated by itself. Before, only a tiny plan touching one source file was exempt. A validator, a shared runtime, configuration or fixtures something reads, and code reaching beyond one package still elevate a plan, as do the other signals: changed budgets, contracts other skills consume, irreversible effects, and the seal runtime. The unused tiny-plan definition is removed. It seals plans with contract version 1.11.0.
+- Construct 1.11.0: ships the Blueprint 1.11.0 runtime copy, so it reports contract version 1.11.0. It still accepts every sealed 1.x plan.
 - Blueprint 1.10.0: a plan runs one fewer judgment pass.
   - An elevated draft's owner walk now rehearses Construct's Verification and re-derives the load-bearing premise, and leaves the Challenger brief to its one fresh challenger. Before, the planner ran the same brief itself first. A standard draft's walk still runs the brief.
   - Blueprint now consults Reason before sealing, not also before the challenge. That matches Reason's own checkpoints: before committing to an approach, after a failure, and before presenting a result.

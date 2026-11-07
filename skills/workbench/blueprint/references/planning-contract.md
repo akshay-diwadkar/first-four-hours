@@ -6,7 +6,7 @@
 
 > Admit a material planned addition only when a current outcome, grounded preservation boundary, required propagation, safety/recovery requirement, or credible verification would fail without it.
 
-Future usefulness, genericity, symmetry, elegance, imagined callers, and "while we are here" earn nothing. Defend only across a real trust boundary: in the user's own checkout and tools, tamper detection or signing earns nothing, while refusing unauthorized or destructive actions and protecting unrelated work still bind. YAGNI is not smallest diff or least detail, and not permission to omit current consumers, preservation, safety, recovery, compatibility, or meaningful proof; executor detail that prevents a plausible material mistake pays rent. A tiny plan changes one or two files, docs, changelog, and version lines aside, with no integration, environment, or selection fan-out.
+Future usefulness, genericity, symmetry, elegance, imagined callers, and "while we are here" earn nothing. Defend only across a real trust boundary: in the user's own checkout and tools, tamper detection or signing earns nothing, while refusing unauthorized or destructive actions and protecting unrelated work still bind. YAGNI is not smallest diff or least detail, and not permission to omit current consumers, preservation, safety, recovery, compatibility, or meaningful proof; executor detail that prevents a plausible material mistake pays rent.
 
 ## Intent closure
 

@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.7.0"
+CONTRACT_VERSION = "1.8.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -438,6 +438,7 @@ class WorkspaceReservation:
     relative_blueprint_path: str
     git_exclude: Path | None
     git_ignored: bool
+    carryover: tuple[dict[str, str], ...] = ()
 
 
 class RepositoryView:
@@ -1036,16 +1037,21 @@ def _workspace_state(
     )
 
 
-def _select_workspace_directory(root: Path, slug: str, binding: dict[str, Any], request_bytes: bytes) -> Path:
+def _select_workspace_directory(
+    root: Path, slug: str, binding: dict[str, Any], request_bytes: bytes, avoid: Path | None = None
+) -> Path:
+    """Pick the task directory; ``avoid`` is a predecessor's directory, never reused even for the same request."""
     base = root / BLUEPRINT_WORKSPACE_DIR / slug
     if not base.exists():
         return base
-    if _workspace_state(base, binding, request_bytes) == "same":
+    if base.resolve() != avoid and _workspace_state(base, binding, request_bytes) == "same":
         return base
     digest = _binding_hash(binding)
     for length in (12, 16, 24, 32, 64):
         collision_slug = f"{slug}-{digest[:length]}"
         candidate = root / BLUEPRINT_WORKSPACE_DIR / collision_slug
+        if candidate.exists() and candidate.resolve() == avoid:
+            continue
         if not candidate.exists() or _workspace_state(candidate, binding, request_bytes) == "same":
             return candidate
     raise _workspace_error(
@@ -1108,13 +1114,36 @@ def _amend_workspace(root: Path, blueprint: Path, request_bytes: bytes) -> Path:
     return task_directory
 
 
+def _predecessor_seed(root: Path, predecessor: Path) -> tuple[Path, str, tuple[dict[str, str], ...]]:
+    """Return a stopped plan's directory, its receipt-free body under the current marker, and its carryover."""
+    plan = canonical_blueprint_path(root, predecessor, require_existing=True)
+    request_path = canonical_request_path(root, plan.parent / REQUEST_FILENAME, require_existing=True)
+    text = plan.read_bytes().decode("utf-8")
+    # carryover refuses an edited, unsealed, or stale-receipt plan before anything is reserved.
+    entries = tuple(import_module("carryover_sources").carryover(root, text))
+    if _sealed_binding(text) != _workspace_binding(root, request_path.read_bytes()):
+        raise _workspace_error(
+            "workspace.predecessor.unbound",
+            f"predecessor is not bound to its request.md in this repository: {plan}",
+            "Pass the unedited sealed blueprint.md of a workspace in this repository.",
+        )
+    _marker, _newline, rest = canonical_body(text).partition("\n")
+    return plan.parent.resolve(), CONTRACT_MARKER + "\n" + rest, entries
+
+
 def prepare_blueprint_workspace(
-    repo_root: Path, task_name: str, request_file: Path, *, amend: Path | None = None
+    repo_root: Path,
+    task_name: str,
+    request_file: Path,
+    *,
+    amend: Path | None = None,
+    predecessor: Path | None = None,
 ) -> WorkspaceReservation:
     """Reserve one task directory, write the initial Blueprint shell, and the narrow local untracked boundary.
 
     ``amend`` names an existing workspace's ``blueprint.md`` whose request is replaced in place
     instead of reserving a new directory.
+    ``predecessor`` seeds a fresh directory's draft with a stopped sealed plan and reports its carryover.
     """
     root = repo_root.resolve()
     if not root.is_dir():
@@ -1123,6 +1152,13 @@ def prepare_blueprint_workspace(
             f"repository root is not a directory: {root}",
             "Provide an existing repository root.",
         )
+    if amend is not None and predecessor is not None:
+        raise _workspace_error(
+            "workspace.predecessor.amend",
+            "--amend and --predecessor cannot be combined",
+            "Use --amend before Construct runs, or --predecessor after it stops.",
+        )
+    seed = _predecessor_seed(root, predecessor) if predecessor is not None else None
     request = request_file.absolute()
     if request.name in RETIRED_HANDOFF_ARTIFACTS:
         raise _request_error(
@@ -1165,7 +1201,9 @@ def prepare_blueprint_workspace(
     if amend is not None:
         task_directory = _amend_workspace(root, amend, request_bytes)
     else:
-        task_directory = _select_workspace_directory(root, slug, binding, request_bytes)
+        task_directory = _select_workspace_directory(
+            root, slug, binding, request_bytes, avoid=seed[0] if seed else None
+        )
     if not task_directory.exists():
         try:
             task_directory.mkdir()
@@ -1177,7 +1215,9 @@ def prepare_blueprint_workspace(
     observed = _workspace_task_directory(task_directory, require_request=True)
     request_path = canonical_request_path(root, request_path, require_existing=True)
     blueprint_path = canonical_blueprint_path(root, task_directory / BLUEPRINT_FILENAME)
-    _materialize_blueprint_scaffold(blueprint_path, task_name, existed=BLUEPRINT_FILENAME in observed)
+    _materialize_blueprint_scaffold(
+        blueprint_path, task_name, existed=BLUEPRINT_FILENAME in observed, content=seed[1] if seed else None
+    )
     git_exclude, git_ignored = _ensure_git_exclude(
         root,
         (
@@ -1193,6 +1233,7 @@ def prepare_blueprint_workspace(
         blueprint_path.relative_to(root).as_posix(),
         git_exclude,
         git_ignored,
+        seed[2] if seed else (),
     )
 
 
@@ -1237,8 +1278,8 @@ def blueprint_scaffold_text(task_name: str) -> str:
     ) + "\n"
 
 
-def _materialize_blueprint_scaffold(path: Path, task_name: str, *, existed: bool) -> None:
-    """Create the canonical Blueprint shell once for a caller that validated the workspace boundary.
+def _materialize_blueprint_scaffold(path: Path, task_name: str, *, existed: bool, content: str | None = None) -> None:
+    """Create the canonical Blueprint shell, or ``content`` when given, once for a caller that validated the workspace boundary.
 
     ``existed`` carries the boundary observation: True means the validated
     workspace pass already saw a regular non-symlink Blueprint file, which is
@@ -1251,7 +1292,7 @@ def _materialize_blueprint_scaffold(path: Path, task_name: str, *, existed: bool
     scaffold bytes, or preparation fails closed with
     ``workspace.blueprint.concurrent``.
     """
-    scaffold_bytes = blueprint_scaffold_text(task_name).encode("utf-8")
+    scaffold_bytes = (blueprint_scaffold_text(task_name) if content is None else content).encode("utf-8")
     if existed:
         if path.is_symlink() or not path.is_file():
             raise _workspace_error(

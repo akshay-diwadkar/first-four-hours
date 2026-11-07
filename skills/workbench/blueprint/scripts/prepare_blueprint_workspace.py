@@ -18,9 +18,12 @@ def main() -> int:
     parser.add_argument(
         "--amend", type=Path, metavar="BLUEPRINT", help="Replace the request of the workspace holding this blueprint.md in place."
     )
+    parser.add_argument("--predecessor", type=Path, help="Seed a fresh draft with this stopped sealed blueprint.md.")
     args = parser.parse_args()
     try:
-        reservation = prepare_blueprint_workspace(args.repo_root, args.task_name, args.request_file, amend=args.amend)
+        reservation = prepare_blueprint_workspace(
+            args.repo_root, args.task_name, args.request_file, amend=args.amend, predecessor=args.predecessor
+        )
     except (OSError, UnicodeError, ValueError) as exc:
         diagnostics = getattr(exc, "diagnostics", None)
         if not diagnostics:
@@ -37,6 +40,7 @@ def main() -> int:
         json.dumps(
             {
                 "valid": True,
+                "carryover": list(reservation.carryover),
                 "slug": reservation.slug,
                 "request_path": str(reservation.request_path),
                 "blueprint_path": str(reservation.blueprint_path),

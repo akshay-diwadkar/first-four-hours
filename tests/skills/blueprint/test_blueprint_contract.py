@@ -554,6 +554,14 @@ def test_relevant_byte_drift_fails_closed_after_seal(tmp_path: Path) -> None:
     assert [item.code for item in getattr(progressed.value, "diagnostics", ())] == ["workspace.amend.progressed"]
     assert request.read_text(encoding="utf-8") == "Normalize names; callers passing None keep None.\n"
     assert draft_file.read_text(encoding="utf-8") == sealed
+    # After a stop, --predecessor seeds a fresh workspace with the stopped plan, even for an unchanged request.
+    same_request = tmp_path / "same-request.md"
+    same_request.write_bytes(request.read_bytes())
+    seeded = runtime.prepare_blueprint_workspace(repo, "test-task", same_request, predecessor=draft_file)
+    assert seeded.blueprint_path.parent.resolve() != draft_file.parent.resolve()
+    assert seeded.blueprint_path.read_text(encoding="utf-8") == runtime.canonical_body(sealed)
+    assert {(entry["path"], entry["role"]): entry["status"] for entry in seeded.carryover}[("src/names.py", "location")] == "changed"
+    assert draft_file.read_text(encoding="utf-8") == sealed
     # carryover reports each bound file's status through the real CLI, never an import.
 
     def carryover(predecessor: Path) -> subprocess.CompletedProcess[str]:

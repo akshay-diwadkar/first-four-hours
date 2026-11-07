@@ -29,6 +29,8 @@ python scripts/cli.py --repo-root /absolute/repo --input predecessor_file=/absol
 
 `result.entries` gives each Source's and existing or deleted Location's `path`, `role`, and `status`: `unchanged`, `changed`, or `missing`.
 
+To amend after a Construct stop, add `--predecessor /absolute/stopped/blueprint.md` to preparation, with the same task name. It refuses an edited or unbound plan, reserves a fresh task directory even when the request is unchanged, starts its draft as the stopped plan without receipts (an existing draft is kept), and returns the same entries as `carryover`. The stopped workspace stays unchanged.
+
 To change the request, write the amended request outside the repository and rerun preparation with `--amend /absolute/repo/.first-four-hours/blueprints/<task-slug>/blueprint.md`, the path preparation returned. It replaces that workspace's `request.md` in place and turns a sealed plan back into a draft to repair and reseal. Once a bound file's bytes changed or a planned-new Location exists, Construct may have started, so it refuses with `workspace.amend.progressed` and only a fresh workspace remains.
 
 Each diagnostic names its fix; before repairing one, read its rule's owner: [Declared text](references/declared-text.md) for `block.*`, `frozen.*`, `declaration.malformed`, and a `proof.*` about an instruction's Proof run or `Red:` line; [Incomplete gates](references/incomplete-gates.md) for `verification.incomplete.*`; otherwise this file or the [planning contract](references/planning-contract.md).

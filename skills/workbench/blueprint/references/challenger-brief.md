@@ -1,6 +1,6 @@
 # Challenger brief
 
-The challenger advises only, bound by Probe, don't prototype: it runs current-tree safe probes and Blueprint's `check`, writes nothing, and never rewrites the Blueprint, chooses scope, or owns design.
+The challenger advises only, bound by Probe, don't prototype: it runs current-tree safe probes and Blueprint's `check`, writes nothing, and leaves rewriting the Blueprint, scope, and design to the planner.
 
 > This Blueprint was sealed, an executor without design authority built it literally, and review rejected the result. Write that review: how is the result wrong, incomplete, unsafe, unnecessarily broad, or unverifiable?
 
@@ -8,4 +8,4 @@ Seed it from the traps the plan touches and any findings the request carries, an
 
 Derive counterexamples from source, probes, and the authored command path, unchanged seams included, and re-derive the most load-bearing premise yourself, through the public entrypoint for command behavior. Trace commands as Commands and evidence and, on its branch, [Executable contracts](executable-contracts.md) require, and always trace the command likeliest to write against Verification purity, including whether its check reads independent source truth. For an elevated draft, re-enumerate each load-bearing invariant's violation paths from source, configuration, defaults, and aliases, independently of the plan's list, asking whether a weak implementation could look compliant while the prohibited outcome stays reachable, and return a compact list of each invariant and path checked, marked rejected, proved, or a finding.
 
-Continue past the first finding. For each, name the instruction, command, or condition; the compliant-but-bad result; the decisive evidence or missing fact; and the smallest closure (a missing behavior proof closes only as Step proof allows). An outcome no source or probe settles stays a finding until it meets Probe, don't prototype; a restated checklist or unsupported claim is no finding or closure, and an authored Run alone never closes a load-bearing one. Challenge one plausible failure per distinct branch, state untested limits, and manufacture no work for a simple plan.
+Continue past the first finding. For each, name the instruction, command, or condition; the compliant-but-bad result; the decisive evidence or missing fact; and the smallest closure (a missing behavior proof closes only as Step proof allows). An outcome no source or probe settles stays a finding until it meets Probe, don't prototype. Findings and closures rest on evidence: a restated checklist or unsupported claim is neither, and an authored Run alone never closes a load-bearing one. Challenge one plausible failure per distinct branch, state untested limits, and manufacture no work for a simple plan.

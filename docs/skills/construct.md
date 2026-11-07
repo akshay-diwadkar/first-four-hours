@@ -13,7 +13,7 @@ You have a sealed `blueprint.md` and want it implemented faithfully, possibly by
 
 ## How to start it
 
-Start it yourself with `/construct`, or the agent may start it when your request matches. It needs a Git worktree. For example:
+Start it yourself with `/construct`, or the agent may start it when your request matches. It needs a Git worktree. Start it in a fresh session, or let the agent run it as a subagent: the sealed plan carries every decision, and a fresh context keeps Construct from re-reading the whole planning conversation on each of its steps. For example:
 
 ```text
 /construct : Implement the sealed blueprint in .first-four-hours/blueprints/<task-slug>/blueprint.md.

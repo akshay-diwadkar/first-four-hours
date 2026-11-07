@@ -289,7 +289,7 @@
   {
     "id": "implement.local-repair-boundary",
     "skill": "construct",
-    "source": "references/execution-contract.md",
+    "source": "references/failure-and-resume.md",
     "surface": "doctor",
     "text": "if the sealed Blueprint already fixes the correct answer, repair the"
   },
@@ -471,7 +471,7 @@
   {
     "id": "implement.mutation-recovery",
     "skill": "construct",
-    "source": "references/execution-contract.md",
+    "source": "references/failure-and-resume.md",
     "surface": "doctor",
     "text": "After that mutation stop, once the caller establishes a trusted state, it takes the stopped command, `changed_paths`, `index_changed`, and `head_changed` to a Blueprint amendment as for a `plan-contradiction`, never rerunning that sealed plan unchanged"
   },

@@ -2,7 +2,7 @@
 name: construct
 description: "Implement an existing sealed `blueprint.md`; run its Verification; report completion, incomplete verification, or contradiction; skip planning-required work."
 metadata:
-  version: "1.8.0"
+  version: "1.9.0"
   implicit-authority: sealed-blueprint
 ---
 
@@ -29,6 +29,6 @@ Judge criteria first; follow `next_command` when present, else `required_action`
 
 ## Exceptions
 
-Stopping ends the Construct run: `plan-contradiction`, `protected-work-conflict`, or `safety-contradiction`, reported with exact evidence. The execution contract's Stopping section owns what happens next.
+Stopping ends the Construct run: `plan-contradiction`, `protected-work-conflict`, or `safety-contradiction`, reported with exact evidence. [Failure, resume, and stopping](references/failure-and-resume.md) owns failing Runs, resume, and what happens next.
 
 Final and stop reports end with one optional next step fitting this outcome, after a stop its recovery owner's: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.

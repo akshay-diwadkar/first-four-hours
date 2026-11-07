@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,9 @@ from blueprint_runtime import (
     Diagnostic,
     RepositoryView,
     _canonical_json,
+    _workspace_binding,
+    canonical_blueprint_path,
+    canonical_request_path,
     _error,
     _proof_schema_diagnostics,
     _raise,
@@ -70,6 +74,29 @@ def _proven_proof(text: str) -> dict[str, Any]:
     if schema:
         _raise(schema)
     return proof
+
+
+def implemented_locations(predecessor: Path, architecture_sha256: str, repo_root: Path) -> frozenset[str]:
+    """Return the Location paths of a sealed plan built on the declared architecture.
+
+    The plan must be unedited, bound to its frozen sibling request and this
+    repository, and that request must bind the same architecture bytes.
+    """
+    plan = canonical_blueprint_path(repo_root, predecessor, require_existing=True)
+    request = canonical_request_path(repo_root, plan.parent / "request.md", require_existing=True)
+    proof = _proven_proof(plan.read_bytes().decode("utf-8"))
+    request_bytes = request.read_bytes()
+    if {key: proof["binding"][key] for key in ("repository_id", "request_sha256")} != _workspace_binding(
+        repo_root, request_bytes
+    ):
+        raise ValueError("Architecture source predecessor is not bound to its request.md in this repository.")
+    declared = [
+        json.loads(match).get("sha256")
+        for match in re.findall(r"(?m)^<!-- architecture-source: (\{.*\}) -->$", request_bytes.decode("utf-8").replace("\r\n", "\n"))
+    ]
+    if _sha256(request_bytes) != architecture_sha256 and declared != [architecture_sha256]:
+        raise ValueError("Architecture source predecessor was not planned from this architecture.")
+    return frozenset(record["path"] for record in proof["locations"])
 
 
 def _status(view: RepositoryView, path: str, recorded: str) -> str:

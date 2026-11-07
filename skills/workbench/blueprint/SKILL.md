@@ -2,7 +2,7 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "1.11.1"
+  version: "1.12.0"
 ---
 
 ## Workflow
@@ -15,7 +15,7 @@ metadata:
 6. **Challenge and repair.** Read [Challenge and rehearsal](references/challenge-and-rehearsal.md); walk the draft yourself, with the [Challenger brief](references/challenger-brief.md) for a standard draft; an elevated draft's fresh-context subagent runs it instead. Done when every finding is repaired, rejected on evidence, or returned to the user, and every plan-authored check a repair changed is re-applied to every file, name, and text it scans.
 7. **Seal or stop.** Once the [Seal gate](references/challenge-and-rehearsal.md#seal-gate) holds, check and seal exactly as in [README](README.md); otherwise stop unsealed and report why, never weakening an outcome, check, or proof below what the Seal gate requires. Done when your report names the sealed path or stop and distinguishes mechanical seal success, your evidence-backed readiness judgment, and unstarted implementation and verification.
 
-Consult `reason` before committing to an approach, after a failure or direction change, and before seal. Seal and stop reports trace `reason` checkpoints per its Checkpoint trace and end with one optional next step fitting the outcome, after a stop the unblocking one: a fenced, self-contained prompt naming the repository and every issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names; start Construct in a fresh session or subagent when possible: the sealed plan carries every decision.
+Consult `reason` before committing to an approach, after a failure or direction change, and before seal. Seal and stop reports trace `reason` checkpoints per its Checkpoint trace and end with one optional next step fitting the outcome, after a stop the unblocking one: a fenced, self-contained prompt naming the repository and every issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names; start Construct in a fresh session or, per [Construct handoff](references/construct-handoff.md), a subagent when possible: the sealed plan carries every decision.
 
 ## Boundaries
 

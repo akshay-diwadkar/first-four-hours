@@ -1,6 +1,6 @@
 # Earned Conformance Review
 
-When this review is earned and the harness has an `ffh-conformance` agent (or `ffh_conformance`) that launches, launch the reviewer as that agent; otherwise launch a generic subagent.
+When this review is earned and the harness has an `ffh-conformance` agent (or `ffh_conformance`) that launches, launch the reviewer as that agent; otherwise launch a generic subagent. When you run as `ffh-constructor` (or `ffh_constructor`), the First Four Hours constructor, or otherwise cannot launch a subagent, launch none: report the review as earned and not run, so your caller launches it after you return or reports it as not run.
 
 When an orchestrated handoff invokes Construct, it owns the execution stage and the completion report. The primary agent remains the owner of edits, delta acceptance, repair, attribution, and completion judgment. A Construct run is normally verified by the authored verification and the bounded direct conformance pass. For a non-trivial or materially risky change, one fresh, read-only, material-only conformance reviewer may be earned when independent context could plausibly catch an omission or unauthorized delta cheaply: consequential behavior or safety risk, meaningful propagation, indirect verification, or a hard-to-observe acceptance condition. Trivial work earns no reviewer and none is mandatory.
 

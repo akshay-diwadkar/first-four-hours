@@ -25,6 +25,8 @@ Start it yourself with `/assess`, or the agent may start it when your request ma
 
 Assess fixes the exact target, base, and head, reads the authoritative requirements, and works out what the change must do before it reads pull request prose or earlier reviews. Those can suggest concerns but never clear one. It reports every independently material defect it finds, not only the first. It accounts for every clause the change removes and the whole lifecycle of any new state. A re-review after rework covers what changed since the earlier assessment and whether its findings are fixed, and names what it did not re-inspect; ask for a full review when you want the whole change assessed again. A rebase or amend that rewrites the reviewed commit gets a full review. A gap you accepted, as recorded in the plan's frozen request or other authoritative requirements, is not a finding while the change stays within it; a gap the plan accepted without your recorded decision can still be one. If the same agent wrote or planned the change, Assess hands the whole review to a fresh-context subagent. If that subagent returns no checked assessment, Assess stops and asks you to run it in a fresh session. Only when no subagent can start does it review in place and disclose the whole change as self-reviewed. It consults [Reason](reason.md) at its judgment points, skipping only the final check on a tiny change it finds clear.
 
+It can also review a pull request you can read but have not checked out, such as one from a fork or in a repository you have not cloned. Give its URL or `owner/repo#N`. Assess fetches only that pull request's base and head commits, using `gh` and Git, into its own folder under your system's temporary folder, and seals the assessment there; your checkout is never changed. On Linux and macOS that folder is yours alone, readable only by you, and Assess stops as `blocked` if another account holds it. It reviews that code without running it, and asks you before running any of it, such as its tests.
+
 ## What you get
 
 A sealed `assessment.md` in the ignored folder `.first-four-hours/assessments/<slug>/`, with one result:
@@ -38,6 +40,8 @@ No result is approval, certification, or permission to merge.
 ## When it stops
 
 Assess returns `blocked` when it cannot establish the authority or evidence it needs, for example when it cannot confirm that an external source is current.
+
+When it cannot read a pull request you named, it returns `blocked` without an `assessment.md`, naming the pull request, the failing command, and its error. Because a fetched pull request's folder is temporary, a later check or re-review may find it gone; Assess then reviews the whole change again.
 
 When an evidence-backed risk beyond the change could alter the merge decision, Assess stops before sealing and asks you to run `/diagnose` on that risk. You then run Assess again with the resulting `diagnosis.md`; if that diagnosis is missing or contradictory, Assess returns `blocked`.
 

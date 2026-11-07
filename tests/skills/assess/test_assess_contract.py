@@ -188,7 +188,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
     ]
     assert artifact.startswith("# Assessment\n")
     receipt = artifact.splitlines()[-1]
-    assert receipt.startswith("<!-- assessment-result: 1.5.0; sha256: ")
+    assert receipt.startswith(f"<!-- assessment-result: {contract.CONTRACT_VERSION}; sha256: ")
     assert "`findings`" in artifact
     assert '- Severity: "P1"' in artifact
     assert f"{head}:service.py#L1-L1" in artifact
@@ -220,7 +220,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(tmp_path: Path,
         parse_result(f"{blocked}<!-- assessment-result: 1.0.0; sha256: {blocked_digest} -->\n")
     assert refused_blocked.value.code == "artifact.shape_invalid"
     assert "requires a material limitation" in refused_blocked.value.message
-    legacy = artifact.replace("<!-- assessment-result: 1.5.0; ", "<!-- assessment-result: 2.0.0; ", 1)
+    legacy = artifact.replace(f"<!-- assessment-result: {contract.CONTRACT_VERSION}; ","<!-- assessment-result: 2.0.0; ", 1)
     output.write_text(legacy, encoding="utf-8")
     checked = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert checked.returncode != 0
@@ -307,7 +307,7 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
 
 
 def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:
-    repo, base, _head = _repository(tmp_path, assessment_seed)
+    repo, base, head = _repository(tmp_path, assessment_seed)
     prepared = _run(repo, "--input", "slug=Rename Check", "--format", "json", "prepare")
     assert prepared.returncode == 0, prepared.stdout + prepared.stderr
     workspace = json.loads(prepared.stdout)["result"]
@@ -375,6 +375,35 @@ def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path
     assert sealed.returncode == 0, sealed.stdout + sealed.stderr
     assert _git(repo, "status", "--porcelain") == ""
     assert _run(repo, "--input", f"output={output}", "--format", "json", "check").returncode == 0
+    # A PR head present only in a checkout-less fetched repository seals and checks.
+    _git(repo, "update-ref", "refs/pull/7/head", head)
+    fetched = tmp_path / "pr-repo"
+    _git(tmp_path, "init", "-q", str(fetched))
+    _git(
+        fetched,
+        "fetch",
+        "-q",
+        "--no-tags",
+        str(repo),
+        "+refs/pull/7/head:refs/first-four-hours/pr/7/head",
+        "+refs/heads/assess-base:refs/first-four-hours/pr/7/base",
+    )
+    pr_prepared = _run(fetched, "--input", "slug=PR 7", "--format", "json", "prepare")
+    assert pr_prepared.returncode == 0, pr_prepared.stdout + pr_prepared.stderr
+    pr_output = Path(json.loads(pr_prepared.stdout)["result"]["output_path"])
+    pr_sealed, _ = _seal(
+        fetched,
+        tmp_path,
+        _bundle(tmp_path, base_ref="refs/first-four-hours/pr/7/base", head_ref="refs/first-four-hours/pr/7/head"),
+        pr_output,
+    )
+    assert pr_sealed.returncode == 0, pr_sealed.stdout + pr_sealed.stderr
+    pr_check = _run(fetched, "--input", f"output={pr_output}", "--format", "json", "check")
+    assert pr_check.returncode == 0, pr_check.stdout + pr_check.stderr
+    pr_result = parse_result(pr_output.read_text(encoding="utf-8"))
+    assert pr_result["base_revision"] == base
+    assert pr_result["head_revision"] == head
+    assert _git(fetched, "status", "--porcelain") == ""
     # Replay a delta review on the template's own refs.
     template = json.loads((SKILL / "templates" / "assessment-bundle.json").read_text(encoding="utf-8"))
     default_refs = {"base_ref": template["base_ref"], "head_ref": template["head_ref"]}

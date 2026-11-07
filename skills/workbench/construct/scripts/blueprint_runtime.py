@@ -3307,8 +3307,8 @@ def detect_request_source(
         declaration = re.fullmatch(r"<!-- architecture-source: (\{.*\}) -->", provenance[0].rstrip("\r"))
         try:
             record = json.loads(declaration.group(1)) if declaration else None
-            if not isinstance(record, dict) or set(record) not in ({"path", "sha256"}, {"path", "sha256", "predecessor"}):
-                raise ValueError("Architecture source needs exactly path, sha256, and an optional predecessor.")
+            if not isinstance(record, dict) or set(record) not in ({"path", "sha256"}, {"path", "sha256", "predecessors"}):
+                raise ValueError("Architecture source needs exactly path, sha256, and optional predecessors.")
             if (
                 not isinstance(record["path"], str)
                 or not Path(record["path"]).is_absolute()
@@ -3317,13 +3317,16 @@ def detect_request_source(
                 raise ValueError("Architecture source path must name an absolute architecture.md.")
             if not isinstance(record["sha256"], str) or re.fullmatch(r"[0-9a-f]{64}", record["sha256"]) is None:
                 raise ValueError("Architecture source sha256 must bind exact file bytes.")
-            predecessor = record.get("predecessor")
-            if predecessor is not None and (
-                not isinstance(predecessor, str)
-                or not Path(predecessor).is_absolute()
-                or Path(predecessor).name != BLUEPRINT_FILENAME
+            predecessors = record.get("predecessors")
+            if predecessors is not None and (
+                not isinstance(predecessors, list)
+                or not predecessors
+                or not all(
+                    isinstance(item, str) and Path(item).is_absolute() and Path(item).name == BLUEPRINT_FILENAME
+                    for item in predecessors
+                )
             ):
-                raise ValueError("Architecture source predecessor must name an absolute sealed blueprint.md.")
+                raise ValueError("Architecture source predecessors must list absolute sealed blueprint.md paths.")
             if check_sources:
                 if repo_root is None:
                     raise ValueError("Architecture source verification requires the repository root.")
@@ -3335,22 +3338,22 @@ def detect_request_source(
                 if _sha256(data) != record["sha256"]:
                     raise ValueError("Architecture source digest changed after request resolution.")
                 implemented: frozenset[str] = frozenset()
-                if predecessor is not None:
-                    implemented = import_module("carryover_sources").implemented_locations(
-                        Path(predecessor), record["sha256"], repo_root
-                    )
+                for item in predecessors or ():
+                    try:
+                        implemented |= import_module("carryover_sources").implemented_locations(
+                            Path(item), record["sha256"], repo_root
+                        )
+                    except ValueError as exc:
+                        raise ValueError(f"Architecture source predecessor {item}: {exc}") from exc
                 try:
                     verify_handoff(data, repo_root, implemented=implemented)
                 except architecture_handoff.StaleArchitecture as stale:
                     recovery = (
                         "; reseal the receipt-free decision with Architect, then write a fresh request "
-                        "whose architecture-source sha256 is the resealed file's digest"
+                        "whose architecture-source sha256 is the resealed file's digest, or, if Construct "
+                        "implemented plans from this architecture without moving HEAD, list every such "
+                        "sealed blueprint.md in the source's predecessors"
                     )
-                    if predecessor is None:
-                        recovery += (
-                            ", or, if Construct implemented a plan from this architecture, declare that "
-                            "sealed blueprint.md as the source's predecessor"
-                        )
                     raise ValueError(f"{stale}{recovery}") from stale
         except (OSError, ValueError) as exc:
             raise _request_error("handoff.architecture.source", str(exc)) from exc

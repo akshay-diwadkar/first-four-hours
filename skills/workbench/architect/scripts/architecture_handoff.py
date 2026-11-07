@@ -72,7 +72,7 @@ def _record_untracked_entry(
 def _dirty_fingerprint(
     repo_root: Path, *, git_root: Path | None = None, exclude: tuple[str, ...] = ()
 ) -> str | None:
-    # Excluded paths are a predecessor plan's sealed Locations; without them every command is unchanged.
+    # Excluded paths are predecessor plans' sealed Locations; without them every command is unchanged.
     excluded = [f":(exclude,literal){path}" for path in exclude]
     status = _git(
         repo_root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", ".", f":(exclude){BLUEPRINT_WORKSPACE_DIR}", *excluded
@@ -233,7 +233,7 @@ def _proof_line(snapshot: dict[str, Any]) -> str:
 
 
 def _implemented_snapshot(repo_root: Path, current: dict[str, Any], implemented: frozenset[str]) -> dict[str, Any]:
-    """Recompute a Git snapshot without a predecessor plan's sealed Location paths."""
+    """Recompute a Git snapshot without predecessor plans' sealed Location paths."""
     root = repo_root.resolve()
     dirty = _dirty_fingerprint(root, exclude=tuple(sorted(implemented)))
     return {**current, "dirty": dirty is not None, "dirty_fingerprint": dirty}
@@ -278,7 +278,7 @@ def _receipt_free(text: str, repo_root: Path | None = None, implemented: frozens
         and current.get("kind") == "git"
         and recorded.get("revision") == current.get("revision")
     ):
-        # Writes a sealed predecessor plan authorized are not architecture drift; anything else still is.
+        # Writes that sealed predecessor plans authorized are not architecture drift; anything else still is.
         current = _implemented_snapshot(repo_root, current, implemented)
     if recorded != current:
         if (
@@ -388,7 +388,7 @@ def verify_handoff(
 ) -> None:
     """Verify declared truth. Semantic actionability remains Blueprint-owned.
 
-    ``implemented`` names a verified predecessor plan's Location paths, which a
+    ``implemented`` names verified predecessor plans' Location paths, which a
     Git snapshot with an unchanged HEAD leaves out of its comparison.
     """
     text = data.decode("utf-8")

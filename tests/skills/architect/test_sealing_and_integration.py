@@ -201,22 +201,25 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     assert noted_prepare.returncode == 0, noted_prepare.stdout
     notes.unlink()
 
-    # After Construct implements a plan built on the architecture, an amendment that declares
-    # that plan as predecessor keeps the unchanged architecture; any other drift still stales it.
+    # After Construct implements plans built on the architecture, an amendment that lists every
+    # implemented plan as predecessors keeps the unchanged architecture; any other drift still stales it.
+    def seal_plan(plan: Path, draft_text: str) -> None:
+        marker = plan.read_text(encoding="utf-8").splitlines()[0]
+        plan.write_text(draft_text.replace("{marker}", marker), encoding="utf-8")
+        sealed_plan = run_python(
+            [sys.executable, str(BLUEPRINT_CLI), "--repo-root", str(repo), "--input", f"request_file={plan.parent / 'request.md'}",
+             "--input", f"draft_file={plan}", "--format", "json", "run"],
+            capture_output=True, text=True,
+        )
+        assert sealed_plan.returncode == 0, sealed_plan.stdout + sealed_plan.stderr
+
     plan_file = repo / ".first-four-hours" / "blueprints" / "payment-boundary" / "blueprint.md"
-    marker = plan_file.read_text(encoding="utf-8").splitlines()[0]
-    plan_file.write_text(BLUEPRINT_DRAFT.replace("{marker}", marker), encoding="utf-8")
-    sealed_plan = run_python(
-        [sys.executable, str(BLUEPRINT_CLI), "--repo-root", str(repo), "--input", f"request_file={plan_file.parent / 'request.md'}",
-         "--input", f"draft_file={plan_file}", "--format", "json", "run"],
-        capture_output=True, text=True,
-    )
-    assert sealed_plan.returncode == 0, sealed_plan.stdout + sealed_plan.stderr
+    seal_plan(plan_file, BLUEPRINT_DRAFT)
     (repo / "payments" / "config.py").write_text("TIMEOUT_SECONDS = 30\nRETRY_LIMIT = 3\n", encoding="utf-8")
     (repo / "payments" / "retry.py").write_text("from payments.config import RETRY_LIMIT\n", encoding="utf-8")
     source = {"path": str(handoff), "sha256": hashlib.sha256(handoff.read_bytes()).hexdigest()}
 
-    def amend(task: str, declaration: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    def amend(task: str, declaration: dict[str, object]) -> subprocess.CompletedProcess[str]:
         request = tmp_path / f"{task}.md"
         request.write_text(
             f"<!-- architecture-source: {json.dumps(declaration, separators=(',', ':'))} -->\n"
@@ -230,16 +233,37 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     undeclared_diagnostic = json.loads(undeclared.stdout)["diagnostics"][0]
     assert undeclared_diagnostic["code"] == "handoff.architecture.source"
     assert "reseal" in undeclared_diagnostic["message"] and "fresh request" in undeclared_diagnostic["message"]
-    assert "predecessor" in undeclared_diagnostic["message"]
-    declared = {**source, "predecessor": str(plan_file)}
+    declared = {**source, "predecessors": [str(plan_file)]}
     amended = amend("amend-declared", declared)
     assert amended.returncode == 0, amended.stdout
+    # A second amendment after Construct also implemented the first one lists both plans.
+    amendment_plan = repo / ".first-four-hours" / "blueprints" / "amend-declared" / "blueprint.md"
+    amendment_draft = (
+        BLUEPRINT_DRAFT.replace("# Blueprint: payment retry limit", "# Blueprint: payment retry backoff").split("## Implementation")[0]
+        + "## Implementation\n\n"
+        "### 1. Add the backoff module\n"
+        "**Location:** `payments/backoff.py`\n"
+        "**State:** new\n\n"
+        "Add a backoff delay for the payment retry.\n\n"
+        "## Verification\n\n"
+        "### After implementation\n"
+        "Run: `python -m pytest -q tests/test_checkout.py`\n"
+        "Expect: exit 0 and checkout still passes.\n\n"
+        "## Completion Conditions\n"
+        "- The payment retry has a backoff delay. Shown by `python -m pytest -q tests/test_checkout.py`.\n"
+    )
+    seal_plan(amendment_plan, amendment_draft)
+    (repo / "payments" / "backoff.py").write_text("DELAY = 1\n", encoding="utf-8")
+    chained = {**source, "predecessors": [str(plan_file), str(amendment_plan)]}
+    chained_amendment = amend("amend-chained", chained)
+    assert chained_amendment.returncode == 0, chained_amendment.stdout
     extra = repo / "checkout" / "extra.py"
     extra.write_text("EXTRA = 1\n", encoding="utf-8")
-    drifted = amend("amend-drifted", declared)
+    drifted = amend("amend-drifted", chained)
     assert drifted.returncode == 1
     assert json.loads(drifted.stdout)["diagnostics"][0]["code"] == "handoff.architecture.source"
     extra.unlink()
+    assert "predecessors" in undeclared_diagnostic["message"]
 
     (repo / "unrelated.txt").write_text("new head\n", encoding="utf-8")
     run_python(["git", "add", "."], cwd=repo, capture_output=True, text=True, check=True)

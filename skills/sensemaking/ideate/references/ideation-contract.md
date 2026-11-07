@@ -128,14 +128,14 @@ Choose the search structure that best fits the problem:
 - **Path with a fork:** a sequence with an architectural fork that needs option resolution, or an option whose selection continues into a causal or strategy progression.
 
 Causal-divergence lenses, for every search:
-- **Obvious defaults:** Name at least one answer a typical agent would give first, so the other lenses look past them; this line is never not applicable.
+- **Obvious defaults:** Answers a typical agent would give first.
 - **Simplify/eliminate:** Remove requirement or bypass problem.
 - **Invert/relax an authorized constraint:** Only alter constraints within Ideate’s delegated authority.
-- **Domain transfer:** State the problem without its domain's nouns, then borrow from a distant field that solved that abstracted problem.
-- **Combine mechanisms:** Pair mechanisms whose strengths cover each other's weaknesses, such as a quick common route with a careful fallback.
-- **Actor/timing/control:** Shift who acts, whose view counts, when it happens, or who decides.
-- **Failure recovery:** Shift from preventing failure to limiting it or recovering from it.
-- **Preserve baseline:** Keep current/status-quo approach as a legitimate candidate when available evidence does not justify intervention.
+- **Domain transfer:** State the problem without its domain's nouns, borrow from a distant field that solved it, and query the web with that statement when web research is allowed.
+- **Combine mechanisms:** Pair mechanisms whose strengths cover each other's weaknesses.
+- **Actor/timing/control:** Shift who acts, when, or who decides; generate from at least two named, differently informed perspectives (such as stakeholder, adjacent-field specialist, adversary), not one blended view.
+- **Failure recovery:** Shift from preventing failure to limiting or recovering from it.
+- **Preserve baseline:** Keep the status quo as a legitimate candidate when evidence does not justify intervention.
 
 Sequencing lenses, for path searches with or without a fork; each proposes a competing ordering, never a justification of an order already chosen:
 - **Risk-first:** Retire the step most likely to fail first.

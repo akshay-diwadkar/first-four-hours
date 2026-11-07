@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-07
+
 ### Added
 
 - Assess 1.8.0: a change that reaches beyond one package or directory and its own tests, or shows a depth signal such as fan-out or broad contract propagation, now always gets one Behavior/Proof falsification slice, run as `ffh-reviewer` when Provision set it up, else as a generic subagent. Before, the slice was optional, and in practice Assess reviewed every change itself. Version bumps, `docs/` pages, and changelog entries do not count as reach, so tiny changes stay local and cost no extra subagent. When no subagent can start, Assess covers the slice itself and says so in the assessment's limitations. Its context budgets do not grow. It seals assessments with contract version 1.8.0.

@@ -1369,7 +1369,23 @@ def _gh_detail(completed: subprocess.CompletedProcess[str]) -> str:
 
 def publish_findings(repo_root: Path, output: Path, confirm: str | None) -> dict[str, Any]:
     root = repo_root.resolve()
-    checked = check_result(repo_root, output)
+    try:
+        checked = check_result(repo_root, output)
+    except AssessError as exc:
+        # The user decided that a moved base alone still posts: the comment names the exact base it reviewed.
+        # check_result raises result.target_moved only when snapshots and identity are intact, so accept it
+        # here only when the assessed head itself is unchanged.
+        if exc.code != "result.target_moved":
+            raise
+        destination = _canonical_output(root, output)
+        sealed = parse_result(destination.read_text(encoding="utf-8"))
+        if inspect_binding(root, sealed["base_ref"], sealed["head_ref"]).head_revision != sealed["head_revision"]:
+            raise
+        checked = {
+            "path": str(destination),
+            "base_revision": sealed["base_revision"],
+            "head_revision": sealed["head_revision"],
+        }
     text = Path(checked["path"]).read_text(encoding="utf-8")
     stored = parse_result(text)
     if stored["head_revision"] != checked["head_revision"] or stored["base_revision"] != checked["base_revision"]:

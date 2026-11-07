@@ -296,6 +296,18 @@ def test_findings_result_binds_file_and_assessed_source_locators(
         contract.publish_findings(repo, output, digest)
     assert changed_source.value.code == "result.stale" and len(calls) == recorded
     snapshot.write_bytes(snapshot_bytes)
+    # A moved base alone still posts the same confirmed text, naming the base it reviewed; a moved head does not.
+    _git(repo, "update-ref", "refs/heads/assess-base", head)
+    rebased = contract.publish_findings(repo, output, digest)
+    assert rebased["status"] == "posted" and calls[-1] == (["gh", "pr", "comment", target, "--body-file", "-"], comment)
+    recorded = len(calls)
+    _git(repo, "update-ref", "HEAD", base)
+    with pytest.raises(AssessError) as both_moved:
+        contract.publish_findings(repo, output, digest)
+    assert both_moved.value.code == "result.target_moved" and len(calls) == recorded
+    _git(repo, "update-ref", "HEAD", head)
+    _git(repo, "update-ref", "refs/heads/assess-base", base)
+    assert output.read_bytes() == sealed_bytes
     body = artifact.removesuffix("\n").rpartition("\n")[0] + "\n"
     title, *sections = body.split("\n## ")
     by_heading = {section.split("\n", 1)[0]: section for section in sections}

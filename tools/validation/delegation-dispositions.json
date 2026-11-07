@@ -32,7 +32,7 @@
       "owner": "Construct owns implementation, conformance, and the completion report.",
       "lifecycle": "When an orchestrated handoff invokes Construct, it owns the execution stage and the completion report.",
       "workers": "No implementation worker is earned.",
-      "specialists": "One fresh read-only conformance reviewer is earned only for non-trivial, materially risky changes.",
+      "specialists": "One fresh read-only conformance reviewer is earned only for non-trivial, materially risky changes; when Construct runs as ffh-constructor or cannot launch it, its caller launches it after Construct returns or reports it as not run.",
       "writes": "All implementation writes remain with the Construct owner.",
       "rationale": "Implementation semantics and writes stay direct; only earned independent conformance review is separable."
     },

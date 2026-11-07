@@ -2,7 +2,7 @@
 name: pr
 description: Write a grounded, reviewer-oriented pull request description for the current branch and open or update its PR only after explicit user confirmation. Use when a finished branch needs a PR or a refreshed description; never merges.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # PR

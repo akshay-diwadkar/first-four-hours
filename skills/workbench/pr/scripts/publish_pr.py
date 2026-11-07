@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from pr_contract import GitError, Problem, check_description, emit, git  # noqa: E402
+from pr_contract import GitError, Problem, check_description, emit, git, strip_remote  # noqa: E402
 
 
 def run_gh(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -27,13 +27,6 @@ def run_gh(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         check=False,
         timeout=120,
     )
-
-
-def _strip_remote(ref: str, remotes: list[str]) -> tuple[str | None, str]:
-    for remote in remotes:
-        if ref.startswith(f"{remote}/"):
-            return remote, ref[len(remote) + 1 :]
-    return None, ref
 
 
 def _ssh_hostname(host: str, cwd: Path) -> str:
@@ -269,8 +262,8 @@ def main(argv: list[str] | None = None) -> int:
         return emit(gates, draft)
 
     remotes = git(repo, "remote").split()
-    base_remote, base_branch = _strip_remote(args.base, remotes)
-    head_remote, head_branch = _strip_remote(upstream, remotes)
+    base_remote, base_branch = strip_remote(args.base, remotes)
+    head_remote, head_branch = strip_remote(upstream, remotes)
     if base_remote is not None and base_remote != head_remote:
         return emit(
             [

@@ -426,20 +426,55 @@ def _stdout_json(value: str) -> Any:
     return records
 
 
+PASSED_OUTPUT_LIMIT = 4000
+
+
+def _passed_text(text: str) -> str:
+    """A passing stream whole up to the limit, else its final characters after an omission note."""
+    if len(text) <= PASSED_OUTPUT_LIMIT:
+        return text
+    return f"[{len(text) - PASSED_OUTPUT_LIMIT} earlier characters omitted]\n{text[-PASSED_OUTPUT_LIMIT:]}"
+
+
 def _result_entry(summary: dict[str, Any]) -> dict[str, Any]:
-    entry = {
+    """One Run's result: failures keep full output; a pass keeps output enough to judge Expect, once.
+
+    Every later turn re-reads what a result returns, so a passing Run's stdout
+    appears either parsed in ``stdout_json`` (its trailing JSON lines within the
+    limit) or as bounded text, never both, and stderr is bounded.
+    """
+    stdout = summary["stdout_full"]
+    entry: dict[str, Any] = {
         "step": summary["step"],
         "returncode": summary["returncode"],
         "timed_out": summary["timed_out"],
         "launch_error": summary["launch_error"],
         "passed": summary["passed"],
         "elapsed_ms": summary["elapsed_ms"],
-        "stdout": summary["stdout_full"],
+        "stdout": stdout,
         "stderr": summary["stderr_full"],
     }
-    parsed = _stdout_json(summary["stdout_full"])
+    parsed = _stdout_json(stdout)
     if parsed is not None:
         entry["stdout_json"] = parsed
+    if not summary["passed"]:
+        return entry
+    entry["stderr"] = _passed_text(summary["stderr_full"])
+    if parsed is None or (isinstance(parsed, dict) and len(stdout) > PASSED_OUTPUT_LIMIT):
+        entry.pop("stdout_json", None)
+        entry["stdout"] = _passed_text(stdout)
+        return entry
+    entry["stdout"] = None
+    if isinstance(parsed, list) and len(stdout) > PASSED_OUTPUT_LIMIT:
+        kept: list[Any] = []
+        size = 0
+        for record in reversed(parsed):
+            size += len(json.dumps(record, separators=(",", ":"))) + 1
+            if kept and size > PASSED_OUTPUT_LIMIT:
+                break
+            kept.append(record)
+        entry["stdout_json"] = kept[::-1]
+        entry["stdout_json_omitted"] = len(parsed) - len(kept)
     return entry
 
 

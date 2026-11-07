@@ -405,14 +405,19 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert code == 0 and payload["proof"]["passed"] is True and payload["proof"]["next_instruction"] is None
     after_command = payload["proof"]["next_command"]
     assert "phase=after" in after_command["argv"] and after_command["argv"][-1] == "verify"
+    # A passing Run returns its output once and bounded: trailing JSON records, no raw copy, a stderr tail.
+    _write(repo, "tools/check.py", "import json, sys\nsys.stderr.write('noise\\n' * 2000 + 'checking\\n')\n"
+           "for i in range(400):\n    print(json.dumps({'event': 'plan', 'i': i}))\n"
+           "print(json.dumps({'event': 'validation-budget', 'errors': [], 'slow': True}))\n")
     completed = subprocess.run(after_command["argv"], cwd=after_command["cwd"], capture_output=True,
                                text=True, encoding="utf-8", check=False)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     verification = json.loads(completed.stdout)["result"]["verification"]
-    assert verification["results"][0]["passed"] is True
-    assert verification["results"][0]["stdout_json"][-1]["errors"] == []
+    passed = verification["results"][0]
+    assert passed["passed"] is True and passed["stdout"] is None
+    assert passed["stdout_json"][-1]["errors"] == [] and passed["stdout_json_omitted"] > 0
     assert verification["notices"][0]["slow"] is True
-    assert verification["results"][0]["stderr"].strip() == "checking"
+    assert passed["stderr"].endswith("checking\n") and len(passed["stderr"]) < 4100
     # An undeclared failure keeps the local-repair reverify route.
     _write(repo, "tools/check.py", "import sys\nsys.exit(1)\n")
     code, payload = _run_phase(capsys, repo, blueprint, "after")

@@ -4,6 +4,6 @@ At intake, observe repository identity and Git worktree state: `verify` reports 
 
 Protected unrelated dirty work survives byte-for-byte: a protected path is never edited, never attributed to an instruction, and must be unchanged at completion; compare the intake and completion observations for the same paths, including each entry's returned `sha256`/`size`/`mode`/`kind` content identity, so byte changes are detected even when porcelain status is unchanged. A protected-work conflict ends this invocation for the protected work's owner to resolve before a fresh Construct invocation. A concurrent writer or moved HEAD is a `safety-contradiction`: the execution baseline is no longer trustworthy.
 
-Repair forward from the current material state under the execution contract's local-repair boundary. Never reset or restore a whole file/worktree/index/commit/branch automatically, and never use `git stash`, `git checkout --`, `git restore`, or `git reset` as an automatic recovery shortcut.
+Repair forward from the current material state under the [local-repair boundary](failure-and-resume.md#failing-runs). Never reset or restore a whole file/worktree/index/commit/branch automatically, and never use `git stash`, `git checkout --`, `git restore`, or `git reset` as an automatic recovery shortcut.
 
-If HEAD or repository identity changes before completion, stop with `safety-contradiction` and report the expected and observed identity; the execution contract's Stopping section owns recovery.
+If HEAD or repository identity changes before completion, stop with `safety-contradiction` and report the expected and observed identity; [Stopping](failure-and-resume.md#stopping) owns recovery.

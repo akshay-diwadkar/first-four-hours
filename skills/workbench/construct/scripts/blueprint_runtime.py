@@ -1038,21 +1038,30 @@ def _workspace_state(
 
 
 def _select_workspace_directory(
-    root: Path, slug: str, binding: dict[str, Any], request_bytes: bytes, avoid: Path | None = None
+    root: Path, slug: str, binding: dict[str, Any], request_bytes: bytes, seed: str | None = None
 ) -> Path:
-    """Pick the task directory; ``avoid`` is a predecessor's directory, never reused even for the same request."""
+    """Pick the task directory.
+
+    With ``seed``, an existing same-request directory is reused only while its
+    draft is absent or still exactly the seed, so a sealed or differently seeded
+    plan is never returned.
+    """
+
+    def usable(candidate: Path) -> bool:
+        if not candidate.exists():
+            return True
+        if _workspace_state(candidate, binding, request_bytes) != "same":
+            return False
+        draft = candidate / BLUEPRINT_FILENAME
+        return seed is None or not draft.exists() or draft.read_bytes() == seed.encode("utf-8")
+
     base = root / BLUEPRINT_WORKSPACE_DIR / slug
-    if not base.exists():
-        return base
-    if base.resolve() != avoid and _workspace_state(base, binding, request_bytes) == "same":
+    if usable(base):
         return base
     digest = _binding_hash(binding)
     for length in (12, 16, 24, 32, 64):
-        collision_slug = f"{slug}-{digest[:length]}"
-        candidate = root / BLUEPRINT_WORKSPACE_DIR / collision_slug
-        if candidate.exists() and candidate.resolve() == avoid:
-            continue
-        if not candidate.exists() or _workspace_state(candidate, binding, request_bytes) == "same":
+        candidate = root / BLUEPRINT_WORKSPACE_DIR / f"{slug}-{digest[:length]}"
+        if usable(candidate):
             return candidate
     raise _workspace_error(
         "workspace.collision.exhausted",
@@ -1114,8 +1123,8 @@ def _amend_workspace(root: Path, blueprint: Path, request_bytes: bytes) -> Path:
     return task_directory
 
 
-def _predecessor_seed(root: Path, predecessor: Path) -> tuple[Path, str, tuple[dict[str, str], ...]]:
-    """Return a stopped plan's directory, its receipt-free body under the current marker, and its carryover."""
+def _predecessor_seed(root: Path, predecessor: Path) -> tuple[str, tuple[dict[str, str], ...]]:
+    """Return a stopped plan's receipt-free body under the current marker, and its carryover."""
     plan = canonical_blueprint_path(root, predecessor, require_existing=True)
     request_path = canonical_request_path(root, plan.parent / REQUEST_FILENAME, require_existing=True)
     text = plan.read_bytes().decode("utf-8")
@@ -1128,7 +1137,7 @@ def _predecessor_seed(root: Path, predecessor: Path) -> tuple[Path, str, tuple[d
             "Pass the unedited sealed blueprint.md of a workspace in this repository.",
         )
     _marker, _newline, rest = canonical_body(text).partition("\n")
-    return plan.parent.resolve(), CONTRACT_MARKER + "\n" + rest, entries
+    return CONTRACT_MARKER + "\n" + rest, entries
 
 
 def prepare_blueprint_workspace(
@@ -1202,7 +1211,7 @@ def prepare_blueprint_workspace(
         task_directory = _amend_workspace(root, amend, request_bytes)
     else:
         task_directory = _select_workspace_directory(
-            root, slug, binding, request_bytes, avoid=seed[0] if seed else None
+            root, slug, binding, request_bytes, seed=seed[0] if seed else None
         )
     if not task_directory.exists():
         try:
@@ -1216,7 +1225,7 @@ def prepare_blueprint_workspace(
     request_path = canonical_request_path(root, request_path, require_existing=True)
     blueprint_path = canonical_blueprint_path(root, task_directory / BLUEPRINT_FILENAME)
     _materialize_blueprint_scaffold(
-        blueprint_path, task_name, existed=BLUEPRINT_FILENAME in observed, content=seed[1] if seed else None
+        blueprint_path, task_name, existed=BLUEPRINT_FILENAME in observed, content=seed[0] if seed else None
     )
     git_exclude, git_ignored = _ensure_git_exclude(
         root,
@@ -1233,7 +1242,7 @@ def prepare_blueprint_workspace(
         blueprint_path.relative_to(root).as_posix(),
         git_exclude,
         git_ignored,
-        seed[2] if seed else (),
+        seed[1] if seed else (),
     )
 
 

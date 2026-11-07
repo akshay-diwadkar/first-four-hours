@@ -562,6 +562,13 @@ def test_relevant_byte_drift_fails_closed_after_seal(tmp_path: Path) -> None:
     assert seeded.blueprint_path.read_text(encoding="utf-8") == runtime.canonical_body(sealed)
     assert {(entry["path"], entry["role"]): entry["status"] for entry in seeded.carryover}[("src/names.py", "location")] == "changed"
     assert draft_file.read_text(encoding="utf-8") == sealed
+    # A second stop seeds from the latest plan into a third directory; neither sealed plan is reopened.
+    second = runtime.seal_blueprint(repo, seeded.request_path, seeded.blueprint_path).text
+    seeded.blueprint_path.write_bytes(second.encode("utf-8"))
+    reseeded = runtime.prepare_blueprint_workspace(repo, "test-task", same_request, predecessor=seeded.blueprint_path)
+    assert reseeded.blueprint_path.parent.resolve() not in {draft_file.parent.resolve(), seeded.blueprint_path.parent.resolve()}
+    assert reseeded.blueprint_path.read_text(encoding="utf-8") == runtime.canonical_body(second)
+    assert draft_file.read_text(encoding="utf-8") == sealed and seeded.blueprint_path.read_text(encoding="utf-8") == second
     # carryover reports each bound file's status through the real CLI, never an import.
 
     def carryover(predecessor: Path) -> subprocess.CompletedProcess[str]:

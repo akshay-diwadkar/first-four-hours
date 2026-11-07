@@ -6,7 +6,7 @@ Every draft gets an owner walk: rehearse Construct's Verification section yourse
 
 A draft is **elevated** when it shows any of these, else **standard**:
 
-- a Location creating, changing, or deleting a validator, a shared runtime, configuration or fixtures read by code outside the change's own package or directory, or code (script, test, runtime) not confined to one package or directory whose own tests exercise it directly;
+- a Location creating, changing, or deleting a validator, a shared runtime, configuration or fixtures read by anything other than the confined package's own tests, or code (script, test, runtime) not confined to one package or directory whose own tests exercise it directly;
 - a budgeted or deadline gate whose limit changes or whose headroom the change can plausibly consume;
 - a changed contract another skill, package, or service consumes, or Locations in more than one (docs and changelog excepted);
 - an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service);

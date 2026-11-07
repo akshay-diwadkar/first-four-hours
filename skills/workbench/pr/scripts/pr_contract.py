@@ -75,6 +75,28 @@ def head_commit(repo: Path) -> str:
     return git(repo, "rev-parse", "--verify", "HEAD").strip()
 
 
+def strip_remote(ref: str, remotes: list[str]) -> tuple[str | None, str]:
+    for remote in remotes:
+        if ref.startswith(f"{remote}/"):
+            return remote, ref[len(remote) + 1 :]
+    return None, ref
+
+
+def branch_ref(repo: Path, base: str) -> str | None:
+    """Return the full ref of the branch publish would target for base, or None when base names no such branch."""
+    remote, branch = strip_remote(base, git(repo, "remote").split())
+    if remote is not None:
+        if branch == "HEAD":
+            return None
+        candidate = f"refs/remotes/{base}"
+    else:
+        candidate = f"refs/heads/{base}"
+    # Exact equality rejects a glob matching other refs and a differently cased name that a
+    # case-insensitive filesystem resolves; publish would send either to GitHub as written.
+    listed = git(repo, "for-each-ref", "--format=%(refname)", "--", candidate).splitlines()
+    return candidate if candidate in listed else None
+
+
 def is_clean(repo: Path) -> bool:
     return not git(repo, "status", "--porcelain", "--untracked-files=normal").strip()
 
@@ -434,7 +456,23 @@ def check_description(repo: Path, draft: Path, runs: Path, base: str) -> tuple[l
             )
         ], {}
     try:
-        merge_base = git(repo, "merge-base", base, "HEAD").strip()
+        base_ref = branch_ref(repo, base)
+    except GitError as exc:
+        return [
+            ("pr.repository_unreadable", f"cannot read the repository's branches: {exc}.", "Repair the repository and retry.")
+        ], {}
+    if base_ref is None:
+        return [
+            (
+                "pr.base_not_branch",
+                f"base `{base}` is not a local branch or a fetched remote-tracking branch, "
+                "so publish cannot open a pull request against it.",
+                "Pass the branch the pull request targets, such as origin/main after fetching it, "
+                "not a commit SHA, tag, or <remote>/HEAD.",
+            )
+        ], {}
+    try:
+        merge_base = git(repo, "merge-base", base_ref, "HEAD").strip()
     except GitError as exc:
         return [
             (

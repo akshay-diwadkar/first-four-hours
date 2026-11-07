@@ -331,7 +331,38 @@ def test_publish_requires_confirmed_text_and_pushed_branch(
     assert code == 1 and [item["code"] for item in out] == ["pr.branch_unpushed"], out
     assert "fork PRs are not supported" in out[0]["message"], out
     assert calls == []
-    code, out = run(confirmed)
+    # Check refuses a base that publish cannot pass to gh as a branch, before the user is asked to confirm.
+    _git(repo, "push", "-q", "origin", "main")
+    _git(repo, "remote", "set-head", "origin", "main")
+    _git(repo, "tag", "v1", "main")
+    sha = _git(repo, "rev-parse", "main").strip()
+    code, envelope = _cli(repo, "check", f"draft={draft}", f"runs={runs}", f"base={sha}")
+    assert code != 0 and envelope["blocking_reasons"] == ["pr.base_not_branch"], envelope
+    assert sha in envelope["diagnostics"][0]["message"], envelope
+    code, envelope = _cli(repo, "check", f"draft={draft}", f"runs={runs}", "base=v1")
+    assert code != 0 and envelope["blocking_reasons"] == ["pr.base_not_branch"], envelope
+    assert "v1" in envelope["diagnostics"][0]["message"], envelope
+    code, envelope = _cli(repo, "check", f"draft={draft}", f"runs={runs}", "base=origin/HEAD")
+    assert code != 0 and envelope["blocking_reasons"] == ["pr.base_not_branch"], envelope
+    assert "origin/HEAD" in envelope["diagnostics"][0]["message"], envelope
+    # The reported incident: a commit SHA base is refused before any gh call.
+    code, out = run(confirmed, sha)
+    assert code == 1 and [item["code"] for item in out] == ["pr.base_not_branch"], out
+    assert calls == []
+    # A glob, a differently cased name (which a case-insensitive filesystem resolves), and a full ref name are not
+    # branch names publish can send.
+    code, out = run(confirmed, "ma*")
+    assert code == 1 and [item["code"] for item in out] == ["pr.base_not_branch"], out
+    assert calls == []
+    code, out = run(confirmed, "MAIN")
+    assert code == 1 and [item["code"] for item in out] == ["pr.base_not_branch"], out
+    assert calls == []
+    code, out = run(confirmed, "refs/remotes/origin/main")
+    assert code == 1 and [item["code"] for item in out] == ["pr.base_not_branch"], out
+    assert calls == []
+    # A tag shadowing the branch's short name does not change the diff check grounds the draft in.
+    _git(repo, "tag", "origin/main", "HEAD")
+    code, out = run(confirmed, "origin/main")
     assert code == 0, out
     assert out == {"status": "opened", "url": "https://github.com/acme/widget/pull/7"}
     assert calls == [[

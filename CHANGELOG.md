@@ -11,6 +11,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- PR 1.0.1: `check` now refuses a base that is not a branch, such as a commit SHA, a tag, or `origin/HEAD`, with `pr.base_not_branch`, before you are asked to confirm the text. Previously such a base passed `check` and `publish` failed only after your yes. Pass a local branch such as `main` or a fetched remote-tracking branch such as `origin/main`. `check` does not contact the remote, so a branch deleted there since your last fetch, or a local branch you never pushed, still passes.
 - Architect 1.1.1: the shared architecture verifier can leave verified predecessor plans' Location paths out of a Git snapshot comparison, for Blueprint 1.6.0's amendment intake. Architect's own sealing and checks are unchanged. New handoffs record `scope_version` 1.1.1.
 
 - Blueprint 1.5.6: its guidance is reworded to follow research on how agents read instructions, with no rule added or removed. The most consequential rule now leads each section, rules say what to do rather than only what to avoid, and syntax that `check` enforces is stated once and points to its diagnostics. The last workflow step is now Seal or stop: when the seal gate cannot hold, Blueprint stops unsealed and reports why rather than weakening an outcome, check, or proof to seal. The guidance stays about the same size, and the SKILL.md budget drops from 945 to 935 tokens. It seals plans with contract version 1.5.6.

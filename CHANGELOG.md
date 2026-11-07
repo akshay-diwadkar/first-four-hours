@@ -27,6 +27,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- Blueprint 1.11.1: a plan that adds, deletes, or renames a file now also accounts for checks that find files by directory or file type. Before, the planner searched only for each edited path by name, which a new file never matches, so a plan could add a file that a repository validator then rejected only when Construct ran it. The references budget grows by the clause. It seals plans with contract version 1.11.1.
+- Construct 1.11.1: ships the Blueprint 1.11.1 runtime copy, so it reports contract version 1.11.1. It still accepts every sealed 1.x plan.
 - PR 1.0.1: `check` now refuses a base that is not a branch, such as a commit SHA, a tag, or `origin/HEAD`, with `pr.base_not_branch`, before you are asked to confirm the text. Previously such a base passed `check` and `publish` failed only after your yes. Pass a local branch such as `main` or a fetched remote-tracking branch such as `origin/main`. `check` does not contact the remote, so a branch deleted there since your last fetch, or a local branch you never pushed, still passes.
 - Architect 1.1.1: the shared architecture verifier can leave verified predecessor plans' Location paths out of a Git snapshot comparison, for Blueprint 1.6.0's amendment intake. Architect's own sealing and checks are unchanged. New handoffs record `scope_version` 1.1.1.
 

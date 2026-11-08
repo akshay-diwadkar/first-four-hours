@@ -200,8 +200,8 @@ def test_select_seals_equivalent_github_and_local_scope(tmp_path: Path, monkeypa
     footer = check.BINDINGS_RE.search(sealed_scope)
     assert footer is not None and set(json.loads(footer.group("json"))) == {"inputs", "source", "checkout"}
     assert footer.start() > sealed_scope.index("<!-- ticket: untrusted-end -->")
-    assert sealed_scope[footer.end() :].strip().startswith("<!-- ticket-scope: 1.0.1; sha256: ")
-    assert sealed_scope.splitlines()[-1].startswith("<!-- ticket-scope: 1.0.1; sha256: ")
+    assert sealed_scope[footer.end() :].strip().startswith(f"<!-- ticket-scope: {common.TICKET_VERSION}; sha256: ")
+    assert sealed_scope.splitlines()[-1].startswith(f"<!-- ticket-scope: {common.TICKET_VERSION}; sha256: ")
     # Metadata after a section, authored bindings, or stray text after the untrusted fence is refused.
     scope_text = draft.read_text(encoding="utf-8")
     meta_block = check.METADATA_RE.search(scope_text).group(0)

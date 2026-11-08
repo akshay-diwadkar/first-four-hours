@@ -16,7 +16,7 @@ from typing import Any, Callable
 
 from _skill_protocol_runtime import compatible_version
 
-TICKET_VERSION = "1.0.1"
+TICKET_VERSION = "1.0.2"
 OWNER_REPO_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?$")
 SSH_REPO_PATTERN = re.compile(r"^git@github\.com:([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?)$")
 WRITE_TIMEOUT_SECONDS = 120

@@ -3,9 +3,9 @@
   "limits": {
     "architect": {"top_level": 612, "references": 5943},
     "assess": {"top_level": 847, "references": 5541},
-    "blueprint": {"top_level": 958, "references": 7008},
+    "blueprint": {"top_level": 958, "references": 7012},
     "charter": {"top_level": 860, "references": 2150},
-    "construct": {"top_level": 704, "references": 5496},
+    "construct": {"top_level": 766, "references": 5460},
     "diagnose": {"top_level": 750, "references": 5142},
     "examiner": {"top_level": 960, "references": 3823},
     "ideate": {"top_level": 758, "references": 4442},

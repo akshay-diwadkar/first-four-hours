@@ -173,10 +173,16 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
         message = _messages(envelope)
         assert "M1" in message and "add" in message
 
-        # 6. A guard that errors unmutated is refused, not scored as a kill.
-        (repo / "check_add.py").write_text("from calc import add\nraise RuntimeError('broken guard')\n", encoding="utf-8")
+        # 6. A guard that errors unmutated is refused, not scored as a kill, even while the suite passes.
+        broken_guard = (
+            "from calc import add\nassert add(2, 3) == 5\n"
+            "if __name__ == '__main__':\n    raise RuntimeError('broken guard')\n"
+        )
+        (repo / "check_add.py").write_text(broken_guard, encoding="utf-8")
         code, envelope = _cli(repo, "verify", audit=str(audit), item="1")
-        assert code == 3 and "did not pass unmutated" in _messages(envelope)
+        message = _messages(envelope)
+        assert code == 3 and "selection `add` did not pass unmutated" in message
+        assert "selection `suite`" not in message
 
         # 7. A slower suite fails on time alone.
         baseline = _load("audit_contract").read_sealed(text)["results"]["baseline"]["suite"]
@@ -237,3 +243,12 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
             except ProcessLookupError:
                 gone = True
         assert gone
+
+    # 11. A selection whose own process outlives its timeout reads timeout and is ended within the bound.
+    begin = time.monotonic()
+    with replay.RepositoryCopy(repo, False, []) as copy_root:
+        status_name, _seconds, _tail = replay.run_selection(
+            copy_root, "hung", {"argv": [sys.executable, "-c", "import time; time.sleep(20)"], "timeout_seconds": 1}
+        )
+    assert status_name == "timeout"
+    assert time.monotonic() - begin < 5

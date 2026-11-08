@@ -84,11 +84,20 @@ class RepositoryCopy:
         temp = self.temp
         if temp is None:
             return
-        try:
-            shutil.rmtree(temp, onerror=_clear_readonly)
-        except OSError as error:
-            if exc_type is None:
-                raise ReplayError(f"could not remove the temporary copy {temp}; delete it by hand") from error
+        # Windows releases an ended child's handles on the copy a moment after it exits, so retry briefly.
+        deadline = time.monotonic() + 5
+        while True:
+            try:
+                shutil.rmtree(temp, onerror=_clear_readonly)
+                break
+            except OSError as error:
+                if not temp.exists():
+                    break
+                if time.monotonic() >= deadline:
+                    if exc_type is None:
+                        raise ReplayError(f"could not remove the temporary copy {temp}; delete it by hand") from error
+                    return
+                time.sleep(0.1)
         if exc_type is None and temp.exists():
             raise ReplayError(f"could not remove the temporary copy {temp}; delete it by hand")
 

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "title": "",
+  "summary": "",
+  "budget": {"seconds": null, "kind": "local", "basis": ""},
+  "copy_git": false,
+  "copy_exclude": [],
+  "selections": {
+    "suite": {"argv": [], "timeout_seconds": 1800}
+  },
+  "mutants": {},
+  "findings": []
+}

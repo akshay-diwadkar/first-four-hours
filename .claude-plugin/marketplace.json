@@ -19,6 +19,7 @@
         "./skills/workbench/diagnose",
         "./skills/workbench/pr",
         "./skills/workbench/provision",
+        "./skills/workbench/temper",
         "./skills/workbench/ticket",
         "./skills/sensemaking/ideate",
         "./skills/sensemaking/reason",

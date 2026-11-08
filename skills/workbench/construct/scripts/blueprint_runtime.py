@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.13.0"
+CONTRACT_VERSION = "1.14.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -72,8 +72,9 @@ DIAGNOSIS_HANDOFF_VERSION = "1.0.0"
 ARCHITECTURE_HANDOFF_VERSION = "1.0.0"
 TICKET_SCOPE_HANDOFF_VERSION = "1.0.0"
 ASSESSMENT_HANDOFF_VERSION = "1.4.0"
+TEST_AUDIT_HANDOFF_VERSION = "1.0.0"
 HANDOFF_RECEIPT_RE = re.compile(
-    r"^<!-- (?P<marker>diagnosis|architecture|ticket-scope|assessment-result): "
+    r"^<!-- (?P<marker>diagnosis|architecture|ticket-scope|assessment-result|test-audit): "
     r"(?P<version>[^;\s]+); sha256: (?P<digest>[0-9a-f]{64}) -->$"
 )
 CANONICAL_HANDOFF_MARKER_RE = re.compile(
@@ -83,10 +84,12 @@ CANONICAL_HANDOFF_MARKER_RE = re.compile(
 HANDOFF_LIKE_RE = re.compile(r"^<!-- [^>]*handoff[^>]*-->$", re.IGNORECASE)
 ASSESSMENT_MARKER_RE = re.compile(r"^<!--\s*assessment-result\b", re.IGNORECASE)
 RECEIPT_SHAPED_RE = re.compile(
-    r"^<!--\s*(?:diagnosis|architecture|ticket-scope|optimization|assessment-result)"
+    r"^<!--\s*(?:diagnosis|architecture|ticket-scope|optimization|assessment-result|test-audit)"
     r"(?:\s*:\s*\d+(?:\.\d+)*\s*(?:;|-->)|(?=\s|:)[^\n]*\bsha256\b)",
     re.IGNORECASE,
 )
+SELECTABLE_KINDS = frozenset({"diagnosis", "assessment", "test-audit"})
+BATCH_KINDS = frozenset({"assessment", "test-audit"})
 
 
 def _clean_architecture_view(text: str) -> str:
@@ -3370,6 +3373,22 @@ def _request_error(code: str, message: str) -> ValueError:
     return error
 
 
+def _numbered_selection(numbers: list[str], handoff_item: str | None, label: str) -> str:
+    """Return the canonical comma-joined selection of numbered findings, all when no item is given."""
+    if handoff_item is None:
+        chosen = list(numbers)
+    else:
+        chosen = []
+        for piece in (part.strip() for part in handoff_item.split(",")):
+            if not piece or piece not in numbers or piece in chosen:
+                raise _request_error(
+                    "handoff.item.unknown",
+                    f"{label} selection piece {piece!r} is empty, repeated, or not a finding number.",
+                )
+            chosen.append(piece)
+    return ",".join(sorted(chosen, key=int))
+
+
 def detect_request_source(
     request_bytes: bytes,
     handoff_item: str | None = None,
@@ -3523,7 +3542,7 @@ def detect_request_source(
             )
         if handoff_item is not None:
             raise _request_error(
-                "handoff.item.unexpected", "handoff_item is valid only for diagnosis and assessment handoffs."
+                "handoff.item.unexpected", "handoff_item is valid only for diagnosis, assessment, and test-audit handoffs."
             )
         if HANDOFF_LIKE_RE.fullmatch(first) or (HANDOFF_LIKE_RE.fullmatch(final) and "sha256:" in final):
             raise _request_error(
@@ -3545,6 +3564,7 @@ def detect_request_source(
         "architecture": ARCHITECTURE_HANDOFF_VERSION,
         "issue": TICKET_SCOPE_HANDOFF_VERSION,
         "assessment": ASSESSMENT_HANDOFF_VERSION,
+        "test-audit": TEST_AUDIT_HANDOFF_VERSION,
     }[kind]
     if not compatible_version(version, expected_version):
         raise _request_error(
@@ -3553,9 +3573,9 @@ def detect_request_source(
         )
     if _sha256(body.encode("utf-8")) != match.group("digest"):
         raise _request_error("handoff.receipt.stale", "Typed handoff receipt does not match its content.")
-    if kind not in {"diagnosis", "assessment"} and handoff_item is not None:
+    if kind not in SELECTABLE_KINDS and handoff_item is not None:
         raise _request_error(
-            "handoff.item.unexpected", "handoff_item is valid only for diagnosis and assessment handoffs."
+            "handoff.item.unexpected", "handoff_item is valid only for diagnosis, assessment, and test-audit handoffs."
         )
     selected: str | None = None
     if kind == "architecture" and check_sources:
@@ -3598,18 +3618,12 @@ def detect_request_source(
             raise _request_error(
                 "handoff.not_actionable", "Only an assessment whose result is findings has findings to plan."
             )
-        if handoff_item is None:
-            chosen = list(numbers)
-        else:
-            chosen = []
-            for piece in (part.strip() for part in handoff_item.split(",")):
-                if not piece or piece not in numbers or piece in chosen:
-                    raise _request_error(
-                        "handoff.item.unknown",
-                        f"Assessment selection piece {piece!r} is empty, repeated, or not a finding number.",
-                    )
-                chosen.append(piece)
-        selected = ",".join(sorted(chosen, key=int))
+        selected = _numbered_selection(numbers, handoff_item, "Assessment")
+    elif kind == "test-audit":
+        numbers = re.findall(r"^## Finding (\d+)\s*$", body, re.MULTILINE)
+        if not numbers:
+            raise _request_error("handoff.not_actionable", "A test audit with no findings has nothing to plan.")
+        selected = _numbered_selection(numbers, handoff_item, "Test audit")
     elif kind == "issue":
         metadata_match = re.search(r"<!-- ticket-scope-metadata -->\s*```json\s*(\{.*?\})\s*```", body, re.DOTALL)
         try:
@@ -3861,7 +3875,7 @@ def _request_binding(view: RepositoryView, request_bytes: bytes, request_source:
         "git_head": git_head,
         "request_sha256": _sha256(request_bytes),
     }
-    if request_source.get("kind") in {"diagnosis", "assessment"}:
+    if request_source.get("kind") in SELECTABLE_KINDS:
         binding["source_item"] = request_source.get("item")
     return binding
 
@@ -4143,7 +4157,7 @@ def verify_sealed_blueprint(
     if (
         handoff_item is None
         and request_source is not None
-        and request_source.get("kind") == "assessment"
+        and request_source.get("kind") in BATCH_KINDS
         and isinstance(sealed_source_item, str)
         and sealed_source_item
     ):
@@ -4171,7 +4185,7 @@ def verify_sealed_blueprint(
             )
         if request_source is not None:
             source_item = binding.get("source_item")
-            if request_source.get("kind") in {"diagnosis", "assessment"}:
+            if request_source.get("kind") in SELECTABLE_KINDS:
                 if source_item != request_source.get("item"):
                     diagnostics.append(
                         _error(
@@ -4185,7 +4199,7 @@ def verify_sealed_blueprint(
                 diagnostics.append(
                     _error(
                         "binding.request.source_item_unexpected",
-                        "Blueprint request binding includes a finding selection for a request that is not a diagnosis or assessment handoff.",
+                        "Blueprint request binding includes a finding selection for a request that is not a diagnosis, assessment, or test-audit handoff.",
                         "Reseal the Blueprint from the authoritative request.",
                         category="contract_contradiction",
                     )

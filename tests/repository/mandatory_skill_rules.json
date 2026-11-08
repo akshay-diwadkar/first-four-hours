@@ -551,5 +551,12 @@
     "source": "references/construct-handoff.md",
     "surface": "doctor",
     "text": "The returned report is a claim; confirm it from the repository before reporting"
+  },
+  {
+    "id": "temper.read-only",
+    "skill": "temper",
+    "source": "SKILL.md",
+    "surface": "doctor",
+    "text": "Temper is read-only: it never edits, adds, or deletes tests or code in the target repository."
   }
 ]

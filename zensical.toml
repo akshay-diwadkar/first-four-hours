@@ -28,6 +28,7 @@ nav = [
     { "Diagnose" = "skills/diagnose.md" },
     { "PR" = "skills/pr.md" },
     { "Provision" = "skills/provision.md" },
+    { "Temper" = "skills/temper.md" },
     { "Ticket" = "skills/ticket.md" },
     { "Ideate" = "skills/ideate.md" },
     { "Reason" = "skills/reason.md" },

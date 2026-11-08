@@ -6,6 +6,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- Ticket 1.0.2: the GitHub persist guide now says each `reconciliation-input.json` decision carries `create`, `reuse`, or `block` under the `action` key, the key `reconcile` reads. Before, it never named the key, so an input written with a `decision` key failed with `persist.reconcile_input_invalid`.
 - Construct 1.12.2: an earned conformance review now gets its diffs in the brief, so `ffh-conformance`, which has no shell, can check that lines the plan preserves are unchanged. Before, it judged changed files only from their current content.
   - The brief carries `git diff HEAD` for the plan's existing and deleted files that Git tracks, and names every other planned file for the reviewer to read whole.
   - On a fresh run, Construct first records the state of each planned file that already had uncommitted changes or that Git does not track, so the review can tell your earlier edits from Construct's. A resumed run cannot recover that state, so it says so, and preservation in those files is reported unverified.

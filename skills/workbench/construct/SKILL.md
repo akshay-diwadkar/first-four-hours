@@ -2,7 +2,7 @@
 name: construct
 description: "Implement an existing sealed `blueprint.md`; run its Verification; report completion, incomplete verification, or contradiction; skip planning-required work."
 metadata:
-  version: "1.12.0"
+  version: "1.12.1"
   implicit-authority: sealed-blueprint
 ---
 
@@ -22,10 +22,10 @@ Judge criteria first; follow `next_command` when present, else `required_action`
 
 ## Smooth execution loop
 
-1. **Intake.** Read [Execution contract](references/execution-contract.md) once, then run `verify` before for fresh work, `status` for resume. For dirty targets, non-Git paths, concurrent, destructive, or recovery work read [Safety](references/safety-and-recovery.md). Uncertain progress requires caller reconciliation. Read the whole Blueprint before editing.
+1. **Intake.** Read [Execution contract](references/execution-contract.md) once, then run `verify` before for fresh work, `status` for resume. For dirty targets, non-Git paths, concurrent, destructive, or recovery work read [Safety](references/safety-and-recovery.md). Read the whole Blueprint before editing; when a caller quotes or paraphrases it, reread that step and work from its sealed text.
 2. **Implement** each `### N.` in order. `apply` writes declared blocks, never by hand: with `Red:`, `apply` Frozen, write prose tests, `prove` its declared red, then `apply` Exact. Implement the rest, then `prove` green with the caller-held next unused attempt and follow its forward guidance. Repair only what Blueprint settles; otherwise stop as `plan-contradiction`.
-3. **Verify.** Run `verify` phase `after`; judge every `Expect:`. Repair locally only when Blueprint fixes the answer, then `reverify` from the earliest invalidated Run line. A shown declared `Incomplete:` outcome ends as `verification-incomplete` after step 4. Else stop with plan-contradiction evidence. Timeout or mutation failures are unsafe, never `reverify`.
-4. **Reconcile and report.** Compare the final diff against the sealed Blueprint once: every instruction realized, no unauthorized change, constraints preserved. When earned, an [Earned Conformance Review](references/delegation-protocol.md) confirms it. Report instructions, proof and before-implementation verification results, each after-implementation Run with its `Expect:` and whether its output met it, unrecoverable red gaps, notices, and whether protected paths and HEAD are unchanged.
+3. **Verify.** Run `verify` phase `after`; judge every `Expect:`. Execute Runs only through `verify` or `reverify`, on resume too. Repair locally only when Blueprint fixes the answer, then `reverify` from the earliest invalidated Run line. A shown declared `Incomplete:` outcome ends as `verification-incomplete` after step 4. Else stop with plan-contradiction evidence. Timeout or mutation failures are unsafe, never `reverify`.
+4. **Reconcile and report.** Compare the final diff against the sealed Blueprint once, per the Execution contract. Consequential behavior or safety risk, meaningful propagation, indirect verification, or a hard-to-observe acceptance condition earns an [Earned Conformance Review](references/delegation-protocol.md); else none. Report instructions, each Proof run and Run with its `Expect:` and quoted output showing whether it met it, unrecoverable red gaps, notices, any caller quote the Blueprint lacks, whether a review was earned, run, or earned and not run, and whether protected paths and HEAD are unchanged.
 
 ## Exceptions
 

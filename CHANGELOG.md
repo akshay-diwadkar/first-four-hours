@@ -12,6 +12,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- Assess 1.8.1: a passing test that depends on processes, timing, or cleanup is now run several times, once while the machine is busy, before Assess accepts it. Before, Assess ran each check once per reviewed commit, so a test that fails only now and then could pass a review: a Windows cleanup failure in a pull request's tests passed two re-reviews this way. Every other check still runs once. Its references budget grows by 34 tokens to hold this rule. It seals assessments with contract version 1.8.1.
 - Ticket 1.0.2: the GitHub persist guide now says each `reconciliation-input.json` decision carries `create`, `reuse`, or `block` under the `action` key, the key `reconcile` reads. Before, it never named the key, so an input written with a `decision` key failed with `persist.reconcile_input_invalid`.
 - Construct 1.12.2: an earned conformance review now gets its diffs in the brief, so `ffh-conformance`, which has no shell, can check that lines the plan preserves are unchanged. Before, it judged changed files only from their current content.
   - The brief carries `git diff HEAD` for the plan's existing and deleted files that Git tracks, and names every other planned file for the reviewer to read whole.

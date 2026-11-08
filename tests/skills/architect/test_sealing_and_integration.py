@@ -274,6 +274,34 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     assert "architecture proof snapshot does not match" in stale.stdout
     assert not (repo / ".first-four-hours" / "architectures" / "stale").exists()
 
+    # Once the implementation is committed, implemented_at binds the architecture without the snapshot comparison.
+    def git_out(*args: str) -> str:
+        return run_python(["git", *args], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
+
+    def refused_source(task: str, declaration: dict[str, object]) -> str:
+        refused_run = amend(task, declaration)
+        assert refused_run.returncode == 1, refused_run.stdout
+        diagnostic = json.loads(refused_run.stdout)["diagnostics"][0]
+        assert diagnostic["code"] == "handoff.architecture.source"
+        return diagnostic["message"]
+
+    second_head = git_out("rev-parse", "HEAD")
+    assert "implemented_at" in refused_source("implemented-undeclared", source)
+    implemented = amend("implemented", {**source, "implemented_at": second_head})
+    assert implemented.returncode == 0, implemented.stdout
+    seal_plan(
+        repo / ".first-four-hours" / "blueprints" / "implemented" / "blueprint.md",
+        amendment_draft.replace("payments/backoff.py", "payments/jitter.py"),
+    )
+    refused_source("implemented-both", {**source, "implemented_at": second_head, "predecessors": [str(plan_file)]})
+    assert "reseal" in refused_source("implemented-at-snapshot", {**source, "implemented_at": first_head})
+    elsewhere = git_out("commit-tree", "HEAD^{tree}", "-p", "HEAD", "-m", "elsewhere")
+    assert "reseal" in refused_source("implemented-elsewhere", {**source, "implemented_at": elsewhere})
+    side = git_out("commit-tree", "HEAD^{tree}", "-m", "side")
+    merge = git_out("commit-tree", "HEAD^{tree}", "-p", "HEAD", "-p", side, "-m", "merge")
+    git_out("update-ref", "HEAD", merge)
+    refused_source("implemented-side", {**source, "implemented_at": side})
+
     # A non-Git root binds a filesystem snapshot that must not count the sealed handoff itself.
     plain = make_repo(tmp_path / "plain")
     sealed_plain = run_python(seal_command(plain, "payment-boundary", draft, json_output=True), capture_output=True, text=True, check=True)
@@ -282,6 +310,21 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
     assert proof_snapshot(plain_handoff)["kind"] == "filesystem"
     accepted_plain = run_python(prepare_command(plain, plain_handoff, "payment-boundary"), capture_output=True, text=True)
     assert accepted_plain.returncode == 0, accepted_plain.stdout
+    plain_request = tmp_path / "plain-implemented.md"
+    plain_request.write_text(
+        "<!-- architecture-source: "
+        + json.dumps(
+            {"path": str(plain_handoff), "sha256": hashlib.sha256(plain_handoff.read_bytes()).hexdigest(), "implemented_at": "0" * 40},
+            separators=(",", ":"),
+        )
+        + " -->\nPlan from the filesystem architecture after its implementation.\n",
+        encoding="utf-8",
+    )
+    plain_refused = run_python(prepare_command(plain, plain_request, "plain-implemented"), capture_output=True, text=True)
+    assert plain_refused.returncode == 1, plain_refused.stdout
+    plain_diagnostic = json.loads(plain_refused.stdout)["diagnostics"][0]
+    assert plain_diagnostic["code"] == "handoff.architecture.source"
+    assert "reseal" in plain_diagnostic["message"]
 
     # Without a HEAD commit the snapshot binds only tracked and non-ignored untracked files.
     unborn = make_repo(tmp_path / "unborn")

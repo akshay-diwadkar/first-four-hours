@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.12.1"
+CONTRACT_VERSION = "1.13.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -3419,8 +3419,14 @@ def detect_request_source(
         declaration = re.fullmatch(r"<!-- architecture-source: (\{.*\}) -->", provenance[0].rstrip("\r"))
         try:
             record = json.loads(declaration.group(1)) if declaration else None
-            if not isinstance(record, dict) or set(record) not in ({"path", "sha256"}, {"path", "sha256", "predecessors"}):
-                raise ValueError("Architecture source needs exactly path, sha256, and optional predecessors.")
+            if not isinstance(record, dict) or set(record) not in (
+                {"path", "sha256"},
+                {"path", "sha256", "predecessors"},
+                {"path", "sha256", "implemented_at"},
+            ):
+                raise ValueError(
+                    "Architecture source needs exactly path, sha256, and optionally predecessors or implemented_at."
+                )
             if (
                 not isinstance(record["path"], str)
                 or not Path(record["path"]).is_absolute()
@@ -3439,6 +3445,11 @@ def detect_request_source(
                 )
             ):
                 raise ValueError("Architecture source predecessors must list absolute sealed blueprint.md paths.")
+            implemented_at = record.get("implemented_at")
+            if "implemented_at" in record and (
+                not isinstance(implemented_at, str) or re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", implemented_at) is None
+            ):
+                raise ValueError("Architecture source implemented_at must be a full lowercase commit SHA.")
             if check_sources:
                 if repo_root is None:
                     raise ValueError("Architecture source verification requires the repository root.")
@@ -3449,6 +3460,24 @@ def detect_request_source(
                 data = read_primary(Path(record["path"]), repo_root)
                 if _sha256(data) != record["sha256"]:
                     raise ValueError("Architecture source digest changed after request resolution.")
+                if implemented_at is not None:
+                    verify_handoff(data, repo_root, check_sources=False)
+                    proof_line = data.decode("utf-8").removesuffix("\n").split("\n")[-2].rstrip("\r")
+                    proof = architecture_handoff.PROOF_RE.match(proof_line)
+                    snapshot = json.loads(proof.group("json"))["snapshot"] if proof else None
+                    if not architecture_handoff._snapshot_shape(snapshot) or snapshot["kind"] != "git":
+                        raise ValueError(
+                            "Architecture source implemented_at needs an architecture sealed with a Git snapshot; "
+                            "reseal the receipt-free decision with Architect."
+                        )
+                    listed = _git(repo_root, "rev-list", "--ancestry-path", f"{snapshot['revision']}..HEAD")
+                    if listed.returncode != 0 or implemented_at not in listed.stdout.split():
+                        raise ValueError(
+                            f"Architecture source implemented_at {implemented_at} is not a commit after the "
+                            f"architecture's snapshot revision {snapshot['revision']} in HEAD's history; name the "
+                            "commit that implemented this architecture, or reseal the receipt-free decision with Architect."
+                        )
+                    return {"kind": "architecture", "contract_version": ARCHITECTURE_HANDOFF_VERSION, "item": None}
                 implemented: frozenset[str] = frozenset()
                 for item in predecessors or ():
                     try:
@@ -3464,7 +3493,8 @@ def detect_request_source(
                         "; reseal the receipt-free decision with Architect, then write a fresh request "
                         "whose architecture-source sha256 is the resealed file's digest, or, if Construct "
                         "implemented plans from this architecture without moving HEAD, list every such "
-                        "sealed blueprint.md in the source's predecessors"
+                        "sealed blueprint.md in the source's predecessors, or, once a committed implementation of "
+                        "this architecture moved HEAD, declare that commit as the source's implemented_at"
                     )
                     raise ValueError(f"{stale}{recovery}") from stale
         except (OSError, ValueError) as exc:

@@ -4,6 +4,11 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- Blueprint 1.13.0: a downstream ticket can now plan from an architecture whose earlier implementation is already committed. Add `"implemented_at":"<full commit SHA>"` to the request's `architecture-source` declaration, naming the commit that implemented it. Intake still checks the architecture file, its digest, and its receipt, and requires that commit to come after the architecture's snapshot and be in HEAD's history; it no longer compares the repository with the pre-implementation snapshot or its cited lines. Before, once HEAD moved, the only routes were resealing with Architect or restating the architecture by hand. `implemented_at` cannot be combined with `predecessors`, and an architecture sealed outside Git cannot use it. A stale source's refusal now names this route. Its references budget grows by 29 tokens to hold it. It seals plans with contract version 1.13.0.
+- Construct 1.13.0: ships the Blueprint 1.13.0 runtime copy, so it reports contract version 1.13.0 and reads requests that declare `implemented_at`. It still accepts every sealed 1.x plan.
+
 ### Fixed
 
 - Ticket 1.0.2: the GitHub persist guide now says each `reconciliation-input.json` decision carries `create`, `reuse`, or `block` under the `action` key, the key `reconcile` reads. Before, it never named the key, so an input written with a `decision` key failed with `persist.reconcile_input_invalid`.

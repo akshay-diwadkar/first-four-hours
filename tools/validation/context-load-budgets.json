@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "limits": {
     "architect": {"top_level": 612, "references": 5943},
-    "assess": {"top_level": 847, "references": 5541},
+    "assess": {"top_level": 847, "references": 5575},
     "blueprint": {"top_level": 958, "references": 7041},
     "charter": {"top_level": 860, "references": 2150},
     "construct": {"top_level": 766, "references": 5749},

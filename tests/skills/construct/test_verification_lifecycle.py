@@ -407,13 +407,14 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert "phase=after" in after_command["argv"] and after_command["argv"][-1] == "verify"
     # A passing Run returns its output once and bounded: trailing JSON records, no raw copy, a stderr tail,
     # the whole output in a file for Expect, and slow notices even from records trimming dropped.
-    _write(repo, "tools/check.py", "import json, sys\nsys.stderr.write('noise\\n' * 2000 + 'checking\\n')\n"
+    _write(repo, "tools/check.py", "import json, sys\nsys.stderr.write('noise\\n' * 2000 + 'x' * 1500 + '\\n' + 'y' * 1500 + '\\n' + 'checking\\n')\n"
            "for i in range(400):\n    print(json.dumps({'event': 'plan', 'i': i, 'slow': i == 0}))\n"
            "print(json.dumps({'event': 'validation-budget', 'errors': [], 'slow': True}))\n")
     completed = subprocess.run(after_command["argv"], cwd=after_command["cwd"], capture_output=True,
                                text=True, encoding="utf-8", check=False)
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    verification = json.loads(completed.stdout)["result"]["verification"]
+    parsed = json.loads(completed.stdout)
+    verification = parsed["result"]["verification"]
     passed = verification["results"][0]
     assert passed["passed"] is True and passed["stdout"] is None
     assert passed["stdout_json"][-1]["errors"] == [] and passed["stdout_json_omitted"] > 0
@@ -423,12 +424,38 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     whole = full_output.read_text(encoding="utf-8")
     full_output.unlink()
     assert '"i": 0,' in whole and whole.count("noise") == 2000 and not full_output.is_relative_to(repo)
-    # An undeclared failure keeps the local-repair reverify route.
-    _write(repo, "tools/check.py", "import sys\nsys.exit(1)\n")
-    code, payload = _run_phase(capsys, repo, blueprint, "after")
-    diagnostic = payload["diagnostics"][0]
-    assert (code, diagnostic["code"]) == (3, "verification.step_failed")
+    run_summary = parsed["result"]["run_summary"]
+    expected = {
+        "line": passed["step"]["line"],
+        "command": "python -B tools/check.py",
+        "exit": 0,
+        "status": "passed",
+        "stdout": ["[391 earlier lines omitted]"]
+        + [json.dumps({"event": "plan", "i": i, "slow": i == 0}) for i in range(391, 400)]
+        + [json.dumps({"event": "validation-budget", "errors": [], "slow": True})],
+        "stderr": ["[2001 earlier lines omitted]", "y" * 500 + " ... [500 characters omitted] ... " + "y" * 500, "checking"],
+    }
+    assert run_summary == [expected]
+    # An undeclared failure keeps the local-repair reverify route and carries the summary through the CLI stop.
+    _write(repo, "tools/check.py", "import sys\nprint('broken', file=sys.stderr)\nsys.exit(1)\n")
+    completed = subprocess.run(after_command["argv"], cwd=after_command["cwd"], capture_output=True,
+                               text=True, encoding="utf-8", check=False)
+    assert completed.returncode == 3, completed.stdout + completed.stderr
+    diagnostic = json.loads(completed.stdout)["diagnostics"][0]
+    assert diagnostic["code"] == "verification.step_failed"
     assert "reverify" in diagnostic["next_command"]["argv"] and "incomplete" not in diagnostic["details"]
+    assert diagnostic["details"]["run_summary"] == [{
+        "line": passed["step"]["line"], "command": "python -B tools/check.py", "exit": 1,
+        "status": "failed", "stdout": [], "stderr": ["broken"],
+    }]
+    # Launch errors and timeouts report no exit code, never the synthetic 127 or -9.
+    for argv, timeout, status in (
+        (("missing-tool-505",), 5, "launch_error"),
+        ((sys.executable, "-c", "import time; time.sleep(30)"), 1, "timed_out"),
+    ):
+        step = blueprint_runtime.VerificationStep(phase="After implementation", argv=argv, timeout_seconds=timeout, line=1)
+        entry = runner._run_summary(runner._execute_exact_step(step, repo)[1])
+        assert entry["exit"] is None and entry["status"] == status
     _write(repo, "tools/check.py", logged_check)
 
     # A changed directory link must not turn source-only evidence into an
@@ -660,6 +687,8 @@ def test_verification_guards_visible_and_bound_content_only(tmp_path: Path, caps
     assert (code, diagnostic["code"]) == (3, "verification.mutated_workspace")
     assert diagnostic["details"]["changed_paths"] == []
     assert diagnostic["details"]["head_changed"] is True and diagnostic["details"]["index_changed"] is False
+    assert diagnostic["details"]["run_summary"][0]["status"] == "guard_failed"
+    assert diagnostic["details"]["run_summary"][0]["exit"] == 0
     # The stop names its authored command and routes recovery to a Blueprint amendment, never an unchanged rerun.
     assert diagnostic["category"] == "unsafe_state"
     assert any("tests/test_overwrite.py" in item for item in diagnostic["supporting_evidence"])

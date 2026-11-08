@@ -22,6 +22,7 @@ import difflib
 import hashlib
 import json
 import os
+import shlex
 import stat
 import subprocess
 import sys
@@ -430,6 +431,9 @@ def _stdout_json(value: str) -> Any:
 
 
 PASSED_OUTPUT_LIMIT = 4000
+SUMMARY_LINE_LIMIT = 1000
+SUMMARY_STDOUT = (10, 3000)
+SUMMARY_STDERR = (5, 1500)
 
 
 def _passed_text(text: str) -> str:
@@ -509,6 +513,48 @@ def _result_entry(summary: dict[str, Any]) -> dict[str, Any]:
         entry["stdout_json"] = kept[::-1]
         entry["stdout_json_omitted"] = len(parsed) - len(kept)
     return entry
+
+
+def _summary_lines(text: str, max_lines: int, budget: int) -> list[str]:
+    """The last non-blank lines of a stream within a line count and character budget."""
+    lines = [line.rstrip() for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    lines = [line for line in lines if line.strip()]
+    if not lines:
+        return []
+    half = SUMMARY_LINE_LIMIT // 2
+    lines = [
+        line if len(line) <= SUMMARY_LINE_LIMIT
+        else f"{line[:half]} ... [{len(line) - SUMMARY_LINE_LIMIT} characters omitted] ... {line[-half:]}"
+        for line in lines
+    ]
+    taken: list[str] = []
+    used = 0
+    for line in reversed(lines):
+        if len(taken) >= max_lines or (taken and used + len(line) > budget):
+            break
+        taken.append(line)
+        used += len(line)
+    taken.reverse()
+    omitted = len(lines) - len(taken)
+    return ([f"[{omitted} earlier lines omitted]"] if omitted > 0 else []) + taken
+
+
+def _run_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    """One Run's compact presentation entry, read from the whole streams."""
+    if summary["timed_out"]:
+        status = "timed_out"
+    elif summary["launch_error"]:
+        status = "launch_error"
+    else:
+        status = "passed" if summary["passed"] else "failed"
+    return {
+        "line": summary["step"]["line"],
+        "command": shlex.join(summary["step"]["argv"]),
+        "exit": None if summary["timed_out"] or summary["launch_error"] else summary["returncode"],
+        "status": status,
+        "stdout": _summary_lines(summary["stdout_full"], *SUMMARY_STDOUT),
+        "stderr": _summary_lines(summary["stderr_full"], *SUMMARY_STDERR),
+    }
 
 
 def _notices(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -932,7 +978,8 @@ def _load(repo_root: Path, blueprint_path: Path) -> tuple[Path, Path, str, bytes
 
 
 def _run_guarded(
-    root: Path, bound: frozenset[str], step: blueprint_runtime.VerificationStep, results: list[dict[str, Any]], phase: str
+    root: Path, bound: frozenset[str], step: blueprint_runtime.VerificationStep, results: list[dict[str, Any]], phase: str,
+    *, summaries: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Execute one authored command under the timeout and mutation guard; append its full result."""
     index_before = _git_index_sha256(root)
@@ -940,6 +987,8 @@ def _run_guarded(
     content_before = _guarded_fingerprint(root, bound)
     _receipt, summary = _execute_exact_step(step, root)
     results.append(_result_entry(summary))
+    if summaries is not None:
+        summaries.append(_run_summary(summary))
     partial = {"verification": {"phase": phase, "results": results, "notices": _notices(results)}}
     if summary["timed_out"]:
         raise ConstructError(
@@ -956,10 +1005,14 @@ def _run_guarded(
         content_after = _guarded_fingerprint(root, bound)
     except ConstructError as exc:
         results[-1]["passed"] = False
+        if summaries is not None:
+            summaries[-1]["status"] = "guard_failed"
         exc.result = partial
         raise
     if index_before != index_after or head_before != head_after or content_before != content_after:
         results[-1]["passed"] = False
+        if summaries is not None:
+            summaries[-1]["status"] = "guard_failed"
         changed_paths = sorted(path for path in content_before.keys() | content_after.keys() if content_before.get(path) != content_after.get(path))
         raise ConstructError(
             "verification.mutated_workspace",
@@ -1083,68 +1136,75 @@ def run_verification(
     steps = _selected_steps(steps, from_line)
     results: list[dict[str, Any]] = []
     bound = _plan_bound_paths(root, path, blueprint)
-    for step in steps:
-        summary = _run_guarded(root, bound, step, results, phase)
-        partial = {"verification": {"phase": phase, "results": results, "notices": _notices(results)}}
-        outcome = _outcome(summary)
-        if outcome == "unavailable":
-            raise ConstructError(
-                "verification.proof_unavailable",
-                f"authored {authored_phase} Run could not launch; its proof is unavailable, not failed",
-                category="missing_evidence",
-                evidence=[summary["stderr_full"]],
-                result=partial,
-                valid_repairs=("Report verification as incomplete with this evidence; do not rewrite the Run or substitute an interpreter.",),
-            )
-        if outcome == "failed":
-            evidence = [
-                json.dumps(summary["step"], sort_keys=True),
-                f"returncode: {summary['returncode']}",
-                f"stdout tail: {summary['stdout']['tail']}",
-                f"stderr tail: {summary['stderr']['tail']}",
-            ]
-            details = {
-                "step": summary["step"],
-                "returncode": summary["returncode"],
-                "timed_out": summary["timed_out"],
-                "stdout": summary["stdout_full"],
-                "stderr": summary["stderr_full"],
-            }
-            incomplete = summary["step"].get("incomplete")
-            if incomplete is not None:
-                details["incomplete"] = incomplete
-            error = ConstructError(
-                "verification.step_failed",
-                f"authored {authored_phase} Run failed: " + _canonical_json(summary["step"]),
-                evidence=evidence,
-                result=partial,
-                details=details,
-            )
-            if authored_phase == FINAL_PHASE:
-                error.next_command = _reverify_next_command(root, path, summary["step"]["line"])
-                error.valid_repairs = (
-                    "Repair the settled local bytes and run the returned reverify command.",
-                    "Run reverify from an earlier authored Run line when the repair invalidated earlier evidence.",
-                    "Stop with plan-contradiction evidence when the repair requires a new semantic decision.",
+    summaries: list[dict[str, Any]] = []
+    try:
+        for step in steps:
+            summary = _run_guarded(root, bound, step, results, phase, summaries=summaries)
+            partial = {"verification": {"phase": phase, "results": results, "notices": _notices(results)}}
+            outcome = _outcome(summary)
+            if outcome == "unavailable":
+                raise ConstructError(
+                    "verification.proof_unavailable",
+                    f"authored {authored_phase} Run could not launch; its proof is unavailable, not failed",
+                    category="missing_evidence",
+                    evidence=[summary["stderr_full"]],
+                    result=partial,
+                    valid_repairs=("Report verification as incomplete with this evidence; do not rewrite the Run or substitute an interpreter.",),
                 )
-            if incomplete is not None:
-                details["reverify_command"] = error.next_command
-                error.next_command = None
-                error.valid_repairs = (
-                    "If the output shows the declared incomplete outcome and no failure it does not explain, report "
-                    "verification incomplete with this output as evidence: never passed, not a plan contradiction, and "
-                    "never rerun unchanged.",
-                    "Otherwise the failure is real: repair the settled local bytes and run details.reverify_command, "
-                    "or stop with plan-contradiction evidence.",
+            if outcome == "failed":
+                evidence = [
+                    json.dumps(summary["step"], sort_keys=True),
+                    f"returncode: {summary['returncode']}",
+                    f"stdout tail: {summary['stdout']['tail']}",
+                    f"stderr tail: {summary['stderr']['tail']}",
+                ]
+                details = {
+                    "step": summary["step"],
+                    "returncode": summary["returncode"],
+                    "timed_out": summary["timed_out"],
+                    "stdout": summary["stdout_full"],
+                    "stderr": summary["stderr_full"],
+                }
+                incomplete = summary["step"].get("incomplete")
+                if incomplete is not None:
+                    details["incomplete"] = incomplete
+                error = ConstructError(
+                    "verification.step_failed",
+                    f"authored {authored_phase} Run failed: " + _canonical_json(summary["step"]),
+                    evidence=evidence,
+                    result=partial,
+                    details=details,
                 )
-            raise error
+                if authored_phase == FINAL_PHASE:
+                    error.next_command = _reverify_next_command(root, path, summary["step"]["line"])
+                    error.valid_repairs = (
+                        "Repair the settled local bytes and run the returned reverify command.",
+                        "Run reverify from an earlier authored Run line when the repair invalidated earlier evidence.",
+                        "Stop with plan-contradiction evidence when the repair requires a new semantic decision.",
+                    )
+                if incomplete is not None:
+                    details["reverify_command"] = error.next_command
+                    error.next_command = None
+                    error.valid_repairs = (
+                        "If the output shows the declared incomplete outcome and no failure it does not explain, report "
+                        "verification incomplete with this output as evidence: never passed, not a plan contradiction, and "
+                        "never rerun unchanged.",
+                        "Otherwise the failure is real: repair the settled local bytes and run details.reverify_command, "
+                        "or stop with plan-contradiction evidence.",
+                    )
+                raise error
+        workspace = _workspace_observation(root, bound)
+    except ConstructError as exc:
+        exc.details = {**(exc.details or {}), "run_summary": summaries}
+        raise
     return {
+        "run_summary": summaries,
         "verification": {
             "phase": phase,
             "results": results,
             "notices": _notices(results),
-            "workspace": _workspace_observation(root, bound),
-        }
+            "workspace": workspace,
+        },
     }
 
 

@@ -35,7 +35,7 @@ A sealed `test-audit.md` in the ignored folder `.first-four-hours/test-audits/<s
 
 ## When it stops
 
-If a command fails on the unchanged copy, or a claim does not replay, the seal refuses and names the finding, the mutant, and the command; Temper repairs the bundle or drops the finding, never the expectation. A command that reaches your real project, through an absolute path or an editable install, leaves its mutants uncaught, so the seal fails rather than trusting it. Temper asks before running anything that uses shared or billable resources or production data.
+If a command fails on the unchanged copy, or a claim does not replay, the seal refuses and names the finding, the mutant, and the command; Temper repairs the bundle or drops the finding, never the expectation. A command that reaches your real project, through an absolute path or an editable install, never sees the copy's mutants: that fails a claim that a test catches a mutant, but can let a `vacuous` or `gap` claim that a mutant slips through pass falsely, so Temper shows that each such finding's command runs the copy's code. Temper asks before running anything that uses shared or billable resources or production data.
 
 ## Why it's built this way
 

@@ -9,6 +9,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -132,6 +133,11 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
         (tmp_path / "escape.json").write_text(json.dumps(escaping), encoding="utf-8")
         code, envelope = _cli(repo, "run", bundle=str(tmp_path / "escape.json"), slug="cart")
         assert code == 3 and "../outside.py" in _messages(envelope)
+        broken = copy.deepcopy(bundle)
+        broken["selections"]["add"]["argv"] = [sys.executable, "-c", "raise SystemExit('broken guard')"]
+        (tmp_path / "broken.json").write_text(json.dumps(broken), encoding="utf-8")
+        code, envelope = _cli(repo, "run", bundle=str(tmp_path / "broken.json"), slug="cart")
+        assert code == 3 and "selection `add` did not pass unmutated" in _messages(envelope)
         assert not (repo / ".first-four-hours" / "test-audits").exists()
 
         # 2. The true bundle seals without touching the repository.
@@ -167,14 +173,19 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
         message = _messages(envelope)
         assert "M1" in message and "add" in message
 
-        # 6. A slower suite fails on time alone.
+        # 6. A guard that errors unmutated is refused, not scored as a kill.
+        (repo / "check_add.py").write_text("from calc import add\nraise RuntimeError('broken guard')\n", encoding="utf-8")
+        code, envelope = _cli(repo, "verify", audit=str(audit), item="1")
+        assert code == 3 and "did not pass unmutated" in _messages(envelope)
+
+        # 7. A slower suite fails on time alone.
         baseline = _load("audit_contract").read_sealed(text)["results"]["baseline"]["suite"]
         slow = f"import time\nfrom calc import add\nassert add(2, 3) == 5\ntime.sleep({1.1 * baseline + 1.5})\n"
         (repo / "check_add.py").write_text(slow, encoding="utf-8")
         code, envelope = _cli(repo, "verify", audit=str(audit), item="1")
         assert code == 3 and "audited baseline" in _messages(envelope)
 
-        # 7. A tampered audit fails its receipt.
+        # 8. A tampered audit fails its receipt.
         tampered = tmp_path / "tampered.md"
         tampered.write_text(text.replace("overlap", "overlay", 1), encoding="utf-8", newline="\n")
         code, envelope = _cli(repo, "verify", audit=str(tampered), item="1")
@@ -182,7 +193,7 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
     finally:
         os.chmod(calc, stat.S_IWRITE | stat.S_IREAD)
 
-    # 8. The copy refuses to land where it could reach the repository.
+    # 9. The copy refuses to land where it could reach the repository.
     replay = _load("replay")
     inside = repo / "inside-tmp"
     inside.mkdir()
@@ -200,3 +211,29 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
     with pytest.raises(replay.ReplayError):
         with replay.RepositoryCopy(worktree, True, []):
             pass
+
+    # 10. A selection that exits while a descendant holds its output is bounded and the tree is ended.
+    spawn = (
+        "import subprocess, sys; "
+        "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(20)']); "
+        "print('started', child.pid)"
+    )
+    begin = time.monotonic()
+    with replay.RepositoryCopy(repo, False, []) as copy_root:
+        status_name, _seconds, tail = replay.run_selection(
+            copy_root, "orphan", {"argv": [sys.executable, "-c", spawn], "timeout_seconds": 5}
+        )
+    elapsed = time.monotonic() - begin
+    assert status_name == "passed" and tail.startswith("started ")
+    assert elapsed < 5
+    if sys.platform != "win32":
+        pid = int(tail.split()[1])
+        deadline = time.monotonic() + 5
+        gone = False
+        while time.monotonic() < deadline and not gone:
+            try:
+                os.kill(pid, 0)
+                time.sleep(0.05)
+            except ProcessLookupError:
+                gone = True
+        assert gone

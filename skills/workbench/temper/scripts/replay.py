@@ -98,6 +98,108 @@ def _tail(output: str) -> str:
     return lines[-1][:TAIL_LIMIT] if lines else ""
 
 
+def _contain(process: subprocess.Popen[bytes]) -> Any:
+    """Put the launched process in a Job Object (Windows); return the job handle or None."""
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = getattr(ctypes, "WinDLL")("kernel32", use_last_error=True)
+    kernel32.CreateJobObjectW.argtypes = [wintypes.LPVOID, wintypes.LPCWSTR]
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+    kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        return None
+    handle = kernel32.OpenProcess(0x0100 | 0x0001, False, process.pid)
+    if not handle:
+        kernel32.CloseHandle(job)
+        return None
+    try:
+        assigned = kernel32.AssignProcessToJobObject(job, handle)
+    finally:
+        kernel32.CloseHandle(handle)
+    if not assigned:
+        kernel32.CloseHandle(job)
+        return None
+    return job
+
+
+def _end_job(job: Any, name: str) -> None:
+    import ctypes
+    from ctypes import wintypes
+
+    class Accounting(ctypes.Structure):
+        _fields_ = [
+            ("TotalUserTime", ctypes.c_longlong),
+            ("TotalKernelTime", ctypes.c_longlong),
+            ("ThisPeriodTotalUserTime", ctypes.c_longlong),
+            ("ThisPeriodTotalKernelTime", ctypes.c_longlong),
+            ("TotalPageFaultCount", wintypes.DWORD),
+            ("TotalProcesses", wintypes.DWORD),
+            ("ActiveProcesses", wintypes.DWORD),
+            ("TotalTerminatedProcesses", wintypes.DWORD),
+        ]
+
+    kernel32 = getattr(ctypes, "WinDLL")("kernel32", use_last_error=True)
+    kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+    kernel32.TerminateJobObject.restype = wintypes.BOOL
+    kernel32.QueryInformationJobObject.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    kernel32.QueryInformationJobObject.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    remaining = -1
+    try:
+        if kernel32.TerminateJobObject(job, 1):
+            deadline = time.monotonic() + 5
+            while True:
+                info = Accounting()
+                if not kernel32.QueryInformationJobObject(job, 1, ctypes.byref(info), ctypes.sizeof(info), None):
+                    break
+                remaining = info.ActiveProcesses
+                if remaining == 0 or time.monotonic() >= deadline:
+                    break
+                time.sleep(0.05)
+    finally:
+        kernel32.CloseHandle(job)
+    if remaining != 0:
+        raise ReplayError(f"selection `{name}` left processes that could not be ended; end them by hand")
+
+
+def _end_tree(process: subprocess.Popen[bytes], job: Any, name: str, quiet: bool) -> None:
+    """End the selection's whole process tree and reap the launched process."""
+    try:
+        if sys.platform == "win32":
+            if job is not None:
+                try:
+                    _end_job(job, name)
+                finally:
+                    process.wait()
+            else:
+                if process.poll() is None:
+                    process.kill()
+                process.wait()
+        else:
+            try:
+                getattr(os, "killpg")(process.pid, getattr(signal, "SIGKILL"))
+            except (ProcessLookupError, PermissionError):
+                pass
+            process.wait()
+    except (OSError, ReplayError):
+        if not quiet:
+            raise
+
+
 def run_selection(copy_root: Path, name: str, selection: dict[str, Any]) -> tuple[str, float, str]:
     """Run one selection in the copy and return (status, seconds, tail)."""
     argv = selection["argv"]
@@ -107,33 +209,35 @@ def run_selection(copy_root: Path, name: str, selection: dict[str, Any]) -> tupl
     else:
         options["start_new_session"] = True
     start = time.monotonic()
-    try:
-        process = subprocess.Popen(
-            argv,
-            cwd=copy_root,
-            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            **options,
-        )
-    except OSError as error:
-        raise ReplayError(f"selection `{name}` could not launch {argv[0]!r}: {error}; fix its argv") from error
-    status = "passed"
-    try:
-        output, _ = process.communicate(timeout=selection["timeout_seconds"])
-        if process.returncode != 0:
-            status = "failed"
-    except subprocess.TimeoutExpired:
-        if sys.platform == "win32":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(process.pid)], capture_output=True, check=False)
-        else:
-            getattr(os, "killpg")(process.pid, getattr(signal, "SIGKILL"))
-        output, _ = process.communicate()
-        status = "timeout"
-    return status, time.monotonic() - start, _tail(output or "")
+    with tempfile.TemporaryFile() as sink:
+        try:
+            process = subprocess.Popen(
+                argv,
+                cwd=copy_root,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                stdout=sink,
+                stderr=subprocess.STDOUT,
+                **options,
+            )
+        except OSError as error:
+            raise ReplayError(f"selection `{name}` could not launch {argv[0]!r}: {error}; fix its argv") from error
+        job: Any = None
+        try:
+            if sys.platform == "win32":
+                job = _contain(process)
+            try:
+                code = process.wait(timeout=selection["timeout_seconds"])
+                status = "passed" if code == 0 else "failed"
+            except subprocess.TimeoutExpired:
+                status = "timeout"
+            seconds = time.monotonic() - start
+        except BaseException:
+            _end_tree(process, job, name, quiet=True)
+            raise
+        _end_tree(process, job, name, quiet=False)
+        sink.seek(0)
+        output = sink.read().decode("utf-8", errors="replace")
+    return status, seconds, _tail(output)
 
 
 @contextmanager

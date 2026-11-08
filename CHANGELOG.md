@@ -6,6 +6,12 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ### Fixed
 
+- Construct 1.12.2: an earned conformance review now gets its diffs in the brief, so `ffh-conformance`, which has no shell, can check that lines the plan preserves are unchanged. Before, it judged changed files only from their current content.
+  - The brief carries `git diff HEAD` for the plan's existing and deleted files that Git tracks, and names every other planned file for the reviewer to read whole.
+  - On a fresh run, Construct first records the state of each planned file that already had uncommitted changes or that Git does not track, so the review can tell your earlier edits from Construct's. A resumed run cannot recover that state, so it says so, and preservation in those files is reported unverified.
+  - When Construct runs as `ffh-constructor`, its report carries that state for the caller that launches the review.
+  - No `/provision` rerun is needed.
+  - Its references budget grows to hold this guidance.
 - Construct 1.12.1: a change with consequential behavior or safety risk, meaningful propagation, indirect verification, or a hard-to-observe acceptance condition now always earns a conformance review, so `ffh-constructor` reports such a review as earned and not run instead of calling it not earned. Its report says whether a conformance review was earned, run, or earned and not run, and quotes the output showing whether each step proof and verification command met its expected result. It runs verification commands only through its `verify` or `reverify` command, including on resume. When a caller quotes or paraphrases the plan, Construct rereads the plan's own step text, works from it, and reports any quote the plan lacks. It ships the Blueprint 1.12.1 runtime copy, so it reports contract version 1.12.1, and still accepts every sealed 1.x plan. Its top-level budget grows by about 58 tokens to hold the review conditions, and its references budget shrinks by 36.
 - Blueprint 1.12.1: when it confirms a Construct subagent's run, it decides whether a conformance review was earned from Construct's `SKILL.md`, where those conditions now live. Its references budget grows by the pointer. It seals plans with contract version 1.12.1.
 

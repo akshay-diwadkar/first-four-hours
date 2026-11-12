@@ -12,7 +12,7 @@ Future usefulness, genericity, symmetry, elegance, imagined callers, and "while 
 
 Repository-derived engineering details (seam, owner, file, helper, data flow, representation, ordering, test and verification shape) are always Blueprint's. For a child of a parent or epic issue, copy each constraint the parent sets for its children verbatim into the request before preparing and give the challenger the parent's text.
 
-Close every known gap or get the user's recorded acceptance: a requested outcome or load-bearing invariant failing for some producible input, state, configuration, or environment, including one a supported finding names, is a gap however rare or low-consequence. Record the user's answer by amending the request in place ([README](../README.md)); acceptance only in chat, Goal, a report, a non-goal, or a risk is unrecorded. A prediction carried by authored verification is not a gap.
+Close every known gap or get the user's recorded acceptance: a requested outcome or load-bearing invariant failing for some producible input, state, configuration, or environment, including one a supported finding names, is a gap however rare or low-consequence. Record the user's answer by amending the request in place ([Earlier plans](earlier-plans.md#commands)); acceptance only in chat, Goal, a report, a non-goal, or a risk is unrecorded. A prediction carried by authored verification is not a gap.
 
 ## Approach and scope
 
@@ -28,7 +28,12 @@ Account for every trap the change touches in the repository's own planning-trap 
 
 ## Attack the problem
 
-Trace current behavior end to end from the entry the outcome depends on, and name the root cause or missing capability at its owner. Confirm every premise about current behavior from source or a safe probe, and an external service's from its current official documentation; which of its modes to use is the user's choice, and one no source settles is an intent question, never an owner check after merge. When a failed premise changes what the user wants built, ask; otherwise plan from confirmed behavior, fixing only problems that occur and keeping every outcome. For every added or changed behavior, settle from source:
+Done when every state, exit path, assumption, and violation path has a decided behavior.
+
+- Trace current behavior end to end from the entry the outcome depends on; name the root cause or missing capability at its owner.
+- Confirm every premise about current behavior from source or a safe probe, and an external service's from its current official documentation. Which of its modes to use is the user's choice; one no source settles is an intent question, never an owner check after merge.
+- When a failed premise changes what the user wants built, ask. Otherwise plan from confirmed behavior, fixing only problems that occur and keeping every outcome.
+- For every added or changed behavior, settle from source:
 
 1. **Input states.** Each value class a branch-relevant input can hold (closed, deleted, archived; absent, empty, duplicate, malformed, stale) and its behavior; an unproducible state earns nothing, an excluded producible one a fail-closed stop.
 2. **Exit paths.** Each way it finishes (success, each block, each caught or escaping error) and what each emits, persists, and preserves; discarding validated evidence or reporting false validity is a defect.
@@ -36,7 +41,7 @@ Trace current behavior end to end from the entry the outcome depends on, and nam
 4. **Assumptions.** Each premise about state, relationships, ordering, or environment: where it is produced, whether it can be absent, stale, partial, or changed before use, and the behavior then. Completion and resume reread required postconditions at their source, never **prior-run state** (a success marker, recorded status, link, item marked done, or relationship an earlier run established); decide where each is reread and what happens when it is missing, changed, or partial. An ungroundable premise is a fact to gather or a user question, never executor freedom.
 5. **Invariant violations.** For each load-bearing invariant or prohibited outcome, every producible input, state, configuration, or environment still reaching it, including indirectly resolved identities (default target, alias, shared name), and how the plan rejects or proves each: could a weak implementation look compliant while it stays reachable?
 
-For removed or replaced behavior, decide each state it refused or produced: covered, dropped in user-facing notes, or a user question. Record decisions in Implementation and prove the distinct ones in Verification, without a state matrix. Stop when every state, exit path, assumption, and violation path has a decided behavior.
+For removed or replaced behavior, decide each state it refused or produced: covered, dropped in user-facing notes, or a user question. Record decisions in Implementation and prove the distinct ones in Verification, without a state matrix.
 
 ## Commands and evidence
 

@@ -13,3 +13,7 @@ When a new answer changes request meaning, write a resolved request with one sou
 ```
 
 A changed source needs a fresh request, never a silently refreshed hash. After Construct implemented plans from it, list each in `"predecessors":["<sealed blueprint.md path>"]` while HEAD is unmoved, and intake ignores only their Locations; once committed, declare the implementing commit as `"implemented_at":"<full SHA>"` instead, and judge later drift yourself. Carry intent, mechanism facts, protected behavior, consequences, and evidence into Goal and Current State without copying prose or making mapping artifacts. Every material imported invariant, constraint, and policy survives the [requirement trace](challenge-and-rehearsal.md#requirement-trace) as a completion condition or preservation disposition, or seal is blocked. Once sealed, the Blueprint, not the architecture, owns progress.
+
+## Assessment and test-audit handoffs
+
+A sealed Assess `assessment.md` with result `findings`, or a sealed Temper `test-audit.md` with findings, is an upstream handoff: pass `--input handoff_item=1,3` to every `check` and `run` to plan only those findings, all when omitted. Its selected findings are the request's clauses and settled evidence: cite none again in Current State, and re-confirm only that each defect still occurs in the current tree. A test audit's `## Verify` section names the exact Temper `verify` command whose run, with `item` set to the planned findings, proves the changed suite keeps each finding's kills.

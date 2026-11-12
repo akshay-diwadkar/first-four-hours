@@ -183,7 +183,6 @@ def test_findings_result_binds_file_and_assessed_source_locators(
         "## Findings",
         "### Finding 1",
         "## Limitations",
-        "## Changed paths not examined",
         "## Target",
         "## Assessed snapshots",
         "## Examined",
@@ -213,6 +212,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     assert json.loads(not_pull.stdout)["diagnostics"][0]["code"] == "publish.target_not_pull_request"
     assert output.read_bytes() == local_bytes
     target = "https://github.com/acme/widget/pull/7"
+    output = prepare_assessment_workspace(repo, "pr-case").output_path
     resealed, _ = _seal(
         repo,
         tmp_path,
@@ -311,7 +311,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     body = artifact.removesuffix("\n").rpartition("\n")[0] + "\n"
     title, *sections = body.split("\n## ")
     by_heading = {section.split("\n", 1)[0]: section for section in sections}
-    old_order = ["Target", "Assessed snapshots", "Result", "Examined", "Changed paths not examined", "Findings", "Limitations"]
+    old_order = ["Target", "Assessed snapshots", "Result", "Examined", "Findings", "Limitations"]
     reordered = "\n## ".join([title, *(by_heading[name] for name in old_order)]).rstrip("\n") + "\n"
     reordered_digest = hashlib.sha256(reordered.encode("utf-8")).hexdigest()
     with pytest.raises(AssessError) as refused_order:
@@ -332,10 +332,12 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     assert retired["code"] == "artifact.version_unsupported"
     assert retired["category"] == "stale_evidence"
     assert output.read_text(encoding="utf-8") == legacy
-    # An assessment sealed before findings carried a scenario still checks.
+    # An assessment sealed before findings carried a scenario also carries the retired Changed paths not examined section, and still checks.
     lines = body.splitlines(keepends=True)
     start = lines.index("- Scenario:\n")
-    unscripted = "".join(lines[:start] + lines[start + 3 :])
+    unscripted = "".join(lines[:start] + lines[start + 3 :]).replace(
+        "\n## Target\n", "\n## Changed paths not examined\n\nNone.\n\n## Target\n", 1
+    )
     unscripted_digest = hashlib.sha256(unscripted.encode("utf-8")).hexdigest()
     output.write_text(f"{unscripted}<!-- assessment-result: 1.4.0; sha256: {unscripted_digest} -->\n", encoding="utf-8")
     earlier = _run(repo, "--input", f"output={output}", "--format", "json", "check")
@@ -375,6 +377,7 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     assert any("findings[0].locators[0]" in item for item in evidence)
     assert any("examined[0]" in item for item in evidence)
     assert not output.exists()
+    assert prepare_assessment_workspace(repo, "case").output_path == output
     sealed, _ = _seal(repo, tmp_path, _bundle(tmp_path, examined=[]), output)
     assert sealed.returncode != 0
     assert json.loads(sealed.stdout)["diagnostics"][0]["code"] == "result.coverage_missing"
@@ -515,6 +518,16 @@ def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path
     snapshot = _snapshot(tmp_path)
     snapshot_bytes = snapshot.read_bytes()
     sources = [_assessed_source(snapshot)]
+    sealed_once = output.read_bytes()
+    overwrite, _ = _seal(repo, tmp_path, _bundle(tmp_path, assessed_sources=sources, **default_refs), output)
+    assert overwrite.returncode != 0, overwrite.stdout
+    assert json.loads(overwrite.stdout)["diagnostics"][0]["code"] == "output.exists"
+    assert output.read_bytes() == sealed_once
+    reused = _run(repo, "--input", "slug=Rename Check", "--format", "json", "prepare")
+    assert reused.returncode != 0
+    assert json.loads(reused.stdout)["diagnostics"][0]["code"] == "workspace.assessment_exists"
+    assert output.read_bytes() == sealed_once
+    output = prepare_assessment_workspace(repo, "earlier-check").output_path
     earlier_seal, _ = _seal(repo, tmp_path, _bundle(tmp_path, assessed_sources=sources, **default_refs), output)
     assert earlier_seal.returncode == 0, earlier_seal.stdout + earlier_seal.stderr
     earlier_check = _run(repo, "--input", f"output={output}", "--format", "json", "check")
@@ -548,11 +561,17 @@ def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path
         limitations=[f"Delta on {earlier_head}: service.py was not re-inspected."],
         **default_refs,
     )
+    earlier_output = output
+    output = prepare_assessment_workspace(repo, "delta-check").output_path
     delta_seal, _ = _seal(repo, tmp_path, delta_bundle, output)
     assert delta_seal.returncode == 0, delta_seal.stdout + delta_seal.stderr
     assert json.loads(delta_seal.stdout)["result"]["unexamined_changed_paths"] == ["service.py"]
     delta_check = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert delta_check.returncode == 0, delta_check.stdout + delta_check.stderr
+    earlier_after = _run(repo, "--input", f"output={earlier_output}", "--format", "json", "check")
+    assert earlier_after.returncode != 0
+    assert json.loads(earlier_after.stdout)["diagnostics"][0]["code"] == "result.target_moved"
+    assert earlier_output.read_bytes() == earlier_artifact
     _git(repo, "update-ref", default_refs["base_ref"], _git(repo, "rev-parse", "HEAD"))
     moved_base = _run(repo, "--input", f"output={output}", "--format", "json", "check")
     assert moved_base.returncode != 0

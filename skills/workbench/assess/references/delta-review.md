@@ -1,6 +1,6 @@
 # Delta review
 
-Read this when an earlier assessment of this change exists.
+Read this when an earlier assessment of this change exists under `.first-four-hours/assessments/`; use the most recently sealed one.
 
 Review the delta when `check` passes an earlier assessment of this change or refuses it only with `result.target_moved`, its result was not `blocked`, its `Head revision` is an ancestor of this head, and the authoritative requirements are unchanged. A repair plan made from an earlier assessment's findings leaves the authoritative requirements unchanged unless its request adds or changes a requirement; a limitation the user accepted in that request does not change them. The delta covers:
 

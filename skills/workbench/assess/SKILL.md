@@ -2,7 +2,7 @@
 name: assess
 description: Assess a PR or code change against its issue/spec, acceptance criteria, repository rules, tests, and base behavior for correctness, code quality, maintainability, and proportionate security. Use for PR review, re-review, acceptance-criteria checks, or merge readiness.
 metadata:
-  version: "1.8.1"
+  version: "1.9.0"
 ---
 
 # Assess
@@ -19,9 +19,11 @@ If you wrote or planned this change in this context, hand the whole stage to a f
 
 Otherwise first read [assess guidance](references/assess-guidance.md), plus [Blueprint evidence](references/blueprint-evidence.md) when a sealed Blueprint exists, [delta review](references/delta-review.md) when an earlier assessment does, and [pull requests](references/pull-requests.md) when the target pull request's head may be missing from the current repository. Establish exact target/base/head, current authority, base truth, and requested delta once. Derive requirements from authority and the change from base/head before reading PR prose, comments, audits, or prior reviews; those are hints that may add candidates, never clear one.
 
+Then, at any change size, consult `reason` before committing to the assessment approach: full or delta review, scope, and depth.
+
 ## Author and seal
 
-Copy the [minimal bundle template](templates/assessment-bundle.json) outside the skill and target repository and fill it per the guidance's bundle fields; it has no default verdict. Prepare first; sealing accepts only its ignored `.first-four-hours/assessments/<slug>/assessment.md`. The agent decides currentness, depth, compliance, severity, findings, limitations, Diagnose need, and result; scripts verify only shape, exact Git/snapshot identity and freshness, locators, safe output, and integrity.
+Copy the [minimal bundle template](templates/assessment-bundle.json) outside the skill and target repository and fill it per the guidance's bundle fields; it has no default verdict. Prepare a new slug first; sealing accepts only its ignored `.first-four-hours/assessments/<slug>/assessment.md` and never replaces one. The agent decides currentness, depth, compliance, severity, findings, limitations, Diagnose need, and result; scripts verify only shape, exact Git/snapshot identity and freshness, locators, safe output, and integrity.
 
 ```bash
 python /absolute/skill-root/scripts/cli.py --repo-root /absolute/repo \

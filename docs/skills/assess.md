@@ -29,7 +29,7 @@ It can also review a pull request you can read but have not checked out, such as
 
 ## What you get
 
-A sealed `assessment.md` in the ignored folder `.first-four-hours/assessments/<slug>/`, with one result:
+A sealed `assessment.md` in its own ignored folder `.first-four-hours/assessments/<slug>/`, which a later assessment never replaces, with one result:
 
 - `clear`: no material defect was found after sufficient examination. When Assess reviews only the rework since an earlier assessment, this covers that rework on top of the assessment, and the report names the head it reviewed;
 - `findings`: evidenced material defects, each with its location, the steps that show it going wrong, its consequence, and severity;

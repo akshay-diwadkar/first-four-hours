@@ -11,7 +11,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from audit_contract import expectations, render, validate_bundle
+from audit_contract import claims_of, expectations, render, validate_bundle
 from audit_workspace import RESULT_FILENAME, WorkspaceError, prepare_workspace
 from replay import ReplayError, RepositoryCopy, mutated, outcome, run_selection
 
@@ -78,8 +78,8 @@ def main() -> int:
                     for number, finding in enumerate(bundle["findings"], 1):
                         if item["mutant"] not in finding["mutants"]:
                             continue
-                        for role in ("candidate", "guard", "witness"):
-                            if finding.get(role) == item["selection"]:
+                        for role, name, _outcome in claims_of(finding):
+                            if name == item["selection"]:
                                 verb = "kill" if item["expected"] == "killed" else "survive"
                                 failures.append(
                                     f"finding {number} ({finding['kind']}): mutant {item['mutant']} expected {role} "

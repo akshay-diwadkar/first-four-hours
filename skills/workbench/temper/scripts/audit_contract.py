@@ -26,6 +26,19 @@ ROLES: dict[str, tuple[str, ...]] = {
     "rework": ("candidate", "guard"),
     "gap": ("guard", "witness"),
 }
+
+
+def claims_of(finding: dict[str, Any]) -> list[tuple[str, str, str]]:
+    """Return the (role, selection, outcome) a finding claims for each of its mutants.
+
+    A gap also claims that the whole suite lets its mutants survive, unless its guard already is the suite.
+    """
+    rows = [(role, finding[role], outcome) for role, outcome in KINDS[finding["kind"]].items()]
+    if finding["kind"] == "gap" and finding["guard"] != "suite":
+        rows.append(("suite", "suite", "survived"))
+    return rows
+
+
 RESERVED_RE = re.compile(r"^#{1,6}\s|<!--", re.MULTILINE)
 TOP_FIELDS = {"schema_version", "title", "summary", "budget", "copy_git", "copy_exclude", "selections", "mutants", "findings"}
 SELECTION_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
@@ -263,14 +276,14 @@ def validate_bundle(bundle: object, repo_root: Path) -> list[str]:
                             f"carrying out both would delete finding {number}'s guard"
                         )
                 for mid in finding["mutants"]:
-                    for role, outcome in KINDS[kind].items():
-                        key = (mid, finding[role])
+                    for _role, name, outcome in claims_of(finding):
+                        key = (mid, name)
                         prior = claims.get(key)
                         if prior is None:
                             claims[key] = (outcome, number)
                         elif prior[0] != outcome:
                             errors.append(
-                                f"findings[{number - 1}]: expects mutant {mid} {outcome} by `{finding[role]}`, "
+                                f"findings[{number - 1}]: expects mutant {mid} {outcome} by `{name}`, "
                                 f"but finding {prior[1]} expects it {prior[0]}"
                             )
     if isinstance(selections, dict) and isinstance(findings, list) and not errors:
@@ -289,8 +302,8 @@ def expectations(bundle: dict[str, Any]) -> dict[tuple[str, str], str]:
     result: dict[tuple[str, str], str] = {}
     for finding in bundle["findings"]:
         for mid in finding["mutants"]:
-            for role, outcome in KINDS[finding["kind"]].items():
-                result[(mid, finding[role])] = outcome
+            for _role, name, outcome in claims_of(finding):
+                result[(mid, name)] = outcome
     return result
 
 
@@ -351,7 +364,7 @@ def render(bundle: dict[str, Any], results: dict[str, Any], verify_argv: list[st
             lines += ["### Mutants", ""]
             for mid in finding["mutants"]:
                 mutant = bundle["mutants"][mid]
-                roles = ", ".join(f"{role} `{finding[role]}` {observed[(mid, finding[role])]}" for role in KINDS[kind])
+                roles = ", ".join(f"{role} `{name}` {observed[(mid, name)]}" for role, name, _outcome in claims_of(finding))
                 lines.append(
                     f"- `{mid}` in `{mutant['path']}`, {_scalar(mutant['behavior'])}: "
                     f"{_scalar(mutant['old'])} → {_scalar(mutant['new'])}; {roles}"

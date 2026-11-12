@@ -28,7 +28,7 @@ A finding's kind fixes what the seal replays for each mutant it lists:
 | :--- | :--- | :--- |
 | `redundant` | `candidate`, `guard` | candidate kills; guard kills |
 | `vacuous` | `candidate`, `guard` | candidate survives; guard kills |
-| `gap` | `guard`, `witness` | guard survives; witness kills |
+| `gap` | `guard`, `witness` | guard and `suite` survive; witness kills |
 | `rework` | `candidate`, `guard` | candidate kills |
 
 `guard` must kill the mutants once the change lands: for `redundant` and `vacuous`, the tests that stay, never the candidate's files nor another such finding's candidate; for `gap`, the tests that will hold the new test; for `rework`, the tests that will hold the faster or stable replacement, possibly the candidate itself. `witness` is any command, such as a probe outside the suite, showing the mutant is observable. Mutants for `redundant` and `vacuous` change the behavior the candidate claims to test. A `rework` without mutants rests on its rationale and measured times. Every finding names its `tests` and a `rationale` citing triage evidence.

@@ -100,7 +100,7 @@ def _bundle() -> dict[str, Any]:
                 "tests": [],
                 "rationale": "No check calls mul; the probe shows the fault is observable.",
                 "mutants": ["M2"],
-                "guard": "suite",
+                "guard": "add",
                 "witness": "probe",
             },
         ],
@@ -138,6 +138,25 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
         (tmp_path / "broken.json").write_text(json.dumps(broken), encoding="utf-8")
         code, envelope = _cli(repo, "run", bundle=str(tmp_path / "broken.json"), slug="cart")
         assert code == 3 and "selection `add` did not pass unmutated" in _messages(envelope)
+        # A gap the suite already catches is refused, even when its narrow guard misses the mutant.
+        covered = copy.deepcopy(bundle)
+        covered["selections"] = {name: bundle["selections"][name] for name in ("suite", "add", "smoke")}
+        covered["mutants"] = {"M1": bundle["mutants"]["M1"]}
+        covered["findings"] = [
+            {
+                "kind": "gap",
+                "title": "addition looks untested",
+                "tests": [],
+                "rationale": "Only the smoke check runs for it.",
+                "mutants": ["M1"],
+                "guard": "smoke",
+                "witness": "add",
+            }
+        ]
+        (tmp_path / "covered.json").write_text(json.dumps(covered), encoding="utf-8")
+        code, envelope = _cli(repo, "run", bundle=str(tmp_path / "covered.json"), slug="cart")
+        message = _messages(envelope)
+        assert code == 3 and "finding 1" in message and "M1" in message and "suite" in message
         assert not (repo / ".first-four-hours" / "test-audits").exists()
 
         # 2. The true bundle seals without touching the repository.
@@ -147,6 +166,16 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
         text = audit.read_text(encoding="utf-8")
         assert re.search(r"<!-- test-audit: 1\.0\.0; sha256: [0-9a-f]{64} -->$", text.rstrip("\n").splitlines()[-1])
         assert (calc.read_bytes(), calc.stat().st_mtime_ns) == before
+        outcomes = _load("audit_contract").read_sealed(text)["results"]["outcomes"]
+        assert {(o["mutant"], o["selection"], o["observed"]) for o in outcomes} == {
+            ("M1", "add", "killed"),
+            ("M1", "dup", "killed"),
+            ("M1", "smoke", "survived"),
+            ("M2", "add", "survived"),
+            ("M2", "probe", "killed"),
+            ("M2", "suite", "survived"),
+        }
+        assert text.count("suite `suite` survived") == 1
         status = subprocess.run(["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True, check=True)
         assert status.stdout == ""
 

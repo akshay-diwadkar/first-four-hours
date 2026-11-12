@@ -33,7 +33,7 @@
       "kind": "string",
       "required": false,
       "repeatable": false,
-      "description": "Selected diagnosis finding ID, or comma-separated assessment finding numbers (all when omitted); rejected for every other request kind.",
+      "description": "Selected diagnosis finding ID, or comma-separated assessment or test-audit finding numbers (all when omitted); rejected for every other request kind.",
       "choices": [],
       "accepted_for": ["run", "check"]
     },

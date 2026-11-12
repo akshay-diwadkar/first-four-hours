@@ -138,6 +138,11 @@
         "tests/skills/pr/test_pr.py"
       ]
     },
+    "temper-runtime-contract": {
+      "test_targets": [
+        "tests/skills/temper/test_temper.py"
+      ]
+    },
     "provision-runtime-contract": {
       "test_targets": [
         "tests/repository/test_routine_validation.py::test_live_repository_metadata"
@@ -945,6 +950,7 @@
     "reason": "reason-guidance-contract",
     "router": "router-runtime-contract",
     "scribe": "scribe-runtime-contract",
+    "temper": "temper-runtime-contract",
     "ticket": "ticket-runtime-contract",
     "tutor": "tutor-runtime-contract"
   },

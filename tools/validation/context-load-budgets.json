@@ -3,7 +3,7 @@
   "limits": {
     "architect": {"top_level": 612, "references": 5943},
     "assess": {"top_level": 847, "references": 5575},
-    "blueprint": {"top_level": 958, "references": 7041},
+    "blueprint": {"top_level": 958, "references": 7069},
     "charter": {"top_level": 860, "references": 2150},
     "construct": {"top_level": 766, "references": 5749},
     "diagnose": {"top_level": 750, "references": 5142},
@@ -14,6 +14,7 @@
     "reason": {"top_level": 650, "references": 3500},
     "router": {"top_level": 500, "references": 1000},
     "scribe": {"top_level": 736, "references": 2075},
+    "temper": {"top_level": 630, "references": 1335},
     "ticket": {"top_level": 616, "references": 6426},
     "tutor": {"top_level": 1027, "references": 3470}
   }

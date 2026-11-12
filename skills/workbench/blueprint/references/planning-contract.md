@@ -52,7 +52,7 @@ Decide in prose, with short pseudocode only where prose cannot settle control fl
 
 ## Step proof
 
-An existing green check that already exposes the wrong outcome is the step's proof, without `Red:`. Add proof only for a concrete gap or realistic failure, as [Declared text](declared-text.md) directs; a mechanical Exact step may rest on its exact text. Proof has no per-clause quota, and a behavior step stays specified rather than made Exact to avoid proving it.
+An existing green check that already exposes the wrong outcome is the step's proof, without `Red:`. Add proof only for a concrete gap or realistic failure, as [Declared text](declared-text.md) directs; a mechanical Exact step may rest on its exact text. Proof has no per-clause quota, and a behavior step stays specified rather than made Exact to avoid proving it. Shape every added or changed test by `temper`'s test design when that skill is installed.
 
 ## Conditional branches
 

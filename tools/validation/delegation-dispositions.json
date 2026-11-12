@@ -159,6 +159,16 @@
       "specialists": "No separate specialist branch is currently earned.",
       "writes": "Examiner writes only under .learning/<subject>/ in the invocation folder: practice sets under exams/<exam>/, only its own sections of study-plan.html, and the subject's START_HERE.html.",
       "rationale": "Fidelity and audit depend on the same requirement reading that wrote the paper; splitting it adds coordination without cheap verification."
+    },
+    {
+      "skill": "temper",
+      "mode": "direct",
+      "owner": "Temper owns triage, mutant design, the findings, and the sealed test-audit.md.",
+      "lifecycle": "Temper seals one test-audit.md and returns control; Blueprint plans the findings the user names, and Construct runs Temper's verify.",
+      "workers": "No worker seam is earned: replay is a script, and choosing candidates and meaningful mutants is one owner judgment.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Temper writes only the ignored .first-four-hours/test-audits/<slug>/test-audit.md and its local Git exclude rule; every mutant runs in a throwaway copy outside the repository.",
+      "rationale": "Mutant meaning and candidate choice depend on one reading of the suite, and scripts already verify every claim."
     }
   ]
 }

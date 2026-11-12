@@ -19,6 +19,7 @@ A skill that hands work to another seals it in its own folder under `.first-four
 | Diagnose | `.first-four-hours/diagnoses/<slug>/diagnosis.md` |
 | Ideate | `.first-four-hours/ideations/<slug>/ideation.md` |
 | Router | `.first-four-hours/routes/<slug>/route.md` |
+| Temper | `.first-four-hours/test-audits/<slug>/test-audit.md` |
 | Ticket | `.first-four-hours/ticket-scopes/<slug>/ticket-scope.md` |
 
 Scribe keeps its audit report the same way, in `.first-four-hours/scribes/<slug>/scribe-audit.md`. Its support bundle is a temporary file outside the repository.
@@ -37,12 +38,13 @@ Deliverables you asked for are not handoffs and stay committable: Scribe's docum
 
 ## Inputs to planning
 
-Four skills produce work that Blueprint can plan from, and you decide whether to start it:
+Five skills produce work that Blueprint can plan from, and you decide whether to start it:
 
 - [Diagnose](../skills/diagnose.md) finds causes. Name one finding when you ask Blueprint to plan a fix, or ask Architect first when that fix needs a structural decision. Diagnose's advisory directions are leads, not a chosen design.
 - [Architect](../skills/architect.md) decides structure. Blueprint plans around that decision instead of reopening it.
 - [Ticket](../skills/ticket.md) `select` narrows one ready ticket into a `plan-ready` scope.
 - [Assess](../skills/assess.md) reviews a change. When its result is `findings`, Blueprint plans the repair from the sealed `assessment.md`: every finding, or only the ones you name.
+- [Temper](../skills/temper.md) audits a test suite. Blueprint plans from the sealed `test-audit.md` the same way, every finding or only the ones you name, and Construct reruns Temper's `verify` to show the remaining tests still catch each planned finding's mutants.
 
 ## Inside a Blueprint run
 
@@ -53,7 +55,7 @@ Blueprint brings in other help within its own run, not as separate stages:
 
 ## Reason checkpoints
 
-Architect, Assess, Blueprint, Charter, Diagnose, Ticket, Ideate, Scribe, Tutor, and Examiner consult [Reason](../skills/reason.md) at their own judgment points, such as before committing to an approach, after a failure, and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start Reason yourself.
+Architect, Assess, Blueprint, Charter, Diagnose, Temper, Ticket, Ideate, Scribe, Tutor, and Examiner consult [Reason](../skills/reason.md) at their own judgment points, such as before committing to an approach, after a failure, and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start Reason yourself.
 
 ## Routing
 

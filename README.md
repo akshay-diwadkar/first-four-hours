@@ -99,6 +99,7 @@ Diagnose reads your project without editing it, and leaves a sealed `diagnosis.m
 | A decision that is stuck, or rests on an assumption you doubt | `reason` |
 | Not knowing which skill comes next | `router` (ask in plain words) |
 | A fresh install to finish, or subagents to set up on the models you choose | `provision` |
+| A test suite that is slow, costly in CI, or full of tests that protect little | `temper` |
 | A subject to learn, or a written examination to practise for | `tutor` or `examiner` |
 
 [Choose a skill](docs/getting-started/choosing-a-skill.md) covers more situations.
@@ -149,6 +150,7 @@ Working on a project and its changes.
 - [Diagnose](docs/skills/diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix. [Contract](skills/workbench/diagnose/SKILL.md)
 - [PR](docs/skills/pr.md): write a reviewer-oriented pull request description and open the pull request, or update its description, once you confirm it. [Contract](skills/workbench/pr/SKILL.md)
 - [Provision](docs/skills/provision.md): install the suite's Python requirements and set up its subagents on the models you choose. [Contract](skills/workbench/provision/SKILL.md)
+- [Temper](docs/skills/temper.md): audit a test suite to cut its run cost while keeping or raising the faults it catches. [Contract](skills/workbench/temper/SKILL.md)
 - [Ticket](docs/skills/ticket.md): split large work into session-sized tickets, or pick the next ready ticket and prepare it for planning. [Contract](skills/workbench/ticket/SKILL.md)
 
 ### Sensemaking

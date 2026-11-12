@@ -125,7 +125,7 @@ The repository's tests prove the planning and execution mechanics with determini
 
 ## Related skills
 
-Blueprint can plan from a [Diagnose](diagnose.md) finding, an [Architect](architect.md) decision, a [Ticket](ticket.md) scope, or the findings of a sealed [Assess](assess.md) review, all of them or the ones you name. Construct carries out the result. See [How skills hand work to each other](../concepts/handoffs.md).
+Blueprint can plan from a [Diagnose](diagnose.md) finding, an [Architect](architect.md) decision, a [Ticket](ticket.md) scope, or the findings of a sealed [Assess](assess.md) review or [Temper](temper.md) test audit, all of them or the ones you name. When it plans tests, it shapes them by Temper's test design rules if Temper is installed. Construct carries out the result. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

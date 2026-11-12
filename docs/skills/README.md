@@ -14,6 +14,7 @@ Each page also says why the skill is built the way it is: the failure it exists 
 - [Diagnose](diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix.
 - [PR](pr.md): write a reviewer-oriented pull request description and open the pull request, or update its description, once you confirm it.
 - [Provision](provision.md): install the suite's Python requirements and set up its subagents on the models you choose.
+- [Temper](temper.md): audit a test suite to cut its run cost while keeping or raising the faults it catches.
 - [Ticket](ticket.md): split large work into session-sized tickets, or pick the next ready ticket and prepare it for planning.
 
 ## Sensemaking

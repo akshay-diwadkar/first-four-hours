@@ -484,6 +484,32 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
     current = runtime.render_sealed_blueprint(draft(), unbound)
     _bp, current_diagnostics, _view = runtime.verify_sealed_blueprint(current, assess_repo, request_bytes=assessment)
     assert "binding.request.source_item" in {item.code for item in current_diagnostics}
+    # A sealed Temper test audit is a typed request with the same numbered batch selection.
+    audit_body = "# Test Audit: Cart\n\n## Finding 1\n\n- Kind: `redundant`\n\n## Finding 2\n\n- Kind: `gap`\n"
+    audit = (audit_body + f"<!-- test-audit: 1.0.0; sha256: {runtime._sha256(audit_body.encode('utf-8'))} -->\n").encode("utf-8")
+    audit_source = runtime.detect_request_source(audit)
+    assert (audit_source["kind"], audit_source["item"]) == ("test-audit", "1,2")
+    assert runtime.detect_request_source(audit, "2")["item"] == "2"
+    with pytest.raises(ValueError) as refused_audit_item:
+        runtime.detect_request_source(audit, "3")
+    assert [item.code for item in getattr(refused_audit_item.value, "diagnostics", ())] == ["handoff.item.unknown"]
+    empty_audit_body = "# Test Audit: Cart\n\n## Findings\n\nNo findings.\n"
+    empty_audit = empty_audit_body + f"<!-- test-audit: 1.0.0; sha256: {runtime._sha256(empty_audit_body.encode('utf-8'))} -->\n"
+    with pytest.raises(ValueError) as refused_empty_audit:
+        runtime.detect_request_source(empty_audit.encode("utf-8"))
+    assert [item.code for item in getattr(refused_empty_audit.value, "diagnostics", ())] == ["handoff.not_actionable"]
+    audit_repo = tmp_path / "audit-repo"
+    audit_repo.mkdir()
+    audit_request, audit_draft = write_request_and_draft(audit_repo, draft())
+    audit_request.write_bytes(audit)
+    audit_sealed = runtime.seal_blueprint(audit_repo, audit_request, audit_draft, handoff_item="2").text
+    assert _sealed_proof(audit_sealed)["binding"]["source_item"] == "2"
+    _bp, audit_no_item, _view = runtime.verify_sealed_blueprint(audit_sealed, audit_repo, request_bytes=audit)
+    assert audit_no_item == []
+    _bp, audit_other_item, _view = runtime.verify_sealed_blueprint(
+        audit_sealed, audit_repo, request_bytes=audit, handoff_item="1"
+    )
+    assert "binding.request.source_item" in {item.code for item in audit_other_item}
     blueprint, diagnostics = runtime.parse_blueprint(sealed)
     assert diagnostics == []
     assert blueprint is not None

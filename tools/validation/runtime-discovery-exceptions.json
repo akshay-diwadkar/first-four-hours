@@ -11,6 +11,7 @@
     "skills/workbench/construct/scripts/run_verification.py:git-ls-files",
     "skills/workbench/charter/scripts/charter_workspace.py:git-ls-files",
     "skills/workbench/diagnose/scripts/diagnosis_workspace.py:git-ls-files",
+    "skills/workbench/temper/scripts/audit_workspace.py:git-ls-files",
     "skills/workbench/ticket/scripts/scope_workspace.py:git-ls-files",
     "skills/sensemaking/ideate/scripts/ideation_workspace.py:git-ls-files",
     "skills/sensemaking/router/scripts/route_workspace.py:git-ls-files",

@@ -22,6 +22,7 @@ One row per skill. The table is generated from the skill folders, [the invocatio
 | [`diagnose`](../skills/diagnose.md) | Workbench | [`skills/workbench/diagnose/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/diagnose/SKILL.md) | `user-invoked` | 3.11 or later | none |
 | [`pr`](../skills/pr.md) | Workbench | [`skills/workbench/pr/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/pr/SKILL.md) | `both` | 3.11 or later | none |
 | [`provision`](../skills/provision.md) | Workbench | [`skills/workbench/provision/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/provision/SKILL.md) | `user-invoked` | none | none |
+| [`temper`](../skills/temper.md) | Workbench | [`skills/workbench/temper/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/temper/SKILL.md) | `both` | 3.11 or later | none |
 | [`ticket`](../skills/ticket.md) | Workbench | [`skills/workbench/ticket/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/ticket/SKILL.md) | `user-invoked` | 3.11 or later | none |
 | [`ideate`](../skills/ideate.md) | Sensemaking | [`skills/sensemaking/ideate/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/ideate/SKILL.md) | `both` | 3.11 or later | none |
 | [`reason`](../skills/reason.md) | Sensemaking | [`skills/sensemaking/reason/`](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/reason/SKILL.md) | `both` | none | none |

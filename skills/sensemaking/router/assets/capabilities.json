@@ -63,6 +63,11 @@
       "description": "Write source-grounded technical documentation such as runbooks, procedures, setup guides, notices, error messages, and reference pages, or audit an existing document read-only. Use when a document must faithfully carry supplied commands, paths, values, warnings, and recovery without invented facts."
     },
     {
+      "name": "temper",
+      "invocation": "both",
+      "description": "Audit an existing test suite to cut its run cost while keeping or raising the faults it catches, proving each finding with replayed mutants and sealing test-audit.md for blueprint. Use when asked to audit, slim, or speed up a test suite, or when a suite is visibly bloated or slow; skip writing or fixing individual tests."
+    },
+    {
       "name": "ticket",
       "invocation": "user-invoked",
       "description": "Persist work items to GitHub or a local store, or select one ready ticket and narrow it into a Blueprint handoff. Use when a request spans several major changes that need session-sized, dependency-ordered tickets, or when choosing the next ready ticket to plan."

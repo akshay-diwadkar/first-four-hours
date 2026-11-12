@@ -8,11 +8,11 @@
   <a href="https://github.com/akshay-diwadkar/first-four-hours/releases/latest"><img alt="Latest Release" src="https://img.shields.io/github/v/release/akshay-diwadkar/first-four-hours?sort=semver&display_name=tag&cacheSeconds=300"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
   <a href="pyproject.toml"><img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11+-blue.svg"></a>
-  <a href="https://akshay-diwadkar.github.io/first-four-hours/"><img alt="Docs" src="https://img.shields.io/badge/docs-online-brightgreen.svg"></a>
+  <a href="https://first-four-hours.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/docs-online-brightgreen.svg"></a>
   <a href="docs/getting-started/installation.md"><img alt="Works with Claude Code, Codex, GitHub Copilot, Cursor" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Codex%20%C2%B7%20Copilot%20%C2%B7%20Cursor-8A63D2.svg"></a>
 </p>
 
-<p align="center"><a href="#install">Install</a> · <a href="#see-it-work">See it work</a> · <a href="#the-skills">Skills</a> · <a href="https://akshay-diwadkar.github.io/first-four-hours/">Docs</a> · <a href="CHANGELOG.md">Changelog</a></p>
+<p align="center"><a href="#install">Install</a> · <a href="#see-it-work">See it work</a> · <a href="#the-skills">Skills</a> · <a href="https://first-four-hours.pages.dev/">Docs</a> · <a href="CHANGELOG.md">Changelog</a></p>
 
 > *"Give me six hours to chop down a tree, and I will spend the first four sharpening the axe."*
 
@@ -138,6 +138,6 @@ Sixteen skills in three domains. Each name links to its page; each contract is t
 
 ## More
 
-- **[Documentation](https://akshay-diwadkar.github.io/first-four-hours/)**: getting started, how the suite works, one page per skill, recipes, [reference](docs/reference/README.md), and [troubleshooting](docs/troubleshooting/README.md).
+- **[Documentation](https://first-four-hours.pages.dev/)**: getting started, how the suite works, one page per skill, recipes, [reference](docs/reference/README.md), and [troubleshooting](docs/troubleshooting/README.md).
 - **Contributing**: start with [`CONTRIBUTING.md`](CONTRIBUTING.md). Skills raise the floor and preserve the ceiling, as [`SKILL_PHILOSOPHY.md`](SKILL_PHILOSOPHY.md) explains; [`REPO_VERSIONING.md`](REPO_VERSIONING.md) owns versions and tests.
 - **License**: [MIT](LICENSE).

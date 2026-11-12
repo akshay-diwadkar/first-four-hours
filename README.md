@@ -28,7 +28,7 @@ You need Node.js for `npx` and Python 3.11 or later. From your project's root fo
 npx skills add akshay-diwadkar/first-four-hours --skill '*'
 ```
 
-Then type `/provision` in your agent. It installs the Python packages some skills need and sets up the suite's subagents on the models you choose.
+Then type `/provision` in your agent. It installs any Python packages the installed skills declare and sets up the suite's subagents on the models you choose.
 
 <details>
 <summary>Claude Code plugin, Cursor, or one skill only</summary>

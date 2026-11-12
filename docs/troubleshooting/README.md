@@ -12,7 +12,7 @@ Find the symptom you see. Each entry gives the likely cause, a check that change
 
 - **Likely cause:** the Python the agent runs is older than the skill needs, or a package the skill declares is missing.
 - **Check:** run `python --version`. [The reference](../reference/README.md) gives each skill's minimum Python and links any requirements file.
-- **Next step:** install a Python that meets the minimum. For a skill with a requirements file, install its packages into the Python the agent uses with `python -m pip install -r <skill folder>/requirements.txt`, where `<skill folder>` is the installed skill's folder, such as `.claude/skills/scribe`. With the Claude Code plugin, the folder is under its `installPath`, which `claude plugin list --json` reports, for example `<installPath>/skills/sensemaking/scribe`. With a local Cursor plugin, it is under the clone, for example `~/.cursor/plugins/local/first-four-hours/skills/sensemaking/scribe`.
+- **Next step:** install a Python that meets the minimum. For a skill with a requirements file, install its packages into the Python the agent uses with `python -m pip install -r <skill folder>/requirements.txt`, where `<skill folder>` is the installed skill's folder, such as `.claude/skills/<skill>`. With the Claude Code plugin, the folder is under its `installPath`, which `claude plugin list --json` reports, for example `<installPath>/skills/<domain>/<skill>`. With a local Cursor plugin, it is under the clone, for example `~/.cursor/plugins/local/first-four-hours/skills/<domain>/<skill>`.
 
 ## A skill stopped instead of writing its handoff
 

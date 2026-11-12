@@ -1,6 +1,6 @@
 # Provision
 
-Provision sets up First Four Hours in the agent harness you run it in. After you confirm, it installs the Python packages some skills need. It then writes up to six subagents for the suite's delegated work, each on the model and effort you choose. It belongs to the Workbench domain.
+Provision sets up First Four Hours in the agent harness you run it in. After you confirm, it installs any Python packages the installed skills declare. It then writes up to six subagents for the suite's delegated work, each on the model and effort you choose. It belongs to the Workbench domain.
 
 ## When to use it
 

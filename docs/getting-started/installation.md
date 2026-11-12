@@ -7,7 +7,6 @@ A skill is a folder of instructions for a coding agent. Install the skills in a 
 - For the Skills CLI route, Node.js supplies `npx`.
 - For the Claude Code or Cursor plugin route, Git fetches the plugin. The plugin routes do not need Node.js.
 - Python 3.11 or later, available as `python`. Many skills run Python scripts from their own folders.
-- Extra Python packages for Scribe. See [Install extra packages](#install-extra-packages).
 - A coding agent with skill support. The repository's own install check covers the agent names `claude-code`, `codex`, and `github-copilot`.
 - A folder to work in. Workbench skills work on the project folder where you start them, usually a Git repository. The Learning skills, `tutor` and `examiner`, work in any folder.
 
@@ -46,24 +45,6 @@ npx skills add akshay-diwadkar/first-four-hours --skill '*' --agent codex
 Add `--global` to install for your user account instead of the current project.
 
 **Not verified here:** this repository does not record where a `--global` install puts the skill folders, and its install check does not run `--global`.
-
-## Install extra packages
-
-Scribe needs an extra Python package, listed in its own `requirements.txt` file:
-
-- `scribe`: `jsonschema`.
-
-Use the same `python` command as your agent. Run the command below from your project folder for a `claude-code` project install:
-
-```bash
-python -m pip install -r .claude/skills/scribe/requirements.txt
-```
-
-For `codex` or `github-copilot`, replace `.claude/skills` with `.agents/skills`. Skip the command if you do not use Scribe.
-
-Or type `/provision` in your agent: it finds this file, installs it with the agent's Python after you confirm, and also sets up the suite's subagents. See [Provision](../skills/provision.md).
-
-For the Claude Code plugin, the skill folders are under the `installPath` value from `claude plugin list --json`. For example, Scribe is in `<installPath>/skills/sensemaking/scribe`. For the local Cursor plugin, Scribe is in `~/.cursor/plugins/local/first-four-hours/skills/sensemaking/scribe`.
 
 ## Install as a Claude Code plugin
 
@@ -146,7 +127,7 @@ Start a skill to verify any install. See [Your first run](first-run.md).
 - A plugin install cannot fetch the marketplace: run `git --version` to verify Git. Verify your access to github.com. Run the install again.
 - Cursor does not list the skills of the plugin: verify the file `~/.cursor/plugins/local/first-four-hours/.cursor-plugin/plugin.json`. Reload the window. On an Enterprise plan, ask an administrator to allow local plugin imports.
 - The agent does not recognize a skill name: verify the `SKILL.md` file of the skill in the folder from the previous section. Start a new agent session from the project folder.
-- A skill fails during a Python script: run `python --version`. The output must show 3.11 or later. For Scribe, also install the [extra packages](#install-extra-packages).
+- A skill fails during a Python script: run `python --version`. The output must show 3.11 or later.
 - Anything else: open an issue at https://github.com/akshay-diwadkar/first-four-hours/issues with the command and its output.
 
 ## Next

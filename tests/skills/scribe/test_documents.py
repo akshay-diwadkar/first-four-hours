@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 from bundle_workspace import WorkspaceError, prepare_workspace
-from check_document import validate_document, validate_sources
+from check_document import _validate, load_bundle, validate_document, validate_sources
 from check_document_language import collect_diagnostics
 
 from tools.validation.git_test_support import seed_git
@@ -96,6 +96,38 @@ def test_write_checks_every_listed_document_without_writing(document_case: tuple
     ]
     errors = validate_sources(undeclared, repo, temp_bundle)
     assert [(item["type"], item["location"]) for item in errors] == [("undeclared_source", "source SRC-9")]
+    invalid = copy.deepcopy(bundle)
+    invalid["documents"][0]["required_facts"] = "none"
+    del invalid["sources"][0]["authority"]
+    invalid["documents"][1]["owner"] = "x"
+    invalid["glossary"]["abbreviations"] = {"API": "", "api": "x"}
+    invalid["sources"][0]["sha256"] = "XYZ"
+    invalid["documents"][0]["procedures"] = [{"id": "PROC-1", "ordered_markers": ["one"]}]
+    invalid["documents"][1]["profile"] = "loose"
+    invalid["glossary"]["action_verbs"] = ["run", "run"]
+    invalid["sources"][0]["path"] = 5
+    invalid["glossary"]["terms"] = ["word"]
+    with pytest.raises(ValueError) as rejected:
+        load_bundle(write_bundle(repo.parent / "invalid", invalid))
+    assert [part.split(": ", 1)[0] for part in str(rejected.value).split("; ")] == [
+        "documents.0.procedures.0.ordered_markers",
+        "documents.0.required_facts",
+        "documents.1",
+        "documents.1.profile",
+        "glossary.abbreviations",
+        "glossary.abbreviations.API",
+        "glossary.action_verbs",
+        "glossary.terms.0",
+        "sources.0",
+        "sources.0.path",
+        "sources.0.sha256",
+    ]
+    with pytest.raises(ValueError, match="unsupported keyword 'maxLength'"):
+        _validate({"type": "string", "maxLength": 3}, "x", [], [])
+    with pytest.raises(ValueError, match="unsupported keyword 'minLength'"):
+        _validate({"type": "object", "propertyNames": {"pattern": "^a$", "minLength": 1}}, {"a": "x"}, [], [])
+    with pytest.raises(ValueError, match="unsupported type 'integer'"):
+        _validate({"type": "integer"}, 1, [], [])
 
     bundle_path = write_bundle(repo.parent / "temp", with_fact(bundle))
     status = git_status(repo, "--ignored")

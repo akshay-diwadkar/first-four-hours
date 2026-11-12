@@ -21,11 +21,10 @@ from _document_contract import (
 from _skill_protocol_runtime import compatible_version
 from bundle_workspace import WorkspaceError, in_namespace, require_external_bundle
 from check_document_language import collect_diagnostics
-from jsonschema import Draft7Validator
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 BUNDLE_SCHEMA = SKILL_ROOT / "schemas" / "document-bundle.schema.json"
-BUNDLE_CONTRACT_VERSION = "1.1.0"
+BUNDLE_CONTRACT_VERSION = "1.1.1"
 # Source-binding repairs point at the bundle or source, never the audited document.
 SOURCE_REPAIRS = {
     "unsafe_source_path": (
@@ -82,6 +81,84 @@ def _error(error_type: str, location: str, severity: str, message: str) -> dict[
     return {"type": error_type, "location": location, "severity": severity, "message": message}
 
 
+_SCHEMA_KEYWORDS = frozenset(
+    {
+        "$schema",
+        "title",
+        "type",
+        "properties",
+        "required",
+        "additionalProperties",
+        "propertyNames",
+        "items",
+        "minItems",
+        "minLength",
+        "pattern",
+        "enum",
+        "uniqueItems",
+    }
+)
+_PYTHON_TYPES: dict[str, type] = {"object": dict, "array": list, "string": str}
+
+
+def _validate(
+    schema: dict[str, Any], value: Any, path: list[str | int], errors: list[tuple[list[str | int], str]]
+) -> None:
+    """Append (path, message) for each violation of the JSON Schema keywords Scribe's schemas use."""
+    for key in schema:
+        if key not in _SCHEMA_KEYWORDS:
+            raise ValueError(f"cannot read bundle schema: unsupported keyword {key!r}")
+    names = schema.get("propertyNames")
+    if names is not None:
+        for key in names:
+            if key != "pattern":
+                raise ValueError(f"cannot read bundle schema: unsupported keyword {key!r}")
+    expected = schema.get("type")
+    if expected is not None:
+        if expected not in _PYTHON_TYPES:
+            raise ValueError(f"cannot read bundle schema: unsupported type {expected!r}")
+        if not isinstance(value, _PYTHON_TYPES[expected]):
+            errors.append((path, f"is not of type {expected!r}"))
+            return
+    if "enum" in schema and value not in schema["enum"]:
+        errors.append((path, f"must be one of {schema['enum']!r}"))
+    if isinstance(value, str):
+        if "minLength" in schema and len(value) < schema["minLength"]:
+            errors.append((path, f"must be at least {schema['minLength']} characters long"))
+        if "pattern" in schema and not re.search(schema["pattern"], value):
+            errors.append((path, f"{value!r} does not match {schema['pattern']!r}"))
+    if isinstance(value, list):
+        if "minItems" in schema and len(value) < schema["minItems"]:
+            errors.append((path, f"must have at least {schema['minItems']} items"))
+        if schema.get("uniqueItems"):
+            dumped = [json.dumps(item, sort_keys=True) for item in value]
+            if len(set(dumped)) != len(dumped):
+                errors.append((path, "has non-unique items"))
+        if "items" in schema:
+            for index, item in enumerate(value):
+                _validate(schema["items"], item, [*path, index], errors)
+    if isinstance(value, dict):
+        properties = schema.get("properties", {})
+        for name in schema.get("required", []):
+            if name not in value:
+                errors.append((path, f"{name!r} is a required property"))
+        extra = [key for key in value if key not in properties]
+        additional = schema.get("additionalProperties")
+        if additional is False:
+            if extra:
+                errors.append((path, "additional properties are not allowed: " + ", ".join(repr(key) for key in sorted(extra))))
+        elif isinstance(additional, dict):
+            for key in extra:
+                _validate(additional, value[key], [*path, key], errors)
+        if names is not None and "pattern" in names:
+            for key in value:
+                if not re.search(names["pattern"], key):
+                    errors.append((path, f"property name {key!r} does not match {names['pattern']!r}"))
+        for key in value:
+            if key in properties:
+                _validate(properties[key], value[key], [*path, key], errors)
+
+
 def _schema_errors(data: Any) -> list[dict[str, str]]:
     try:
         schema = json.loads(BUNDLE_SCHEMA.read_text(encoding="utf-8"))
@@ -90,12 +167,12 @@ def _schema_errors(data: Any) -> list[dict[str, str]]:
         )
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot read bundle schema: {exc}") from exc
-    errors = sorted(Draft7Validator(schema).iter_errors(data), key=lambda item: list(item.absolute_path))
-    result = []
-    for item in errors:
-        location = ".".join(str(part) for part in item.absolute_path) or "$"
-        result.append(_error("invalid_bundle", location, "critical", item.message))
-    return result
+    errors: list[tuple[list[str | int], str]] = []
+    _validate(schema, data, [], errors)
+    return [
+        _error("invalid_bundle", ".".join(str(part) for part in path) or "$", "critical", message)
+        for path, message in sorted(errors, key=lambda item: item[0])
+    ]
 
 
 def load_bundle(path: Path) -> dict[str, Any]:

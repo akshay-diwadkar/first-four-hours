@@ -48,7 +48,7 @@ Guidance for source/evidence classes, domain traps, and material decision lenses
 
 ## Unknown or mixed-domain goals
 
-Infer evidence, authority, and constraints from the goal and consequences; prefer primary/current/direct evidence; combine playbooks under the same `alternative | path | path with a fork` and artifact contract; preserve uncertainty. Never force taxonomy classification or refusal because the domain is unclear.
+Infer evidence, authority, and constraints from the goal and consequences; combine playbooks under the same `alternative | path | path with a fork` and artifact contract; preserve uncertainty. Never force taxonomy classification or refusal because the domain is unclear.
 
 ## Coverage recording
 

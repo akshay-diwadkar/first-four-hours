@@ -88,7 +88,7 @@ A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-fir
 
 Then `### Dropped` lists each dropped candidate with a one-line reason, and each surviving candidate, ordering, or path gets its own subsection holding only what distinguishes it under the decision criteria. Path exploration, with or without a fork, describes causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
 
-Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); the sealer checks only lines with one of these labels, requires the action and every bound non-empty, and refuses `run an experiment first` with no such line outside HTML comments. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
+Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); `run an experiment first` needs one. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
 
 ### What would change the answer
 
@@ -108,7 +108,7 @@ The sealer appends `<!-- ideation-handoff: <version>; sha256: <digest> -->` as t
 
 ### Workspace
 
-The sealer writes only `.first-four-hours/ideations/<slug>/ideation.md` inside `--repo-root`. For a Git target it adds `/.first-four-hours/ideations/` once to worktree-local `.git/info/exclude`, never `.gitignore`, and reports `git_ignored`; a non-Git target reports `false`. It fails closed on a non-top-level Git root, an unresolved or unsafe exclude path, a tracked `.first-four-hours/ideations/` namespace in any letter case, a symlinked or non-regular `.first-four-hours/` or workspace entry, or other files in `.first-four-hours/ideations/<slug>/`. Workspace files are never evidence, material surfaces, or command cwd: no evidence row may cite `.first-four-hours/ideations/`, and the sealer rejects a local row that does. The draft stays outside the repository and installed skill.
+The sealer writes only `.first-four-hours/ideations/<slug>/ideation.md` inside `--repo-root`. For a Git target it adds `/.first-four-hours/ideations/` once to worktree-local `.git/info/exclude`, never `.gitignore`, and reports `git_ignored`; a non-Git target reports `false`. Workspace files are never evidence, material surfaces, or command cwd: no evidence row may cite `.first-four-hours/ideations/`, and the sealer rejects a local row that does. The draft stays outside the repository and installed skill.
 
 ## Guidance
 
@@ -177,6 +177,8 @@ A Reason challenge targets a consequential researched provisional conclusion or 
 
 Repair the draft until each holds:
 - Every material conclusion, number, or absolute claim (such as "100%") traces to an evidence row or a calculation from one, or is labelled an estimate, `assumption-backed:`, or `hypothesis:`.
+- Each source a material conclusion rests on was opened, is the work cited, and states the row's finding at the passage its Locator names; a search result or abstract alone does not count. Trace a secondary source to its primary, checked the same way, or mark the row secondary and untraced. A row you could not open says so; label its conclusion as above.
+- The leading candidate was searched for prior art (who built or tried it, and what happened) in every source research could use; an evidence row records that search, even when nothing turned up.
 - A recommendation built only from `Obvious defaults:` answers, alone or combined, states why each other lens candidate lost.
 - When What to do makes the next commitment depend on an experiment's result, Outcome is `run an experiment first`.
 - Prose holds no file-edit instructions.

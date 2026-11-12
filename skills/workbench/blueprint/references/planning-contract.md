@@ -20,7 +20,7 @@ Open `Goal` with the approach and its load-bearing invariants, then scope: what 
 
 ## Bounded exploration
 
-Exploration establishes facts; you make the decisions. [Bounded exploration](delegation-protocol.md) owns how. Re-verify a returned fact that becomes load-bearing.
+[Bounded exploration](delegation-protocol.md) owns how to establish facts. Re-verify a returned fact that becomes load-bearing.
 
 ## Repository traps
 

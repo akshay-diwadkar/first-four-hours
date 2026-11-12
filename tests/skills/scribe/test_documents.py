@@ -96,6 +96,25 @@ def test_write_checks_every_listed_document_without_writing(document_case: tuple
     ]
     errors = validate_sources(undeclared, repo, temp_bundle)
     assert [(item["type"], item["location"]) for item in errors] == [("undeclared_source", "source SRC-9")]
+    # A schema-valid populated glossary loads unchanged.
+    populated = copy.deepcopy(bundle)
+    populated["glossary"] = {
+        "terms": [
+            {
+                "preferred": "service",
+                "meaning": "the process the runbook manages",
+                "forbidden": ["daemon", "server process"],
+            }
+        ],
+        "abbreviations": {
+            "API": "application programming interface",
+            "TLS-1": "transport layer security version one",
+        },
+        "action_verbs": ["run", "stop"],
+        "phrasal_verbs": ["set up", "shut down"],
+        "hazardous_actions": ["purge", "delete"],
+    }
+    assert load_bundle(write_bundle(repo.parent / "glossary", populated)) == populated
     invalid = copy.deepcopy(bundle)
     invalid["documents"][0]["required_facts"] = "none"
     del invalid["sources"][0]["authority"]

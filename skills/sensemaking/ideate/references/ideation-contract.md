@@ -56,7 +56,7 @@ Required non-empty fields:
 - Research: settled | diminishing returns | unavailable sources | user limit — <coverage; limitations>
 ```
 
-`Research:` is the one research record. It begins with why research stopped (`settled` when more search could not change the answer, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: playbooks and sources used, the web searches run, and what was unavailable, skipped, or user-excluded. The sealer refuses an ideation with no External evidence row naming a source unless research stopped for `user limit`, whose coverage then names the user's web opt-out, or `unavailable sources`, whose coverage names why web research could not be done; record a web search that found nothing relevant as an External evidence row saying so. Individually verified findings or completed source collection do not determine aggregate readiness; sufficiency for the next intended commitment remains agent-owned.
+`Research:` is the one research record. It begins with why research stopped (`settled` when more search could not change the answer, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: playbooks and sources used, the web searches run, and what was unavailable, skipped, or user-excluded. The sealer refuses an ideation with no External evidence row naming a source unless research stopped for `user limit`, whose coverage then names the user's web opt-out, or `unavailable sources`, whose coverage names why web research could not be done; record a web search that found nothing relevant as an External evidence row saying so.
 
 ### Evidence
 
@@ -66,7 +66,7 @@ Evidence rows sit in tables under three optional fixed subsections; the subsecti
 - `### External evidence` — publications and other outside sources. Header: `| Finding | Source | Locator | Date/freshness | Relevance |`.
 - `### Contextual evidence` — user facts that are neither repository files nor publications. Header: `| Claim | Source description | Locator | Verification |`; non-empty locator/verification.
 
-Elsewhere, cite evidence by what it is, such as its source and finding, never by a number or invented code; an `evidence-backed:` support basis names the evidence it rests on. Tracing each material conclusion to a row is an agent obligation: the sealer checks rows, not citations.
+Elsewhere, cite evidence by what it is, such as its source and finding, never by a number or invented code; an `evidence-backed:` support basis names the evidence it rests on.
 
 ### Exploration
 
@@ -84,7 +84,7 @@ Search shape: alternative | path | path with a fork
 - Preserve baseline:
 ```
 
-A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer. The sealer checks only that each line exists outside HTML comments and is non-empty, and that `- Obvious defaults:` does not read `not applicable`.
+A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer.
 
 Then `### Dropped` lists each dropped candidate with a one-line reason, and each surviving candidate, ordering, or path gets its own subsection holding only what distinguishes it under the decision criteria. Path exploration, with or without a fork, describes causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
 
@@ -173,6 +173,10 @@ Return the sealed path to the user or invoking owner. A consumer reads What to d
 
 A Reason challenge targets a consequential researched provisional conclusion or load-bearing claim; Reason cannot choose Ideate's conclusion or next commitment. Ideate re-verifies Reason evidence; only its accepted consequence persists in `ideation.md`.
 
-## Agent obligations (not machine-judged)
+## Pre-seal checks
 
-Truthful support prose and lens accounting, honest dropped-candidate reasons, substantive criteria application and adversarial reasoning, honest research-stop recording, no fabricated precision, no file-edit instructions in artifact prose.
+Repair the draft until each holds:
+- Every material conclusion, number, or absolute claim (such as "100%") traces to an evidence row or a calculation from one, or is labelled an estimate, `assumption-backed:`, or `hypothesis:`.
+- A recommendation built only from `Obvious defaults:` answers, alone or combined, states why each other lens candidate lost.
+- When What to do makes the next commitment depend on an experiment's result, Outcome is `run an experiment first`.
+- Prose holds no file-edit instructions.

@@ -17,7 +17,7 @@ from urllib.parse import quote
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.8.1"
+CONTRACT_VERSION = "1.9.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
@@ -56,7 +56,8 @@ BASES = {"observed", "reasoned"}
 FINDING_SEVERITIES = ("P0", "P1", "P2", "P3")
 NO_LIMITATIONS = "Assessor declared no material limitations."
 LEADING_HEADINGS = ["# Assessment", "## Result", "## Findings"]
-TRAILING_HEADINGS = [
+TRAILING_HEADINGS = ["## Limitations", "## Target", "## Assessed snapshots", "## Examined"]
+LEGACY_TRAILING_HEADINGS = [
     "## Limitations",
     "## Changed paths not examined",
     "## Target",
@@ -76,7 +77,7 @@ PUBLISH_ACTIONS = {
     "publish.result_not_findings": "Nothing was posted. Only a findings assessment can be posted.",
     "publish.target_not_pull_request": (
         "Nothing was posted. To post, reassess with the pull request's url from gh pr view --json url as target, "
-        "then seal and check it."
+        "then seal it under a new slug and check it."
     ),
     "publish.unconfirmed": (
         "Nothing was posted. Preview again without confirm, show the user the exact body, and pass its body_sha256 "
@@ -91,8 +92,8 @@ PUBLISH_ACTIONS = {
         "pull request with its gh url as target."
     ),
     "publish.head_moved": (
-        "Nothing was posted. Assess the pull request's current head, using delta review when it qualifies, seal and "
-        "check it, then preview again."
+        "Nothing was posted. Assess the pull request's current head, using delta review when it qualifies, seal it "
+        "under a new slug and check it, then preview again."
     ),
     "publish.failed": (
         "The comment may or may not exist. Look at the pull request's conversation before offering to post again."
@@ -122,10 +123,12 @@ class AssessError(ValueError):
     def diagnostic(self, *, phase: str) -> dict[str, Any]:
         if self.code in PUBLISH_ACTIONS:
             action = PUBLISH_ACTIONS[self.code]
+        elif self.code in {"workspace.assessment_exists", "output.exists"}:
+            action = "An assessment already exists at this slug and is never replaced. Keep it (on a re-review, check it for delta review), prepare a new slug, such as one ending in the short head revision, and seal there."
         elif self.code == "result.target_moved":
-            action = "The base or head moved since this assessment. If it qualifies under the delta review reference, review the delta; otherwise perform a fresh full assessment against the current exact base/head and assessed snapshots. Then seal a new assessment.md."
+            action = "The base or head moved since this assessment. If it qualifies under the delta review reference, review the delta; otherwise perform a fresh full assessment against the current exact base/head and assessed snapshots. Then prepare a new slug and seal a new assessment.md there."
         elif self.category == "stale_evidence":
-            action = "Perform a fresh full assessment against the current exact base/head and assessed snapshots, then seal a new assessment.md."
+            action = "Perform a fresh full assessment against the current exact base/head and assessed snapshots, then prepare a new slug and seal a new assessment.md there."
         elif self.category == "unsafe_state":
             action = "Use the prepared ignored .first-four-hours/assessments/<slug>/assessment.md output path, keep source snapshots external, repair the named unsafe workspace/output condition, and retry without changing the assessed head."
         elif self.category in {"missing_evidence", "unavailable_prerequisite"}:
@@ -397,6 +400,12 @@ def prepare_assessment_workspace(repo_root: Path, slug: str) -> AssessmentWorksp
     ):
         if _is_linked(path) or path.exists() and not path.is_dir():
             raise _workspace_fail(code, f"{label} is not a real directory: {path}", path=path)
+    if os.path.lexists(task_dir / RESULT_FILENAME):
+        raise _workspace_fail(
+            "workspace.assessment_exists",
+            f"An assessment already exists for this slug at {task_dir / RESULT_FILENAME}; a sealed assessment is never replaced",
+            path=task_dir / RESULT_FILENAME,
+        )
     relative_output = PurePosixPath(ASSESSMENT_WORKSPACE_DIR, normalized, RESULT_FILENAME).as_posix()
     git_exclude, git_ignored = _ensure_assessments_git_exclude(root, relative_output, exclude)
     task_dir.mkdir(parents=True, exist_ok=True)
@@ -996,7 +1005,6 @@ def render_result(
     sources: tuple[SourceBinding, ...],
     examined: list[dict[str, str]],
     findings: list[dict[str, Any]],
-    unexamined: list[str],
 ) -> str:
     lines = ["# Assessment", "", "## Result", "", f"`{bundle['result']}`", "", "## Findings", ""]
     if not findings:
@@ -1024,10 +1032,6 @@ def render_result(
         lines.append(NO_LIMITATIONS)
     else:
         lines.extend(f"- {_scalar(item)}" for item in bundle["limitations"])
-    lines.extend(["", "## Changed paths not examined", ""])
-    if not unexamined:
-        lines.append("None.")
-    lines.extend(f"- {_scalar(path)}" for path in unexamined)
     lines.extend(
         [
             "",
@@ -1154,13 +1158,17 @@ def parse_result(text: str) -> dict[str, Any]:
             path=RESULT_FILENAME,
         )
     headings = HEADING_RE.findall(body)
-    if (
-        len(headings) < len(LEADING_HEADINGS) + len(TRAILING_HEADINGS)
-        or headings[: len(LEADING_HEADINGS)] != LEADING_HEADINGS
-        or headings[-len(TRAILING_HEADINGS) :] != TRAILING_HEADINGS
-    ):
+    trailing = next(
+        (
+            candidate
+            for candidate in (TRAILING_HEADINGS, LEGACY_TRAILING_HEADINGS)
+            if len(headings) >= len(LEADING_HEADINGS) + len(candidate) and headings[-len(candidate) :] == candidate
+        ),
+        None,
+    )
+    if trailing is None or headings[: len(LEADING_HEADINGS)] != LEADING_HEADINGS:
         raise _fail("artifact.shape_invalid", "assessment.md headings are not canonical", path=RESULT_FILENAME)
-    finding_headings = headings[len(LEADING_HEADINGS) : -len(TRAILING_HEADINGS)]
+    finding_headings = headings[len(LEADING_HEADINGS) : -len(trailing)]
     if finding_headings != [f"### Finding {index}" for index in range(1, len(finding_headings) + 1)]:
         raise _fail(
             "artifact.shape_invalid",
@@ -1175,7 +1183,7 @@ def parse_result(text: str) -> dict[str, Any]:
         raise _fail("artifact.shape_invalid", "clear assessment.md cannot contain findings", path=RESULT_FILENAME)
     if result == "findings" and not finding_headings:
         raise _fail("artifact.shape_invalid", "findings assessment.md must contain a finding", path=RESULT_FILENAME)
-    limitations = body.split("\n## Limitations\n\n", 1)[1].split("\n## Changed paths not examined\n", 1)[0]
+    limitations = body.split("\n## Limitations\n\n", 1)[1].split("\n## ", 1)[0]
     if result == "blocked" and limitations == f"{NO_LIMITATIONS}\n":
         raise _fail("artifact.shape_invalid", "blocked assessment.md requires a material limitation", path=RESULT_FILENAME)
     base_revision = _json_field(body, "Base revision")
@@ -1550,6 +1558,15 @@ def _source_bindings_match(current: tuple[SourceBinding, ...], expected: tuple[S
     return tuple(source.as_dict() for source in current) == tuple(source.as_dict() for source in expected)
 
 
+def _output_exists(destination: Path) -> AssessError:
+    return _fail(
+        "output.exists",
+        f"An assessment already exists at {destination}; a sealed assessment is never replaced",
+        category="unsafe_state",
+        path=destination,
+    )
+
+
 def _publish(
     destination: Path,
     content: str,
@@ -1583,8 +1600,15 @@ def _publish(
                 category="unsafe_state",
                 path=destination,
             )
-        os.replace(temporary, destination)
-        temporary = None
+        try:
+            os.link(temporary, destination)
+        except FileExistsError:
+            raise _output_exists(destination) from None
+        except OSError:
+            if os.path.lexists(destination):
+                raise _output_exists(destination) from None
+            os.replace(temporary, destination)
+            temporary = None
     except OSError as exc:
         raise _fail(
             "output.write_failed", f"Assess publication failed: {exc}", category="unsafe_state", path=destination
@@ -1599,6 +1623,8 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
     bundle = read_bundle(bundle_path, root)
     binding = inspect_binding(root, bundle["base_ref"], bundle["head_ref"])
     destination = _canonical_output(Path(binding.repository_root), output)
+    if os.path.lexists(destination):
+        raise _output_exists(destination)
     source_bindings = bind_sources(bundle, Path(binding.repository_root), destination)
     findings, examined = bind_all_locators(bundle, binding, source_bindings)
     changed = _changed_paths(binding)
@@ -1612,7 +1638,7 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
             category="contract_contradiction",
             evidence=tuple(unnamed),
         )
-    content = render_result(bundle, binding, source_bindings, examined, findings, unexamined)
+    content = render_result(bundle, binding, source_bindings, examined, findings)
     _publish(destination, content, Path(binding.repository_root), bundle, binding, source_bindings)
     return {
         "path": str(destination),

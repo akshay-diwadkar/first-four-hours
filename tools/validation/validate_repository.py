@@ -157,7 +157,10 @@ CONSTRUCT_INPUT_WIRING = {
     "attempt": (None, ["prove"], ["prove", "status"]),
     "blocks": (None, [], ["apply"]),
 }
-LATEST_RELEASE_BADGE_RE = re.compile(r"\[!\[Latest Release\]\((?P<badge_url>[^)]+)\)\]\((?P<target_url>[^)]+)\)")
+LATEST_RELEASE_BADGE_RE = re.compile(
+    r"\[!\[Latest Release\]\([^)]+\)\]\((?P<markdown_target>[^)]+)\)"
+    r"|<a href=\"(?P<html_target>[^\"]+)\"><img alt=\"Latest Release\" src=\"[^\"]+\""
+)
 LATEST_RELEASE_URL = "https://github.com/akshay-diwadkar/first-four-hours/releases/latest"
 MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\((?:<(?P<bracketed>[^>]+)>|(?P<plain>[^)\s]+))(?:\s+['\"][^)]*['\"])?\)")
 REPOSITORY_FILE_URL_PREFIXES = (
@@ -1027,7 +1030,7 @@ def validate_readme_release_link(readme_path: Path | None = None) -> list[str]:
     match = LATEST_RELEASE_BADGE_RE.search(readme_path.read_text(encoding="utf-8"))
     if match is None:
         return ["README.md: missing Latest Release badge"]
-    if match.group("target_url") != LATEST_RELEASE_URL:
+    if (match.group("markdown_target") or match.group("html_target")) != LATEST_RELEASE_URL:
         return [f"README.md: Latest Release badge must target {LATEST_RELEASE_URL}"]
     return []
 

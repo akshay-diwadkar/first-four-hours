@@ -69,7 +69,7 @@ Below it, the plan cites the files its facts come from, gives ordered instructio
 
 This repository is planned, built, and reviewed with its own skills, and its pull requests keep the record:
 
-- **[#88](https://github.com/akshay-diwadkar/first-four-hours/pull/88): the plan that drifted.** Two changes needed extra rounds, and every finding was a gap between the plan and the request. Since then, Blueprint checks each deliverable against every clause of the request before it seals.
+- **[#193](https://github.com/akshay-diwadkar/first-four-hours/pull/193): the bug a quiet machine hid.** Two re-reviews of Temper ([#192](https://github.com/akshay-diwadkar/first-four-hours/pull/192)) passed its Windows cleanup test, each running it once on a quiet machine. A full re-review ran it while the machine was busy, and it failed twice in a row. Since then, Assess repeats a timing-sensitive check, once under load, before it trusts a pass.
 - **[#128](https://github.com/akshay-diwadkar/first-four-hours/pull/128): structure settled first.** Construct's safety check made one verification take 332 seconds while its tests took 42. Architect settled what the check should cover before Blueprint planned the fix.
 - **[Epic #27](https://github.com/akshay-diwadkar/first-four-hours/issues/27): research to shipped features.** One Ideate run researched how real examinations and good tutors work; Ticket split it into four issues, closed by four pull requests.
 

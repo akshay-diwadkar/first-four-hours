@@ -16,9 +16,9 @@
 
 > *"Give me six hours to chop down a tree, and I will spend the first four sharpening the axe."*
 
-Friday evening, Mateo Rojas's agent says the checkout fix is done, and the tests pass. On Monday, Yuki Tanaka finds the requirement it missed, a decision from Tuesday's meeting quietly reopened, and a caller the fix broke. Mateo explains the context again, reviews another patch, and stops trusting the word "done".
+Your agent said **done**. Then came the missed requirement, the decision it quietly reopened, the caller it broke.
 
-Those are the lost hours. First Four Hours spends them up front: each skill does one job before the work moves on, and leaves a file you can open and check. On a small fix, sharpening takes minutes.
+First Four Hours does the sharpening first: each skill does one job before the work moves on, and leaves a file you can open and check. On a small fix, that takes minutes.
 
 ## Install
 

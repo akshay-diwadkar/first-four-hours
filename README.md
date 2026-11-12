@@ -69,9 +69,9 @@ Below it, the plan cites the files its facts come from, gives ordered instructio
 
 This repository is planned, built, and reviewed with its own skills, and its pull requests keep the record:
 
-- **[#108](https://github.com/akshay-diwadkar/first-four-hours/pull/108): the skill that didn't pay its way.** Atlas gave agents a map of the codebase. Tested on Django and Temporal, with answers graded blind, the map cost about 18% more per question on one and the same on the other, with no gain in accuracy. So Atlas was deleted from the suite, through a sealed Blueprint that Construct carried out.
-- **[#128](https://github.com/akshay-diwadkar/first-four-hours/pull/128): structure settled first.** Construct's safety check made one verification take 332 seconds while its tests took 42. Architect settled what the check should cover before Blueprint planned the fix.
 - **[Epic #27](https://github.com/akshay-diwadkar/first-four-hours/issues/27): research to shipped features.** One Ideate run researched how real examinations and good tutors work; Ticket split it into four issues, closed by four pull requests.
+- **[#108](https://github.com/akshay-diwadkar/first-four-hours/pull/108): the skill that didn't pay its way.** Atlas gave agents a map of the codebase. Tested on Django and Temporal, with answers graded blind, the map cost about 18% more per question on one and the same on the other, with no gain in accuracy. So Atlas was deleted from the suite, through a sealed Blueprint that Construct carried out.
+- **[#162](https://github.com/akshay-diwadkar/first-four-hours/pull/162): the skill that halved itself.** Blueprint planned the cut to its own guidance, from 12,854 tokens to 6,420, and a hard limit now stops it growing back. Assess then caught two rules the cut had removed by accident, and a second sealed plan dealt with them.
 
 ## Start from the problem
 

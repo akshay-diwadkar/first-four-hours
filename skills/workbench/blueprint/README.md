@@ -1,8 +1,8 @@
 # Blueprint
 
-`blueprint` turns an authorized request into one sealed, implementation-complete `.first-four-hours/blueprints/<task-slug>/{request.md,blueprint.md}`. [SKILL.md](SKILL.md) owns the planning workflow; this file owns the workspace commands and the sealed shape.
+`blueprint` turns an authorized request into one sealed, implementation-complete `.first-four-hours/blueprints/<task-slug>/{request.md,blueprint.md}`. [SKILL.md](SKILL.md) owns the planning workflow; this file owns the every-run workspace commands and the sealed shape.
 
-Prepare the task-scoped workspace, which freezes the resolved request bytes into the sibling `request.md`, writes the initial `blueprint.md` scaffold from the task name, and returns canonical paths; preparation never replaces an existing `blueprint.md`. The `--request-file` input is pre-planning input, not planning output: pass an upstream handoff where it was sealed, and write a request Blueprint resolves (user answers, an Ideate selection, an architecture source declaration) outside the repository, which stays read-only apart from the writes `SKILL.md` lists. A sealed Assess `assessment.md` with result `findings`, or a sealed Temper `test-audit.md` with findings, is such a handoff: pass `--input handoff_item=1,3` to every `check` and `run` to plan only those findings, all when omitted. Its selected findings are the request's clauses and settled evidence: cite none again in Current State, and re-confirm only that each defect still occurs in the current tree. A test audit's `## Verify` section names the exact Temper `verify` command whose run, with `item` set to the planned findings, proves the changed suite keeps each finding's kills:
+Prepare the task-scoped workspace, which freezes the resolved request bytes into the sibling `request.md`, writes the initial `blueprint.md` scaffold from the task name, and returns canonical paths; preparation never replaces an existing `blueprint.md`. The `--request-file` input is pre-planning input, not planning output: pass an upstream handoff where it was sealed, and write a request Blueprint resolves (user answers, an Ideate selection, an architecture source declaration) outside the repository, which stays read-only apart from the writes `SKILL.md` lists. Assess and Temper handoffs pass `handoff_item` to every `check` and `run` per [Architecture intake](references/architecture-intake.md#assessment-and-test-audit-handoffs). Prepare with:
 
 ```bash
 python scripts/prepare_blueprint_workspace.py \
@@ -21,17 +21,7 @@ python scripts/cli.py --repo-root /absolute/repo \
 
 A successful seal's `result.blueprint_path` is the sealed file's absolute path; its frozen `request.md` is the sibling. The envelope lists no `artifacts`.
 
-For a replan, `carryover` reports an earlier sealed plan's bound files, writing nothing and refusing an edited plan:
-
-```bash
-python scripts/cli.py --repo-root /absolute/repo --input predecessor_file=/absolute/earlier/blueprint.md --format json carryover
-```
-
-`result.entries` gives each Source's and existing or deleted Location's `path`, `role`, and `status`: `unchanged`, `changed`, or `missing`.
-
-To amend after a Construct stop, add `--predecessor /absolute/stopped/blueprint.md` to preparation, with the same task name. It refuses an edited or unbound plan, reserves a fresh task directory even when the request is unchanged, starts its draft as the stopped plan without receipts, and returns the same entries as `carryover`. It reuses a directory only while its draft is absent or still exactly that seed, so no sealed plan is reopened, and a draft already edited leads to another fresh directory. Every earlier workspace stays unchanged. One task name holds at most six workspaces for the same request; past that, use another task name.
-
-To change the request, write the amended request outside the repository and rerun preparation with `--amend /absolute/repo/.first-four-hours/blueprints/<task-slug>/blueprint.md`, the path preparation returned. It replaces that workspace's `request.md` in place and turns a sealed plan back into a draft to repair and reseal. Once a bound file's bytes changed or a planned-new Location exists, Construct may have started, so it refuses with `workspace.amend.progressed` and only a fresh workspace remains.
+Replans, Construct-stop amendments, and request changes: [Earlier plans](references/earlier-plans.md#commands).
 
 Each diagnostic names its fix; before repairing one, read its rule's owner: [Declared text](references/declared-text.md) for `block.*`, `frozen.*`, `declaration.malformed`, and a `proof.*` about an instruction's Proof run or `Red:` line; [Incomplete gates](references/incomplete-gates.md) for `verification.incomplete.*`; otherwise this file or the [planning contract](references/planning-contract.md).
 

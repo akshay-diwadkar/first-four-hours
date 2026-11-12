@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-12
+
 ### Added
 
 - Temper 1.0.0: a new Workbench skill that audits an existing test suite to cut what it costs to run while keeping or raising the faults it catches. Start it with `/temper` or ask for a test-suite audit; the agent may also start it for a slow or bloated suite, but not for writing or fixing individual tests. It triages with your project's own tools, then proves each finding with mutants replayed in a throwaway copy of your project, and seals numbered `redundant`, `vacuous`, `gap`, and `rework` findings in `.first-four-hours/test-audits/<slug>/test-audit.md`. It never edits your project. Its `verify` command lets a plan confirm after the change that the remaining tests still catch each planned finding's mutants and that a trimmed suite is not clearly slower (more than 10% plus one second) than the audit measured; it reports the seconds saved. Its test design reference is the one place the suite's test-design rules live.

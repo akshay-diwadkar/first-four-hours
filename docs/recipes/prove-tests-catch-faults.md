@@ -54,10 +54,10 @@ The test replaces apply_discount with a mock, so it passes whatever the discount
 - Kind: `gap`
 - Title: nothing tests the minimum basket for a discount
 - Tests: none
-- Guard: `full-suite`
+- Guard: `pricing-suite`
 - Witness: `threshold-probe`
 
-The whole suite passes when the minimum basket check is inverted.
+Both `pricing-suite` and `suite` pass when the minimum basket check is inverted.
 ```
 
 Finding 3 is fast, so deleting slow files by hand would have kept it, and it protects nothing the rest of the pricing suite does not already catch. Finding 7 is the shape of last month's bug: a mutant that inverts the discount threshold slips past the whole suite, and only Temper's probe catches it.

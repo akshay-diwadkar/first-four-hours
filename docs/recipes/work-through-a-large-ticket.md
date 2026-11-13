@@ -8,6 +8,7 @@ Large work spread over several sessions loses the thread: each session rediscove
 
 - A request spans several major changes.
 - You have an epic or backlog and want the next ready ticket checked against the current code.
+- You keep re-explaining the same decisions to each new session, or after the agent compacts its context.
 
 ## Use something else when
 

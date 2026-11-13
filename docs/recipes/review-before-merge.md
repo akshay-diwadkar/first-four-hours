@@ -8,6 +8,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 
 - A change is finished and you need to know it does what its issue, specification, or Blueprint asked, without breaking existing behavior.
 - You want a re-review after rework.
+- You are about to trust the agent's summary of a change instead of the change.
 
 ## Use something else when
 

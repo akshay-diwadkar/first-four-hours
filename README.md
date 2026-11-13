@@ -9,10 +9,11 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
   <a href="pyproject.toml"><img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11+-blue.svg"></a>
   <a href="https://first-four-hours.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/docs-online-brightgreen.svg"></a>
+  <a href="https://first-four-hours.pages.dev/recipes/"><img alt="Recipes for common failures" src="https://img.shields.io/badge/recipes-common%20failures-orange.svg"></a>
   <a href="docs/getting-started/installation.md"><img alt="Works with Claude Code, Codex, GitHub Copilot, Cursor" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Codex%20%C2%B7%20Copilot%20%C2%B7%20Cursor-8A63D2.svg"></a>
 </p>
 
-<p align="center"><a href="#install">Install</a> · <a href="#see-it-work">See it work</a> · <a href="#the-skills">Skills</a> · <a href="https://first-four-hours.pages.dev/">Docs</a> · <a href="CHANGELOG.md">Changelog</a></p>
+<p align="center"><a href="#install">Install</a> · <a href="#see-it-work">See it work</a> · <a href="#the-skills">Skills</a> · <a href="https://first-four-hours.pages.dev/">Docs</a> · <a href="https://first-four-hours.pages.dev/recipes/">Recipes</a> · <a href="CHANGELOG.md">Changelog</a></p>
 
 > *"Give me six hours to chop down a tree, and I will spend the first four sharpening the axe."*
 

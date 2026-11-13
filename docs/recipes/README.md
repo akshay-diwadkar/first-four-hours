@@ -3,8 +3,11 @@
 Each recipe starts from a problem you keep losing time to and shows the smallest skill, or combination of skills, that deals with it. The aim is to settle the first decisions early, so less work has to be redone later. Every skill also works alone, and [Choose a skill](../getting-started/choosing-a-skill.md) maps single situations to single skills.
 
 - [Plan a change before your agent starts editing](plan-a-change.md): decisions get made halfway through editing and the work is redone.
+- [Keep the agent inside the change you asked for](keep-changes-in-scope.md): the diff touches code nobody asked it to, despite the rules file.
 - [Fix the bug without patching the symptom](fix-a-bug.md): a fix lands where the symptom shows and the bug comes back.
+- [Find out which tests actually catch anything](prove-tests-catch-faults.md): the suite is slow and green, and nobody knows which tests protect anything.
 - [Settle the structure before agents add parallel machinery](settle-structure.md): agents add a second way to do something the code already does.
+- [Agree what a project is for before every session re-argues it](agree-a-project-once.md): settled scope reopens every session because nobody wrote it down.
 - [Work through a large ticket without losing the thread](work-through-a-large-ticket.md): work spread over sessions keeps being rediscovered or left half-done.
 - [Trust a change before you merge it](review-before-merge.md): reviews skim the diff and fixes quietly reopen decisions.
 - [Find the next step when work spans several skills](find-the-next-skill.md): the next skill is unclear and the agent drifts.

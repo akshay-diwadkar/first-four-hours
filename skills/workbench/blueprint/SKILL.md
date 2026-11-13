@@ -2,13 +2,13 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "1.14.2"
+  version: "1.14.3"
 ---
 
 ## Workflow
 
 1. **Close intent.** With supplied or referenced architecture, or an Assess or Temper handoff, first read [Architecture intake](references/architecture-intake.md). Settle every material user-owned ambiguity before design: desired outcome, compatibility, product tradeoffs, change boundary, non-derivable priorities, and ambiguous acceptance. Ask only when different answers yield materially different correct solutions and no source or supplied answer settles the choice. Never ask the user to choose a repository-derived engineering detail. Do not seal while a material user-owned ambiguity remains.
-2. **Explore cheaply.** In any step, read [Bounded exploration](references/delegation-protocol.md) before a repository sweep. Read [Planning contract](references/planning-contract.md) before decision-critical exploration, and [Earlier plans](references/earlier-plans.md) before reusing or amending a plan or request. Gather only facts that can change the solution, preservation, propagation, or verification. Done when each such open question is answered from source or a safe probe, recorded as a prediction, or returned to step 1 if user-owned.
+2. **Explore cheaply.** In any step, read [Bounded exploration](references/delegation-protocol.md) first. Read [Planning contract](references/planning-contract.md) before decision-critical exploration, and [Earlier plans](references/earlier-plans.md) before reusing or amending a plan or request. Gather only facts that can change the solution, preservation, propagation, or verification. Done when each such open question is answered from source or a safe probe, recorded as a prediction, or returned to step 1 if user-owned.
 3. **Solve the engineering problem.** Settle every decision the planning contract requires, and [attack the problem](references/planning-contract.md#attack-the-problem). Trace [command dispatch](references/executable-contracts.md) when it can change correctness. When designs remain plausible, gather the smallest discriminating fact and decide yourself; when viable solutions must first be found, invoke `ideate` per [Ideate in planning](references/ideate-in-planning.md). Done when one supported solution accounts for current obligations and meaningful verification.
 4. **Bound the delta.** Apply the planning contract's [rent rule](references/planning-contract.md#the-rent-rule). Done when every material planned addition passes it.
 5. **Write the plan.** Prepare the workspace exactly as in [README](README.md), then fill its `blueprint.md` scaffold with [Declared text](references/declared-text.md) and [Incomplete gates](references/incomplete-gates.md) as the planning contract routes. Done when `check` reports no diagnostics.

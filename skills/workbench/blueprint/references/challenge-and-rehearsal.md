@@ -16,7 +16,7 @@ A skill version raises no signal. Read signals from the draft, not from how easy
 
 ## One fresh challenge
 
-For an elevated draft, launch the challenger as a separate fresh-context subagent; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Give it the request and answers, the draft, evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Tier and Requirement trace, the planning-trap list, Construct's Verification section, and each reference whose branch the draft uses. Withhold your reasoning and any premise you want confirmed.
+For an elevated draft, launch the challenger as a separate fresh-context subagent; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Give it the request and answers, the draft, evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Tier and Requirement trace, the planning-trap list, Construct's Verification section, [Each turn](delegation-protocol.md#each-turn), and each reference whose branch the draft uses. Withhold your reasoning and any premise you want confirmed. Launch it before your owner walk and, if your harness allows, walk while it works; edit the draft only after its review, then repair all findings together.
 
 ## Repair and re-check
 

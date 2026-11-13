@@ -18,10 +18,6 @@ Close every known gap or get the user's recorded acceptance: a requested outcome
 
 Open `Goal` with the approach and its load-bearing invariants, then scope: what changes, the trust boundary, protected behavior, and non-goals only where someone would reach past them. A non-goal bounds the plan's additions, never a requested outcome, preserved obligation, or consumer. Reuse a current mechanism only once its load-bearing assumptions hold.
 
-## Bounded exploration
-
-[Bounded exploration](delegation-protocol.md) owns how to establish facts. Re-verify a returned fact that becomes load-bearing.
-
 ## Repository traps
 
 Account for every trap the change touches in the repository's own planning-trap list, when its guidance names one. Search the repository for each edited path and any tool writing a hash, receipt, or copy of it; for each check, validator, loader, or packaging rule enumerating any directory holding a new, deleted, or renamed path, or its file type; for the old value of any changed version or identifier others compare against; and for the registrations, allowlists, and vendored copies of any reused mechanism; plan each refresh or companion edit as a step.

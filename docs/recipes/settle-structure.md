@@ -8,6 +8,7 @@ When no one has decided which part of the code owns a job, agents add a new help
 
 - The open question is a boundary, a dependency direction, who owns some state, or whether to consolidate duplicated mechanisms.
 - You suspect the design needs work but have no specific target.
+- An agent added an abstraction "for flexibility" that nobody asked for, and you want the structure decided instead of accumulated.
 
 ## Use something else when
 

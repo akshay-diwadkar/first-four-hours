@@ -40,8 +40,11 @@ nav = [
   { "Solve a recurring problem" = [
     "recipes/README.md",
     { "Plan a change before your agent starts editing" = "recipes/plan-a-change.md" },
+    { "Keep the agent inside the change you asked for" = "recipes/keep-changes-in-scope.md" },
     { "Fix the bug without patching the symptom" = "recipes/fix-a-bug.md" },
+    { "Find out which tests actually catch anything" = "recipes/prove-tests-catch-faults.md" },
     { "Settle the structure before agents add parallel machinery" = "recipes/settle-structure.md" },
+    { "Agree what a project is for before every session re-argues it" = "recipes/agree-a-project-once.md" },
     { "Work through a large ticket without losing the thread" = "recipes/work-through-a-large-ticket.md" },
     { "Trust a change before you merge it" = "recipes/review-before-merge.md" },
     { "Find the next step when work spans several skills" = "recipes/find-the-next-skill.md" },

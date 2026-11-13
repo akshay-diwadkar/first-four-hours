@@ -8,6 +8,7 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 
 - Something is wrong and you do not know why: a defect, a bottleneck, or runtime behavior you cannot explain by reading the code.
 - You want evidence of what is worth improving instead of generic advice.
+- The agent said the bug was fixed, and the same failure came back.
 
 ## Use something else when
 

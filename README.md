@@ -1,4 +1,7 @@
-<p align="center"><img alt="First Four Hours — Skills for AI agents. Sharpen the axe first." src="assets/first-four-hours-banner.png"></p>
+<p align="center"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
+  <img alt="First Four Hours — Skills for AI agents. Sharpen the axe first." src="assets/banner-light.svg">
+</picture></p>
 
 <h1 align="center">First Four Hours</h1>
 

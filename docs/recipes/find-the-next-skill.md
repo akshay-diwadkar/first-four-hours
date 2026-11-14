@@ -2,7 +2,7 @@
 
 The hardest part of some work is the first move: which skill, in what order, and what to leave until later.
 
-When the next skill is unclear, an agent either picks one and drifts into a side quest, or lays out a long plan that is wrong as soon as the first result comes in. Router lays out the skills as far as the next steps can be known now, and stops where a step depends on a result that does not exist yet.
+When the next skill is unclear, an agent either picks one and drifts into a side quest, or lays out a long plan that is wrong as soon as the first result comes in. `/router` lays out the skills as far as the next steps can be known now, and stops where a step depends on a result that does not exist yet.
 
 ## Use this when
 
@@ -17,9 +17,9 @@ When the next skill is unclear, an agent either picks one and drifts into a side
 
 ## Steps
 
-1. Ask for the outcome in plain words. Router starts when the agent recognizes the task, not by name.
+1. Ask for the outcome in plain words. `/router` starts when the agent recognizes the task, not by name.
 2. Read the sealed `route.md`. Each step names a skill, why it is needed now, its input, its expected result, and a ready-to-copy prompt.
-3. Say yes to step 1's prompt. For [Diagnose](../skills/diagnose.md) and [Ticket](../skills/ticket.md), you type the prompt yourself.
+3. Say yes to step 1's prompt. For [`/diagnose`](../skills/diagnose.md) and [`/ticket`](../skills/ticket.md), you type the prompt yourself.
 4. When the route runs out, ask again from the new state. A route never continues itself.
 
 ## A worked scenario
@@ -32,7 +32,7 @@ Priya Raman, FreshCart's product owner, wants FreshCart to send order updates by
 FreshCart needs to send order updates by text message as well as email, and I cannot tell whether that starts with a decision, a plan, or a ticket. Work out which skills I need, and in what order.
 ```
 
-Router reads the current state first. The job queue is already running, so "move sending onto the queue" is not a step. FreshCart's message code already sends through one channel interface, so adding a channel is not a structural question, and Architect is not a step either. No text-message provider is chosen yet, but that is not a separate step: Blueprint asks Ideate for the options inside its own run, and you choose there.
+`/router` reads the current state first. The job queue is already running, so "move sending onto the queue" is not a step. FreshCart's message code already sends through one channel interface, so adding a channel is not a structural question, and `/architect` is not a step either. No text-message provider is chosen yet, but that is not a separate step: `/blueprint` asks `/ideate` for the options inside its own run, and you choose there.
 
 ```markdown
 # Route: text-message order updates alongside email
@@ -53,7 +53,7 @@ Router reads the current state first. The job queue is already running, so "move
    - Result: an `assessment.md` that is `clear`, `findings`, or `blocked`.
 ```
 
-Each step also carries a ready-to-copy prompt. The route stops after Assess, because what comes next depends on its result: a pull request after `clear`, or a fix after `findings`. A longer route would guess. When you get there, ask again; the fresh route starts from the new state. A route that guessed further would have planned a pull request before anyone knew whether there were findings to fix.
+Each step also carries a ready-to-copy prompt. The route stops after `/assess`, because what comes next depends on its result: a pull request after `clear`, or a fix after `findings`. A longer route would guess. When you get there, ask again; the fresh route starts from the new state. A route that guessed further would have planned a pull request before anyone knew whether there were findings to fix.
 
 ## You are done when
 
@@ -61,5 +61,5 @@ A fresh route is a single `None:` line, meaning the current state already meets 
 
 ## If it goes wrong
 
-- The route stops earlier than you expected: that is a correct answer. Produce the result it stops at, then ask for a fresh route ([Router](../skills/router.md)).
+- The route stops earlier than you expected: that is a correct answer. Produce the result it stops at, then ask for a fresh route ([`/router`](../skills/router.md)).
 - A routed skill stops: follow that skill's page from [the skill index](../skills/README.md).

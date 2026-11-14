@@ -2,7 +2,7 @@
 
 You have seen this bug before. Last quarter someone patched it where it showed, the tickets stopped, and everyone moved on. Now it is back, somewhere else.
 
-When the cause is unknown, an agent tends to patch the place where the symptom shows, and the bug comes back somewhere else. Diagnose finds the cause from evidence first, without editing anything. The fix is then planned for one finding.
+When the cause is unknown, an agent tends to patch the place where the symptom shows, and the bug comes back somewhere else. `/diagnose` finds the cause from evidence first, without editing anything. The fix is then planned for one finding.
 
 ## Use this when
 
@@ -18,10 +18,10 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 
 ## Steps
 
-1. Start Diagnose yourself and name the symptom. Only you can start it.
+1. Start `/diagnose` yourself and name the symptom. Only you can start it.
 2. Read the sealed `diagnosis.md`. Each finding says how well its cause is established. Advisory directions are leads, not a chosen fix.
-3. Pick one finding and ask Blueprint to plan its fix, naming the finding. If no viable fix is apparent, or the evidence cannot rank the possible fixes, Blueprint asks [Ideate](../skills/ideate.md) inside its run, and you choose unless you already chose or delegated the choice.
-4. Carry out the sealed plan with Construct, as in [Plan a change before your agent starts editing](plan-a-change.md).
+3. Pick one finding and ask `/blueprint` to plan its fix, naming the finding. If no viable fix is apparent, or the evidence cannot rank the possible fixes, `/blueprint` asks [`/ideate`](../skills/ideate.md) inside its run, and you choose unless you already chose or delegated the choice.
+4. Carry out the sealed plan with `/construct`, as in [Plan a change before your agent starts editing](plan-a-change.md).
 
 ## A worked scenario
 
@@ -29,13 +29,13 @@ When the cause is unknown, an agent tends to patch the place where the symptom s
 
 Amara Okafor leads support at FreshCart, and the support inbox has a new kind of complaint: two order-confirmation emails for one order. Some customers think they were charged twice. It gets worse whenever checkout is busy.
 
-Mateo Rojas, who owns checkout, could have a duplicate filter in the email sender by lunch. It would work. The emails would stop. You start Diagnose instead.
+Mateo Rojas, who owns checkout, could have a duplicate filter in the email sender by lunch. It would work. The emails would stop. You start `/diagnose` instead.
 
 ```text
 /diagnose : Support keeps hearing from FreshCart customers who got two order-confirmation emails for one order, and it gets worse when checkout is busy. Find out why; a duplicate filter in the sender is not an answer.
 ```
 
-Diagnose follows the email back from the sender to its caller: the payment webhook handler. The handler sends the confirmation before it records the provider's event ID. Against a local test app, Diagnose replays one captured webhook twice and gets two emails; it replays it again with that event ID already marked as seen and gets none. Changing the suspected cause moved the effect, so the cause is `demonstrated`, not just reproduced. It touches no production system and changes no code.
+`/diagnose` follows the email back from the sender to its caller: the payment webhook handler. The handler sends the confirmation before it records the provider's event ID. Against a local test app, `/diagnose` replays one captured webhook twice and gets two emails; it replays it again with that event ID already marked as seen and gets none. Changing the suspected cause moved the effect, so the cause is `demonstrated`, not just reproduced. It touches no production system and changes no code.
 
 ```markdown
 ## Finding webhook-retry-resends-confirmation
@@ -56,20 +56,20 @@ The provider retries webhooks that answer slowly, so duplicates rise with checko
 The webhook handler owns the duplicate: it acts on an event before marking it seen. The email sender only does what it is told.
 ```
 
-In its report, Diagnose offers two advisory directions: store the event ID before acting, or filter duplicates in the sender. It notes that the second would hide the cause rather than remove it. Neither is a decision; you pick the finding to fix.
+In its report, `/diagnose` offers two advisory directions: store the event ID before acting, or filter duplicates in the sender. It notes that the second would hide the cause rather than remove it. Neither is a decision; you pick the finding to fix.
 
 ```text
 /blueprint : Plan a fix for finding webhook-retry-resends-confirmation in .first-four-hours/diagnoses/duplicate-confirmation-emails/diagnosis.md.
 ```
 
-Blueprint plans the fix where the finding puts the cause: the handler stores the event ID in the same transaction as the order update, before anything is sent. Its regression test replays the same webhook twice and expects one email. Construct sees that test fail before the change and pass after it. A filter in the sender would have stopped this symptom and let the next one through, such as a duplicate refund notice. Mateo's filter would have closed Amara's tickets and kept the bug.
+`/blueprint` plans the fix where the finding puts the cause: the handler stores the event ID in the same transaction as the order update, before anything is sent. Its regression test replays the same webhook twice and expects one email. `/construct` sees that test fail before the change and pass after it. A filter in the sender would have stopped this symptom and let the next one through, such as a duplicate refund notice. Mateo's filter would have closed Amara's tickets and kept the bug.
 
 ## You are done when
 
-Construct's report shows every instruction applied, the plan's verification passed, and the diff matching the plan; you have settled its owner gates; and the symptom no longer appears when you check it the way you first saw it.
+`/construct`'s report shows every instruction applied, the plan's verification passed, and the diff matching the plan; you have settled its owner gates; and the symptom no longer appears when you check it the way you first saw it.
 
 ## If it goes wrong
 
-- Diagnose reports missing evidence instead of a finding: supply that evidence or the access it asked for, then run Diagnose again ([Diagnose](../skills/diagnose.md)).
-- The symptom returns after the fix: run Diagnose again with the new evidence rather than patching on top ([Diagnose](../skills/diagnose.md)).
-- Construct stops: follow [Construct](../skills/construct.md).
+- `/diagnose` reports missing evidence instead of a finding: supply that evidence or the access it asked for, then run `/diagnose` again ([`/diagnose`](../skills/diagnose.md)).
+- The symptom returns after the fix: run `/diagnose` again with the new evidence rather than patching on top ([`/diagnose`](../skills/diagnose.md)).
+- `/construct` stops: follow [`/construct`](../skills/construct.md).

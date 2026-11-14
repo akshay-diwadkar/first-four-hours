@@ -1,6 +1,6 @@
 # Construct
 
-Construct carries out a sealed Blueprint plan: it applies each instruction in order, runs the plan's verification, compares the final diff with the plan, and reports. It belongs to the Workbench domain.
+`/construct` carries out a sealed `/blueprint` plan: it applies each instruction in order, runs the plan's verification, compares the final diff with the plan, and reports. It belongs to the Workbench domain.
 
 ## When to use it
 
@@ -8,12 +8,12 @@ You have a sealed `blueprint.md` and want it implemented faithfully, possibly by
 
 ## When to use something else
 
-- Without a sealed plan, start with [Blueprint](blueprint.md). Construct does not plan.
-- To review the finished change, use [Assess](assess.md).
+- Without a sealed plan, start with [`/blueprint`](blueprint.md). `/construct` does not plan.
+- To review the finished change, use [`/assess`](assess.md).
 
 ## How to start it
 
-Start it yourself with `/construct`, or the agent may start it when your request matches. It needs a Git worktree. Start it in a fresh session, or let the agent run it as a subagent: the sealed plan carries every decision, and a fresh context keeps Construct from re-reading the whole planning conversation on each of its steps. That subagent is `ffh-constructor`, on the model you chose, when [Provision](provision.md) set one up, otherwise a generic subagent on the session's model. When Blueprint's handoff starts that subagent, the agent rechecks its outcome in your repository before reporting and runs any conformance review the subagent could not start. For example:
+Start it yourself with `/construct`, or the agent may start it when your request matches. It needs a Git worktree. Start it in a fresh session, or let the agent run it as a subagent: the sealed plan carries every decision, and a fresh context keeps `/construct` from re-reading the whole planning conversation on each of its steps. That subagent is `ffh-constructor`, on the model you chose, when [`/provision`](provision.md) set one up, otherwise a generic subagent on the session's model. When `/blueprint`'s handoff starts that subagent, the agent rechecks its outcome in your repository before reporting and runs any conformance review the subagent could not start. For example:
 
 ```text
 /construct : Implement the sealed blueprint in .first-four-hours/blueprints/<task-slug>/blueprint.md.
@@ -23,7 +23,7 @@ The request is one line because the plan already made every decision.
 
 ## What happens
 
-Construct checks the plan's seal and that the files it was planned against have not changed. It then implements each instruction in order, writing any text the plan fixes exactly as declared, and proves each step that declares proof, with at most three attempts per step. It may repair its own coding mistakes, but it never changes the plan's method, scope, or decisions. After the last instruction it runs the plan's verification and compares the final diff with the plan once. It writes no state of its own, so a resumed run rereads progress from the worktree. It never edits the plan and never commits.
+`/construct` checks the plan's seal and that the files it was planned against have not changed. It then implements each instruction in order, writing any text the plan fixes exactly as declared, and proves each step that declares proof, with at most three attempts per step. It may repair its own coding mistakes, but it never changes the plan's method, scope, or decisions. After the last instruction it runs the plan's verification and compares the final diff with the plan once. It writes no state of its own, so a resumed run rereads progress from the worktree. It never edits the plan and never commits.
 
 ## What you get
 
@@ -34,15 +34,15 @@ Your worktree with the change applied, and a report of the instructions, proof r
 | Result | Meaning | What to do |
 | :--- | :--- | :--- |
 | Completion report | Every instruction is applied, verification passed, and the diff matches the plan. | Review the result, settle the owner gates, then commit and open a pull request. |
-| `verification-incomplete` | A check the plan declared environmental did not finish. | Run Construct again when the environment is healthy. An incomplete check is never a pass. |
-| `plan-contradiction` | The plan is stale, wrong, or incomplete against the actual code. | Run a new `/blueprint` with the original request and Construct's evidence, then a fresh `/construct`. |
+| `verification-incomplete` | A check the plan declared environmental did not finish. | Run `/construct` again when the environment is healthy. An incomplete check is never a pass. |
+| `plan-contradiction` | The plan is stale, wrong, or incomplete against the actual code. | Run a new `/blueprint` with the original request and `/construct`'s evidence, then a fresh `/construct`. |
 | `protected-work-conflict` | Continuing would overwrite unrelated uncommitted work. | That work's owner resolves it, then run a fresh `/construct`. |
-| `safety-contradiction` | A safety check failed or the baseline moved, for example HEAD changed. | Restore a trusted state, then run a fresh `/construct`. If a verification command changed the worktree, restore a trusted state, then run a new `/blueprint` with the original request and Construct's evidence before a fresh `/construct`. |
+| `safety-contradiction` | A safety check failed or the baseline moved, for example HEAD changed. | Restore a trusted state, then run a fresh `/construct`. If a verification command changed the worktree, restore a trusted state, then run a new `/blueprint` with the original request and `/construct`'s evidence before a fresh `/construct`. |
 | Stopped with evidence | A step failed its third attempt, or a resume cannot verify earlier progress. | Judge the diff, then run a fresh `/construct` from a trustworthy worktree, or take the evidence back to `/blueprint` when the plan is at fault. |
 
 ## Why it's built this way
 
-**The failure it prevents.** The most dangerous executor is the helpful one: it meets a decision it does not understand, and improves it. Ordinary implementation agents drift from instructions: they redesign while coding, take a shortcut the plan ruled out, or "improve" a decision they do not understand. Construct makes execution follow the plan reliably, so a weaker, cheaper executor can carry out a strong planner's decisions faithfully.
+**The failure it prevents.** The most dangerous executor is the helpful one: it meets a decision it does not understand, and improves it. Ordinary implementation agents drift from instructions: they redesign while coding, take a shortcut the plan ruled out, or "improve" a decision they do not understand. `/construct` makes execution follow the plan reliably, so a weaker, cheaper executor can carry out a strong planner's decisions faithfully.
 
 **What it refuses, and why.** It never changes the plan's method, scope, or decisions, and never edits the plan. It fixes its own coding mistakes, but when the plan disagrees with the actual code it stops with `plan-contradiction` and its evidence instead of improvising. An executor that quietly patches planning gaps has become the planner, without the planner's grounding or challenge. It keeps no state of its own, so a resumed run rereads progress from the worktree instead of trusting an earlier success message.
 
@@ -50,8 +50,8 @@ Your worktree with the change applied, and a report of the instructions, proof r
 
 ## Related skills
 
-Fix review findings the same way: plan the fix with a new Blueprint and apply it with a fresh Construct, so the planner keeps every decision. See [How skills hand work to each other](../concepts/handoffs.md).
+Fix review findings the same way: plan the fix with a new `/blueprint` and apply it with a fresh `/construct`, so the planner keeps every decision. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 
-[Construct's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/construct/SKILL.md)
+[`/construct`'s contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/construct/SKILL.md)

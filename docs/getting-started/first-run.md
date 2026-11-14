@@ -2,11 +2,11 @@
 
 Pick the bug you have stopped mentioning in stand-up: the one that shows up twice a month, vanishes when anyone looks, and has a workaround everyone quietly applies. That is a good first problem.
 
-Try one skill on a real problem in your own project. This page uses Diagnose because it reads your project without editing it, starts only when you name it, and leaves a file you can open. Install the skills first: see [Install First Four Hours](installation.md).
+Try one skill on a real problem in your own project. This page uses `/diagnose` because it reads your project without editing it, starts only when you name it, and leaves a file you can open. Install the skills first: see [Install First Four Hours](installation.md).
 
 ## Start Diagnose
 
-You start a skill by name with `/name : request`, the form these pages use. If your agent names skills another way, use its form. With the Claude Code plugin, a skill's name starts with `first-four-hours:`, so Diagnose is `/first-four-hours:diagnose`.
+You start a skill by name with `/name : request`, the form these pages use. If your agent names skills another way, use its form. With the Claude Code plugin, a skill's name starts with `first-four-hours:`, so `/diagnose` is `/first-four-hours:diagnose`.
 
 For example (illustrative):
 
@@ -14,7 +14,7 @@ For example (illustrative):
 /diagnose : The nightly export writes an empty file about twice a month, still exits 0, and works when we rerun it by hand. Find out why.
 ```
 
-Replace the request with a real problem from your project. Diagnose traces the symptom through the project and runs only probes that change nothing. It asks before using shared or billable resources or production data, and it never edits the project.
+Replace the request with a real problem from your project. `/diagnose` traces the symptom through the project and runs only probes that change nothing. It asks before using shared or billable resources or production data, and it never edits the project.
 
 ## What you get
 
@@ -26,22 +26,22 @@ To see it, run this from the project folder:
 ls .first-four-hours/diagnoses
 ```
 
-The run is done when the file is sealed. When the evidence cannot support a finding, Diagnose says what evidence is missing instead of guessing.
+The run is done when the file is sealed. When the evidence cannot support a finding, `/diagnose` says what evidence is missing instead of guessing.
 
 ## What to do next
 
 Nothing starts on its own; you decide:
 
-- Plan a fix for one finding with Blueprint, then carry out the sealed plan with [Construct](../skills/construct.md). For example (illustrative):
+- Plan a fix for one finding with `/blueprint`, then carry out the sealed plan with [`/construct`](../skills/construct.md). For example (illustrative):
 
     ```text
     /blueprint : Plan a fix for finding <finding-id> in .first-four-hours/diagnoses/<slug>/diagnosis.md.
     ```
 
-- Explore options first with [Ideate](../skills/ideate.md).
+- Explore options first with [`/ideate`](../skills/ideate.md).
 - Stop here.
 
-If you want to learn a subject rather than change code, start with [Tutor](../skills/tutor.md) instead. For example (illustrative):
+If you want to learn a subject rather than change code, start with [`/tutor`](../skills/tutor.md) instead. For example (illustrative):
 
 ```text
 /tutor : I study history, and I am tired of people citing Gödel to prove things the theorem never said. Teach me the first incompleteness theorem from scratch, make me build the self-referring sentence myself, then show me popular claims about it and have me say which ones are wrong.

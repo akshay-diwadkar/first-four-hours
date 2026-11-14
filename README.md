@@ -2,7 +2,7 @@
 
 <h1 align="center">First Four Hours</h1>
 
-<p align="center"><b>Skills for coding agents that settle the decisions before the edits,<br>and leave a file you can open and check.</b></p>
+<p align="center"><b>Agent skills that decide first, edit second, and leave an audit trail.</b></p>
 
 <p align="center">
   <a href="https://github.com/akshay-diwadkar/first-four-hours/releases/latest"><img alt="Latest Release" src="https://img.shields.io/github/v/release/akshay-diwadkar/first-four-hours?sort=semver&display_name=tag&cacheSeconds=300"></a>

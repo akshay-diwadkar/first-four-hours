@@ -1,6 +1,6 @@
 # Bounded Delegation Protocol
 
-When another orchestrated handoff invokes Diagnose, it owns the diagnosis stage and diagnosis.md. Delegation is optional. Use read-only evidence workers only when independent scopes materially reduce context load or confounding, including bounded measurement evidence for improvement questions; otherwise investigate directly.
+When another orchestrated handoff invokes Diagnose, it owns the diagnosis stage and diagnosis.md. A large independent sweep, needing more than about 8 files or a whole-repository search, goes to `ffh-evidence` (or `ffh_evidence`) when it launches and reads suffice, else stays local. Other delegation is optional: use read-only evidence workers only when independent scopes materially reduce context load or confounding, including bounded measurement evidence for improvement questions; otherwise investigate directly.
 
 ## Worker frame and trust boundary
 
@@ -24,6 +24,8 @@ A lifecycle or public-capability handoff makes the receiving agent the semantic 
 Use a bounded specialist when narrow independent judgment is the point; choose capability proportional to ambiguity and consequence, and let the owner recheck and decide the result. Use a bounded worker only for cheap-to-verify labor. Give it the exact task or question, inputs and scope, authority and exclusions, objective stop, compact verifiable result or proof, and require it to return material ambiguity or contradiction. Prefer the cheapest sufficient selectable worker, but never let it expand scope or authority, make product, architecture, or completion decisions, vote on semantic truth, or delegate again. Workers are read-only by default; a skill-specific write exception requires already-settled semantics, exact scope and proof, cheaper owner inspection than direct work, and explicit owner acceptance.
 
 Parallelize only independent bounded work and reconcile conflicts against current authority and evidence, never confidence, count, votes, or arrival order. When model selection is unavailable, preserve these roles without inventing routing machinery; never encode provider names, prices, or a skill-to-model matrix.
+
+Each turn re-reads your context, so issue every independent read, search, and probe the question could need together, as parallel calls or one command; call alone only when the input depends on an earlier result. Never skip evidence to save calls; split the work rather than produce output too large to show inline.
 
 Keep this subsection as the shared source of truth. A standalone package that needs it must receive a mechanically derived local projection plus only its skill-specific trigger, scope, return or proof, and consumption rules; do not hand-copy the doctrine. A direct or no-delegation skill needs no projection.
 <!-- delegation-projection:end -->

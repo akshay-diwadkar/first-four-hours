@@ -2,7 +2,7 @@
 name: tutor
 description: "Teach any subject, technical or not: a direct explanation, interactive tutoring that checks understanding and adapts, or continuing learning with a realistic study plan and self-contained HTML lesson records under `.learning/`. Use when someone wants to learn, understand, practise, or be taught something; skip explanations incidental to other work."
 metadata:
-  version: "1.4.0"
+  version: "1.4.1"
 ---
 
 # Tutor
@@ -23,7 +23,7 @@ Write files only for continuing learning or when the learner asks to keep someth
 
 ## Teach
 
-Choose explanations, examples, analogies, diagrams, demonstrations, and prerequisite teaching to fit this subject and this learner; no pedagogy is fixed. Before teaching, practising, or reviewing, read [Choosing how to teach](references/teaching-methods.md). Teach a missing prerequisite before the idea that needs it. When the learner follows a course, use the notation and terms of any course materials they share. Research in proportion to currency, uncertainty, accuracy needs, and the request: settled basics may need none, while current, contested, high-stakes, or unfamiliar material needs authoritative sources. State uncertainty instead of inventing detail. When code you present or save, such as examples and lab starter code, runs quickly and offline and changes nothing outside a temporary folder, run it there, remove the folder, and fix or flag code that fails; label any other code unrun and offer to run it.
+Choose explanations, examples, analogies, diagrams, demonstrations, and prerequisite teaching to fit this subject and this learner; no pedagogy is fixed. Before teaching, practising, or reviewing, read [Choosing how to teach](references/teaching-methods.md). Teach a missing prerequisite before the idea that needs it. When the learner follows a course, use the notation and terms of any course materials they share. Research in proportion to currency, uncertainty, accuracy needs, and the request: settled basics may need none, while current, contested, high-stakes, or unfamiliar material needs authoritative sources. Each turn re-reads your context, so issue independent searches and source reads together, never skipping one to save calls. State uncertainty instead of inventing detail. When code you present or save, such as examples and lab starter code, runs quickly and offline and changes nothing outside a temporary folder, run it there, remove the folder, and fix or flag code that fails; label any other code unrun and offer to run it.
 
 Use a diagram, interactive example, simulation, or animation only when it explains a relationship, process, or change better than words. Before making one, read [Visuals](references/visuals.md).
 

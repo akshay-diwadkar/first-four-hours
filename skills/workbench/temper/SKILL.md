@@ -2,7 +2,7 @@
 name: temper
 description: "Audit an existing test suite to cut its run cost while keeping or raising the faults it catches, proving each finding with replayed mutants and sealing test-audit.md for blueprint. Use when asked to audit, slim, or speed up a test suite, or when a suite is visibly bloated or slow; skip writing or fixing individual tests."
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Temper

@@ -164,7 +164,7 @@ def test_audit_replays_claims_and_verify_guards_kills(tmp_path: Path) -> None:
         assert code == 0, envelope
         audit = Path(envelope["result"]["path"])
         text = audit.read_text(encoding="utf-8")
-        assert re.search(r"<!-- test-audit: 1\.0\.0; sha256: [0-9a-f]{64} -->$", text.rstrip("\n").splitlines()[-1])
+        assert re.search(r"<!-- test-audit: 1\.0\.1; sha256: [0-9a-f]{64} -->$", text.rstrip("\n").splitlines()[-1])
         assert (calc.read_bytes(), calc.stat().st_mtime_ns) == before
         outcomes = _load("audit_contract").read_sealed(text)["results"]["outcomes"]
         assert {(o["mutant"], o["selection"], o["observed"]) for o in outcomes} == {

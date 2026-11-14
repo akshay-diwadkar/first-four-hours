@@ -2,7 +2,7 @@
 name: architect
 description: Decide repository-grounded architecture before blueprint planning; use for boundary, dependency-direction, state ownership, abstraction, consolidation, module or class structure, subsystems, or no-targets.
 metadata:
-  version: "1.1.1"
+  version: "1.1.2"
 ---
 
 # Architect
@@ -16,7 +16,7 @@ Stop at architecture. Never classify implementation tier, perform a full propaga
 ## Workflow
 
 1. Follow [Architecture Protocol](references/architecture-protocol.md). Consult `reason` before committing to an approach, after a failure or direction change, and before sealing. Load [Structural Techniques](references/structural-techniques.md) only where the protocol or discovery points to it.
-2. Use [Bounded Delegation Protocol](references/delegation-protocol.md) only for optional evidence workers or earned specialist review.
+2. Use [Bounded Delegation Protocol](references/delegation-protocol.md) before any large sweep and for optional evidence workers or earned specialist review.
 3. Draft from the [Handoff Template](references/architecture-template.md).
 4. Use [Worked Example](references/worked-examples.md) only for optional alternatives, user policy, or view calibration, and [Calibration Examples](references/calibration-examples.md) before framing a target inside one module or class or selecting any structure other than `no-design-change`.
 5. Seal once:

@@ -2,6 +2,8 @@
 
 Audit reports what it finds and never fixes it. It does not edit any document, even when remediation is authorized; remediation is a separate `write` with document-revision authority.
 
+Each turn re-reads your context, so read together every document and bound source the audit needs, as parallel calls or one command; never skip one to save calls.
+
 1. Write a bundle that lists every document to audit and binds the sources the audit checks per [Source Grounding](source-grounding.md), choosing each `profile` per [Document Bundle](document-bundle.md), or reuse the documents' existing bundle.
 2. Read each document as its intended reader. Ask the reader-job question of [Write](write.md) step 2 and the two-reader question of its step 5. Record each material omission or ambiguity in that document's `reader_findings`, with its location and its consequence for that reader. Do not resolve it, add gap labels to the document, or edit the document or sources.
 3. Run `audit`. It reads the documents, bundle, and bound sources, changes none of them, and writes `.first-four-hours/scribes/<slug>/scribe-audit.md`, replacing an earlier report for that slug. The report gives each document its own section: the audited `document_sha256`, every check finding with its exact `code`, and your reader findings, labeled as judgment apart from the checks. A later change to a document makes its section stale; a reader finding added later needs a rerun.

@@ -59,5 +59,7 @@ Use a bounded specialist when narrow independent judgment is the point; choose c
 
 Parallelize only independent bounded work and reconcile conflicts against current authority and evidence, never confidence, count, votes, or arrival order. When model selection is unavailable, preserve these roles without inventing routing machinery; never encode provider names, prices, or a skill-to-model matrix.
 
+Each turn re-reads your context, so issue every independent read, search, and probe the question could need together, as parallel calls or one command; call alone only when the input depends on an earlier result. Never skip evidence to save calls; split the work rather than produce output too large to show inline.
+
 Keep this subsection as the shared source of truth. A standalone package that needs it must receive a mechanically derived local projection plus only its skill-specific trigger, scope, return or proof, and consumption rules; do not hand-copy the doctrine. A direct or no-delegation skill needs no projection.
 <!-- delegation-projection:end -->

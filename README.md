@@ -13,7 +13,7 @@
   <a href="docs/getting-started/installation.md"><img alt="Works with Claude Code, Codex, GitHub Copilot, Cursor" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Codex%20%C2%B7%20Copilot%20%C2%B7%20Cursor-8A63D2.svg"></a>
 </p>
 
-<p align="center"><a href="#install">Install</a> · <a href="#see-it-work">See it work</a> · <a href="#the-skills">Skills</a> · <a href="https://first-four-hours.pages.dev/">Docs</a> · <a href="https://first-four-hours.pages.dev/recipes/">Recipes</a> · <a href="CHANGELOG.md">Changelog</a></p>
+<p align="center"><a href="#install">Install</a> · <a href="#your-first-plan">Your first plan</a> · <a href="#the-skills">Skills</a> · <a href="https://first-four-hours.pages.dev/">Docs</a> · <a href="https://first-four-hours.pages.dev/recipes/">Recipes</a> · <a href="CHANGELOG.md">Changelog</a></p>
 
 > *"Give me six hours to chop down a tree, and I will spend the first four sharpening the axe."*
 
@@ -44,7 +44,7 @@ For Cursor, see [Install as a Cursor plugin](docs/getting-started/installation.m
 
 </details>
 
-## See it work
+## Your first plan
 
 Name a skill and say what is at stake. For example (illustrative; FreshCart is a made-up online grocery service):
 

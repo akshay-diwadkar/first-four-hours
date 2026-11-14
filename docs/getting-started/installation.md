@@ -30,9 +30,9 @@ npx skills add akshay-diwadkar/first-four-hours --skill blueprint
 
 Replace `blueprint` with the name of the skill you want. The note in [Install the whole suite](#install-the-whole-suite) also applies to this command.
 
-For planning, install `blueprint`, `construct`, `ideate`, and `reason` together. Blueprint consults Reason and uses Ideate during planning. Ideate consults Reason. Construct needs no other skill.
+For planning, install `blueprint`, `construct`, `ideate`, and `reason` together. `/blueprint` consults `/reason` and uses `/ideate` during planning. `/ideate` consults `/reason`. `/construct` needs no other skill.
 
-Many skills, including Diagnose and Tutor, consult `reason` at their judgment points. Each skill with Reason checkpoints also needs `reason`. [How skills hand work to each other](../concepts/handoffs.md) lists the skills with Reason checkpoints.
+Many skills, including `/diagnose` and `/tutor`, consult `reason` at their judgment points. Each skill with `/reason` checkpoints also needs `reason`. [How skills hand work to each other](../concepts/handoffs.md) lists the skills with `/reason` checkpoints.
 
 ## Choose the agent and where skills go
 
@@ -58,7 +58,7 @@ Run this command in a Claude Code session:
 
 If necessary, the command adds the `first-four-hours` marketplace. The command installs the plugin for your user account, so every project can use the plugin. The plugin route needs Git and Python 3.11 or later. For Claude Code, use the plugin or the Skills CLI, not both, to prevent duplicate skills.
 
-Plugin skill names start with `first-four-hours:`. For example, start Diagnose with `/first-four-hours:diagnose`, Ideate with `/first-four-hours:ideate`, and Tutor with `/first-four-hours:tutor`. Each skill keeps its start mode.
+Plugin skill names start with `first-four-hours:`. For example, start `/diagnose` with `/first-four-hours:diagnose`, `/ideate` with `/first-four-hours:ideate`, and `/tutor` with `/first-four-hours:tutor`. Each skill keeps its start mode.
 
 The plugin has no pinned version and follows repository commits. Run `/plugin marketplace update first-four-hours` in a Claude Code session to update the plugin. Another option is `claude plugin update first-four-hours@first-four-hours` in a terminal. A new session uses the updated plugin.
 
@@ -89,7 +89,7 @@ Team members can then install `first-four-hours` from **Customize**.
 
 Cursor also loads skills from `.agents/skills/` and `.claude/skills/` in a project or in your user folder. The Skills CLI installs skills into the same folders. Use the plugin or the Skills CLI, not both, to prevent duplicate skills.
 
-Type `/` in the chat to choose a skill. Each skill keeps its start mode. Cursor has no setting to hide a skill from `/`. The `/` list therefore also shows `router`, which the agent starts on its own. Ask for the result of Router in plain words instead.
+Type `/` in the chat to choose a skill. Each skill keeps its start mode. Cursor has no setting to hide a skill from `/`. The `/` list therefore also shows `router`, which the agent starts on its own. Ask for the result of `/router` in plain words instead.
 
 **Not verified here:** no check in this repository installs the Cursor plugin, and this repository does not confirm these Cursor details:
 

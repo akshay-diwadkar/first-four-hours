@@ -10,7 +10,7 @@ Inspect existing tests and owner profiles first. Reuse sufficient deterministic 
 
 Skill-specific tests, including integrations, belong under `tests/skills/<skill>/`. Shared tests under `tests/repository/` or `tests/skill_protocol/` protect genuinely common mechanisms. The [testing policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/REPO_VERSIONING.md) defines the collected-case ceilings per skill, for shared coverage, and for the complete suite, including parametrized rows, as well as the runtime bounds.
 
-A ceiling is not a quota. When slots are full, strengthen an existing coherent scenario or replace lower-value coverage while preserving essential proof. Do not hide independent cases in loops or move skill-specific coverage into the shared allowance. Reason is instruction-only; shared metadata, reference, and authority checks cover it without artificial runtime tests.
+A ceiling is not a quota. When slots are full, strengthen an existing coherent scenario or replace lower-value coverage while preserving essential proof. Do not hide independent cases in loops or move skill-specific coverage into the shared allowance. `/reason` is instruction-only; shared metadata, reference, and authority checks cover it without artificial runtime tests.
 
 ## Select, then run
 

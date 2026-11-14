@@ -2,7 +2,7 @@
 
 A sealed `blueprint.md` is the file a weaker agent will carry out without making engineering decisions of its own, so every part of it has a job. This page walks through one plan, section by section, and says why each part is there.
 
-The plan is illustrative. It belongs to FreshCart, the made-up online grocery service the [recipes](../recipes/README.md) follow, and it is shortened. The format is real; [Blueprint's README](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/blueprint/README.md) owns its exact rules.
+The plan is illustrative. It belongs to FreshCart, the made-up online grocery service the [recipes](../recipes/README.md) follow, and it is shortened. The format is real; [`/blueprint`'s README](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/blueprint/README.md) owns its exact rules.
 
 ## The request
 
@@ -10,7 +10,7 @@ The plan is illustrative. It belongs to FreshCart, the made-up online grocery se
 /blueprint : Someone is scraping FreshCart's public search endpoint. Plan rate limiting that stops them; existing API clients must keep working unchanged, and a cheaper model will build this tonight with nobody watching.
 ```
 
-Blueprint froze these words into `request.md`, next to the plan. It asked one question, because only you could answer it and the answer changes the correct plan: should partner API keys be exempt from the limit? You said yes. It did not ask where the limiter should live, which library to use, or how to test it. Those answers are in the repository, and making you choose them would be a planning failure.
+`/blueprint` froze these words into `request.md`, next to the plan. It asked one question, because only you could answer it and the answer changes the correct plan: should partner API keys be exempt from the limit? You said yes. It did not ask where the limiter should live, which library to use, or how to test it. Those answers are in the repository, and making you choose them would be a planning failure.
 
 ## Goal: the part you approve
 
@@ -44,7 +44,7 @@ Main risk: /search/suggest shares the search handler, so it is limited too.
 
 **Why it's there.** Each fact is one the plan depends on, read from the code rather than remembered. The second one matters: an agent writing its own limiter would likely read the forwarded header directly, and any client can forge that header. The plan reuses the trusted helper instead.
 
-The `**Source:**` lines bind the plan to the code. Sealing records the exact bytes of every cited file, and Construct checks them before it starts. If one of those files changed after planning, Construct stops instead of applying a plan written for code that no longer exists.
+The `**Source:**` lines bind the plan to the code. Sealing records the exact bytes of every cited file, and `/construct` checks them before it starts. If one of those files changed after planning, `/construct` stops instead of applying a plan written for code that no longer exists.
 
 ## Implementation: decisions, not code
 
@@ -63,7 +63,7 @@ Add `rate_limit` to `build_chain` immediately after `authenticate`. Allow 60 req
 
 **Why it's there.** Every step names the files it touches and whether each one exists or is new. Sealing refuses a `new` file that already exists and an `existing` one that does not, so a mistyped path cannot quietly create a second module.
 
-The instruction is prose, not code. It settles every choice a faithful executor with no design authority could get wrong: where in the chain, the limit, which key, the partner exemption, the exact response. It leaves the typing to the executor. Blueprint never builds or runs the planned change, so code written into the plan would be untested code the executor copies. Prose is the default; short pseudocode appears only where prose cannot settle control flow, and exact text only where the bytes themselves are the decision, such as an error message.
+The instruction is prose, not code. It settles every choice a faithful executor with no design authority could get wrong: where in the chain, the limit, which key, the partner exemption, the exact response. It leaves the typing to the executor. `/blueprint` never builds or runs the planned change, so code written into the plan would be untested code the executor copies. Prose is the default; short pseudocode appears only where prose cannot settle control flow, and exact text only where the bytes themselves are the decision, such as an error message.
 
 ## Proof that would catch a wrong implementation
 
@@ -79,9 +79,9 @@ Red: today a client can send any number of search requests; the request after th
 Expect: exits 0 and reports 4 passed.
 ```
 
-**Why it's there.** The plan decides what the tests must catch: each case, its input, the result it expects, and the wrong implementation it rejects. Construct writes the test code from those cases; a test that skips a case is a defect it repairs, never a reason to change the plan. The planner never runs its own code, so the plan freezes exact bytes only for test data, such as expected output, never for the tests themselves.
+**Why it's there.** The plan decides what the tests must catch: each case, its input, the result it expects, and the wrong implementation it rejects. `/construct` writes the test code from those cases; a test that skips a case is a defect it repairs, never a reason to change the plan. The planner never runs its own code, so the plan freezes exact bytes only for test data, such as expected output, never for the tests themselves.
 
-`Red:` names the defect the new test must show before the change. A test that already passes on today's code proves nothing about the change, so Construct checks that the test fails for that reason first, then passes after the step.
+`Red:` names the defect the new test must show before the change. A test that already passes on today's code proves nothing about the change, so `/construct` checks that the test fails for that reason first, then passes after the step.
 
 ## Verification and completion
 
@@ -100,17 +100,17 @@ Expect: exits 0 with no failures; the existing search tests pass unchanged.
 - Owner gate: the operations lead confirms that 60 requests a minute suits production traffic.
 ```
 
-**Why it's there.** Verification is a list of exact commands, each with the result it must show. Construct runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so. Construct stops a command that changes a tracked file, an untracked file Git does not ignore, the Git index, HEAD, or any file the plan names, even an ignored one. It never reads through a directory link, and output Git ignores, such as a tool cache, never stops a run.
+**Why it's there.** Verification is a list of exact commands, each with the result it must show. `/construct` runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so. `/construct` stops a command that changes a tracked file, an untracked file Git does not ignore, the Git index, HEAD, or any file the plan names, even an ignored one. It never reads through a directory link, and output Git ignores, such as a tool cache, never stops a run.
 
-Completion conditions state outcomes, not tasks. The Goal summarizes the approach and what must stay true; the concrete outcomes, each ending with the command whose result shows it, appear only here, so a condition no check can show stands out as a missing check. The last one starts with `Owner gate:` because no command can settle it; a person has to. Construct lists it as pending for its owner and never claims it.
+Completion conditions state outcomes, not tasks. The Goal summarizes the approach and what must stay true; the concrete outcomes, each ending with the command whose result shows it, appear only here, so a condition no check can show stands out as a missing check. The last one starts with `Owner gate:` because no command can settle it; a person has to. `/construct` lists it as pending for its owner and never claims it.
 
 ## What the seal adds, and what it does not
 
-Line 1 of the file is an HTML comment naming the contract version. Sealing appends two generated receipts as the last two lines: `blueprint-proof` records the hash of every cited source and every existing target, and `blueprint-validation` binds the plan's text to that proof. A sealed plan never changes. If the request changes, Blueprint writes a new plan in a fresh folder.
+Line 1 of the file is an HTML comment naming the contract version. Sealing appends two generated receipts as the last two lines: `blueprint-proof` records the hash of every cited source and every existing target, and `blueprint-validation` binds the plan's text to that proof. A sealed plan never changes. If the request changes, `/blueprint` writes a new plan in a fresh folder.
 
 The seal proves shape and binding: the sections are in order, each target exists or is absent as declared, and the cited files are the ones the planner read. It does not prove the plan is good. That was the challenger's job. Before sealing, a separate fresh-context agent read the draft the way a faithful executor with no design authority would follow it. In this plan it noticed that step 2 never mentioned `/search/suggest`, which shares the search handler: a faithful executor would have limited it without anyone deciding to. The planner made it explicit in the Goal and the completion conditions, and only then sealed.
 
 ## Read next
 
 - [Plan a change before your agent starts editing](../recipes/plan-a-change.md): the recipe this plan comes from.
-- [Blueprint](../skills/blueprint.md) and [Construct](../skills/construct.md): what each skill does, where it stops, and why it is built that way.
+- [`/blueprint`](../skills/blueprint.md) and [`/construct`](../skills/construct.md): what each skill does, where it stops, and why it is built that way.

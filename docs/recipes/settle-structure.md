@@ -2,7 +2,7 @@
 
 Many codebases have a second cache. Nobody decided to build it. An agent could not find the first one, or could not tell it was allowed to use it.
 
-When no one has decided which part of the code owns a job, agents add a new helper, cache, or pipeline beside the one that already exists, and the codebase grows two ways to do one thing. Architect decides where the responsibility belongs first. Blueprint then plans around that decision instead of guessing.
+When no one has decided which part of the code owns a job, agents add a new helper, cache, or pipeline beside the one that already exists, and the codebase grows two ways to do one thing. `/architect` decides where the responsibility belongs first. `/blueprint` then plans around that decision instead of guessing.
 
 ## Use this when
 
@@ -14,14 +14,14 @@ When no one has decided which part of the code owns a job, agents add a new help
 
 - The structure is already settled: [Plan a change before your agent starts editing](plan-a-change.md).
 - A defect has an unknown cause: [Fix the bug without patching the symptom](fix-a-bug.md).
-- The goal is not mainly structural and you need options compared: [Ideate](../skills/ideate.md).
+- The goal is not mainly structural and you need options compared: [`/ideate`](../skills/ideate.md).
 
 ## Steps
 
-1. Start Architect with the structural question.
+1. Start `/architect` with the structural question.
 2. Read the sealed `architecture.md`. It holds the selected structure with its owner, boundary, and consequences, or a no-change outcome. No change is a valid answer, and it ends the recipe.
-3. Start Blueprint on `architecture.md`. It plans around the decision rather than reopening it.
-4. Carry out the plan with Construct, as in [Plan a change before your agent starts editing](plan-a-change.md).
+3. Start `/blueprint` on `architecture.md`. It plans around the decision rather than reopening it.
+4. Carry out the plan with `/construct`, as in [Plan a change before your agent starts editing](plan-a-change.md).
 
 ## A worked scenario
 
@@ -33,7 +33,7 @@ FreshCart calls three outside services: the payment provider, the email service,
 /architect : Payments, messages, and stock each keep their own retry loop with their own idea of what is safe to retry, and a delivery-slot client is about to become the fourth. Decide where retry logic for FreshCart's outbound HTTP calls should live.
 ```
 
-Architect reads the three loops and finds they differ in only two ways that matter: which responses are safe to retry, and how long a call may keep trying. One difference is not a matter of taste: a payment must never be retried when the charge may already have gone through.
+`/architect` reads the three loops and finds they differ in only two ways that matter: which responses are safe to retry, and how long a call may keep trying. One difference is not a matter of taste: a payment must never be retried when the charge may already have gone through.
 
 ```markdown
 ## Decision
@@ -44,7 +44,7 @@ Architect reads the three loops and finds they differ in only two ways that matt
 - Consequences: the three loops are removed, and the delivery-slot client gets retries through configuration instead of a fourth copy.
 ```
 
-Architect did not name files to edit, an order of migration, or tests. That is Blueprint's job, and Blueprint plans around this decision instead of reopening it.
+`/architect` did not name files to edit, an order of migration, or tests. That is `/blueprint`'s job, and `/blueprint` plans around this decision instead of reopening it.
 
 A fourth retry loop would have taken an afternoon to write. Sooner or later, one of the four would have retried a payment.
 
@@ -54,10 +54,10 @@ A fourth retry loop would have taken an afternoon to write. Sooner or later, one
 
 ## You are done when
 
-`architecture.md` is sealed with a selected structure or a no-change outcome. When you go on, Construct's report for the plan built on it shows every instruction applied, the plan's verification passed, and the diff matching the plan, and you have settled its owner gates.
+`architecture.md` is sealed with a selected structure or a no-change outcome. When you go on, `/construct`'s report for the plan built on it shows every instruction applied, the plan's verification passed, and the diff matching the plan, and you have settled its owner gates.
 
 ## If it goes wrong
 
-- Architect ends with a blocker: supply the evidence or the policy decision it names, then run it again ([Architect](../skills/architect.md)).
-- You no longer agree with the structure while planning: run Architect again on the new question instead of asking Blueprint to redesign it ([Architect](../skills/architect.md)).
-- Construct stops: follow [Construct](../skills/construct.md).
+- `/architect` ends with a blocker: supply the evidence or the policy decision it names, then run it again ([`/architect`](../skills/architect.md)).
+- You no longer agree with the structure while planning: run `/architect` again on the new question instead of asking `/blueprint` to redesign it ([`/architect`](../skills/architect.md)).
+- `/construct` stops: follow [`/construct`](../skills/construct.md).

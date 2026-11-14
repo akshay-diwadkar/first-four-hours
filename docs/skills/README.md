@@ -6,25 +6,25 @@ Each page also says why the skill is built the way it is: the failure it exists 
 
 ## Workbench
 
-- [Architect](architect.md): decide a structural question, such as a boundary, dependency direction, or module structure, before planning.
-- [Assess](assess.md): review one exact change against its requirements and base behavior before you trust it.
-- [Blueprint](blueprint.md): plan a repository change so completely that a weaker agent can carry it out.
-- [Charter](charter.md): give a rough idea for a whole project its agreed purpose, scope, and success before anyone splits it into tickets.
-- [Construct](construct.md): carry out a sealed Blueprint plan and verify the result.
-- [Diagnose](diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix.
-- [PR](pr.md): write a reviewer-oriented pull request description and open the pull request, or update its description, once you confirm it.
-- [Provision](provision.md): install the suite's Python requirements and set up its subagents on the models you choose.
-- [Temper](temper.md): audit a test suite to cut its run cost while keeping or raising the faults it catches.
-- [Ticket](ticket.md): split large work into session-sized tickets, or pick the next ready ticket and prepare it for planning.
+- [`/architect`](architect.md): decide a structural question, such as a boundary, dependency direction, or module structure, before planning.
+- [`/assess`](assess.md): review one exact change against its requirements and base behavior before you trust it.
+- [`/blueprint`](blueprint.md): plan a repository change so completely that a weaker agent can carry it out.
+- [`/charter`](charter.md): give a rough idea for a whole project its agreed purpose, scope, and success before anyone splits it into tickets.
+- [`/construct`](construct.md): carry out a sealed `/blueprint` plan and verify the result.
+- [`/diagnose`](diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix.
+- [`/pr`](pr.md): write a reviewer-oriented pull request description and open the pull request, or update its description, once you confirm it.
+- [`/provision`](provision.md): install the suite's Python requirements and set up its subagents on the models you choose.
+- [`/temper`](temper.md): audit a test suite to cut its run cost while keeping or raising the faults it catches.
+- [`/ticket`](ticket.md): split large work into session-sized tickets, or pick the next ready ticket and prepare it for planning.
 
 ## Sensemaking
 
-- [Ideate](ideate.md): research and compare options for a goal and recommend a direction you choose from.
-- [Reason](reason.md): check a judgment at the moments it matters, or ask what only you can answer.
-- [Router](router.md): lay out which skills to use, in what order, as far as that can be known now.
-- [Scribe](scribe.md): write or audit technical documentation that carries its sources faithfully.
+- [`/ideate`](ideate.md): research and compare options for a goal and recommend a direction you choose from.
+- [`/reason`](reason.md): check a judgment at the moments it matters, or ask what only you can answer.
+- [`/router`](router.md): lay out which skills to use, in what order, as far as that can be known now.
+- [`/scribe`](scribe.md): write or audit technical documentation that carries its sources faithfully.
 
 ## Learning
 
-- [Examiner](examiner.md): write practice papers for a specific written examination and mark attempts.
-- [Tutor](tutor.md): learn any subject through an explanation, interactive tutoring, or a continuing series.
+- [`/examiner`](examiner.md): write practice papers for a specific written examination and mark attempts.
+- [`/tutor`](tutor.md): learn any subject through an explanation, interactive tutoring, or a continuing series.

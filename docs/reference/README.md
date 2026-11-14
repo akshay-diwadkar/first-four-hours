@@ -36,7 +36,7 @@ One row per skill. The table is generated from the skill folders, [the invocatio
 
 | Fact | Where it is kept |
 | :--- | :--- |
-| Handoff folders, deliverables that stay committable, and which skills consult Reason | [How skills hand work to each other](../concepts/handoffs.md) |
+| Handoff folders, deliverables that stay committable, and which skills consult `/reason` | [How skills hand work to each other](../concepts/handoffs.md) |
 | Install commands for the Skills CLI and the Claude Code plugin, install folders, plugin skill names, and `skills-lock.json` | [Install First Four Hours](../getting-started/installation.md) |
 | What each invocation mode means | [Your first run](../getting-started/first-run.md) |
 | What each skill does and the results it can return | [The skill index](../skills/README.md) and each skill's `SKILL.md` |

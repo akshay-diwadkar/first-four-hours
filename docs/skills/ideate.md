@@ -1,6 +1,6 @@
 # Ideate
 
-Ideate researches the possibilities for a goal, compares them, and recommends a direction, while you keep the final choice. It works for any goal; a repository is optional. It belongs to the Sensemaking domain.
+`/ideate` researches the possibilities for a goal, compares them, and recommends a direction, while you keep the final choice. It works for any goal; a repository is optional. It belongs to the Sensemaking domain.
 
 ## When to use it
 
@@ -9,13 +9,13 @@ Ideate researches the possibilities for a goal, compares them, and recommends a 
 
 ## When to use something else
 
-- Ordinary context gathering and a quick list of ideas do not need Ideate, unless you ask for structured ideation.
-- To plan the chosen direction, use [Blueprint](blueprint.md). Ideate never plans or implements.
-- To find the cause of a problem, use [Diagnose](diagnose.md).
+- Ordinary context gathering and a quick list of ideas do not need `/ideate`, unless you ask for structured ideation.
+- To plan the chosen direction, use [`/blueprint`](blueprint.md). `/ideate` never plans or implements.
+- To find the cause of a problem, use [`/diagnose`](diagnose.md).
 
 ## How to start it
 
-Start it yourself with `/ideate`, or the agent may start it when your request matches. Blueprint may also call it while planning. For example (illustrative):
+Start it yourself with `/ideate`, or the agent may start it when your request matches. `/blueprint` may also call it while planning. For example (illustrative):
 
 ```text
 /ideate : CI takes 47 minutes and engineers have started merging without waiting for it. Find workable ways to get it under ten without dropping test coverage, and tell me which to try first.
@@ -23,7 +23,7 @@ Start it yourself with `/ideate`, or the agent may start it when your request ma
 
 ## What happens
 
-Ideate frames the goal and decision criteria, names the obvious answers first, then generates candidates from several angles that look past them, all before judging any. It tests, extends, or eliminates them with the cheapest evidence that could change the conclusion, compares the survivors with each other and with the current approach, and recombines their strongest parts. It searches the web for prior art and current practice as well as any repository, unless you tell it not to, and records when you opted out or web research could not be done. It keeps mechanisms the evidence supports apart from untested hypotheses. It consults [Reason](reason.md) at its judgment points.
+`/ideate` frames the goal and decision criteria, names the obvious answers first, then generates candidates from several angles that look past them, all before judging any. It tests, extends, or eliminates them with the cheapest evidence that could change the conclusion, compares the survivors with each other and with the current approach, and recombines their strongest parts. It searches the web for prior art and current practice as well as any repository, unless you tell it not to, and records when you opted out or web research could not be done. It keeps mechanisms the evidence supports apart from untested hypotheses. It consults [`/reason`](reason.md) at its judgment points.
 
 ## What you get
 
@@ -36,11 +36,11 @@ The goal, decision criteria, and research coverage, including the web searches r
 
 ## When it stops
 
-Ideate never manufactures a winner. When the evidence cannot justify a recommendation, it names the experiment that would decide, or reports the research limit.
+`/ideate` never manufactures a winner. When the evidence cannot justify a recommendation, it names the experiment that would decide, or reports the research limit.
 
 ## Why it's built this way
 
-**The failure it prevents.** The first idea is rarely the best one. It is only the first one anyone had. A weaker agent does not know where to look. It stops at the first idea, or at what the repository already does, and misses workable directions that nobody has built here yet. Ideate searches the possibilities from several angles, either composing pieces into steps toward a goal or comparing alternatives, and tests them against your constraints.
+**The failure it prevents.** The first idea is rarely the best one. It is only the first one anyone had. A weaker agent does not know where to look. It stops at the first idea, or at what the repository already does, and misses workable directions that nobody has built here yet. `/ideate` searches the possibilities from several angles, either composing pieces into steps toward a goal or comparing alternatives, and tests them against your constraints.
 
 **What it refuses, and why.** It never manufactures a winner. When the evidence cannot justify a choice, it names the experiment that would decide or reports the limit of the research. It keeps mechanisms the evidence supports apart from untested ideas, and it does not dismiss an idea only because no one has built it in this project. Its recommendation is never your approval: you make the final selection, and a choice you already made stands without being asked again.
 
@@ -48,8 +48,8 @@ Ideate never manufactures a winner. When the evidence cannot justify a recommend
 
 ## Related skills
 
-Inside a Blueprint run, Ideate returns its result to the planner, who asks for your selection while it is still open. See [How skills hand work to each other](../concepts/handoffs.md).
+Inside a `/blueprint` run, `/ideate` returns its result to the planner, who asks for your selection while it is still open. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 
-[Ideate's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/ideate/SKILL.md)
+[`/ideate`'s contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/sensemaking/ideate/SKILL.md)

@@ -20,7 +20,7 @@ Classify a new public capability by its primary owned job:
 
 Once investigation and design provide enough evidence, assign exactly one domain before package/release convergence. If none fits, revisit the hierarchy explicitly rather than add dual membership or another domain as a local workaround.
 
-Domains organize the source and catalog. Invocation authority stays with each capability, Router routes concrete capabilities, and affected risk determines validation scope. The generated [skill facts table](../reference/README.md) supplies current capability membership and invocation facts.
+Domains organize the source and catalog. Invocation authority stays with each capability, `/router` routes concrete capabilities, and affected risk determines validation scope. The generated [skill facts table](../reference/README.md) supplies current capability membership and invocation facts.
 
 ## Put the change with its owner
 

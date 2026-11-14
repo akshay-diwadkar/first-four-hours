@@ -2,7 +2,7 @@
 
 You asked for one small fix. The diff touches five files. One of them is a helper nobody mentioned, now "simplified". Your rules file said to leave it alone.
 
-A request that only says what to do leaves everything else open, and a rule in a rules file is advice the agent weighs in the middle of an edit. Blueprint turns what must not change into part of the plan: the Goal names it, every step names the files it may touch, and the completion conditions say how each protected behavior is checked. Construct carries out that plan without widening it and compares the final diff with it. Nothing here forces an agent to obey. It gives you something exact to check the change against, and a step that checks it.
+A request that only says what to do leaves everything else open, and a rule in a rules file is advice the agent weighs in the middle of an edit. `/blueprint` turns what must not change into part of the plan: the Goal names it, every step names the files it may touch, and the completion conditions say how each protected behavior is checked. `/construct` carries out that plan without widening it and compares the final diff with it. Nothing here forces an agent to obey. It gives you something exact to check the change against, and a step that checks it.
 
 ## Use this when
 
@@ -18,11 +18,11 @@ A request that only says what to do leaves everything else open, and a rule in a
 
 ## Steps
 
-1. Start Blueprint with the change and, in the same request, what must not change: the files, the behavior, the interfaces. Name them. "Don't touch anything else" is not something a check can show.
-2. Read the sealed plan's Goal. Each thing you named should appear in its load-bearing invariants or under what does not change, and the completion conditions should name the check that shows it. Anything missing there is not protected. A sealed plan never changes, so ask Blueprint for a new plan that states it.
-3. Start Construct on the sealed plan in a Git worktree. It never changes the plan's method, scope, or decisions. When the code turns out to need something the plan does not allow, it stops with `plan-contradiction` instead of widening the change.
-4. Read Construct's report. A completion report means every instruction was applied, the plan's verification passed, and the final diff matches the plan.
-5. When the protected code matters enough to want a second reader, start Assess on the branch with the sealed Blueprint as its authority.
+1. Start `/blueprint` with the change and, in the same request, what must not change: the files, the behavior, the interfaces. Name them. "Don't touch anything else" is not something a check can show.
+2. Read the sealed plan's Goal. Each thing you named should appear in its load-bearing invariants or under what does not change, and the completion conditions should name the check that shows it. Anything missing there is not protected. A sealed plan never changes, so ask `/blueprint` for a new plan that states it.
+3. Start `/construct` on the sealed plan in a Git worktree. It never changes the plan's method, scope, or decisions. When the code turns out to need something the plan does not allow, it stops with `plan-contradiction` instead of widening the change.
+4. Read `/construct`'s report. A completion report means every instruction was applied, the plan's verification passed, and the final diff matches the plan.
+5. When the protected code matters enough to want a second reader, start `/assess` on the branch with the sealed `/blueprint` plan as its authority.
 
 ## A worked scenario
 
@@ -36,7 +36,7 @@ This week Mateo Rojas, who owns checkout, needs the delivery fee shown on the or
 /blueprint : Show the delivery fee as its own line on FreshCart's order summary. The order total must not change, and the payment retry helper must stay exactly as it is; last time a small checkout change quietly rewrote it.
 ```
 
-Blueprint reads the summary view and the code around it, and writes what must stay true into the Goal:
+`/blueprint` reads the summary view and the code around it, and writes what must stay true into the Goal:
 
 ```markdown
 ## Goal
@@ -56,16 +56,16 @@ Each step names its target files, and none of them is in the payment module. One
 /construct : Implement the sealed blueprint in .first-four-hours/blueprints/delivery-fee-on-summary/blueprint.md.
 ```
 
-Construct applies the two steps and runs the plan's verification, including that diff check, which exits 0. Its report says the final diff matches the plan: two files, the ones the plan named. Yuki Tanaka, reviewing on Friday, does not have to wonder what else moved.
+`/construct` applies the two steps and runs the plan's verification, including that diff check, which exits 0. Its report says the final diff matches the plan: two files, the ones the plan named. Yuki Tanaka, reviewing on Friday, does not have to wonder what else moved.
 
 The tempting shortcut was the one from last month: ask for the change and trust the summary. That route would have put the payment module back in the diff, unread.
 
 ## You are done when
 
-Construct's report shows every instruction applied, the plan's verification passed, and the diff matching the plan; every behavior you named as protected has a completion condition whose check passed; and you have settled the owner gates.
+`/construct`'s report shows every instruction applied, the plan's verification passed, and the diff matching the plan; every behavior you named as protected has a completion condition whose check passed; and you have settled the owner gates.
 
 ## If it goes wrong
 
-- Something you asked to protect is missing from the Goal or the completion conditions: ask Blueprint for a new plan that names it. A sealed plan never changes ([Blueprint](../skills/blueprint.md)).
-- Construct stops with `plan-contradiction` because the change really does need the protected code: decide whether that is acceptable, then run a new `/blueprint` with the original request, your decision, and Construct's evidence ([Construct](../skills/construct.md)).
-- Construct stops any other way: follow the table on [Construct](../skills/construct.md).
+- Something you asked to protect is missing from the Goal or the completion conditions: ask `/blueprint` for a new plan that names it. A sealed plan never changes ([`/blueprint`](../skills/blueprint.md)).
+- `/construct` stops with `plan-contradiction` because the change really does need the protected code: decide whether that is acceptable, then run a new `/blueprint` with the original request, your decision, and `/construct`'s evidence ([`/construct`](../skills/construct.md)).
+- `/construct` stops any other way: follow the table on [`/construct`](../skills/construct.md).

@@ -2,27 +2,27 @@
 
 The tests are green. The description says complete. The reviewer has twenty minutes before the weekend. Bad merges often happen that way: not through carelessness, but through trust in the wrong signals.
 
-Review churn comes from reviews that skim the diff, or from fixes made straight from review comments that quietly reopen decisions. Assess checks the exact change against what it was supposed to do and reports every material defect it finds. Fixes go through a new plan instead of a direct edit.
+Review churn comes from reviews that skim the diff, or from fixes made straight from review comments that quietly reopen decisions. `/assess` checks the exact change against what it was supposed to do and reports every material defect it finds. Fixes go through a new plan instead of a direct edit.
 
 ## Use this when
 
-- A change is finished and you need to know it does what its issue, specification, or Blueprint asked, without breaking existing behavior.
+- A change is finished and you need to know it does what its issue, specification, or `/blueprint` asked, without breaking existing behavior.
 - You want a re-review after rework.
 - You are about to trust the agent's summary of a change instead of the change.
 
 ## Use something else when
 
-- You need the pull request description: [PR](../skills/pr.md).
+- You need the pull request description: [`/pr`](../skills/pr.md).
 - A broader risk has an unknown cause: [Fix the bug without patching the symptom](fix-a-bug.md).
 - The change is not written yet: [Plan a change before your agent starts editing](plan-a-change.md).
 
 ## Steps
 
-1. Start Assess on the branch, naming the authority (issue, specification, or sealed Blueprint) and the base.
+1. Start `/assess` on the branch, naming the authority (issue, specification, or sealed `/blueprint` plan) and the base.
 2. Read the result: `clear`, `findings`, or `blocked`. None of them is approval to merge.
-3. For `findings`, plan the fixes with a new Blueprint from `assessment.md`, and carry them out with a fresh Construct.
-4. Run Assess again on the reworked branch. When it reviews the rework and the earlier findings, its report names the head the earlier assessment reviewed; ask for a full review to cover the whole change again.
-5. Open the pull request with PR. It shows you the exact text and opens the pull request only after your yes. Merging stays yours.
+3. For `findings`, plan the fixes with a new `/blueprint` from `assessment.md`, and carry them out with a fresh `/construct`.
+4. Run `/assess` again on the reworked branch. When it reviews the rework and the earlier findings, its report names the head the earlier assessment reviewed; ask for a full review to cover the whole change again.
+5. Open the pull request with `/pr`. It shows you the exact text and opens the pull request only after your yes. Merging stays yours.
 
 ## A worked scenario
 
@@ -34,7 +34,7 @@ It is Friday afternoon. Checkout engineer Mateo Rojas's branch adds shareable sh
 /assess : Assess this branch against issue #40 and the current main branch before merge.
 ```
 
-Assess reads issue #40 first and works out what the change must do before it reads anyone's claims about it. It returns `findings`:
+`/assess` reads issue #40 first and works out what the change must do before it reads anyone's claims about it. It returns `findings`:
 
 ```markdown
 ## Result
@@ -68,19 +68,19 @@ Assess reads issue #40 first and works out what the change must do before it rea
 - Required truth: existing lists keep working and stay private.
 ```
 
-Assess kept going after the first finding. The second never shows up in tests, because the test database starts with no lists. A five-minute approval would have let any customer read anyone's list, and sent everyone with a saved list to an error page.
+`/assess` kept going after the first finding. The second never shows up in tests, because the test database starts with no lists. A five-minute approval would have let any customer read anyone's list, and sent everyone with a saved list to an error page.
 
 ```text
 /blueprint : Plan fixes for the findings in .first-four-hours/assessments/shared-lists/assessment.md.
 ```
 
-A new Blueprint and a fresh Construct fix both findings, and a second Assess returns `clear` for the rework on top of the first assessment: no material defect found after a sufficient look. Its report names the head the first assessment reviewed. That is still not permission to merge.
+A new `/blueprint` and a fresh `/construct` fix both findings, and a second `/assess` returns `clear` for the rework on top of the first assessment: no material defect found after a sufficient look. Its report names the head the first assessment reviewed. That is still not permission to merge.
 
 ```text
 /pr : Open a pull request for this branch against main; it implements issue #40.
 ```
 
-PR writes for the reviewer who skims and for the one who reads closely but only has the diff. It leads with what changes if this merges, links issue #40 instead of restating it, and claims only checks it actually ran and recorded:
+`/pr` writes for the reviewer who skims and for the one who reads closely but only has the diff. It leads with what changes if this merges, links issue #40 instead of restating it, and claims only checks it actually ran and recorded:
 
 ```markdown
 ## What changes if this merges
@@ -97,14 +97,14 @@ Customers can share a shopping list by link. Only the owner and people holding t
 - Ran: `python -m pytest tests/lists -q`: all tests passed.
 ```
 
-PR shows you the title and the full text, and opens the pull request only after your yes. Merging stays yours.
+`/pr` shows you the title and the full text, and opens the pull request only after your yes. Merging stays yours.
 
 ## You are done when
 
-Assess returns `clear` for the final revision of the branch, which means no material defect was found after sufficient examination (when it reviews only the rework, in that rework on top of the earlier assessment), and you have decided to merge.
+`/assess` returns `clear` for the final revision of the branch, which means no material defect was found after sufficient examination (when it reviews only the rework, in that rework on top of the earlier assessment), and you have decided to merge.
 
 ## If it goes wrong
 
-- `blocked`: supply the missing or contradictory authority or evidence it names, then run Assess again ([Assess](../skills/assess.md)).
-- Assess stops and asks you to run `/diagnose` on a risk beyond the change: run it, then run Assess again with the resulting `diagnosis.md` ([Assess](../skills/assess.md), [Diagnose](../skills/diagnose.md)).
-- A PR check fails: PR repairs the draft and checks again. Nothing is pushed or opened without your yes ([PR](../skills/pr.md)).
+- `blocked`: supply the missing or contradictory authority or evidence it names, then run `/assess` again ([`/assess`](../skills/assess.md)).
+- `/assess` stops and asks you to run `/diagnose` on a risk beyond the change: run it, then run `/assess` again with the resulting `diagnosis.md` ([`/assess`](../skills/assess.md), [`/diagnose`](../skills/diagnose.md)).
+- A `/pr` check fails: `/pr` repairs the draft and checks again. Nothing is pushed or opened without your yes ([`/pr`](../skills/pr.md)).

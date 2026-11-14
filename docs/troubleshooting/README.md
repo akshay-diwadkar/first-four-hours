@@ -24,19 +24,19 @@ Find the symptom you see. Each entry gives the likely cause, a check that change
 
 - **Likely cause:** the handoff is stale because the files it was sealed against have changed, it belongs to another task, or an older version of the producing skill wrote it.
 - **Check:** read the stopping skill's report for the reason and evidence, and confirm that the path you gave is the handoff for this task.
-- **Next step:** run the skill that produced the handoff again for the current state; a sealed handoff is never edited. When a Blueprint plan no longer fits the code, Construct stops with `plan-contradiction`: run a new `/blueprint` with the original request and Construct's evidence, then a fresh `/construct`.
+- **Next step:** run the skill that produced the handoff again for the current state; a sealed handoff is never edited. When a `/blueprint` plan no longer fits the code, `/construct` stops with `plan-contradiction`: run a new `/blueprint` with the original request and `/construct`'s evidence, then a fresh `/construct`.
 
 ## Blueprint did not seal
 
-- **Likely cause:** a question only you can answer is still open, Ideate could only report a research limit for the direction the plan needs, no separate subagent could run a risky plan's challenge, the one challenge returned no review, or repairs after the challenge would have replaced the plan's basis.
-- **Check:** read Blueprint's last message; it names the open question, the limit, the challenge that could not run or returned no review, or the failing premise.
-- **Next step:** answer the question, supply the missing evidence or choose another direction, run Blueprint again in a fresh task folder where a subagent is available and can return its review, or follow the next step its report gives for the failing premise. A changed request needs a new plan in a fresh task folder. See [Blueprint](../skills/blueprint.md).
+- **Likely cause:** a question only you can answer is still open, `/ideate` could only report a research limit for the direction the plan needs, no separate subagent could run a risky plan's challenge, the one challenge returned no review, or repairs after the challenge would have replaced the plan's basis.
+- **Check:** read `/blueprint`'s last message; it names the open question, the limit, the challenge that could not run or returned no review, or the failing premise.
+- **Next step:** answer the question, supply the missing evidence or choose another direction, run `/blueprint` again in a fresh task folder where a subagent is available and can return its review, or follow the next step its report gives for the failing premise. A changed request needs a new plan in a fresh task folder. See [`/blueprint`](../skills/blueprint.md).
 
 ## Construct stopped before completion
 
 - **Likely cause:** the result names it. `plan-contradiction` means the plan is stale, wrong, or incomplete against the code; `verification-incomplete` means a check the plan declared environmental did not finish; `protected-work-conflict` means continuing would overwrite unrelated uncommitted work; `safety-contradiction` means a safety check failed or the baseline moved.
-- **Check:** run `git status` and `git diff` to see what Construct applied. Construct keeps no record of its own; the worktree is its only progress.
-- **Next step:** follow the table in [Construct](../skills/construct.md). A plan fault goes back to `/blueprint`; Construct never redesigns the plan. An incomplete check is never a pass.
+- **Check:** run `git status` and `git diff` to see what `/construct` applied. `/construct` keeps no record of its own; the worktree is its only progress.
+- **Next step:** follow the table in [`/construct`](../skills/construct.md). A plan fault goes back to `/blueprint`; `/construct` never redesigns the plan. An incomplete check is never a pass.
 
 ## A skill finished without the result you expected
 
@@ -44,15 +44,15 @@ These results are correct answers, not failures:
 
 | Result | Skill | Next step |
 | :--- | :--- | :--- |
-| `blocked` | Assess | Supply the authority or evidence it names as missing or contradictory, then run Assess again. |
-| `clear` | Assess | No material defect was found. When Assess reviews only the rework since an earlier assessment, this covers that rework on top of the assessment, and the report names the head it reviewed. It is not approval; the merge decision stays yours. |
-| `needs-info`, `blocked`, `close-candidate`, or `needs-decomposition` | Ticket `select` | Make the missing decision, clear the blocker, close the ticket, or split it. You decide whether to persist replacement tickets. |
-| `Outcome: run an experiment first` or `Outcome: research limit reached` | Ideate | Run the named experiment, or accept the research limit and change the goal or the evidence. |
-| A `None:` route, or a route that stops early | Router | The current state already meets the target, or the next step depends on a result that does not exist yet. Ask for a fresh route once it does. |
-| A finding with missing evidence | Diagnose | Gather the evidence it names, then run Diagnose again. |
-| A gap with its next owner | Scribe | The named owner supplies the missing source; then write again. |
-| A charter left in `settling` | Charter | Answer the open questions it names, starting with any missing observable success, then run `/charter` again; it resumes the same file. |
-| A publication stop such as `charter.umbrella_differs` or `charter.issue_changed` | Charter | The GitHub issue holds text you have not confirmed. Read it, then decide whether to bring the charter to it or replace it. |
+| `blocked` | `/assess` | Supply the authority or evidence it names as missing or contradictory, then run `/assess` again. |
+| `clear` | `/assess` | No material defect was found. When `/assess` reviews only the rework since an earlier assessment, this covers that rework on top of the assessment, and the report names the head it reviewed. It is not approval; the merge decision stays yours. |
+| `needs-info`, `blocked`, `close-candidate`, or `needs-decomposition` | `/ticket` `select` | Make the missing decision, clear the blocker, close the ticket, or split it. You decide whether to persist replacement tickets. |
+| `Outcome: run an experiment first` or `Outcome: research limit reached` | `/ideate` | Run the named experiment, or accept the research limit and change the goal or the evidence. |
+| A `None:` route, or a route that stops early | `/router` | The current state already meets the target, or the next step depends on a result that does not exist yet. Ask for a fresh route once it does. |
+| A finding with missing evidence | `/diagnose` | Gather the evidence it names, then run `/diagnose` again. |
+| A gap with its next owner | `/scribe` | The named owner supplies the missing source; then write again. |
+| A charter left in `settling` | `/charter` | Answer the open questions it names, starting with any missing observable success, then run `/charter` again; it resumes the same file. |
+| A publication stop such as `charter.umbrella_differs` or `charter.issue_changed` | `/charter` | The GitHub issue holds text you have not confirmed. Read it, then decide whether to bring the charter to it or replace it. |
 
 ## Repository validation did not pass
 

@@ -1,6 +1,6 @@
 # Diagnose
 
-Diagnose investigates a concrete problem, risk, or improvement opportunity and finds its cause from evidence before anyone decides on a fix. It belongs to the Workbench domain.
+`/diagnose` investigates a concrete problem, risk, or improvement opportunity and finds its cause from evidence before anyone decides on a fix. It belongs to the Workbench domain.
 
 ## When to use it
 
@@ -9,13 +9,13 @@ Diagnose investigates a concrete problem, risk, or improvement opportunity and f
 
 ## When to use something else
 
-- To plan a fix once the cause is known, use [Blueprint](blueprint.md).
-- To decide a structural question, use [Architect](architect.md).
-- To review a finished change, use [Assess](assess.md).
+- To plan a fix once the cause is known, use [`/blueprint`](blueprint.md).
+- To decide a structural question, use [`/architect`](architect.md).
+- To review a finished change, use [`/assess`](assess.md).
 
 ## How to start it
 
-Only you can start Diagnose: type `/diagnose`. The agent never starts it on its own. For example (illustrative):
+Only you can start `/diagnose`: type `/diagnose`. The agent never starts it on its own. For example (illustrative):
 
 ```text
 /diagnose : About one invoice in 4,000 comes out exactly one cent short, only on the first of the month, and re-running the job gives the right total. Nobody has touched billing in a year. Find out why.
@@ -23,7 +23,7 @@ Only you can start Diagnose: type `/diagnose`. The agent never starts it on its 
 
 ## What happens
 
-Diagnose stays on the named problem unless evidence earns a wider look. It traces symptoms through the repository, may consult authoritative technology documentation for version-specific behavior, and runs only non-mutating probes: a probe that would write into your project, such as bisecting history, building, installing, or running tests that leave caches, runs in a throwaway copy outside your project with its own environment, runs with those writes switched off, or is left for you to run. For a regression from a known-good version, it usually reads the project's history before bisecting or running other probes to narrow down the cause. It asks before using shared or billable resources or production data. It never edits the project or touches GitHub issues. It consults [Reason](reason.md) at its judgment points.
+`/diagnose` stays on the named problem unless evidence earns a wider look. It traces symptoms through the repository, may consult authoritative technology documentation for version-specific behavior, and runs only non-mutating probes: a probe that would write into your project, such as bisecting history, building, installing, or running tests that leave caches, runs in a throwaway copy outside your project with its own environment, runs with those writes switched off, or is left for you to run. For a regression from a known-good version, it usually reads the project's history before bisecting or running other probes to narrow down the cause. It asks before using shared or billable resources or production data. It never edits the project or touches GitHub issues. It consults [`/reason`](reason.md) at its judgment points.
 
 ## What you get
 
@@ -31,11 +31,11 @@ A sealed `diagnosis.md` in the ignored folder `.first-four-hours/diagnoses/<slug
 
 ## When it stops
 
-Diagnose is complete only when its `diagnosis.md` is sealed. When the evidence cannot support a finding, it says what evidence is missing instead of guessing.
+`/diagnose` is complete only when its `diagnosis.md` is sealed. When the evidence cannot support a finding, it says what evidence is missing instead of guessing.
 
 ## Why it's built this way
 
-**The failure it prevents.** The symptom is where a bug is noticed, which is rarely where it lives. When the cause is unknown, agents patch the place where the symptom shows, or answer with generic advice such as "add caching" or "raise the timeout", and the problem returns somewhere else. Diagnose investigates with a senior diagnostic specialist's depth: it traces the symptom through the project and explains what each piece of evidence establishes and how it connects to the symptom.
+**The failure it prevents.** The symptom is where a bug is noticed, which is rarely where it lives. When the cause is unknown, agents patch the place where the symptom shows, or answer with generic advice such as "add caching" or "raise the timeout", and the problem returns somewhere else. `/diagnose` investigates with a senior diagnostic specialist's depth: it traces the symptom through the project and explains what each piece of evidence establishes and how it connects to the symptom.
 
 **What it refuses, and why.** An investigation that is also allowed to fix tends to stop at the first plausible cause. It never edits the project and never chooses a fix. Its advisory directions are leads, not a recommendation, a design, or a plan. It never states a cause more strongly than the evidence supports: a cause is `demonstrated` only when executed evidence shows that changing it moves the effect, and documentation or another project's incident can support a mechanism but never prove this project's cause. When evidence is missing, it names what is missing instead of guessing. Only you start it, and you decide what follows.
 
@@ -43,8 +43,8 @@ Diagnose is complete only when its `diagnosis.md` is sealed. When the evidence c
 
 ## Related skills
 
-You decide what comes next: [Ideate](ideate.md) to explore options, [Blueprint](blueprint.md) with one finding ID to plan a fix, [Architect](architect.md) with one finding ID when the fix first needs a structural decision, such as who owns a responsibility, or nothing. Diagnose starts none of them. See [How skills hand work to each other](../concepts/handoffs.md).
+You decide what comes next: [`/ideate`](ideate.md) to explore options, [`/blueprint`](blueprint.md) with one finding ID to plan a fix, [`/architect`](architect.md) with one finding ID when the fix first needs a structural decision, such as who owns a responsibility, or nothing. `/diagnose` starts none of them. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 
-[Diagnose's contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/diagnose/SKILL.md)
+[`/diagnose`'s contract](https://github.com/akshay-diwadkar/first-four-hours/blob/main/skills/workbench/diagnose/SKILL.md)

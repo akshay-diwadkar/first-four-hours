@@ -20,7 +20,7 @@ For an elevated draft, launch the challenger as a separate fresh-context subagen
 
 ## Repair and re-check
 
-Re-verify each finding against the request and current source, weighing user authority, evidence, and consequence rather than confidence. Closure names the repaired instruction and the evidence or decided branch defeating the counterexample; unsupported closure blocks seal. A needed fact earns one bounded exploration; ask all user-owned choices at once, amend the request in place ([Earlier plans](earlier-plans.md#commands)), and repair only what the answers change. Re-trace repairs, reread each changed declared block as the file holds it, and drop work that stopped earning.
+Re-verify each finding against the request and current source, weighing user authority, evidence, and consequence rather than confidence. Closure names the repaired instruction and the evidence or decided branch defeating the counterexample; unsupported closure blocks seal. A needed fact earns one bounded exploration; ask all user-owned choices at once, amend the request in place ([Earlier plans](earlier-plans.md#commands)), and repair only what the answers change. Reread each changed declared block as the file holds it, and drop work that stopped earning.
 
 One user request gets at most one fresh challenge, amendments included, counting other independent reviews and drafts carried to a fresh workspace; repair against the findings you have. One returning no review stops you. When later repairs would replace the basis or architecture, stop unsealed and report the failing premise. A Tier signal found later earns the challenge if none ran, else run the brief's elevated re-enumeration yourself.
 
@@ -34,6 +34,6 @@ Seal only when every rule in this file and the planning contract holds, includin
 
 - no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance;
 - where completion or a resume relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source, and proof fails an implementation trusting it;
-- the owner walk ran, plus an elevated draft's fresh challenge.
+- the owner walk, an elevated draft's fresh challenge, and the before-seal `reason` consultation ran.
 
 If substantive judgment is still required anywhere, the Blueprint is not ready to seal. After sealing, stop.

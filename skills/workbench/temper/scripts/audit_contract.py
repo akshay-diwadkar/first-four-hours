@@ -11,7 +11,7 @@ from typing import Any
 
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "1.0.1"
 RECEIPT_MARKER = "test-audit"
 DATA_MARKER = "<!-- test-audit-data -->"
 KINDS: dict[str, dict[str, str]] = {

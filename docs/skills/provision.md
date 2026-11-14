@@ -49,7 +49,7 @@ If the harness has no custom subagents or cannot set a model per subagent, Provi
 
 ## Related skills
 
-Blueprint, Reason, Assess, Construct, Architect, Diagnose, and Ideate use these subagents by name for the work each is for, and a generic subagent, as before, when one is missing. See [How skills hand work to each other](../concepts/handoffs.md).
+Blueprint, Reason, Assess, Construct, Architect, Diagnose, and Ideate use these subagents by name for the work each is for, and a generic subagent, as before, when one is missing. The exception is a large sweep: Blueprint, Architect, and Diagnose send it to `ffh-evidence`, and without it they do the sweep themselves. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

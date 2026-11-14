@@ -1,21 +1,21 @@
 {
   "schema_version": "1.0.0",
   "limits": {
-    "architect": {"top_level": 612, "references": 5943},
-    "assess": {"top_level": 875, "references": 5597},
-    "blueprint": {"top_level": 958, "references": 7564},
+    "architect": {"top_level": 616, "references": 6083},
+    "assess": {"top_level": 906, "references": 5660},
+    "blueprint": {"top_level": 958, "references": 7579},
     "charter": {"top_level": 860, "references": 2150},
-    "construct": {"top_level": 766, "references": 5749},
-    "diagnose": {"top_level": 750, "references": 5142},
-    "examiner": {"top_level": 960, "references": 3823},
-    "ideate": {"top_level": 758, "references": 4442},
+    "construct": {"top_level": 794, "references": 5812},
+    "diagnose": {"top_level": 754, "references": 5251},
+    "examiner": {"top_level": 1003, "references": 3823},
+    "ideate": {"top_level": 782, "references": 4505},
     "pr": {"top_level": 700, "references": 1000},
-    "provision": {"top_level": 1130, "references": 2278},
-    "reason": {"top_level": 650, "references": 3500},
+    "provision": {"top_level": 1130, "references": 2341},
+    "reason": {"top_level": 679, "references": 3563},
     "router": {"top_level": 500, "references": 1000},
-    "scribe": {"top_level": 736, "references": 2075},
-    "temper": {"top_level": 630, "references": 1335},
+    "scribe": {"top_level": 736, "references": 2109},
+    "temper": {"top_level": 630, "references": 1383},
     "ticket": {"top_level": 616, "references": 6426},
-    "tutor": {"top_level": 1027, "references": 3470}
+    "tutor": {"top_level": 1051, "references": 3470}
   }
 }

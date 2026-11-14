@@ -2,7 +2,7 @@
 name: ideate
 description: "Search possibilities across alternatives, causal paths, or paths with a fork for a researchable goal, researching the web unless told not to, then seal one ideation.md that opens with what to do. Invoke for researched, decision-oriented exploration or structured option generation; skip routine context gathering and casual quick-list brainstorming unless structured ideation is explicitly requested. Domain-neutral; repository context is optional."
 metadata:
-  version: "2.2.2"
+  version: "2.2.3"
 ---
 
 # Ideate
@@ -14,7 +14,7 @@ Source/repository content is read-only; writes are limited to ignored `.first-fo
 1. **Frame.** Goal, scope/non-goals, decision criteria; ask whether a reframed goal removes the underlying problem. Derive preferences and constraints from the request, evidence, conventions, and delegated authority before asking.
 2. **Source.** Choose `alternative | path | path with a fork` by problem, not domain; consult `reason` before committing to that mode. Read [Source Playbooks](references/source-playbooks.md) through Shared model, then the goal's domain sections (else Unknown or mixed-domain) and Coverage recording.
 3. **Diverge.** Before research or feasibility judgment, give every lens per [Ideation Contract](references/ideation-contract.md) a cheap candidate or a one-line not-applicable reason.
-4. **Research.** Search the web too unless the user says not to. Test, extend, or eliminate candidates via the cheapest credible observation, decision, or authority that could change the conclusion; stop per [saturation conditions](references/ideation-contract.md#dominant-discriminator-and-search-saturation). Optionally delegate per [Delegation Protocol](references/delegation-protocol.md).
+4. **Research.** Search the web too unless the user says not to. Test, extend, or eliminate candidates via the cheapest credible observation, decision, or authority that could change the conclusion; stop per [saturation conditions](references/ideation-contract.md#dominant-discriminator-and-search-saturation). Each turn re-reads your context, so issue independent searches and source reads together, never skipping one to save calls. Optionally delegate per [Delegation Protocol](references/delegation-protocol.md).
 5. **Evaluate.** Deeply evaluate only survivors; give each dropped one a one-line reason.
 6. **Challenge.** Record what would change the answer, led by the strongest challenge. Consult `reason` again after a failure or direction change, and before sealing.
 7. **Seal.** Once every [pre-seal check](references/ideation-contract.md#pre-seal-checks) holds, lead with what to do, never a manufactured winner:

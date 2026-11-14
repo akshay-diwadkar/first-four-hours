@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.0.1",
   "title": "",
   "summary": "",
   "budget": {"seconds": null, "kind": "local", "basis": ""},

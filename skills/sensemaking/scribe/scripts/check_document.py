@@ -24,7 +24,7 @@ from check_document_language import collect_diagnostics
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 BUNDLE_SCHEMA = SKILL_ROOT / "schemas" / "document-bundle.schema.json"
-BUNDLE_CONTRACT_VERSION = "1.1.1"
+BUNDLE_CONTRACT_VERSION = "1.1.2"
 # Source-binding repairs point at the bundle or source, never the audited document.
 SOURCE_REPAIRS = {
     "unsafe_source_path": (

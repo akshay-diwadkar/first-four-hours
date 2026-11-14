@@ -2,7 +2,7 @@
 name: examiner
 description: "Write original practice papers for a specific written examination, grounded in its researched syllabus, format, and marking scheme, with a separate explained answer key, saved as HTML practice sets under `.learning/`; optionally mark attempts, diagnose gaps, and keep the examination section of the subject's shared study plan. Use when someone prepares for a named or supplied written examination; skip oral or practical examinations and ordinary exercises."
 metadata:
-  version: "1.4.0"
+  version: "1.4.1"
 ---
 
 # Examiner
@@ -18,6 +18,8 @@ Identify the exact examination: awarding body or institution, qualification or c
 Research the authoritative syllabus or specification, examination scheme, specimen and past papers, and marking guidance for the applicable session, including its rules for candidates: duration and breaks from that session's own papers, navigation, instructions, permitted materials, negative marking, mark-for-review scoring, and access arrangements. Never present an unsourced rule, such as answering order, as official. Keep official requirements, patterns inferred from past papers, and changes the student requested distinct. When sources conflict, prefer the awarding body's documents for the applicable session over older, third-party, or general ones, and say which you followed.
 
 When official requirements cannot be verified, for example without research access or when none are published, offer a clearly labelled approximation with its explicit assumptions.
+
+Each turn re-reads your context, so issue together every independent search and source read the requirements could need; search alone only when the query depends on an earlier result, and never skip a source to save calls.
 
 ## Write the paper
 

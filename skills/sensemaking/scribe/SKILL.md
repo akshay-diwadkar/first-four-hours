@@ -2,7 +2,7 @@
 name: scribe
 description: Write source-grounded technical documentation such as runbooks, procedures, setup guides, notices, error messages, and reference pages, or audit an existing document read-only. Use when a document must faithfully carry supplied commands, paths, values, warnings, and recovery without invented facts.
 metadata:
-  version: "1.1.1"
+  version: "1.1.2"
 ---
 
 # Scribe

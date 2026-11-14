@@ -6,7 +6,7 @@ Derive the smallest useful exploration from the request, current project files/s
 
 State the boundary, exclusions, material unknowns, and stop condition only as far as needed to avoid a blind spot or endless search.
 
-Optional read-only evidence workers are earned only when separate bounded scopes materially reduce a real blind spot. Assign each a narrow question and scope. The primary re-verifies every material observation before accepting it.
+A large independent sweep goes to an evidence worker per [Bounded Delegation Protocol](delegation-protocol.md); other read-only evidence workers are earned only when separate bounded scopes materially reduce a real blind spot. Assign each a narrow question and scope. The primary re-verifies every material observation before accepting it.
 
 ## Candidate gate
 

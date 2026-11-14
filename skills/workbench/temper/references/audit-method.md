@@ -12,6 +12,8 @@ Spend mutant runs only where cheap evidence points. Use the repository's own too
 
 Each surviving candidate names its tests, the behavior they claim to protect, and the cheapest command that runs them.
 
+Each turn re-reads your context, so run every independent history, CI, and static lookup together; run timing and coverage runs one at a time, since they share the clock and the tree, and never skip evidence to save calls.
+
 ## Selections
 
 A selection is a named argv command run from the root of the copy, such as `["python", "-m", "pytest", "-q", "tests/test_cart.py"]`, with a `timeout_seconds`; no two share an argv. `suite` is required and runs the whole suite the user pays for. Every selection must pass unmutated, and each is timed, so a flaky test cannot be one: select a stable subset and cite the rerun evidence in a `rework` rationale. Use relative paths only: an absolute path or an editable install runs the real repository instead of the copy, which fails a kill claim but makes a survival claim pass falsely, so a `vacuous` or `gap` rationale shows its selection runs the copy's code. The copy skips `.git` and `__pycache__`; set `copy_git` when tests need Git, and list large paths no test reads in `copy_exclude`.

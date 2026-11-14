@@ -4,6 +4,11 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Changed
+
+- Blueprint 1.14.5: after it repairs challenge findings, Blueprint re-checks each plan check whose input a repair changed, not only checks a repair edited. A repair that rewords text a check reads can no longer leave that check impossible to pass. The before-seal `reason` consultation is now part of the Seal gate, so a plan is not sealed without it. Blueprint seals plans with contract version 1.14.5.
+- Construct 1.15.5: ships the Blueprint 1.14.5 runtime copy, so it reports contract version 1.14.5. It still accepts every sealed 1.x plan.
+
 ## [2.4.1] - 2026-11-14
 
 ### Changed

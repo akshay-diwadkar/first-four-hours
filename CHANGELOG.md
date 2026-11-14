@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-11-14
+
 ### Changed
 
 - Blueprint 1.14.3: plans in fewer turns without gathering less evidence. Each turn it issues together every independent read, search, and probe the question at hand could need, and the fresh challenger gets the same rule. For a plan that gets a challenger, Blueprint launches the challenger first and walks the draft itself while the challenger works, editing the draft only once the challenge returns. It no longer sends every repository sweep to the `ffh-evidence` worker; a large independent sweep may still go there.

@@ -1,11 +1,11 @@
 # Charter contract
 
-The charter is one living file revised in place. Its body states only what is currently true; [README](../README.md) owns its exact shape, including the Authority lines the publication script reads and writes.
+The charter's body states only what is currently true; [README](../README.md) owns its exact shape, including the Authority lines the publication script reads and writes.
 
 ## Sections
 
-- `## Purpose`: the problem, the users, the outcome, what success observably means, and what is explicitly out of scope, written to read alone as the project's summary. Until the user agrees all five, its first line is `Unagreed.` and each missing part, observable success included, is an open question in Unsettled.
-- `## Agreed`: settled behavior and journeys, material constraints with the consequential rationale that produced them, and real dependencies, one entry per item, each ending in its provenance.
+- `## Purpose`: the problem, the users, the outcome, what success observably means, and what is explicitly out of scope, written to read alone as the project's summary. Until the user agrees all five, its first line is `Unagreed.` and each missing part, observable success included, is an open question in Unsettled owned by the user.
+- `## Agreed`: settled behavior and journeys, material constraints with the consequential rationale that produced them, and real dependencies, one entry per item, each ending in its provenance. With a user interface, agree how users supply and see data in each high-effort journey (one item at a time, a table, guided steps, import), the first-run order, and what must be visible together, never layout, visual design, or components. Before agreeing one, show two or three alternatives, in words or one disposable prototype, and let the user pick. "Intuitive" or the like without observable meaning is an `Open questions` entry, `owner: user`.
 - `## Unsettled`: what is not agreed, under the `###` kinds that apply, because each fails differently: `Assumptions` (believed, not confirmed), `Recommended, not agreed`, `Open questions` (stated precisely now), `Needs exploration` (cannot yet be stated precisely), and `Deferred` (deliberately left for later). Each entry ends with who can settle it: `owner: user`, `owner: <named person>`, or `owner: research: <pointer>`.
 - `## Revisions`: an append-only log of material changes, never a second copy of old content.
 - `## Authority`: which artifact owns the definition, the state, and, once published, the issue pointer. Edit only its `- State:` and `- Not live:` lines; the publication script writes the rest.
@@ -47,4 +47,4 @@ The state is `ready` only when all of these hold, and otherwise `settling`:
 - nothing in Unsettled blocks splitting the agreed scope into tickets;
 - a reader with only the file could classify a proposed feature as serves, does not serve, or needs the user, and say why.
 
-`ready` is about decomposability, not completeness; a non-blocking open question may stay open indefinitely. The recorded state is your claim about the file, so a resumed session re-derives the gate from the content before acting on it. If observable success cannot be stated, the Purpose stays `Unagreed.`, the state stays `settling`, and the missing success is an open question owned by the user; never present that charter as ready.
+`ready` is about decomposability, not completeness; a non-blocking open question may stay open indefinitely. The recorded state is your claim about the file, so a resumed session re-derives the gate from the content before acting on it.

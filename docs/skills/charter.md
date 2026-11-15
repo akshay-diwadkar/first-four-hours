@@ -24,10 +24,10 @@ Only you can start `/charter`: type `/charter`. The agent never starts it on its
 ## What happens
 
 1. `/charter` proposes a purpose for the project and agrees it with you before anything else: the problem, the users, the outcome, what success observably means, and what is out of scope. For an existing project the purpose says where the project is going, not what the code does today.
-2. It proposes the areas the project must settle; you cut and reorder them.
+2. It proposes the areas the project must settle; for an app, these include how you will do each heavy task, such as entering many items, but never its layout or visual design. You cut and reorder them.
 3. It works through one area per round, three to five questions at a time. Each question comes with an interpretation, what each answer would change, and a recommendation; questions only you can answer, such as values or risk appetite, come with their tradeoffs.
 4. After every round it records your answers with where each came from, surfaces contradictions instead of overwriting them, and keeps the open questions current, each with who can settle it. A recommendation or your silence is never recorded as agreement.
-5. When a question needs research, it can hand the comparison to `/ideate`; when you need to see something, it can build a throwaway prototype.
+5. When a question needs research, it can hand the comparison to `/ideate`; when you need to see something, it can build a throwaway prototype. Before it records how you will do a heavy task, it shows you two or three ways to do it, in words or as a prototype, and you pick. An answer like "intuitive" stays an open question until you say what it means.
 
 ## What you get
 

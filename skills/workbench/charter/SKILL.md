@@ -3,7 +3,7 @@ name: charter
 description: Turn a rough ambition for an app, project, or large idea into one agreed, resumable charter.md that later work is judged against, optionally published as one GitHub umbrella issue. Use when a whole project needs its purpose, scope, success, and open questions settled before tickets or plans.
 disable-model-invocation: true
 metadata:
-  version: "1.0.2"
+  version: "1.1.0"
 ---
 
 # Charter
@@ -21,7 +21,7 @@ Charter never creates child or implementation tickets. It never decomposes or im
 ## Loop
 
 1. Propose a Purpose and agree it before any other question.
-2. Propose the areas to settle, one line each on why it matters; the user cuts and reorders them.
+2. Propose the areas to settle, one line each on why it matters; with a user interface, include how users do each high-effort journey. The user cuts and reorders them.
 3. Each round takes one area's frontier: three to five atomic items, one question and one answer each. Decide derived items from evidence without asking. Give each proposed item your interpretation, what each plausible answer changes, and a recommendation. Ask user-owned items, such as values or risk appetite, bare with their tradeoffs. Name omissions in the agreed flow; never invent features.
 4. Reconcile after every round: answers into Agreed with provenance, contradictions surfaced rather than overwritten, Unsettled current with owners. A recommendation or silence is not agreement.
 5. When conversation cannot settle an item, hand an external fact to `ideate` for a comparison the user chooses from, or build a disposable prototype to react to; neither is authority.

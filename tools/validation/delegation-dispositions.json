@@ -123,11 +123,11 @@
     {
       "skill": "provision",
       "mode": "direct",
-      "owner": "Provision owns harness setup: confirmed requirement installs and its ffh-* agent files.",
+      "owner": "Provision owns harness setup: confirmed requirement installs, its ffh-* agent files, and its optional batch-ops MCP server entry.",
       "lifecycle": "The invocation remains the Provision owner.",
       "workers": "No bounded worker seam is earned.",
       "specialists": "No separate specialist branch is currently earned.",
-      "writes": "Provision writes only confirmed package installs, a virtual environment the user confirmed, and ffh-* agent files in the harness's agent directory, and deletes only those agent files.",
+      "writes": "Provision writes only confirmed package installs, a virtual environment the user confirmed, ffh-* agent files in the harness's agent directory, and its batch-ops entry in the harness's MCP configuration, and deletes only those agent files and that entry.",
       "rationale": "Setup is one short conversation whose choices the user confirms; delegating it adds coordination without cheap verification."
     },
     {

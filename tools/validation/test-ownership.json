@@ -145,7 +145,8 @@
     },
     "provision-runtime-contract": {
       "test_targets": [
-        "tests/repository/test_routine_validation.py::test_live_repository_metadata"
+        "tests/repository/test_routine_validation.py::test_live_repository_metadata",
+        "tests/skills/provision/test_batch_ops.py"
       ]
     },
     "router-runtime-contract": {

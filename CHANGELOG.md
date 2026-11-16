@@ -4,6 +4,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- Provision 1.2.0: offers batch-ops, an optional MCP server that now ships inside Provision. Its `batch_read`, `batch_run`, and `batch_edit` tools read many files, run several commands, or apply several edits with rollback in one call. Only after you say yes, Provision installs its `mcp` and `pydantic` packages into the Python it uses and registers the server on Claude Code, Codex, or OpenCode, or on another harness whose official documentation shows how. Where a harness cannot run a local stdio MCP server, Provision says so and skips it. On Codex and OpenCode it registers batch-ops for your user account. It replaces a same-named server entry you added yourself only after you agree. No skill needs or uses batch-ops, and the skills still need no extra packages. Declining batch-ops on a rerun, or uninstalling, removes Provision's entry after you confirm. Rerun `/provision` to get the offer. Provision's context budgets rise by 90 tokens at the top level and 1046 in references, to hold the new step and its reference.
+
 ### Changed
 
 - Blueprint 1.14.5: after it repairs challenge findings, Blueprint re-checks each plan check whose input a repair changed, not only checks a repair edited. A repair that rewords text a check reads can no longer leave that check impossible to pass. The before-seal `reason` consultation is now part of the Seal gate, so a plan is not sealed without it. Blueprint seals plans with contract version 1.14.5.

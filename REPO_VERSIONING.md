@@ -49,7 +49,7 @@ Each version has one owner. A skill's `metadata.version` in `SKILL.md` is that s
 * A change that bumps a skill version, or changes installation, packaging, release output, or distributed behavior, adds a short user-visible entry under `## [Unreleased]`. An entry for a skill names the skill and its new version. An entry for a breaking change states what users must do.
 * To prepare a release, set `VERSION` from the last released version by the highest-impact change among the `## [Unreleased]` entries, using the Major, Minor, and Patch rules above. Rename `## [Unreleased]` to `## [<VERSION>] - <YYYY-MM-DD>` with the actual release date, add a new empty `## [Unreleased]` above it, and tag the release `v<VERSION>`. The GitHub release notes reuse that changelog entry.
 * The README release badge reads the latest GitHub release; it holds no version to update.
-* Change a requirements file only when the packages it declares change. Each skill's `requirements.txt` declares only that skill's packages, so the skill installs alone. `tools/validation/release-requirements.txt` declares the validation environment: it includes the skill requirements files and adds the validation tools.
+* Change a requirements file only when the packages it declares change. Each skill's `requirements.txt` declares only that skill's packages, so the skill installs alone. `tools/validation/release-requirements.txt` declares the validation environment: it includes the skill requirements files and Provision's optional batch-ops requirements, `skills/workbench/provision/assets/batch-ops/requirements.txt`, and adds the validation tools. The batch-ops test needs those packages and never skips without them.
 
 ## Validation
 

@@ -34,7 +34,7 @@ For a harness it has no notes for, it reads that harness's official documentatio
 
 ## What you get
 
-Up to seven subagents in your harness's agent folder: `ffh-challenger`, `ffh-reviewer`, `ffh-conformance`, `ffh-evidence`, `ffh-researcher`, `ffh-constructor`, and `ffh-planner`. On Codex and OpenCode their names use underscores. `ffh-constructor` runs [`/construct`](construct.md) on a sealed plan, so it may edit files and run commands as `/construct` directs; it owns a whole stage, so `/provision` recommends a model that can carry out a plan unaided rather than the cheapest one. `ffh-planner` runs [`/blueprint`](blueprint.md) the same way and owns a whole stage too; on Claude Code it keeps a one-hour prompt cache. The other five are read-only. Only `ffh-planner` can start another subagent, and only `ffh-challenger`, `ffh-evidence`, and `ffh-researcher`. On OpenCode subagents use the V2 `permissions` format. Their names, descriptions, permissions, and instructions are fixed; only the model and effort are yours. The report lists each subagent as loaded, or as written but unverified with the step that confirms it, such as a restart. For each subagent you skipped or accepted with instruction-only limits, it names the limits the harness could not enforce.
+Up to seven subagents in your harness's agent folder: `ffh-challenger`, `ffh-reviewer`, `ffh-conformance`, `ffh-evidence`, `ffh-researcher`, `ffh-constructor`, and `ffh-planner`. On Codex and OpenCode their names use underscores. [First Four Hours subagents](../reference/agents.md) says what each one does, what it can access, and which skills use it. On OpenCode subagents use the V2 `permissions` format. Their names, descriptions, permissions, and instructions are fixed; only the model and effort are yours. The report lists each subagent as loaded, or as written but unverified with the step that confirms it, such as a restart. For each subagent you skipped or accepted with instruction-only limits, it names the limits the harness could not enforce.
 
 If you chose batch-ops, your harness's MCP settings gain a `batch-ops` server entry (`batch_ops` on Codex) that runs it with the Python that has its packages. On Claude Code it follows the suite's install scope and stays private to you. On Codex and OpenCode it is registered for your user account, so every project sees it. No skill uses it; your agent may call its tools. The entry holds absolute paths, so run `/provision` again after you move or update the suite or that Python.
 
@@ -52,7 +52,7 @@ If the harness has no custom subagents or cannot set a model per subagent, `/pro
 
 ## Related skills
 
-`/blueprint`, `/reason`, `/assess`, `/construct`, `/architect`, `/diagnose`, and `/ideate` use these subagents by name for the work each is for, and a generic subagent, as before, when one is missing. The exception is a large sweep: `/blueprint`, `/architect`, and `/diagnose` send it to `ffh-evidence`, and without it they do the sweep themselves. See [How skills hand work to each other](../concepts/handoffs.md).
+`/blueprint`, `/reason`, `/assess`, `/construct`, `/architect`, `/diagnose`, and `/ideate` use these subagents by name for the work each is for, and a generic subagent, as before, when one is missing, with the exceptions [First Four Hours subagents](../reference/agents.md) lists. See [How skills hand work to each other](../concepts/handoffs.md).
 
 ## Source
 

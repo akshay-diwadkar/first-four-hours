@@ -54,6 +54,7 @@ nav = [
   ] },
   { "Look something up" = [
     "reference/README.md",
+    { "Subagents" = "reference/agents.md" },
   ] },
   { "Fix a problem" = [
     "troubleshooting/README.md",

@@ -546,6 +546,20 @@
     "text": "Never edit the Blueprint, and never start another agent."
   },
   {
+    "id": "plan.planner-relay",
+    "skill": "blueprint",
+    "source": "references/planner-handoff.md",
+    "surface": "doctor",
+    "text": "never answer one yourself"
+  },
+  {
+    "id": "plan.planner-no-guess",
+    "skill": "blueprint",
+    "source": "references/planner-handoff.md",
+    "surface": "doctor",
+    "text": "never guess or record an accepted gap"
+  },
+  {
     "id": "provision.batch-ops-consent",
     "skill": "provision",
     "source": "SKILL.md",

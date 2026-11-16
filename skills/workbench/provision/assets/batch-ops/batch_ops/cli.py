@@ -125,7 +125,7 @@ async def _cmd_run(args: argparse.Namespace, root: Path) -> tuple[str, dict[str,
         try:
             parsed.append(parse_run_spec(spec, index + 1, default_timeout=min(120.0, max(1.0, args.time))))
         except Exception as exc:
-            slots[index] = RunResult(id=f"run{index + 1}", status="error",
+            slots[index] = RunResult(id=f"run{index + 1}", label=f"spec {index + 1}", status="error",
                                      message=f"{type(exc).__name__}: {exc}")
     results = await run_commands(parsed, root=root, tracker=tracker, artifacts=store,
                                  parallel=args.parallel, fail_fast=args.fail_fast,
@@ -133,7 +133,7 @@ async def _cmd_run(args: argparse.Namespace, root: Path) -> tuple[str, dict[str,
     valid = [i for i, slot in enumerate(slots) if slot is None]
     for slot_index, result in zip(valid, results):
         slots[slot_index] = result
-    final = [slot or RunResult(id=f"run{i + 1}", status="skipped", message="not run")
+    final = [slot or RunResult(id=f"run{i + 1}", label="", status="skipped", message="not run")
              for i, slot in enumerate(slots)]
 
     coverage = Coverage(requested=len(final), read=len(final))
@@ -328,7 +328,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             mcp.settings.host = args.host
             mcp.settings.port = args.port
-            mcp.run(args.transport)  # type: ignore[arg-type]
+            mcp.run(args.transport)
         return 0
 
     root = Path(args.root).expanduser().resolve()

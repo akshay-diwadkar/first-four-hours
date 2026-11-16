@@ -450,7 +450,7 @@ async def batch_run(
         for slot_index, result in zip(valid_slots, results):
             slots[slot_index] = result
         final = [
-            slot or RunResult(id=f"run{i + 1}", status="skipped", message="not run")
+            slot or RunResult(id=f"run{i + 1}", label="", status="skipped", message="not run")
             for i, slot in enumerate(slots)
         ]
 

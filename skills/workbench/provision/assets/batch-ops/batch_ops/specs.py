@@ -83,10 +83,10 @@ def _parse_read_string(value: str) -> ReadRequest:
     if s.startswith("git:changed"):
         return ReadRequest(kind="git_changed")
     if s.startswith("grep:"):
-        pattern = s[len("grep:") :]
-        if not pattern:
+        grep_pattern = s[len("grep:") :]
+        if not grep_pattern:
             raise SpecError("grep spec requires a pattern")
-        return ReadRequest(kind="grep", pattern=pattern, max_files=5000)
+        return ReadRequest(kind="grep", pattern=grep_pattern, max_files=5000)
     if s.startswith("artifact:"):
         ref = s[len("artifact:") :]
         m = re.match(r"^(.+?):(\d+(?:-\d+)?)$", ref)
@@ -96,10 +96,10 @@ def _parse_read_string(value: str) -> ReadRequest:
             raise SpecError("artifact spec requires a name")
         return ReadRequest(kind="artifact", artifact=ref)
     if s.startswith("glob:"):
-        pattern = s[len("glob:") :]
-        if not pattern:
+        glob_pattern = s[len("glob:") :]
+        if not glob_pattern:
             raise SpecError("glob spec requires a pattern")
-        return ReadRequest(kind="glob", glob=pattern)
+        return ReadRequest(kind="glob", glob=glob_pattern)
     if s.startswith("handle:"):
         return ReadRequest(kind="handle", handle=s[len("handle:") :])
 
@@ -219,7 +219,7 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
     if priority not in PRIORITIES:
         raise SpecError(f"unknown priority: {priority}")
 
-    common = dict(
+    common: dict[str, Any] = dict(
         label=str(data.get("label") or ""),
         priority=priority,
         mode=mode,

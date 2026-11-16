@@ -198,7 +198,7 @@ def _missing_result(req: ReadRequest, root: Path) -> ReadResult:
         hits = sorted((n for n in names if n.rsplit("/", 1)[-1] == base), key=lambda n: (len(n), n))
     if not hits:
         return result
-    result.message += "; did you mean " + ", ".join(f'"{n}"' for n in hits[:3]) + (
+    result.message = (result.message or "") + "; did you mean " + ", ".join(f'"{n}"' for n in hits[:3]) + (
         f" ({len(hits) - 3} more)" if len(hits) > 3 else "") + "?"
     if len(by_suffix) == 1:
         result.meta["continuation"] = _respec(req, by_suffix[0])
@@ -392,7 +392,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     meta["match_count"] = meta.get("matches", 0)
     return ReadResult(
         id="read", kind="file", label=req.label, path=display,
-        range=(handle_start, handle_end) if handle_start is not None else None,
+        range=(handle_start, handle_end) if handle_start is not None and handle_end is not None else None,
         body=body, hash=sha, bytes_total=info.bytes_total, bytes_shown=shown,
         lines_total=lines_total, lines_shown=selected_count,
         truncated=truncated, status=status, message=message, handle=handle,
@@ -1091,7 +1091,7 @@ def _load_for_compare(req: ReadRequest, root: Path) -> tuple[str, str, str | Non
             return relative_display(root, path), "", "binary file"
         text = info.text
         start, end = parsed["start"], parsed["end"]
-        if start is not None and end is not None:
+        if isinstance(start, int) and isinstance(end, int):
             text = "\n".join(text.splitlines()[int(start) - 1:int(end)])
         return relative_display(root, path), text, None
 

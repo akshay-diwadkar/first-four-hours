@@ -17,6 +17,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .artifacts import ArtifactStore
 from .budget import BudgetTracker, body_budget, tier, water_fill
@@ -106,7 +107,7 @@ def _normalize_output(text: str) -> str:
 async def _kill_tree(process: asyncio.subprocess.Process) -> None:
     if process.returncode is not None:
         return
-    if os.name == "nt":
+    if sys.platform == "win32":
         try:
             killer = await asyncio.create_subprocess_exec(
                 "taskkill", "/T", "/F", "/PID", str(process.pid),
@@ -118,7 +119,7 @@ async def _kill_tree(process: asyncio.subprocess.Process) -> None:
                 await asyncio.wait_for(killer.wait(), timeout=5)
             except asyncio.TimeoutError:
                 killer.kill()
-        except (OSError, asyncio.SubprocessError):
+        except (OSError, subprocess.SubprocessError):
             pass
         if process.returncode is None:
             try:
@@ -192,14 +193,14 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
     process: asyncio.subprocess.Process | None = None
     timed_out = False
 
-    kwargs: dict[str, object] = {}
-    if os.name == "nt":
+    kwargs: dict[str, Any] = {}
+    if sys.platform == "win32":
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
     else:
         kwargs["start_new_session"] = True
 
     try:
-        stdio = dict(
+        stdio: dict[str, Any] = dict(
             cwd=str(cwd),
             env=env,
             stdin=asyncio.subprocess.PIPE if req.stdin is not None else asyncio.subprocess.DEVNULL,
@@ -453,8 +454,8 @@ async def run_commands(
             await asyncio.gather(*tasks, return_exceptions=True)
         executed = [finished.get(req.index) or _blank(req, "skipped", "not run") for req in requests]
 
-    for done in executed:
-        _name_trimmed_artifact(done, artifacts)
+    for item in executed:
+        _name_trimmed_artifact(item, artifacts)
     shares = water_fill(
         [_need(done, max_output) for done in executed],
         [0 if done.result.status in ("error", "timeout") else 1 + tier(done.req.priority) for done in executed],

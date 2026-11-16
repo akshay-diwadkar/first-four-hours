@@ -121,10 +121,10 @@ async def apply_edits(
     if bundle.verify is not None:
         verify = await _run_verify(bundle.verify, root_p, tracker, artifacts)
         report.verify = verify
-        failed = [r for r in verify if r.status != "ok" or r.exit_code not in (0, None)]
-        if failed:
+        failed_runs = [r for r in verify if r.status != "ok" or r.exit_code not in (0, None)]
+        if failed_runs:
             report.ok = False
-            report.message = f"verification failed: {failed[0].cmd_display or failed[0].id}"
+            report.message = f"verification failed: {failed_runs[0].cmd_display or failed_runs[0].id}"
             if bundle.rollback_on_failure:
                 status, errors = _rollback(plan)
                 report.rolled_back = True
@@ -235,13 +235,14 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                     raise SafetyError("path is a directory")
                 if not new.overwrite and not bundle.overwrite:
                     raise SafetyError("file exists; pass overwrite=true to replace it")
-                before = path.read_bytes()
-                before_text = decode_bytes(before).text
+                existing = path.read_bytes()
+                prior: bytes | None = existing
+                before_text = decode_bytes(existing).text
                 mode = file_mode(path)
                 action = "create"
                 message = "overwritten (existing file)"
             else:
-                before = None
+                prior = None
                 before_text = ""
                 mode = new.mode
                 action = "create"
@@ -252,15 +253,15 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
             diff_ref = None  # fit_diffs cuts the diff to the report budget and keeps the full text
             change = FileChange(
                 path=rel, action=action, status="ok",
-                before_hash=sha256_bytes(before) if before is not None else None,
+                before_hash=sha256_bytes(prior) if prior is not None else None,
                 after_hash=sha256_bytes(after), diff=diff, diff_artifact=diff_ref, diff_truncated=diff_ref is not None, message=message,
             )
             plan.items.append(_Planned(
-                change=change, path=path, action="create", before=before, after=after,
+                change=change, path=path, action="create", before=prior, after=after,
                 mode=mode, full_diff=full_diff,
             ))
-            if before is not None:
-                _snapshot(plan, path, rel, before, file_mode(path))
+            if prior is not None:
+                _snapshot(plan, path, rel, prior, file_mode(path))
             else:
                 plan.creates.append(path)
         except Exception as exc:
@@ -731,11 +732,11 @@ async def _apply_manifest(
     if bundle.verify is not None:
         verify = await _run_verify(bundle.verify, root, tracker, artifacts)
         report.verify = verify
-        for result in verify:
-            if result.stdout_artifact:
-                report.artifacts.append(result.stdout_artifact)
-            if result.stderr_artifact:
-                report.artifacts.append(result.stderr_artifact)
+        for run_result in verify:
+            if run_result.stdout_artifact:
+                report.artifacts.append(run_result.stdout_artifact)
+            if run_result.stderr_artifact:
+                report.artifacts.append(run_result.stderr_artifact)
         failed = [r for r in verify if r.status != "ok" or r.exit_code not in (0, None)]
         if failed:
             report.ok = False

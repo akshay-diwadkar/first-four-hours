@@ -32,6 +32,17 @@ def test_batch_ops_stdio_session(tmp_path):
     (repo / "ignored" / "hit.txt").write_text("needle_token\n", encoding="utf-8")
     outside = tmp_path / "outside.txt"
     outside.write_bytes(b"keep\n")
+    proc = tmp_path / "proc"
+    proc.mkdir()
+    child_script = f"import time; time.sleep(4); open({str(proc / 'child_alive')!r}, 'w').close()"
+    parent_script = (
+        "import subprocess, sys, time\n"
+        f"subprocess.Popen([sys.executable, '-c', {child_script!r}])\n"
+        f"open({str(proc / 'spawned')!r}, 'w').close()\n"
+        "time.sleep(4)\n"
+        f"open({str(proc / 'parent_alive')!r}, 'w').close()\n"
+        "time.sleep(30)\n"
+    )
     params = StdioServerParameters(
         command=sys.executable, args=[str(SERVER)], cwd=str(repo), env={"PYTHONDONTWRITEBYTECODE": "1"}
     )
@@ -58,12 +69,16 @@ def test_batch_ops_stdio_session(tmp_path):
 
                 start = time.monotonic()
                 res = await call(session, "batch_run", {"commands": [
-                    {"argv": [sys.executable, "-c", "import time; time.sleep(30)"], "label": "slow", "timeout": 2},
+                    {"argv": [sys.executable, "-c", parent_script], "label": "slow", "timeout": 2},
                     {"argv": [sys.executable, "-c", "raise SystemExit(3)"], "label": "bad"}], "cwd": str(repo)})
                 assert time.monotonic() - start < 15
                 by_label = {i["label"]: i for i in _items(res)}
                 assert by_label["slow"]["status"] == "timeout"
                 assert by_label["bad"]["status"] == "error" and by_label["bad"]["exit_code"] == 3
+                assert (proc / "spawned").exists()
+                await asyncio.sleep(max(0.0, start + 6 - time.monotonic()))
+                assert not (proc / "parent_alive").exists()
+                assert not (proc / "child_alive").exists()
 
                 edit = {"path": "notes.txt", "search": "old line", "replace": "new line"}
                 res = await call(session, "batch_edit", {

@@ -15,7 +15,7 @@ Add one capable adversarial specialist only when challenging the provisional lea
 <!-- delegation-projection:begin -->
 ### Delegation: preserve authority, bound labor
 
-Delegate only when the likely cost, context, coverage, or parallelism gain exceeds coordination overhead; keep tiny or direct work local.
+Delegate only when the likely cost, context, coverage, or parallelism gain exceeds coordination overhead; keep tiny or direct work local. A subagent that reports its tools unavailable before doing any work did not launch: fall back as when it is absent.
 
 A lifecycle or public-capability handoff makes the receiving agent the semantic owner of that stage, not a cheap helper. The stage owner retains sufficient capability for reliable direct-quality work and owns scope, decisions, authoritative artifacts or results, acceptance, and completion. A nested stage owner may delegate its own bounded support work.
 

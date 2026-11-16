@@ -7,5 +7,6 @@ Establish each fact below from the harness's official documentation, recording i
 - How to set an agent's model and effort, and how to list the models offered now.
 - How to grant or withhold reading, searching, file edits, a shell, web access, loading skills, and starting other agents, and which of those the harness enforces.
 - How to see that an agent loaded, with its model and limits.
+- For batch-ops: whether the harness runs local stdio MCP servers; how to add, show, list with status, and remove one; and a scope that keeps this machine's paths out of committed project files.
 
 With those facts, follow the workflow. Put the source URLs and date in each agent file where its format allows a comment; otherwise give them in the report.

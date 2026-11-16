@@ -546,6 +546,20 @@
     "text": "Never edit the Blueprint, and never start another agent."
   },
   {
+    "id": "provision.batch-ops-consent",
+    "skill": "provision",
+    "source": "SKILL.md",
+    "surface": "doctor",
+    "text": "set it up only after a yes"
+  },
+  {
+    "id": "provision.batch-ops-user-entry",
+    "skill": "provision",
+    "source": "references/batch-ops.md",
+    "surface": "doctor",
+    "text": "show it and replace it only after a yes"
+  },
+  {
     "id": "blueprint.construct-caller-confirms",
     "skill": "blueprint",
     "source": "references/construct-handoff.md",

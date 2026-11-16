@@ -4,7 +4,7 @@ Use the [contributor guide](README.md) to bound a change, [validation](validatio
 
 ## Keep a skill standalone
 
-Each skill lives under `skills/<domain>/<skill>/` and must operate after installation without this repository's `tools/` directory. A skill that needs packages declares only its own packages in its optional `requirements.txt`. The [release requirements](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/release-requirements.txt) include those skill requirements and add validation tools. Change a requirements file only when its declared packages change.
+Each skill lives under `skills/<domain>/<skill>/` and must operate after installation without this repository's `tools/` directory. A skill that needs packages declares only its own packages in its optional `requirements.txt`. The [release requirements](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/validation/release-requirements.txt) include those skill requirements and Provision's optional batch-ops requirements, which its test needs, and add validation tools. Change a requirements file only when its declared packages change.
 
 The [CLI protocol](https://github.com/akshay-diwadkar/first-four-hours/blob/main/tools/skill_protocol/README.md) owns manifests and standalone adapters. The [invocation policy](https://github.com/akshay-diwadkar/first-four-hours/blob/main/invocation-policy.json) records invocation authority alongside package metadata. Domains organize capabilities; activation and permission remain capability-specific.
 

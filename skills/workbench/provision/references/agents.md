@@ -27,7 +27,7 @@ When batch-ops is connected by its harness reference's check, ask once, selectin
 A selected agent gets `batch_read` in place of reading and searching, `batch_run` in place of a shell it has, and `batch_edit` in place of file edits it may make, keeps its other capabilities, and has this sentence appended to its instructions:
 
 ```text
-Read, search, run commands, and edit files only through the batch-ops tools, passing `allow_outside: true` only for installed skill files and the system temporary folder, and give each long command its own timeout. If a batch-ops tool is missing, or your first batch-ops call returns an error instead of a result, stop before any other work and return only `batch-ops unavailable:` with that error.
+Read, search, run commands, and edit files only through the batch-ops tools, passing `allow_outside: true` only for installed skill files and the system temporary folder, and give each long command its own timeout. If no batch-ops tool is available to you, or your first batch-ops call returns an error showing batch-ops could not start or serve it, stop before any other work and return only `batch-ops unavailable:` with that error. A report of failed commands or edits, or an error naming your arguments or a precondition, is a result: act on it.
 ```
 
 A deselected agent, and every agent while batch-ops is not connected, keeps the capabilities above. Adding or removing batch-ops later takes a Provision rerun to rewrite the agents.

@@ -73,6 +73,7 @@ class _Plan:
     creates: list[Path] = field(default_factory=list)
     renames: list[tuple[Path, Path]] = field(default_factory=list)
     artifacts: list[str] = field(default_factory=list)
+    made_dirs: list[Path] = field(default_factory=list)
 
 
 async def apply_edits(
@@ -340,6 +341,17 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
     return plan
 
 
+def _note_new_dirs(plan: _Plan, target: Path) -> None:
+    """Record each missing ancestor directory of *target*, so rollback can remove them."""
+    directory = target.parent
+    while not directory.exists():
+        if directory not in plan.made_dirs:
+            plan.made_dirs.append(directory)
+        if directory.parent == directory:
+            break
+        directory = directory.parent
+
+
 def _snapshot(plan: _Plan, path: Path, rel: str, data: bytes | None, mode: int | None) -> None:
     key = os.path.normcase(str(path))
     if key not in plan.snapshots:
@@ -527,12 +539,15 @@ def _apply_plan(plan: _Plan) -> tuple[bool, list[str]]:
             if item.action in ("modify", "create"):
                 if item.after is None:
                     raise SafetyError(f"missing content for {item.change.path}")
+                if item.action == "create":
+                    _note_new_dirs(plan, item.path)
                 atomic_write_bytes(item.path, item.after, mode=item.mode)
             elif item.action == "delete":
                 item.path.unlink()
             elif item.action == "rename":
                 if item.destination is None:
                     raise SafetyError(f"missing destination for {item.change.path}")
+                _note_new_dirs(plan, item.destination)
                 item.destination.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(item.path, item.destination)
             item.change.status = "ok"
@@ -572,6 +587,13 @@ def _rollback(plan: _Plan) -> tuple[str, list[str]]:
                 atomic_write_bytes(snapshot.path, snapshot.data, mode=snapshot.mode)
         except Exception as exc:
             errors.append(f"rollback could not restore {snapshot.rel}: {exc}")
+    for directory in sorted(plan.made_dirs, key=lambda d: len(d.parts), reverse=True):
+        if not directory.exists():
+            continue
+        try:
+            directory.rmdir()
+        except OSError as exc:
+            errors.append(f"rollback could not remove directory {directory}: {exc}")
     if errors:
         return "partial", errors
     return "complete", errors
@@ -615,14 +637,32 @@ async def _apply_manifest(
         report.ok = False
         return report
 
-    paths = _patch_paths(patch)
+    top = git_root(root) or root
+    listing = _git_apply(top, patch, "--numstat", "-z")
+    if listing.returncode != 0:
+        report.ok = False
+        report.errors.append(
+            f"git apply could not read the diff: {listing.stderr.strip() or listing.stdout.strip()}"
+        )
+        return report
+    paths: list[str] = []
+    for record in listing.stdout.split("\0"):
+        parts = record.split("\t", 2)
+        if len(parts) == 3 and parts[2] not in paths:
+            paths.append(parts[2])
+    for value in _patch_sources(patch):
+        if value.startswith('"'):
+            report.ok = False
+            report.errors.append(f"{value}: quoted rename or copy paths are not supported")
+            return report
+        if value not in paths:
+            paths.append(value)
     if not paths:
         report.ok = False
         report.errors.append("diff does not mention any files")
         return report
     # Diff paths are relative to the repository root, as git reads them, so a `git diff`
     # pasted from any subfolder applies. Paths that land outside cwd are refused.
-    top = git_root(root) or root
     try:
         resolved = []
         for p in paths:
@@ -641,6 +681,8 @@ async def _apply_manifest(
     actions = _patch_actions(patch)
     expect_change: list[tuple[_Planned, str]] = []  # (item, action) git apply must visibly carry out
     for original, path in zip(paths, resolved):
+        if actions.get(original) == "copy-source":
+            continue  # git reads a copy source without writing it
         rel = relative_display(root, path)
         existed = path.exists()
         before = path.read_bytes() if existed and path.is_file() else None
@@ -666,7 +708,7 @@ async def _apply_manifest(
         else:
             plan.creates.append(path)
 
-    check = _git_apply(top, patch, check=True, dry_run=False)
+    check = _git_apply(top, patch, "--check")
     if check.returncode != 0:
         report.ok = False
         report.errors.append(f"git apply --check failed: {check.stderr.strip() or check.stdout.strip()}")
@@ -680,7 +722,9 @@ async def _apply_manifest(
         report.message = "dry run: git apply --check passed; no files were written"
         return report
 
-    result = _git_apply(top, patch, check=False, dry_run=False)
+    for created in plan.creates:
+        _note_new_dirs(plan, created)
+    result = _git_apply(top, patch)
     if result.returncode != 0:
         status, rollback_errors = _rollback(plan)
         report.ok = False
@@ -753,45 +797,28 @@ async def _apply_manifest(
     return report
 
 
-def _git_apply(root: Path, patch: str, *, check: bool, dry_run: bool) -> subprocess.CompletedProcess[str]:
-    args = ["git", "apply", "--whitespace=nowarn"]
-    if check:
-        args.append("--check")
-    return subprocess.run(
-        args, cwd=str(root), input=patch, capture_output=True, text=True,
-        encoding="utf-8", errors="replace", timeout=60, check=False,
+def _git_apply(root: Path, patch: str, *options: str) -> subprocess.CompletedProcess[str]:
+    argv = ["git", "apply", "--whitespace=nowarn", *options]
+    # The patch goes in as bytes: text-mode stdin would turn its LF into CRLF on Windows.
+    proc = subprocess.run(
+        argv, cwd=str(root), input=patch.encode("utf-8", errors="replace"),
+        capture_output=True, timeout=60, check=False,
+    )
+    return subprocess.CompletedProcess(
+        argv, proc.returncode,
+        proc.stdout.decode("utf-8", errors="replace"), proc.stderr.decode("utf-8", errors="replace"),
     )
 
 
-def _patch_paths(patch: str) -> list[str]:
-    paths: list[str] = []
-    seen: set[str] = set()
+def _patch_sources(patch: str) -> list[str]:
+    sources: list[str] = []
     for line in patch.splitlines():
-        value = None
-        if line.startswith("+++ b/"):
-            value = line[6:]
-        elif line.startswith("--- a/"):
-            value = line[6:]
-        elif line.startswith("+++ ") and line[4:] not in ("/dev/null",):
-            value = line[4:]
-        elif line.startswith("--- ") and line[4:] not in ("/dev/null",):
-            value = line[4:]
-        elif line.startswith("rename to "):
-            value = line[len("rename to "):]
-        elif line.startswith("rename from "):
-            value = line[len("rename from "):]
-        if not value:
-            continue
-        value = value.strip()
-        if value.startswith(("a/", "b/")):
-            value = value[2:]
-        if value in seen or value.startswith("/dev/null"):
-            continue
-        if value.startswith("/") or ".." in Path(value).parts:
-            continue
-        seen.add(value)
-        paths.append(value)
-    return paths
+        for prefix in ("rename from ", "copy from "):
+            if line.startswith(prefix):
+                value = line[len(prefix):].strip()
+                if value not in sources:
+                    sources.append(value)
+    return sources
 
 
 def _patch_section(patch: str, path: str) -> str:
@@ -829,4 +856,8 @@ def _patch_actions(patch: str) -> dict[str, str]:
             actions[line[len("rename from "):].strip()] = "delete"
         elif line.startswith("rename to "):
             actions[line[len("rename to "):].strip()] = "create"
+        elif line.startswith("copy from "):
+            actions.setdefault(line[len("copy from "):].strip(), "copy-source")
+        elif line.startswith("copy to "):
+            actions[line[len("copy to "):].strip()] = "create"
     return actions

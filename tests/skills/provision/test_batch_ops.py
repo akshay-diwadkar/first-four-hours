@@ -80,13 +80,52 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert not (proc / "parent_alive").exists()
                 assert not (proc / "child_alive").exists()
 
+                lf = repo / "lf.txt"
+                lf.write_bytes(b"one\n")
+                res = await call(session, "batch_edit", {
+                    "manifest": "diff --git a/lf.txt b/lf.txt\n--- a/lf.txt\n+++ b/lf.txt\n@@ -1 +1 @@\n-one\n+two\n",
+                    "cwd": str(repo)})
+                assert not res.isError
+                assert lf.read_bytes().replace(b"\r\n", b"\n") == b"two\n"
+
+                sub = str(repo / "src")
+                res = await call(session, "batch_edit", {
+                    "manifest": "diff --git a/src/new.txt b/src/new.txt\nnew file mode 100644\n--- /dev/null\n+++ b/src/new.txt\n@@ -0,0 +1 @@\n+x\ndiff --git a/notes.txt b/copied.txt\nsimilarity index 100%\ncopy from notes.txt\ncopy to copied.txt\n",
+                    "cwd": sub})
+                assert res.isError
+                assert not (repo / "copied.txt").exists()
+                assert not (repo / "src" / "new.txt").exists()
+
+                res = await call(session, "batch_edit", {
+                    "manifest": "--- /dev/null\n+++ b/src/new.txt\n@@ -0,0 +1 @@\n+x\n--- /dev/null\n+++ /outside2.txt\n@@ -0,0 +1 @@\n+y\n",
+                    "cwd": sub})
+                assert res.isError
+                assert not (repo / "outside2.txt").exists()
+                assert not (repo / "src" / "new.txt").exists()
+
+                res = await call(session, "batch_edit", {
+                    "manifest": "diff --git a/notes.txt b/copied.txt\nsimilarity index 100%\ncopy from notes.txt\ncopy to copied.txt\n",
+                    "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]}, "cwd": str(repo)})
+                assert res.isError
+                assert [(i["kind"], i["path"]) for i in _items(res) if i["kind"] != "verify"] == [("create", "copied.txt")]
+                assert not (repo / "copied.txt").exists()
+
                 edit = {"path": "notes.txt", "search": "old line", "replace": "new line"}
                 res = await call(session, "batch_edit", {
-                    "edits": [edit], "new_files": {"made.txt": "x\n"},
+                    "edits": [edit], "new_files": {"deep/er/made.txt": "x\n"},
                     "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]}, "cwd": str(repo)})
                 assert res.isError
                 assert notes.read_bytes() == b"keep\r\nold line\r\n"
-                assert not (repo / "made.txt").exists()
+                assert not (repo / "deep").exists()
+
+                res = await call(session, "batch_edit", {
+                    "new_files": {"deep2/made.txt": "x\n"},
+                    "verify": {"argv": [sys.executable, "-c", "import pathlib; pathlib.Path('deep2/keep.txt').write_text('k'); raise SystemExit(1)"]},
+                    "cwd": str(repo)})
+                assert res.isError
+                assert (repo / "deep2" / "keep.txt").exists()
+                assert not (repo / "deep2" / "made.txt").exists()
+                assert "rollback could not remove directory" in _text(res)
 
                 res = await call(session, "batch_edit", {"edits": [edit], "cwd": str(repo)})
                 assert not res.isError

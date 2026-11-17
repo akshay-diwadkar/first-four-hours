@@ -100,7 +100,7 @@ def _parse_read_string(value: str) -> ReadRequest:
         grep_pattern = s[len("grep:") :]
         if not grep_pattern:
             raise SpecError("grep spec requires a pattern")
-        return ReadRequest(kind="grep", pattern=grep_pattern, max_files=5000)
+        return ReadRequest(kind="grep", pattern=grep_pattern, max_files=5000, context=0)
     if s.startswith("artifact:"):
         ref = s[len("artifact:") :]
         m = re.match(r"^(.+?):(\d+(?:-\d+)?)$", ref)
@@ -133,13 +133,14 @@ def _parse_read_string(value: str) -> ReadRequest:
             ("context:", "context"),
             ("grep:", "grep"),
             ("block:", "block"),
+            ("outline:", "outline"),
         ):
             if suffix.startswith(prefix):
                 mode = op_mode
                 rest = suffix[len(prefix) :]
                 if op_mode in ("target", "raw", "lines"):
                     range_value = rest
-                elif op_mode in ("grep", "block"):
+                elif op_mode in ("grep", "block", "outline"):
                     if not rest:
                         raise SpecError(f"{op_mode} spec requires a pattern")
                     pattern = rest
@@ -443,6 +444,11 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
         slices = cmd_slices
 
     max_bytes = _positive_int(data.get("max_bytes", 16384), "max_bytes")
+    ok_raw = data.get("ok_exit", [0])
+    ok_list = [ok_raw] if isinstance(ok_raw, int) and not isinstance(ok_raw, bool) else ok_raw
+    if (not isinstance(ok_list, list) or not ok_list
+            or not all(isinstance(c, int) and not isinstance(c, bool) for c in ok_list)):
+        raise SpecError("ok_exit must be an exit code or a non-empty list of exit codes")
     label = str(data.get("label") or "")
     display = _display(label, cmd if cmd is not None else " ".join(argv or []))
 
@@ -461,6 +467,7 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
         merge_streams=bool(data.get("merge_streams", False)),
         max_bytes=max_bytes,
         display=display,
+        ok_exit=[int(c) for c in ok_list],
     )
 
 

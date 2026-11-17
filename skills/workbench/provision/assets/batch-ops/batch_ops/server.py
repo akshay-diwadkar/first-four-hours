@@ -88,7 +88,38 @@ class BatchToolResult(CallToolResult):
         return super().__str__()
 
 
-mcp = FastMCP(
+def _slim_schema(node: Any) -> Any:
+    """A tool input schema without what costs tokens on every turn and tells the model nothing:
+    pydantic's ``title`` keys, ``anyOf [X, null]`` wrappers and ``default: null``."""
+    if isinstance(node, list):
+        return [_slim_schema(item) for item in node]
+    if not isinstance(node, dict):
+        return node
+    out = {key: _slim_schema(value) for key, value in node.items() if key != "title"}
+    options = out.get("anyOf")
+    if isinstance(options, list) and {"type": "null"} in options:
+        rest = [option for option in options if option != {"type": "null"}]
+        del out["anyOf"]
+        if len(rest) == 1 and isinstance(rest[0], dict):
+            out = {**rest[0], **out}
+        elif rest:
+            out["anyOf"] = rest
+        if out.get("default", 0) is None:
+            del out["default"]
+    return out
+
+
+class _SlimFastMCP(FastMCP):
+    """FastMCP that lists slimmed input schemas; calls still validate against the full model."""
+
+    async def list_tools(self) -> list[Any]:
+        tools = await super().list_tools()
+        for tool in tools:
+            tool.inputSchema = _slim_schema(tool.inputSchema)
+        return tools
+
+
+mcp = _SlimFastMCP(
     "batch-ops",
     instructions=(
         "Batch evidence tools for coding agents. batch_read gathers files, greps, git history "
@@ -218,17 +249,20 @@ async def batch_read(
 ) -> BatchToolResult:
     """Read files, ranges, blocks, outlines, greps, globs and git history in one call.
 
-    cwd: absolute working directory. specs (strings): "a.txt" | "a.txt:10-50" | "a.txt@block:RE" |
-    "a.txt@outline" | "a.txt@context:RE:3" | "a.txt@target:10-20" (verbatim edit search text) |
-    "grep:RE" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
-    "git:cochange:PATH" (files committed with PATH) | "artifact:NAME:N-M".
+    cwd: absolute working directory. specs (strings): "a.txt" | "a.txt:10-50" | "a.txt@outline" |
+    "a.txt@outline:RE" (lines matching RE) | "a.txt@block:RE" or "a.txt@block:N" (the block or
+    section opened there) | "a.txt@context:RE:3" | "a.txt@target:10-20" (verbatim edit search
+    text) | "grep:RE" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
+    "git:cochange:PATH" (files committed with PATH) | "artifact:NAME:N-M". A pattern that is not
+    a regex, or matches nothing as one, is matched as literal text, so outline lines paste as-is.
+    A file over 24KB read without a range returns its outline; "a.txt:1-N" reads it all.
     Objects: {"path": p, "since": SHA} omits the body while the file keeps the sha an earlier
     read printed; {"grep": RE, "paths": [..], "exclude": [..], "context": 2, "ignore_case": true,
     "mode": "files"} ("files": per-file counts only); {"git": "diff", "base": REF, "paths": [..]};
-    {"compare": [spec, spec]}. mode="survey" maps the repository. budget: tokens, or {"tokens",
-    "item_tokens", "time_s", "max_output"}. A cut file read adds an indentation outline of its
-    unshown lines, and the `next:` line lists specs to pass back to this tool as-is with the same
-    cwd. allow_outside=true reads absolute paths outside cwd.
+    {"compare": [spec, spec]}. mode="survey" maps the repository. budget (only lowers the
+    ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. A cut
+    read adds an outline of its unshown lines, and the `next:` line lists specs to pass back to
+    this tool as-is with the same cwd. allow_outside=true reads absolute paths outside cwd.
     """
     raw_specs = specs
     try:
@@ -388,13 +422,14 @@ async def batch_run(
 
     cwd: absolute working directory. commands: "@label: <cmd> ||| fails ||| tail:30" (slices:
     fails, head:N, tail:N, lines:N-M, grep:RE, grepv:RE, count, dedupe); {"cmd": "...",
-    "timeout": 60, "cwd": "sub", "shell": "auto|cmd|powershell|bash|sh", "slices": ["tail:30"]};
+    "timeout": 60, "cwd": "sub", "shell": "auto|cmd|powershell|bash|sh", "slices": ["tail:30"],
+    "ok_exit": [0, 1]} (exit codes that are not failures, e.g. a search that may find nothing);
     or {"argv": [...], "slices": [...]} (no shell). An object's cmd may end in " ||| " slices
     instead of "slices", not both. A timeout kills the process tree and keeps partial output.
     parallel=1 runs in order; fail_fast=true skips the rest after a failure; dry_run=true
-    validates only. budget: tokens, or {"tokens", "item_tokens", "time_s", "max_output"}.
-    Passing output keeps its last lines; cut output is kept as "artifact:NAME", which the read
-    tool reads as "artifact:NAME:N-M".
+    validates only. budget (only lowers the ~10k-token report cap): tokens, or {"tokens",
+    "item_tokens", "time_s", "max_output"}. Passing output over 4KB keeps its last lines; cut
+    output is kept as "artifact:NAME", which the read tool reads as "artifact:NAME:N-M".
     """
     raw_cmds = commands
     try:

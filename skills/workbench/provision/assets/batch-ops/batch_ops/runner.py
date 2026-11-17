@@ -27,7 +27,7 @@ from .types import RunRequest, RunResult
 
 CAPTURE_LIMIT = 16 * 1024 * 1024  # per stream, in memory
 SUCCESS_TAIL = 15  # lines kept from the end of a long passing output (summaries live there)
-SUCCESS_TRIM_OVER = 20  # passing outputs longer than this many lines are trimmed
+SUCCESS_TRIM_BYTES = 4 * 1024  # passing outputs larger than this are trimmed to their tail
 _ARTIFACT_SLOT = "@@STDOUT_ARTIFACT@@"  # filled with the artifact reference once it is saved
 DEFAULT_PARALLEL = 4
 
@@ -251,13 +251,12 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         if timed_out:
             result.status = "timeout"
             result.message = f"timed out after {timeout:.1f}s; partial output kept"
-        elif process.returncode == 0:
+        elif process.returncode in req.ok_exit:
             result.status = "ok"
             if req.merge_streams and stdout_cap.data:
                 result.message = "stderr merged into stdout"
         else:
-            result.status = "error"
-            result.message = f"exit code {process.returncode}"
+            result.status = "error"  # the header shows the exit code
 
     except FileNotFoundError as exc:
         result.status = "error"
@@ -301,13 +300,12 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
 
     # A passing command's long output is rarely read in full: keep its head and tail.
     # Failures keep everything (failure-first), and explicit slices always win.
-    if not req.slices and result.status == "ok":
+    if not req.slices and result.status == "ok" and _blen(stdout_text) > SUCCESS_TRIM_BYTES:
         out_lines = stdout_text.splitlines()
-        if len(out_lines) > SUCCESS_TRIM_OVER:
+        if len(out_lines) > SUCCESS_TAIL:
             omitted = len(out_lines) - SUCCESS_TAIL
             stdout_text = "\n".join(
-                [f"[... {omitted} earlier lines of passing output omitted; read them with the read tool spec "
-                 f"\"{_ARTIFACT_SLOT}:1-{omitted}\" ...]"]
+                [f"[... {omitted} earlier lines of passing output omitted: \"{_ARTIFACT_SLOT}:1-{omitted}\"]"]
                 + out_lines[-SUCCESS_TAIL:]
             ) + "\n"
             done.trimmed = True
@@ -367,6 +365,7 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
 
     stdout_text, stdout_cut = cut(done.stdout, out_cap)
     stderr_text, stderr_cut = cut(done.stderr, err_cap)
+    result.budget_cut = stdout_cut or stderr_cut
     stdout_cut = stdout_cut or done.trimmed
 
     if stdout_cut and done.stdout_raw and not result.stdout_artifact:
@@ -378,9 +377,9 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
     result.stderr = stderr_text
     result.truncated = stdout_cut or stderr_cut
     result.bytes_shown = _blen(stdout_text) + _blen(stderr_text)
-    if result.truncated and not result.message:
+    if result.budget_cut and not result.message:
         ref = result.stdout_artifact or result.stderr_artifact
-        result.message = f"output cut to fit; full stream: read tool spec \"{ref}\"" if ref else "output cut to fit"
+        result.message = f"output cut to fit; full stream: \"{ref}\"" if ref else "output cut to fit"
     return result
 
 

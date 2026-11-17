@@ -33,8 +33,9 @@ def test_batch_ops_stdio_session(tmp_path):
         "notes.txt": "seed\n",
         "big.txt": "".join(
             f"block {k}:\n" + "".join(f"    body {k}-{j} filler text to take up room\n" for j in range(1, 21))
-            for k in range(1, 16)
+            for k in range(1, 31)
         ),
+        "doc.md": "# Title\n\nIntro.\n\n## Setup (local)\n\nsetup paragraph\n\n## Next\n\nnext paragraph\n",
     }
     for i in range(1, 31):
         fixture[f"hits/f{i:02d}.txt"] = "".join(f"needle_census {n}\n" for n in range(1, 11))
@@ -84,7 +85,7 @@ def test_batch_ops_stdio_session(tmp_path):
                         assert "full_diff" in props
                     if tool.name == "batch_run":
                         assert "slices" in (tool.description or "")
-                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 6100
+                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5200
 
                 res = await call(session, "batch_read", {
                     "specs": ["notes.txt", {"grep": "needle_token", "paths": ["."]}], "cwd": str(repo)})
@@ -105,8 +106,19 @@ def test_batch_ops_stdio_session(tmp_path):
                     "=== [end target] ==="
                 ) in _text(res).replace("\r", "")
 
+                res = await call(session, "batch_read", {"specs": ["big.txt"], "cwd": str(repo)})
+                text = _text(res)
+                assert "block 30:" in text and "body 1-1 filler" not in text
+                assert "next (read tool)" not in text and '"big.txt:1-630"' in text
+
+                res = await call(session, "batch_read", {"specs": ["doc.md@block:## Setup (local"], "cwd": str(repo)})
+                text = _text(res)
+                assert "## Setup (local)" in text and "setup paragraph" in text and "## Next" not in text
+                res = await call(session, "batch_read", {"specs": ["doc.md@outline"], "cwd": str(repo)})
+                assert "## Setup (local)" in _text(res) and "## Next" in _text(res)
+
                 res = await call(session, "batch_read", {
-                    "specs": ["big.txt"], "budget": {"tokens": 1000}, "cwd": str(repo)})
+                    "specs": ["big.txt:1-630"], "budget": {"tokens": 1000}, "cwd": str(repo)})
                 assert not res.isError
                 text = _text(res)
                 lines = text.replace("\r", "").split("\n")
@@ -144,7 +156,7 @@ def test_batch_ops_stdio_session(tmp_path):
                     {"argv": [sys.executable, "-c", parent_script], "label": "slow", "timeout": 2},
                     {"argv": [sys.executable, "-c", "raise SystemExit(3)"], "label": "bad"},
                     {"argv": [sys.executable, "-c",
-                              "import sys; sys.stdout.write(''.join(f'a\\x00b{i}\\n' for i in range(30)))"],
+                              "import sys; sys.stdout.write(''.join(f'a\\x00b{i}\\n' for i in range(700)))"],
                      "label": "nul"},
                     {"cmd": "git --version ||| count", "label": "objslice"},
                     {"argv": [sys.executable, "-c", "print('x')"], "slices": ["grep:zzz"], "label": "emptied"},
@@ -155,7 +167,7 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert by_label["bad"]["status"] == "error" and by_label["bad"]["exit_code"] == 3
                 run_text = _text(res)
                 assert by_label["nul"]["status"] == "ok"
-                assert "a\\0b29" in run_text and "NUL bytes shown as" in run_text
+                assert "a\\0b699" in run_text and "NUL bytes shown as" in run_text
                 assert by_label["objslice"]["status"] == "ok" and by_label["objslice"]["exit_code"] == 0
                 assert "git version" not in run_text
                 assert "slices kept none of" in run_text
@@ -166,6 +178,10 @@ def test_batch_ops_stdio_session(tmp_path):
                 await asyncio.sleep(max(0.0, start + 6 - time.monotonic()))
                 assert not (proc / "parent_alive").exists()
                 assert not (proc / "child_alive").exists()
+
+                res = await call(session, "batch_run", {"commands": [
+                    {"argv": [sys.executable, "-c", "raise SystemExit(1)"], "ok_exit": [0, 1]}], "cwd": str(repo)})
+                assert not res.isError and _items(res)[0]["status"] == "ok"
 
                 lf = repo / "lf.txt"
                 lf.write_bytes(b"one\n")

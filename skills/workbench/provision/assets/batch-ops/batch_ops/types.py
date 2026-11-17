@@ -86,6 +86,7 @@ class RunRequest:
     merge_streams: bool = False
     max_bytes: int = 16384
     display: str = ""
+    ok_exit: list[int] = field(default_factory=lambda: [0])  # exit codes that count as success
 
 
 @dataclass
@@ -187,6 +188,7 @@ class RunResult:
     stderr_artifact: str | None = None
     message: str | None = None
     slice_errors: list[str] = field(default_factory=list)
+    budget_cut: bool = False  # output cut to fit the report budget (not the passing-output trim)
 
 
 @dataclass

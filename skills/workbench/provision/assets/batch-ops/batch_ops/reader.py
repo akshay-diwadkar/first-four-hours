@@ -38,6 +38,7 @@ from .types import Coverage, ReadRequest, ReadResult, Report, Workspace
 from .workspace import git_root_fast, path_is_within, workspace_info
 
 MAX_FILE_BYTES = 32 * 1024 * 1024
+OUTLINE_FIRST_BYTES = 24 * 1024  # an unranged read larger than this returns the file's outline
 DEFAULT_PARALLEL = 8
 VCS_DIRS = {".git", ".hg", ".svn"}
 
@@ -171,7 +172,7 @@ def _respec(req: ReadRequest, path: str) -> str:
     if req.mode in ("target", "raw") and req.range:
         return f"{path}@{req.mode}:{req.range}"
     if req.mode in ("outline", "list"):
-        return f"{path}@{req.mode}"
+        return f"{path}@{req.mode}" + (f":{req.pattern}" if req.mode == "outline" and req.pattern else "")
     if req.mode in ("block", "grep") and req.pattern:
         return f"{path}@{req.mode}:{req.pattern}"
     if req.mode == "context" and req.pattern:
@@ -271,14 +272,14 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         "size_bytes": info.bytes_total,
     }
 
+    pattern_note: str | None = None
     if mode in ("context", "grep"):
         if not req.pattern:
             raise SafetyError(f"{mode} mode requires a pattern")
-        body, match_count = _grep_text(
+        body, match_count, pattern_note = _grep_text(
             text,
             req.pattern,
             context=req.context if mode == "context" else 0,
-            fixed=False,
             ignore_case=False,
             number=True,
         )
@@ -290,7 +291,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     elif mode == "block":
         if not req.pattern:
             raise SafetyError("block mode requires a pattern")
-        spans = _block_spans(lines, req.pattern)
+        spans, pattern_note = _block_spans(lines, req.pattern)
         if not spans:
             body = f"(no matches for {req.pattern})"
             selected_count = 0
@@ -313,10 +314,16 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         meta["matches"] = len(spans)
 
     elif mode == "outline":
-        picked = _outline_lines(lines, depth=req.depth)
-        body = "\n".join(f"{n + 1}: {lines[n]}" for n in picked) if picked else "(no outline: no indented blocks)"
+        if req.pattern:  # the agent names the heading lines
+            rx, pattern_note = _match_rx(req.pattern, lines=lines)
+            picked = [i for i, line in enumerate(lines) if rx.search(line)]
+        else:
+            picked = _outline_lines(lines, depth=req.depth)
+            meta["outline_depth"] = req.depth
+        empty = f"(no lines match {req.pattern})" if req.pattern else (
+            "(no outline: no indented blocks or headings; name heading lines with @outline:PATTERN)")
+        body = "\n".join(_outline_row(n, lines[n]) for n in picked) if picked else empty
         selected_count = len(picked)
-        meta["outline_depth"] = req.depth
 
     elif mode == "target":
         if not req.range:
@@ -362,32 +369,50 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
 
     effective_cap = min(cap, req.max_bytes) if req.max_bytes else cap
     full_body = body
-    outlines = None
-    if mode in ("auto", "lines") and line_rows and len(full_body.encode("utf-8", errors="replace")) > effective_cap:
-        outlines = [
-            [(i + 1, f"{i + 1}: {lines[i]}") for i in _outline_lines(lines, depth=d)] for d in (2, 1)
-        ]
-    body, truncated, continuation, kept_count = _fit_body(
-        full_body, line_rows, effective_cap, lines_total, lambda a, b: f"{display}:{a}-{b}",
-        outlines=outlines,
-    )
+    full_size = len(full_body.encode("utf-8", errors="replace"))
+    summary = None
+    kept_count: int | None
+    continuation: str | None
+    if mode == "auto" and not req.range and line_rows and full_size > OUTLINE_FIRST_BYTES:
+        summary = _outline_summary(lines, effective_cap)
+    if summary is not None:
+        # A large file read whole is mostly skimmed: show its map and let blocks be read from it.
+        body, kept_count = summary
+        truncated, continuation = True, None
+        meta["outline_first"] = True
+    else:
+        outlines = None
+        if mode in ("auto", "lines") and line_rows and full_size > effective_cap:
+            outlines = [
+                [(i + 1, _outline_row(i, lines[i])) for i in _outline_lines(lines, depth=d)] for d in (2, 1)
+            ]
+        body, truncated, continuation, kept_count = _fit_body(
+            full_body, line_rows, effective_cap, lines_total, lambda a, b: f"{display}:{a}-{b}",
+            outlines=outlines,
+        )
     if kept_count is not None:
         selected_count = kept_count
-    artifact = artifacts.put(full_body, ".read.txt") if truncated and continuation is None else None
+    artifact = (artifacts.put(full_body, ".read.txt")
+                if truncated and continuation is None and summary is None else None)
 
     if req.range is None and handle_start is None:
         handle_start, handle_end = None, None
     handle = make_read_handle(display, sha, handle_start, handle_end)
 
     status = "truncated" if truncated else ("lossy" if info.lossy else "ok")
-    message = None
+    message = pattern_note
     if info.lossy:
         message = f"decoded as {info.encoding} with replacement characters"
-    if truncated:
+    if summary is not None:
+        message = (f"outline only: {lines_total} lines, {format_bytes(info.bytes_total)}; read blocks or "
+                   f"ranges from it, or \"{display}:1-{lines_total}\" for the whole file")
+    elif truncated:
+        # The continuation is named by the body's cut marker and the report's next: line.
         message = f"body truncated to {format_bytes(effective_cap)}; full file is {format_bytes(info.bytes_total)}"
         if continuation:
-            message += f"; continue with \"{continuation}\""
             meta["continuation"] = continuation
+    if pattern_note and message != pattern_note:
+        message = f"{pattern_note}; {message}"
     if meta.get("block_capped"):
         message = f"{message}; {meta['block_capped']}" if message else str(meta["block_capped"])
     if info.mixed_eol:
@@ -406,6 +431,39 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         truncated=truncated, status=status, message=message, handle=handle,
         artifact=artifact, meta=meta,
     )
+
+
+OUTLINE_SUMMARY_BYTES = 6 * 1024  # an outline-first read shows depth 2 only when it fits this
+OUTLINE_ROW_CHARS = 160
+
+
+def _outline_row(index: int, line: str) -> str:
+    """A numbered outline row, clipped: an outline names places, it does not quote them."""
+    row = f"{index + 1}: {line}"
+    return row if len(row) <= OUTLINE_ROW_CHARS else row[:OUTLINE_ROW_CHARS] + " …"
+
+
+def _outline_summary(lines: list[str], cap: int) -> tuple[str, int] | None:
+    """The richest outline of *lines* that fits, cut with a count when even depth 1 does not;
+    None when the file has no outline."""
+    rows: list[str] = []
+    for depth in (2, 1):
+        rows = [_outline_row(i, lines[i]) for i in _outline_lines(lines, depth=depth)]
+        if not rows:
+            return None
+        if len("\n".join(rows).encode("utf-8", errors="replace")) <= min(cap - 64, OUTLINE_SUMMARY_BYTES):
+            return "\n".join(rows), len(rows)
+    if len("\n".join(rows).encode("utf-8", errors="replace")) <= cap - 64:
+        return "\n".join(rows), len(rows)
+    kept: list[str] = []
+    used = 0
+    for row in rows:
+        size = len(row.encode("utf-8", errors="replace")) + 1
+        if used + size > cap - 64:
+            break
+        kept.append(row)
+        used += size
+    return "\n".join(kept) + f"\n[... {len(rows) - len(kept)} more outline line(s)]", len(kept)
 
 
 def _fit_body(
@@ -498,9 +556,10 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
     text = decode_bytes(data).text
     lines = text.splitlines()
     line_rows: list[tuple[int, str]] | None = None
+    note: str | None = None
     if req.pattern:
-        body, count = _grep_text(text, req.pattern, context=req.context, fixed=False,
-                                 ignore_case=req.ignore_case, number=True)
+        body, count, note = _grep_text(text, req.pattern, context=req.context,
+                                       ignore_case=req.ignore_case, number=True)
         body = body or f"(no matches for {req.pattern})"
         shown_lines = body.count("\n") + 1 if count else 0
         meta: dict[str, object] = {"matches": count}
@@ -521,7 +580,7 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
         bytes_total=len(data), bytes_shown=len(body.encode("utf-8", errors="replace")),
         lines_total=len(lines), lines_shown=kept if kept is not None else shown_lines,
         truncated=truncated, meta=meta,
-        message=f"continue with \"{continuation}\"" if continuation else None,
+        message=note,  # a continuation is named by the body's cut marker and the next: line
     )
 
 
@@ -577,7 +636,8 @@ def _block_end(lines: list[str], start: int) -> int:
     match's indentation continues the header (an opener on its own line). After the body, a
     line at the match's indentation that starts with punctuation and is followed by deeper
     lines continues it (a multi-line header's closing part); a lone punctuation-only line
-    closes it and is included; anything else ends the block before that line.
+    closes it and is included; anything else ends the block before that line. A flat heading
+    with no deeper lines opens a section that runs to the next heading of its level or above.
     """
     base = _width(lines[start])
     limit = min(len(lines), start + BLOCK_MAX_LINES)
@@ -617,11 +677,63 @@ def _block_end(lines: list[str], start: int) -> int:
         if _lone(line) and _punct_only(line):
             end = j
         break
+    if not seen_body and _flat_header(lines, start):
+        return _section_end(lines, start, limit)
     return end
 
 
-def _block_spans(lines: list[str], pattern: str) -> list[tuple[int, int]]:
-    rx = _compile_pattern(pattern, fixed=False, ignore_case=False)
+def _lead_run(line: str) -> tuple[str, int] | None:
+    """(character, count) for a line that starts, unindented, with a run of one repeated
+    punctuation or symbol character and then a space ("## Title"), else None."""
+    if not line or not _starts_with_punct(line) or line[0] in " \t":
+        return None
+    char = line[0]
+    count = len(line) - len(line.lstrip(char))
+    if count >= len(line) or line[count] != " ":
+        return None
+    return char, count
+
+
+def _flat_header(lines: list[str], i: int) -> tuple[str, int] | None:
+    """The lead run of line *i* when it stands alone between blank lines (or the file's ends):
+    a heading in a file whose structure is not indented."""
+    run = _lead_run(lines[i])
+    if run is None:
+        return None
+    if i > 0 and lines[i - 1].strip():
+        return None
+    if i + 1 < len(lines) and lines[i + 1].strip():
+        return None
+    return run
+
+
+def _section_end(lines: list[str], start: int, limit: int) -> int:
+    """End of a flat section: the line before the next heading with the same character
+    repeated as often or fewer times, trailing blank lines dropped."""
+    char, count = _flat_header(lines, start) or ("", 0)
+    end = start
+    for j in range(start + 1, limit):
+        other = _flat_header(lines, j)
+        if other and other[0] == char and other[1] <= count:
+            break
+        end = j
+    while end > start and not lines[end].strip():
+        end -= 1
+    return end
+
+
+def _flat_outline(lines: list[str]) -> list[int]:
+    return [i for i in range(len(lines)) if _flat_header(lines, i)]
+
+
+def _block_spans(lines: list[str], pattern: str) -> tuple[list[tuple[int, int]], str | None]:
+    """Blocks opened by lines matching *pattern*, or by line N when the pattern is a number."""
+    if re.fullmatch(r"\d+", pattern.strip()):
+        n = int(pattern)
+        if not 1 <= n <= len(lines):
+            raise SafetyError(f"block line {n} is outside the file ({len(lines)} lines)")
+        return [(n - 1, _block_end(lines, n - 1))], None
+    rx, note = _match_rx(pattern, lines=lines)
     spans: list[tuple[int, int]] = []
     for i, line in enumerate(lines):
         if not rx.search(line):
@@ -631,15 +743,20 @@ def _block_spans(lines: list[str], pattern: str) -> list[tuple[int, int]]:
         spans.append((i, _block_end(lines, i)))
         if len(spans) >= BLOCK_MAX_MATCHES:
             break
-    return spans
+    return spans, note
 
 
 def _outline_lines(lines: list[str], *, depth: int) -> list[int]:
-    """Lines that open an indented block, nested at most ``depth`` levels deep.
+    """Lines that open an indented block, nested at most ``depth`` levels deep, plus flat
+    headings (see ``_flat_header``), so unindented prose has an outline too.
 
     A lone token that opens a block (an opener on its own line) is shown by the line above it;
     a line starting with punctuation continues an earlier header and is not shown.
     """
+    return sorted(set(_indent_outline(lines, depth=depth)) | set(_flat_outline(lines)))
+
+
+def _indent_outline(lines: list[str], *, depth: int) -> list[int]:
     picked: list[int] = []
     stack: list[int] = []  # widths of enclosing block headers
     nonblank = [i for i, line in enumerate(lines) if line.strip()]
@@ -715,20 +832,46 @@ def _compile_pattern(pattern: str, *, fixed: bool, ignore_case: bool) -> re.Patt
         raise SafetyError(f"invalid regular expression: {exc}") from exc
 
 
+LITERAL_NOTE = "pattern matched as literal text"
+
+
+def _match_rx(
+    pattern: str, *, ignore_case: bool = False, lines: list[str] | None = None,
+) -> tuple[re.Pattern[str], str | None]:
+    """A regex for *pattern*, or its literal text when it is not a valid regex.
+
+    With *lines* (a file-local search), a valid regex that matches no line while the
+    literal text does is also matched literally: pasted code such as ``name(arg)`` is a
+    valid regex that never matches itself.  Returns (regex, note when literal).
+    """
+    if not pattern:
+        raise SafetyError("search pattern must not be empty")
+    flags = re.IGNORECASE if ignore_case else 0
+    literal = re.compile(re.escape(pattern), flags)
+    try:
+        rx = re.compile(pattern, flags)
+    except re.error as exc:
+        return literal, f"{LITERAL_NOTE} (not a valid regex: {exc})"
+    if (lines is not None and literal.pattern != rx.pattern
+            and not any(rx.search(line) for line in lines)
+            and any(literal.search(line) for line in lines)):
+        return literal, f"{LITERAL_NOTE} (the regex matched nothing)"
+    return rx, None
+
+
 def _grep_text(
     text: str,
     pattern: str,
     *,
     context: int,
-    fixed: bool,
     ignore_case: bool,
     number: bool,
-) -> tuple[str, int]:
-    rx = _compile_pattern(pattern, fixed=fixed, ignore_case=ignore_case)
+) -> tuple[str, int, str | None]:
     lines = text.splitlines()
+    rx, note = _match_rx(pattern, ignore_case=ignore_case, lines=lines)
     hits = [i for i, line in enumerate(lines) if rx.search(line)]
     if not hits:
-        return "", 0
+        return "", 0, note
     if context <= 0:
         chosen = hits
     else:
@@ -746,13 +889,16 @@ def _grep_text(
         marker = ":" if idx in hit_set else "-"
         out.append(f"{idx + 1}{marker} {lines[idx]}" if number else lines[idx])
         previous = idx
-    return "\n".join(out), len(hits)
+    return "\n".join(out), len(hits), note
 
 
 def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
     if not req.pattern:
         raise SafetyError("grep requires a pattern")
-    rx = _compile_pattern(req.pattern, fixed=req.fixed, ignore_case=req.ignore_case)
+    if req.fixed:
+        rx, literal_note = _compile_pattern(req.pattern, fixed=True, ignore_case=req.ignore_case), None
+    else:
+        rx, literal_note = _match_rx(req.pattern, ignore_case=req.ignore_case)  # no second repo scan
     path_specs = req.paths or ["."]
     files: list[Path] = []
     seen: set[str] = set()
@@ -902,6 +1048,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         body=body, bytes_total=full_bytes, bytes_shown=len(body.encode("utf-8", errors="replace")),
         lines_total=len(out), lines_shown=shown_matches, truncated=truncated,
         message="; ".join(m for m in (
+            literal_note or "",
             f"showing {shown_matches} of {match_count} matches (max_matches={req.max_matches})"
             if want_rows and shown_matches < match_count else "",
             f"{len(files)} file(s) capped at max_files={req.max_files}" if truncated_listing else "",
@@ -1448,7 +1595,8 @@ def survey(
         recent = [line for line in out.splitlines() if line.strip()]
 
     hot: list[tuple[str, int]] = []
-    clusters: list[tuple[str, list[tuple[str, int]]]] = []
+    hubs: set[str] = set()
+    groups: list[tuple[int, list[str]]] = []
     code, out, _ = _git(root_p, ["--no-pager", "log", "--format=%x00", "--name-only", "--relative", "-n", "200"])
     if code == 0:
         commits: list[list[str]] = []
@@ -1471,15 +1619,7 @@ def survey(
                 for right in ordered[i + 1:]:
                     pair_counts[(left, right)] = pair_counts.get((left, right), 0) + 1
         hot = sorted(counts.items(), key=lambda pair: pair[1], reverse=True)[:10]
-        partners: dict[str, list[tuple[str, int]]] = {}
-        for (left, right), count in pair_counts.items():
-            if count >= 3:
-                partners.setdefault(left, []).append((right, count))
-                partners.setdefault(right, []).append((left, count))
-        for anchor, _ in hot:
-            if anchor in partners and len(clusters) < 8:
-                ranked = sorted(partners[anchor], key=lambda pair: (-pair[1], pair[0]))[:5]
-                clusters.append((anchor, ranked))
+        hubs, groups = _cochange_groups(commits, counts, pair_counts)
 
     # Candidate matches with factual reasons
     candidates_dict: dict[str, list[str]] = {}
@@ -1512,6 +1652,14 @@ def survey(
             parts.append(f"  +{len(ranked_folders) - 20} more folder(s)")
     if top_files:
         parts.append("Top-level files: " + ", ".join(top_files))
+    if files:
+        by_ext: dict[str, int] = {}
+        for path in files:
+            ext = path.suffix.lower() or "(none)"
+            by_ext[ext] = by_ext.get(ext, 0) + 1
+        ranked_ext = sorted(by_ext.items(), key=lambda pair: (-pair[1], pair[0]))
+        parts.append("By extension: " + ", ".join(f"{ext} {n}" for ext, n in ranked_ext[:10])
+                     + (f", +{len(ranked_ext) - 10} more" if len(ranked_ext) > 10 else ""))
     if changed:
         parts.append(f"Changed files: {len(changed)}")
         parts.extend(f"  {row}" for row in changed[:15])
@@ -1523,12 +1671,13 @@ def survey(
         parts.append("Recent commits:")
         parts.extend(f"  {row}" for row in recent)
     if hot:
-        parts.append("Hot spots (last 200 commits):")
-        parts.extend(f"  {count:3d}x {path}" for path, count in hot)
-    if clusters:
-        parts.append("Co-change clusters (last 200 commits):")
-        for anchor, ranked in clusters:
-            parts.append(f"  {anchor}: " + ", ".join(f"{name} ({count})" for name, count in ranked))
+        parts.append("Hot spots (last 200 commits; hub = in a quarter or more of them):")
+        parts.extend(f"  {count:3d}x {path}" + (" (hub)" if path in hubs else "") for path, count in hot)
+    if groups:
+        parts.append("Co-change groups (files usually committed together; hubs left out):")
+        for together, members in groups:
+            shown = members[:5] + ([f"+{len(members) - 5} more"] if len(members) > 5 else [])
+            parts.append(f"  {together} commits together: " + ", ".join(shown))
     if candidates_dict:
         parts.append("Candidate files (factual reasons):")
         for cpath, reasons in list(candidates_dict.items())[:20]:
@@ -1568,6 +1717,55 @@ def survey(
     if truncated_walk:
         report.unknowns.append(f"repository walk capped at {max_files} files")
     return report
+
+
+HUB_SHARE = 0.25  # a file in this share of commits (or more) is a hub, not a co-change signal
+GROUP_MIN_TOGETHER = 3
+GROUP_MIN_JACCARD = 0.4
+
+
+def _cochange_groups(
+    commits: list[list[str]], counts: dict[str, int], pair_counts: dict[tuple[str, str], int],
+) -> tuple[set[str], list[tuple[int, list[str]]]]:
+    """Hubs, and groups of files that are mostly committed together.
+
+    A pair joins a group when it was committed together at least GROUP_MIN_TOGETHER times and
+    in at least GROUP_MIN_JACCARD of the commits touching either file; hubs (files in
+    HUB_SHARE of all commits) pair with everything and are left out.  Groups are ranked by
+    their strongest pair, members by how often each changed.
+    """
+    floor = max(5, int(len(commits) * HUB_SHARE + 0.999))
+    hubs = {name for name, count in counts.items() if count >= floor}
+    parent: dict[str, str] = {}
+
+    def find(name: str) -> str:
+        while parent.setdefault(name, name) != name:
+            parent[name] = parent[parent[name]]
+            name = parent[name]
+        return name
+
+    edges = [
+        (left, right, together) for (left, right), together in pair_counts.items()
+        if together >= GROUP_MIN_TOGETHER and left not in hubs and right not in hubs
+        and together / (counts[left] + counts[right] - together) >= GROUP_MIN_JACCARD
+    ]
+    for left, right, _ in edges:
+        a, b = find(left), find(right)
+        if a != b:
+            parent[a] = b
+    strongest: dict[str, int] = {}
+    for left, _, together in edges:
+        root = find(left)
+        strongest[root] = max(strongest.get(root, 0), together)
+    members: dict[str, list[str]] = {}
+    for name in parent:
+        members.setdefault(find(name), []).append(name)
+    ranked = [
+        (strongest.get(root, 0), sorted(names, key=lambda n: (-counts.get(n, 0), n)))
+        for root, names in members.items() if len(names) > 1
+    ]
+    ranked.sort(key=lambda pair: (-pair[0], pair[1][0]))
+    return hubs, ranked[:4]
 
 
 def collect_coverage(requested: int, results: list[ReadResult]) -> Coverage:

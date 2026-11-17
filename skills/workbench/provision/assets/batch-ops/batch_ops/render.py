@@ -13,12 +13,9 @@ from .types import Coverage, EditReport, ReadResult, Report, RunResult
 
 
 def _budget_line(report: Report) -> str:
-    parts = [f"used {format_bytes(report.used_bytes)}"]
-    if report.budget_bytes:
-        parts.append(f"budget {format_bytes(report.budget_bytes)}")
-    if report.budget_tokens:
-        parts.append(f"~{report.budget_tokens} tokens requested")
-    return "budget: " + ", ".join(parts)
+    """Shown only when the budget cut something, so the agent knows a smaller batch reads more."""
+    line = f"budget: used {format_bytes(report.used_bytes)}"
+    return line + (f" of {format_bytes(report.budget_bytes)}" if report.budget_bytes else "")
 
 
 def _coverage_lines(coverage: Coverage, *, counts: bool = True) -> list[str]:
@@ -113,7 +110,7 @@ def _next_line(report: Report) -> str | None:
 
 def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
     lines = [f"# batch_read ({report.mode})"]
-    if any(r.truncated for r in report.reads):
+    if any(r.truncated and not (r.meta or {}).get("outline_first") for r in report.reads):
         lines.append(_budget_line(report))
     problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged")]
     if problems:
@@ -161,7 +158,7 @@ def _render_run_item(result: RunResult) -> list[str]:
         lines.append(f"  cwd: {result.cwd}")
     if result.message:
         lines.append(f"  {result.message}")
-    if result.bytes_total and result.truncated:
+    if result.bytes_total and result.budget_cut:
         lines.append(f"  output: {format_bytes(result.bytes_shown)} shown of {format_bytes(result.bytes_total)}")
     if result.slice_errors:
         lines.extend(f"  slice error: {error}" for error in result.slice_errors)
@@ -173,9 +170,10 @@ def _render_run_item(result: RunResult) -> list[str]:
         lines.append(_fence(result.stderr))
     if not result.stdout and not result.stderr:
         lines.append("  (no output)")
-    if result.stdout_artifact:
+    named = f"{result.message or ''}\n{result.stdout}\n{result.stderr}"
+    if result.stdout_artifact and result.stdout_artifact not in named:
         lines.append(f"  stdout artifact: {result.stdout_artifact}")
-    if result.stderr_artifact:
+    if result.stderr_artifact and result.stderr_artifact not in named:
         lines.append(f"  stderr artifact: {result.stderr_artifact}")
     return lines
 
@@ -183,7 +181,7 @@ def _render_run_item(result: RunResult) -> list[str]:
 def render_run_report(report: Report, *, max_bytes: int = 64 * 1024) -> str:
     lines = ["# batch_run"]
     runs = report.runs
-    if any(r.truncated for r in runs):
+    if any(r.budget_cut for r in runs):
         lines.append(_budget_line(report))
     failed = [r for r in runs if r.status in ("error", "timeout")]
     others = [r for r in runs if r.status not in ("error", "timeout")]

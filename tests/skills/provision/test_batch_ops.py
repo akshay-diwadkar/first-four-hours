@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -25,7 +27,18 @@ def _items(result) -> list[dict]:
 
 def test_batch_ops_stdio_session(tmp_path):
     repo = tmp_path / "repo"
-    seed_git(repo, {".gitignore": "ignored/\n", "src/a.txt": "needle_token here\n", "notes.txt": "seed\n"})
+    fixture = {
+        ".gitignore": "ignored/\n",
+        "src/a.txt": "needle_token here\n",
+        "notes.txt": "seed\n",
+        "big.txt": "".join(
+            f"block {k}:\n" + "".join(f"    body {k}-{j} filler text to take up room\n" for j in range(1, 21))
+            for k in range(1, 16)
+        ),
+    }
+    for i in range(1, 31):
+        fixture[f"hits/f{i:02d}.txt"] = "".join(f"needle_census {n}\n" for n in range(1, 11))
+    seed_git(repo, fixture)
     notes = repo / "notes.txt"
     notes.write_bytes(b"keep\r\nold line\r\n")
     (repo / "ignored").mkdir(exist_ok=True)
@@ -53,10 +66,25 @@ def test_batch_ops_stdio_session(tmp_path):
     async def session_run():
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:
-                await asyncio.wait_for(session.initialize(), 20)
+                init = await asyncio.wait_for(session.initialize(), 20)
+                assert "prefixed names" in (init.instructions or "")
 
                 tools = await asyncio.wait_for(session.list_tools(), 20)
                 assert sorted(t.name for t in tools.tools) == ["batch_edit", "batch_read", "batch_run"]
+                removed = {
+                    "batch_read": ["requests", "tokens", "item_tokens", "time_s", "max_output", "max_files"],
+                    "batch_run": ["specs", "tokens", "item_tokens", "time_s", "max_output"],
+                    "batch_edit": ["max_files", "tokens"],
+                }
+                for tool in tools.tools:
+                    props = tool.inputSchema["properties"]
+                    assert "budget" in props
+                    assert not [name for name in removed[tool.name] if name in props]
+                    if tool.name == "batch_edit":
+                        assert "full_diff" in props
+                    if tool.name == "batch_run":
+                        assert "slices" in (tool.description or "")
+                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 6100
 
                 res = await call(session, "batch_read", {
                     "specs": ["notes.txt", {"grep": "needle_token", "paths": ["."]}], "cwd": str(repo)})
@@ -67,14 +95,73 @@ def test_batch_ops_stdio_session(tmp_path):
                 text = _text(res).replace("\\", "/")
                 assert "src/a.txt" in text and "ignored/hit.txt" not in text
 
+                res = await call(session, "batch_read", {
+                    "specs": ["notes.txt"], "budget": {"tokenz": 5}, "cwd": str(repo)})
+                assert res.isError and "tokenz" in _text(res)
+
+                res = await call(session, "batch_read", {"specs": ["notes.txt@target:1-2"], "cwd": str(repo)})
+                assert (
+                    "1: keep\n2: old line\n\n=== [target: copy verbatim to batch_edit] ===\nkeep\nold line\n"
+                    "=== [end target] ==="
+                ) in _text(res).replace("\r", "")
+
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt"], "budget": {"tokens": 1000}, "cwd": str(repo)})
+                assert not res.isError
+                text = _text(res)
+                lines = text.replace("\r", "").split("\n")
+                assert re.search(r"(?m)^\d+: block 15:$", text)
+                assert "    body 15-5 filler" not in text
+                next_lines = [ln for ln in lines if ln.startswith("next (read tool): specs=")]
+                assert next_lines and "big.txt:" in next_lines[0] and "cwd=" not in next_lines[0]
+                assert not [ln for ln in lines if ln.startswith(("cwd:", "workspace:"))]
+                assert [ln for ln in lines if ln.startswith("budget:")]
+                assert "artifact:" not in text
+
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt@context:body:0"], "budget": {"tokens": 1000}, "cwd": str(repo)})
+                assert "artifact:" in _text(res)
+
+                res = await call(session, "batch_read", {"specs": ["git:log::(top)big.txt"], "cwd": str(repo / "hits")})
+                assert not res.isError
+                assert "(no commits touch" in _text(res)
+
+                grep = {"grep": "needle_census", "paths": ["hits"], "max_matches": 5}
+                res = await call(session, "batch_read", {"specs": [grep], "cwd": str(repo)})
+                text = _text(res).replace("\\", "/")
+                assert "300 match(es) in 30 file(s)" in text
+                for i in range(1, 31):
+                    assert f"hits/f{i:02d}.txt (10)" in text
+
+                res = await call(session, "batch_read", {"specs": [{**grep, "mode": "files"}], "cwd": str(repo)})
+                text = _text(res).replace("\\", "/")
+                for i in range(1, 31):
+                    assert f"hits/f{i:02d}.txt (10)" in text
+                assert "===" not in text and "needle_census 1" not in text
+
                 start = time.monotonic()
                 res = await call(session, "batch_run", {"commands": [
                     {"argv": [sys.executable, "-c", parent_script], "label": "slow", "timeout": 2},
-                    {"argv": [sys.executable, "-c", "raise SystemExit(3)"], "label": "bad"}], "cwd": str(repo)})
+                    {"argv": [sys.executable, "-c", "raise SystemExit(3)"], "label": "bad"},
+                    {"argv": [sys.executable, "-c",
+                              "import sys; sys.stdout.write(''.join(f'a\\x00b{i}\\n' for i in range(30)))"],
+                     "label": "nul"},
+                    {"cmd": "git --version ||| count", "label": "objslice"},
+                    {"argv": [sys.executable, "-c", "print('x')"], "slices": ["grep:zzz"], "label": "emptied"},
+                ], "cwd": str(repo)})
                 assert time.monotonic() - start < 15
                 by_label = {i["label"]: i for i in _items(res)}
                 assert by_label["slow"]["status"] == "timeout"
                 assert by_label["bad"]["status"] == "error" and by_label["bad"]["exit_code"] == 3
+                run_text = _text(res)
+                assert by_label["nul"]["status"] == "ok"
+                assert "a\\0b29" in run_text and "NUL bytes shown as" in run_text
+                assert by_label["objslice"]["status"] == "ok" and by_label["objslice"]["exit_code"] == 0
+                assert "git version" not in run_text
+                assert "slices kept none of" in run_text
+                nul_read = await call(session, "batch_read", {
+                    "specs": [by_label["nul"]["artifact"] + ":1-2"], "cwd": str(repo)})
+                assert "a\\0b0" in _text(nul_read)
                 assert (proc / "spawned").exists()
                 await asyncio.sleep(max(0.0, start + 6 - time.monotonic()))
                 assert not (proc / "parent_alive").exists()
@@ -127,9 +214,23 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert not (repo / "deep2" / "made.txt").exists()
                 assert "rollback could not remove directory" in _text(res)
 
+                res = await call(session, "batch_edit", {"edits": [edit], "dry_run": True, "cwd": str(repo)})
+                assert not res.isError
+                assert " keep" in _text(res).replace("\r", "").split("\n")
+                assert notes.read_bytes() == b"keep\r\nold line\r\n"
+
                 res = await call(session, "batch_edit", {"edits": [edit], "cwd": str(repo)})
                 assert not res.isError
                 assert notes.read_bytes() == b"keep\r\nnew line\r\n"
+                edit_lines = _text(res).replace("\r", "").split("\n")
+                assert "+new line" in edit_lines and "-old line" in edit_lines
+                assert " keep" not in edit_lines
+
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "notes.txt", "search": "new line", "replace": "old line"}],
+                    "full_diff": True, "cwd": str(repo)})
+                assert not res.isError
+                assert " keep" in _text(res).replace("\r", "").split("\n")
 
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "../outside.txt", "search": "keep", "replace": "gone"}], "cwd": str(repo)})

@@ -62,7 +62,7 @@ def apply_slices(text: str, ops: list[str]) -> tuple[str, list[str]]:
                 end = min(len(lines), end)
                 block = lines[start - 1 : end]
                 rendered = [f"=== [context {start}-{end} (numbered)] ==="]
-                rendered.extend(f"{i:4d}: {line}" for i, line in enumerate(block, start=start))
+                rendered.extend(f"{i}: {line}" for i, line in enumerate(block, start=start))
                 rendered.append("")
                 rendered.append("=== [target: copy verbatim to batch_edit] ===")
                 rendered.extend(block)
@@ -100,7 +100,7 @@ def apply_slices(text: str, ops: list[str]) -> tuple[str, list[str]]:
                     for idx in sorted(selected):
                         if prev != -1 and idx > prev + 1:
                             out.append("--")
-                        out.append(f"{idx + 1:4d}: {lines[idx]}")
+                        out.append(f"{idx + 1}: {lines[idx]}")
                         prev = idx
                     lines = out
 
@@ -127,7 +127,7 @@ def apply_slices(text: str, ops: list[str]) -> tuple[str, list[str]]:
                 start = 1
                 if ":" in op:
                     start = int(op.split(":", 1)[1])
-                lines = [f"{i:4d}: {line}" for i, line in enumerate(lines, start=start)]
+                lines = [f"{i}: {line}" for i, line in enumerate(lines, start=start)]
 
             elif op == "dedupe":
                 lines = _dedupe(lines)

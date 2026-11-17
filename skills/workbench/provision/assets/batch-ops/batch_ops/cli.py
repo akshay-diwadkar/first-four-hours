@@ -241,7 +241,7 @@ async def _cmd_edit(args: argparse.Namespace, root: Path) -> tuple[str, dict[str
     ws = workspace_info(root)
     if not (edit_reqs or new_reqs or delete_reqs or rename_reqs or manifest):
         report = EditReport(ok=False, dry_run=bool(payload.get("dry_run")), errors=spec_errors or ["nothing to do"])
-        return render_edit_report(report, max_bytes=args.tokens * 4, cwd=str(root)), build_edit_envelope(report, str(root), ws, tokens=args.tokens), False
+        return render_edit_report(report, max_bytes=args.tokens * 4), build_edit_envelope(report, str(root), ws, tokens=args.tokens), False
 
     bundle = EditRequestBundle(
         edits=edit_reqs, new_files=new_reqs, deletes=delete_reqs, renames=rename_reqs,
@@ -259,7 +259,7 @@ async def _cmd_edit(args: argparse.Namespace, root: Path) -> tuple[str, dict[str
     report = await apply_edits(bundle, root=root, artifacts=store, tracker=tracker,
                                spec_errors=spec_errors)
     fit_diffs(report, args.tokens * 4, store)
-    return (render_edit_report(report, max_bytes=args.tokens * 4, cwd=str(root)),
+    return (render_edit_report(report, max_bytes=args.tokens * 4),
             build_edit_envelope(report, str(root), ws, tokens=args.tokens), report.ok)
 
 

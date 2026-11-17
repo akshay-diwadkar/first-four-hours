@@ -12,14 +12,6 @@ from .safety import estimate_tokens, format_bytes, truncate_text
 from .types import Coverage, EditReport, ReadResult, Report, RunResult
 
 
-def _workspace_line(report: Report) -> str:
-    ws = report.workspace
-    if not ws.git_root:
-        return "workspace: no git repository"
-    flags = "dirty" if ws.dirty else "clean"
-    return f"workspace: {ws.branch or '?'} @ {ws.head or '?'} ({flags}, {ws.changed_count or 0} changed)"
-
-
 def _budget_line(report: Report) -> str:
     parts = [f"used {format_bytes(report.used_bytes)}"]
     if report.budget_bytes:
@@ -29,16 +21,13 @@ def _budget_line(report: Report) -> str:
     return "budget: " + ", ".join(parts)
 
 
-def _coverage_lines(coverage: Coverage) -> list[str]:
-    parts = [f"requested {coverage.requested}", f"read {coverage.read}", f"ok {coverage.ok}"]
+def _coverage_lines(coverage: Coverage, *, counts: bool = True) -> list[str]:
+    parts = []
     for label in ("failed", "missing", "skipped", "binary", "lossy", "stale", "truncated", "unchanged"):
         value = getattr(coverage, label)
         if value:
             parts.append(f"{label} {value}")
-    parts.append(f"shown {format_bytes(coverage.bytes_shown)}")
-    if coverage.bytes_total:
-        parts.append(f"total {format_bytes(coverage.bytes_total)}")
-    lines = ["coverage: " + ", ".join(parts)]
+    lines = ["coverage: " + ", ".join(parts)] if parts and counts else []
     if coverage.not_inspected:
         lines.append("not inspected:")
         lines.extend(f"  - {item}" for item in coverage.not_inspected)
@@ -90,11 +79,8 @@ def _render_read_item(result: ReadResult) -> list[str]:
     lines = [head]
     if result.message:
         lines.append(f"  {result.message}")
-    # The handle already carries the content hash, so one line covers both.
-    if result.handle:
-        lines.append(f"  handle: {result.handle}")
-    elif result.hash:
-        lines.append(f"  sha256: {result.hash[:16]}")
+    if result.hash:
+        lines.append(f"  sha: {result.hash[:12]}")
     meta = result.meta or {}
     encoding = str(meta.get("encoding") or "").lower()
     if (encoding and encoding not in ("utf-8", "ascii", "utf-8-sig")) or meta.get("mixed_eol") or meta.get("lossy"):
@@ -115,11 +101,11 @@ def _render_read_item(result: ReadResult) -> list[str]:
 
 
 def _next_line(report: Report) -> str | None:
-    """Every cut or misspelled item's continuation, as one batch_read call to paste."""
+    """Every cut or misspelled item's continuation, as the specs to pass back to the read tool."""
     specs = [str(r.meta["continuation"]) for r in report.reads if r.meta and r.meta.get("continuation")]
     if not specs:
         return None
-    line = f"next: batch_read cwd={json.dumps(report.cwd)} specs={json.dumps(specs)}"
+    line = f"next (read tool): specs={json.dumps(specs)}"
     if any(r.meta and r.meta.get("outside") and r.meta.get("continuation") for r in report.reads):
         line += " allow_outside=true"
     return line
@@ -127,9 +113,8 @@ def _next_line(report: Report) -> str | None:
 
 def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
     lines = [f"# batch_read ({report.mode})"]
-    lines.append(f"cwd: {report.cwd}")
-    lines.append(_workspace_line(report))
-    lines.append(_budget_line(report))
+    if any(r.truncated for r in report.reads):
+        lines.append(_budget_line(report))
     problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged")]
     if problems:
         lines.append("problems: " + ", ".join(f"{r.id} {r.status}" for r in problems))
@@ -172,11 +157,11 @@ def _render_run_item(result: RunResult) -> list[str]:
         bits.append(f"- {result.label}")
     lines = [" ".join(bits)]
     lines.append(f"  cmd: {result.cmd_display}")
-    if result.cwd:
+    if result.cwd not in ("", "."):
         lines.append(f"  cwd: {result.cwd}")
     if result.message:
         lines.append(f"  {result.message}")
-    if result.bytes_total:
+    if result.bytes_total and result.truncated:
         lines.append(f"  output: {format_bytes(result.bytes_shown)} shown of {format_bytes(result.bytes_total)}")
     if result.slice_errors:
         lines.extend(f"  slice error: {error}" for error in result.slice_errors)
@@ -197,10 +182,9 @@ def _render_run_item(result: RunResult) -> list[str]:
 
 def render_run_report(report: Report, *, max_bytes: int = 64 * 1024) -> str:
     lines = ["# batch_run"]
-    lines.append(f"cwd: {report.cwd}")
-    lines.append(_workspace_line(report))
-    lines.append(_budget_line(report))
     runs = report.runs
+    if any(r.truncated for r in runs):
+        lines.append(_budget_line(report))
     failed = [r for r in runs if r.status in ("error", "timeout")]
     others = [r for r in runs if r.status not in ("error", "timeout")]
     summary = f"{len(runs)} command(s): {sum(1 for r in runs if r.status == 'ok')} ok, {len(failed)} failed/timed out"
@@ -213,7 +197,7 @@ def render_run_report(report: Report, *, max_bytes: int = 64 * 1024) -> str:
     for result in [*failed, *others]:
         lines.extend(_render_run_item(result))
         lines.append("")
-    lines.extend(_coverage_lines(report.coverage))
+    lines.extend(_coverage_lines(report.coverage, counts=False))
     if report.unknowns:
         lines.append("unknowns:")
         lines.extend(f"  - {item}" for item in report.unknowns)
@@ -229,10 +213,8 @@ def _render_edit(report: EditReport) -> list[str]:
     return lines
 
 
-def render_edit_report(report: EditReport, *, max_bytes: int = 32 * 1024, cwd: str = "") -> str:
+def render_edit_report(report: EditReport, *, max_bytes: int = 32 * 1024) -> str:
     lines = [f"# batch_edit{' (dry run)' if report.dry_run else ''}" + (" - ok" if report.ok else " - failed")]
-    if cwd:
-        lines.append(f"cwd: {cwd}")
     if report.message:
         lines.append(report.message)
     if report.errors:
@@ -262,7 +244,7 @@ def render_edit_report(report: EditReport, *, max_bytes: int = 32 * 1024, cwd: s
             if change.message:
                 lines.append(f"      {change.message}")
             if change.diff_artifact:
-                lines.append(f"      full diff: batch_read \"{change.diff_artifact}\"")
+                lines.append(f"      full diff (read tool): \"{change.diff_artifact}\"")
             if change.diff:
                 lines.append(_fence(change.diff))
     else:
@@ -283,7 +265,7 @@ def render_report(report: Report, *, max_bytes: int = 64 * 1024) -> str:
     if report.tool == "batch_run":
         return render_run_report(report, max_bytes=max_bytes)
     if report.tool == "batch_edit":
-        return render_edit_report(report.edit or EditReport(), max_bytes=max_bytes, cwd=report.cwd)
+        return render_edit_report(report.edit or EditReport(), max_bytes=max_bytes)
     if report.tool == "batch_read" and report.mode == "survey":
         return render_read_report(report, max_bytes=max_bytes)
     return render_read_report(report, max_bytes=max_bytes)

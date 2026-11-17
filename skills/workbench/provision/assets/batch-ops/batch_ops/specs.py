@@ -35,6 +35,7 @@ READ_MODES = {
     "list",
     "block",
     "outline",
+    "files",
     "diff",
     "changed",
     "compare",
@@ -76,7 +77,20 @@ def _parse_read_string(value: str) -> ReadRequest:
         raise SpecError("read spec must not be empty")
 
     if s in ("@survey", "survey"):
-        raise SpecError('use batch_read(mode="survey") for a repository survey')
+        raise SpecError('pass mode="survey" with no specs for a repository survey')
+
+    if s.startswith("git:cochange:"):
+        cochange_path = s[len("git:cochange:") :]
+        if not cochange_path:
+            raise SpecError("git:cochange needs a path")
+        return ReadRequest(kind="git_cochange", paths=[cochange_path])
+    if s.startswith("git:log:"):
+        log_rest = s[len("git:log:") :]
+        log_match = re.match(r"^(.*):(\d+-\d+)$", log_rest)
+        log_path, log_range = (log_match.group(1), log_match.group(2)) if log_match else (log_rest, None)
+        if not log_path:
+            raise SpecError("git:log needs a path")
+        return ReadRequest(kind="git_log", paths=[log_path], range=log_range)
 
     if s.startswith("git:diff"):
         return ReadRequest(kind="git_diff")
@@ -230,6 +244,8 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
     )
 
     if kind_key == "path":
+        if mode == "files":
+            raise SpecError("mode files applies only to grep")
         path = str(data["path"])
         if not path:
             raise SpecError("path must not be empty")
@@ -296,8 +312,26 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
 
     if kind_key == "git":
         git_mode = str(data["git"])
-        if git_mode not in ("diff", "changed"):
-            raise SpecError("git must be 'diff' or 'changed'")
+        if git_mode not in ("diff", "changed", "log", "cochange"):
+            raise SpecError("git must be 'diff', 'changed', 'log' or 'cochange'")
+        if git_mode in ("log", "cochange"):
+            git_paths = _str_list(data.get("paths"))
+            if len(git_paths) != 1 or not git_paths[0].strip():
+                raise SpecError("git log and git cochange take exactly one path in paths")
+            git_range: str | None = None
+            if data.get("range") is not None:
+                if git_mode != "log":
+                    raise SpecError("range applies only to git log")
+                git_range = str(data["range"]).strip()
+                range_match = re.match(r"^(\d+)-(\d+)$", git_range)
+                if not range_match or not (1 <= int(range_match.group(1)) <= int(range_match.group(2))):
+                    raise SpecError("git log range must be N-M with 1 <= N <= M")
+            return ReadRequest(
+                kind=f"git_{git_mode}",
+                paths=[git_paths[0]],
+                range=git_range,
+                **common,
+            )
         return ReadRequest(
             kind=f"git_{git_mode}",
             base=str(data.get("base") or "HEAD"),
@@ -367,6 +401,13 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
     cmd = str(data["cmd"]) if data.get("cmd") is not None else None
     if cmd is not None and not cmd.strip():
         raise SpecError("cmd must not be empty")
+    cmd_slices: list[str] = []
+    if cmd is not None and " ||| " in cmd:
+        cmd_parts = cmd.split(" ||| ")
+        cmd = cmd_parts[0].strip()
+        cmd_slices = [p.strip() for p in cmd_parts[1:] if p.strip()]
+        if not cmd:
+            raise SpecError("cmd must not be empty")
     argv = data.get("argv")
     if argv is not None:
         if not isinstance(argv, list) or not argv or not all(isinstance(a, str) for a in argv):
@@ -396,6 +437,10 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
         slices = [str(p).strip() for p in slices_raw if str(p).strip()]
     else:
         raise SpecError("slices must be a list or string")
+    if cmd_slices:
+        if slices:
+            raise SpecError("put slices after ' ||| ' in cmd or in slices, not both")
+        slices = cmd_slices
 
     max_bytes = _positive_int(data.get("max_bytes", 16384), "max_bytes")
     label = str(data.get("label") or "")

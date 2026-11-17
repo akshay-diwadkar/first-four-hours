@@ -401,7 +401,9 @@ def _unified_diff(before: str, after: str, rel: str, action: str) -> str:
     )
 
 
-def fit_diffs(report: EditReport, budget_bytes: int, artifacts: ArtifactStore) -> None:
+def fit_diffs(
+    report: EditReport, budget_bytes: int, artifacts: ArtifactStore, *, condense: bool = False
+) -> None:
     """Share the report budget across diffs so every file's status line stays visible.
 
     Small diffs keep everything; larger ones split what is left (max-min fair) and are cut
@@ -410,6 +412,11 @@ def fit_diffs(report: EditReport, budget_bytes: int, artifacts: ArtifactStore) -
     changes = report.changes
     if not changes:
         return
+    fulls = [c.diff for c in changes]
+    if condense:
+        for change in changes:
+            if change.diff:
+                change.diff = _condense(change.diff)
     sizes = [len(c.diff.encode("utf-8", errors="replace")) for c in changes]
     verify_bytes = sum(r.bytes_shown for r in report.verify)
     total = max(0, body_budget(budget_bytes, len(changes) + len(report.verify)) - verify_bytes)
@@ -417,13 +424,17 @@ def fit_diffs(report: EditReport, budget_bytes: int, artifacts: ArtifactStore) -
         shares = sizes
     else:
         shares = water_fill(sizes, [0] * len(changes), total, floor=160)
-    for change, size, share in zip(changes, sizes, shares):
+    for change, size, share, full in zip(changes, sizes, shares, fulls):
         share = min(share, MAX_DIFF_BYTES)  # no single diff dominates a report
         if size <= share:
             continue
         if not change.diff_artifact:
-            change.diff_artifact = artifacts.put(change.diff, ".edit.diff")
+            change.diff_artifact = artifacts.put(full, ".edit.diff")
             report.artifacts.append(change.diff_artifact)
+        if condense:
+            change.diff = _head_paired(change.diff, max(0, share - 64)) + "\n[... changed lines cut to fit the report]"
+            change.diff_truncated = True
+            continue
         # Spend the share on what changed: drop context lines first, then cut if still too big.
         condensed = _condense(change.diff)
         room = max(0, share - 64)

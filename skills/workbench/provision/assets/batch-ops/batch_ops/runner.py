@@ -26,8 +26,8 @@ from .slices import apply_slices
 from .types import RunRequest, RunResult
 
 CAPTURE_LIMIT = 16 * 1024 * 1024  # per stream, in memory
-SUCCESS_HEAD = 20  # lines kept from the start of a long passing output
-SUCCESS_TAIL = 60  # lines kept from its end (summaries live there)
+SUCCESS_TAIL = 15  # lines kept from the end of a long passing output (summaries live there)
+SUCCESS_TRIM_OVER = 20  # passing outputs longer than this many lines are trimmed
 _ARTIFACT_SLOT = "@@STDOUT_ARTIFACT@@"  # filled with the artifact reference once it is saved
 DEFAULT_PARALLEL = 4
 
@@ -276,8 +276,15 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
             await _kill_tree(process)
         return done
 
-    stdout_text = _normalize_output(decode_bytes(bytes(stdout_cap.data)).text)
-    stderr_text = _normalize_output(decode_bytes(bytes(stderr_cap.data)).text)
+    stdout_text, stdout_nul = _decode_output(bytes(stdout_cap.data))
+    stderr_text, stderr_nul = _decode_output(bytes(stderr_cap.data))
+    stdout_text = _normalize_output(stdout_text)
+    stderr_text = _normalize_output(stderr_text)
+    stdout_visible = stdout_text.encode("utf-8") if stdout_nul else None
+    stderr_visible = stderr_text.encode("utf-8") if stderr_nul else None
+    if stdout_nul or stderr_nul:
+        note = "NUL bytes shown as \\0"
+        result.message = f"{result.message}; {note}" if result.message else note
 
     if req.slices:
         stdout_text, errors = apply_slices(stdout_text, req.slices)
@@ -285,17 +292,22 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         if not req.merge_streams:
             stderr_text, errors = apply_slices(stderr_text, req.slices)
             result.slice_errors.extend(f"stderr {e}" for e in errors)
+        if not stdout_text and not stderr_text and (stdout_cap.data or stderr_cap.data):
+            note = (
+                f"slices kept none of "
+                f"{format_bytes(len(stdout_cap.data) + len(stderr_cap.data))} of output"
+            )
+            result.message = f"{result.message}; {note}" if result.message else note
 
     # A passing command's long output is rarely read in full: keep its head and tail.
     # Failures keep everything (failure-first), and explicit slices always win.
     if not req.slices and result.status == "ok":
         out_lines = stdout_text.splitlines()
-        if len(out_lines) > SUCCESS_HEAD + SUCCESS_TAIL + 40:
-            omitted = len(out_lines) - SUCCESS_HEAD - SUCCESS_TAIL
+        if len(out_lines) > SUCCESS_TRIM_OVER:
+            omitted = len(out_lines) - SUCCESS_TAIL
             stdout_text = "\n".join(
-                out_lines[:SUCCESS_HEAD]
-                + [f"[... {omitted} lines of passing output omitted; read them with batch_read "
-                   f"\"{_ARTIFACT_SLOT}:{SUCCESS_HEAD + 1}-{SUCCESS_HEAD + omitted}\" ...]"]
+                [f"[... {omitted} earlier lines of passing output omitted; read them with the read tool spec "
+                 f"\"{_ARTIFACT_SLOT}:1-{omitted}\" ...]"]
                 + out_lines[-SUCCESS_TAIL:]
             ) + "\n"
             done.trimmed = True
@@ -305,8 +317,16 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         result.message = f"{result.message}; {note}" if result.message else note
 
     done.stdout, done.stderr = stdout_text, stderr_text
-    done.stdout_raw, done.stderr_raw = bytes(stdout_cap.data), bytes(stderr_cap.data)
+    done.stdout_raw = stdout_visible if stdout_visible is not None else bytes(stdout_cap.data)
+    done.stderr_raw = stderr_visible if stderr_visible is not None else bytes(stderr_cap.data)
     return done
+
+
+def _decode_output(data: bytes) -> tuple[str, bool]:
+    """Decode command output; a NUL byte anywhere shows as the two characters \\0."""
+    if data.startswith((b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")) or b"\x00" not in data:
+        return decode_bytes(data).text, False
+    return data.decode("utf-8", errors="replace").replace("\x00", "\\0"), True
 
 
 def _name_trimmed_artifact(done: _Executed, artifacts: ArtifactStore) -> None:
@@ -360,7 +380,7 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
     result.bytes_shown = _blen(stdout_text) + _blen(stderr_text)
     if result.truncated and not result.message:
         ref = result.stdout_artifact or result.stderr_artifact
-        result.message = f"output cut to fit; full stream: batch_read \"{ref}\"" if ref else "output cut to fit"
+        result.message = f"output cut to fit; full stream: read tool spec \"{ref}\"" if ref else "output cut to fit"
     return result
 
 

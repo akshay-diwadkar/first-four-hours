@@ -50,7 +50,6 @@ from .types import (
     RunResult,
     Workspace,
 )
-from .workspace import workspace_info
 
 
 ENVELOPE_META_KEY = "batch_ops/envelope"
@@ -92,12 +91,12 @@ class BatchToolResult(CallToolResult):
 mcp = FastMCP(
     "batch-ops",
     instructions=(
-        "Batch evidence tools for coding agents. Use batch_read to gather several "
-        "files, greps, git diffs, handles or a holistic repository map (mode='survey') "
-        "in one turn. Use batch_run to execute several commands with per-command timeouts "
-        "and failure-first output synthesis. Use batch_edit to apply several edits "
-        "atomically with dry-run, diffs, and automatic rollback on verification failure. "
-        "Reads and edits are confined to cwd unless allow_outside=true explicitly."
+        "Batch evidence tools for coding agents. batch_read gathers files, greps, git history "
+        "or a repository map (mode='survey') in one turn; batch_run runs several commands with "
+        "per-command timeouts, failures first; batch_edit applies several edits atomically with "
+        "dry-run and rollback on verification failure. Your client may list these tools under "
+        "prefixed names: call them by the names it lists. Reads and edits stay inside cwd unless "
+        "allow_outside=true."
     ),
 )
 
@@ -118,31 +117,45 @@ def _root(cwd: str | None) -> Path:
     return path
 
 
+def _unknown_budget_keys(budget_arg: dict[str, Any], allowed: tuple[str, ...]) -> None:
+    extra = set(budget_arg) - set(allowed)
+    if extra:
+        raise ValueError(
+            "budget: unknown key(s) " + ", ".join(sorted(extra)) + "; use " + ", ".join(allowed)
+        )
+
+
 def _resolve_budget(
+    budget_arg: int | dict[str, Any] | None,
+    item_count: int,
+    *,
     tokens: int,
     item_tokens: int,
     time_s: float,
-    budget_arg: int | dict[str, Any] | None,
-    item_count: int,
-) -> tuple[Budget, BudgetTracker, float, str | None]:
-    """Budget, tracker, time limit, and a note when the request was clamped to the report cap."""
+    max_output: int,
+) -> tuple[Budget, BudgetTracker, float, str | None, int]:
+    """Budget, tracker, time limit, a note when the request was clamped to the report cap, and max_output."""
     tok = tokens
     itok = item_tokens
     t_sec = time_s
+    max_out = max_output
     if isinstance(budget_arg, int):
         tok = max(256, budget_arg)
     elif isinstance(budget_arg, dict):
+        _unknown_budget_keys(budget_arg, ("tokens", "item_tokens", "time_s", "max_output"))
         if "tokens" in budget_arg:
             tok = max(256, int(budget_arg["tokens"]))
         if "item_tokens" in budget_arg:
             itok = max(64, int(budget_arg["item_tokens"]))
         if "time_s" in budget_arg:
             t_sec = max(0.5, float(budget_arg["time_s"]))
+        if "max_output" in budget_arg:
+            max_out = max(4096, int(budget_arg["max_output"]))
     asked = tok
     tok = cap_tokens(tok)
     itok = min(itok, tok)
     budget = Budget(tokens=tok, item_tokens=itok, time_s=t_sec, max_items=max(1, item_count))
-    return budget, BudgetTracker(budget), t_sec, _cap_note(asked, tok)
+    return budget, BudgetTracker(budget), t_sec, _cap_note(asked, tok), max(4096, max_out)
 
 
 def _cap_note(asked_tokens: int, tokens: int) -> str | None:
@@ -196,45 +209,34 @@ def _run_error(spec_index: int, exc: BaseException) -> RunResult:
 )
 async def batch_read(
     specs: list[Spec] | None = None,
-    requests: list[Spec] | None = None,
     cwd: str = ".",
     mode: Literal["files", "survey", "batch", "auto"] = "files",
     focus: list[str] | None = None,
-    tokens: int = 10000,
-    item_tokens: int = 10000,
-    time_s: float = 30.0,
     budget: int | dict[str, Any] | None = None,
-    max_files: int = 2000,
-    max_output: int = 65536,
     allow_outside: bool = False,
     ctx: Context | None = None,
 ) -> BatchToolResult:
-    """Read many things in one call: files, line ranges, code blocks, outlines, greps, globs, git.
+    """Read files, ranges, blocks, outlines, greps, globs and git history in one call.
 
-    cwd: absolute path of your working directory (a relative cwd resolves against the server's
-    launch directory). specs: strings or objects. Strings:
-      "src/app.txt" whole file | "src/app.txt:10-50" lines | "src/app.txt@block:RE" the block
-      opened by the first match | "src/app.txt@outline" structure only | "src/app.txt@context:RE:3"
-      | "grep:RE" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "artifact:NAME:10-50" (full
-      output cut from an earlier report)
-    Objects add options: {"path": p, "mode": "block", "pattern": RE}; {"path": p, "since": SHA}
-    returns no body when the file still has that hash (from an earlier result);
-    {"grep": RE, "paths": ["src"], "exclude": ["CHANGELOG.md"], "context": 2, "ignore_case": true}
-    (match lines clip at max_line=300);
-    {"git": "diff", "base": "HEAD~1", "paths": [...]}; {"compare": [{"path": a}, {"path": b}]};
-    {"path": p, "range": "10-50", "mode": "target"} gives verbatim batch_edit search text.
-    mode="survey" (no specs) maps the repository. Large files are cut on a line boundary with the
-    exact range to read next; prefer @outline, then @block, over reading a large file whole.
-    Reports are capped at about 40KB so clients show them inline. Cut or misspelled items are
-    gathered in one `next:` line; pass it to batch_read as-is to continue. allow_outside=true
-    reads absolute paths outside cwd (for example skill files); reads only.
+    cwd: absolute working directory. specs (strings): "a.txt" | "a.txt:10-50" | "a.txt@block:RE" |
+    "a.txt@outline" | "a.txt@context:RE:3" | "a.txt@target:10-20" (verbatim edit search text) |
+    "grep:RE" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
+    "git:cochange:PATH" (files committed with PATH) | "artifact:NAME:N-M".
+    Objects: {"path": p, "since": SHA} omits the body while the file keeps the sha an earlier
+    read printed; {"grep": RE, "paths": [..], "exclude": [..], "context": 2, "ignore_case": true,
+    "mode": "files"} ("files": per-file counts only); {"git": "diff", "base": REF, "paths": [..]};
+    {"compare": [spec, spec]}. mode="survey" maps the repository. budget: tokens, or {"tokens",
+    "item_tokens", "time_s", "max_output"}. A cut file read adds an indentation outline of its
+    unshown lines, and the `next:` line lists specs to pass back to this tool as-is with the same
+    cwd. allow_outside=true reads absolute paths outside cwd.
     """
-    raw_specs = specs if specs is not None else requests
+    raw_specs = specs
     try:
         root = _root(cwd)
         store = _artifacts()
-        budget_obj, tracker, actual_time_s, cap_note = _resolve_budget(
-            tokens, item_tokens, time_s, budget, max(1, len(raw_specs or []))
+        budget_obj, tracker, actual_time_s, cap_note, max_output = _resolve_budget(
+            budget, max(1, len(raw_specs or [])),
+            tokens=10000, item_tokens=10000, time_s=30.0, max_output=65536,
         )
         max_bytes = budget_obj.bytes
 
@@ -244,7 +246,6 @@ async def batch_read(
             report = survey(
                 root,
                 focus=focus,
-                max_files=max_files,
                 artifacts=store,
                 max_bytes=max(1024, min(max_bytes, max_output) - 1024),  # room for coverage lines
             )
@@ -274,7 +275,7 @@ async def batch_read(
         if not raw_specs:
             err_msg = (
                 "# batch_read error\nspecs must not be empty (or pass mode='survey' for a repository map)\n"
-                "Example: batch_read(specs=['src/app.txt:1-50'])"
+                "Example: specs=['src/app.txt:1-50']"
             )
             return BatchToolResult(
                 content=[TextContent(type="text", text=err_msg)],
@@ -314,7 +315,7 @@ async def batch_read(
             tool="batch_read",
             mode="files",
             cwd=str(root),
-            workspace=workspace_info(root),
+            workspace=Workspace(root=str(root)),
             budget_tokens=budget_obj.tokens,
             budget_bytes=max_bytes,
             reads=results,
@@ -376,38 +377,33 @@ async def batch_read(
 )
 async def batch_run(
     commands: list[Spec] | None = None,
-    specs: list[Spec] | None = None,
     cwd: str = ".",
     parallel: int = 4,
     fail_fast: bool = False,
     dry_run: bool = False,
-    tokens: int = 10000,
-    item_tokens: int = 10000,
-    time_s: float = 60.0,
     budget: int | dict[str, Any] | None = None,
-    max_output: int = 65536,
     ctx: Context | None = None,
 ) -> BatchToolResult:
-    """Run independent commands concurrently; failures are reported first.
+    """Run commands concurrently; failures are reported first.
 
-    cwd: absolute path of your working directory. commands: strings or objects.
-      "@label: <test command> ||| fails ||| tail:30" (slices after |||: fails, head:N, tail:N,
-      lines:N-M, grep:RE, grepv:RE, count, dedupe)
-      {"cmd": "...", "timeout": 60, "cwd": "sub", "shell": "auto|cmd|powershell|bash|sh"}
-      {"argv": ["<program>", "<arg>"]} runs without a shell.
-    Timeouts kill the process tree and keep partial output; a command's timeout extends time_s.
-    parallel=1 runs commands in order; add fail_fast=true to skip the rest after a failure.
-    Long passing output is trimmed to head and tail; failing output gets budget first. Cut output
-    is kept as an artifact: batch_read "artifact:NAME:N-M". dry_run=true validates only.
+    cwd: absolute working directory. commands: "@label: <cmd> ||| fails ||| tail:30" (slices:
+    fails, head:N, tail:N, lines:N-M, grep:RE, grepv:RE, count, dedupe); {"cmd": "...",
+    "timeout": 60, "cwd": "sub", "shell": "auto|cmd|powershell|bash|sh", "slices": ["tail:30"]};
+    or {"argv": [...], "slices": [...]} (no shell). An object's cmd may end in " ||| " slices
+    instead of "slices", not both. A timeout kills the process tree and keeps partial output.
+    parallel=1 runs in order; fail_fast=true skips the rest after a failure; dry_run=true
+    validates only. budget: tokens, or {"tokens", "item_tokens", "time_s", "max_output"}.
+    Passing output keeps its last lines; cut output is kept as "artifact:NAME", which the read
+    tool reads as "artifact:NAME:N-M".
     """
-    raw_cmds = commands if commands is not None else specs
+    raw_cmds = commands
     try:
         root = _root(cwd)
         store = _artifacts()
         if not raw_cmds:
             err_msg = (
                 "# batch_run error\ncommands must not be empty\n"
-                "Example: batch_run(commands=['<test command> ||| fails'])"
+                "Example: commands=['<test command> ||| fails']"
             )
             return BatchToolResult(
                 content=[TextContent(type="text", text=err_msg)],
@@ -415,8 +411,9 @@ async def batch_run(
                 isError=True,
             )
 
-        budget_obj, tracker, actual_time_s, cap_note = _resolve_budget(
-            tokens, item_tokens, time_s, budget, len(raw_cmds)
+        budget_obj, tracker, actual_time_s, cap_note, max_output = _resolve_budget(
+            budget, len(raw_cmds),
+            tokens=10000, item_tokens=10000, time_s=60.0, max_output=65536,
         )
 
         parsed: list[RunRequest] = []
@@ -443,7 +440,7 @@ async def batch_run(
             parallel=max(1, min(int(parallel), 16)),
             fail_fast=fail_fast,
             dry_run=dry_run,
-            max_output=max(4096, int(max_output)),
+            max_output=max_output,
         )
 
         valid_slots = [i for i, slot in enumerate(slots) if slot is None]
@@ -477,7 +474,7 @@ async def batch_run(
             tool="batch_run",
             mode="commands",
             cwd=str(root),
-            workspace=workspace_info(root),
+            workspace=Workspace(root=str(root)),
             budget_tokens=budget_obj.tokens,
             budget_bytes=budget_obj.bytes,
             runs=final,
@@ -545,38 +542,38 @@ async def batch_edit(
     manifest: str | None = None,
     cwd: str = ".",
     dry_run: bool = False,
+    full_diff: bool = False,
     verify: str | dict[str, Any] | None = None,
     rollback_on_failure: bool = True,
     overwrite: bool = False,
     normalize_eol: bool = False,
     allow_outside: bool = False,
-    max_files: int = 100,
-    tokens: int = 8000,
     budget: int | dict[str, Any] | None = None,
     ctx: Context | None = None,
 ) -> BatchToolResult:
     """Apply edits, new files, deletes and renames atomically, then optionally verify.
 
-    cwd: absolute path of your working directory.
-    edits: [{"path": "src/app.txt", "search": "exact old text", "replace": "new text"}]; search must
-      match once unless "replace_all": true or "occurrence": N.
-    new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": "a", "to": "b"}].
-    manifest: a unified diff; its paths are relative to the repository root, as for git apply.
-    verify: "<test command>" or {"cmd": "...", "timeout": 120}; on failure every file is restored.
-    dry_run=true shows diffs without writing. Copy search text from batch_read
-    "path@target:N-M" so whitespace matches exactly.
+    cwd: absolute working directory. edits: [{"path": p, "search": "exact old text", "replace":
+    "new"}], search matching once unless "replace_all": true or "occurrence": N; new_files:
+    {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest: a unified
+    diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}; on
+    failure every file is restored. dry_run=true shows diffs without writing. Diffs show hunk
+    headers and changed lines; full_diff=true or dry_run=true shows full diffs. budget: tokens.
+    Copy search text from the read spec "path@target:N-M".
     """
     try:
         root = _root(cwd)
         store = _artifacts()
-        ws = workspace_info(root)
+        ws = Workspace(root=str(root))
         spec_errors: list[str] = []
 
-        budget_tok = tokens
+        budget_tok = 8000
         if isinstance(budget, int):
             budget_tok = budget
-        elif isinstance(budget, dict) and "tokens" in budget:
-            budget_tok = int(budget["tokens"])
+        elif isinstance(budget, dict):
+            _unknown_budget_keys(budget, ("tokens",))
+            if "tokens" in budget:
+                budget_tok = int(budget["tokens"])
         asked_tok, budget_tok = budget_tok, cap_tokens(budget_tok)
         cap_note = _cap_note(asked_tok, budget_tok)
 
@@ -640,7 +637,7 @@ async def batch_edit(
             if not spec_errors:
                 spec_errors.append("nothing to do: provide edits, new_files, deletes, renames or manifest")
             report = EditReport(ok=False, dry_run=dry_run, errors=spec_errors)
-            text = render_edit_report(report, max_bytes=budget_tok * 4, cwd=str(root))
+            text = render_edit_report(report, max_bytes=budget_tok * 4)
             envelope = build_edit_envelope(report, str(root), ws, tokens=budget_tok)
             return BatchToolResult(
                 content=[TextContent(type="text", text=text)],
@@ -661,7 +658,6 @@ async def batch_edit(
             overwrite=overwrite,
             normalize_eol=normalize_eol,
             allow_outside=allow_outside,
-            max_files=max_files,
         )
 
         verify_timeout = verify_req.timeout if verify_req else 120.0
@@ -688,10 +684,10 @@ async def batch_edit(
         if ctx:
             await ctx.report_progress(90, 100)
 
-        fit_diffs(report, budget_tok * 4, store)  # every file's status stays visible
+        fit_diffs(report, budget_tok * 4, store, condense=not (dry_run or full_diff))  # every file's status stays visible
         if cap_note:
             report.message = f"{report.message}; {cap_note}" if report.message else cap_note
-        text = render_edit_report(report, max_bytes=budget_tok * 4, cwd=str(root))
+        text = render_edit_report(report, max_bytes=budget_tok * 4)
         envelope = build_edit_envelope(report, str(root), ws, tokens=budget_tok)
 
         if ctx:

@@ -121,6 +121,8 @@ def _read_one(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) 
         "grep": _grep_request,
         "git_diff": _git_diff_request,
         "git_changed": _git_changed_request,
+        "git_log": _git_log_request,
+        "git_cochange": _git_cochange_request,
         "compare": _compare_request,
         "handle": _handle_request,
         "artifact": _artifact_request,
@@ -239,7 +241,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         return ReadResult(
             id="read", kind="file", label=req.label, status="binary", path=display,
             bytes_total=info.bytes_total,
-            message="binary data (NUL bytes); read it with batch_run and an explicit tool",
+            message="binary data (NUL bytes); inspect it with a command through the run tool",
         )
 
     sha = sha256_bytes(data)
@@ -298,7 +300,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
             for index, (start, end) in enumerate(spans):
                 if index:
                     rows.append("--")
-                rows.extend(f"{n + 1:4d}: {lines[n]}" for n in range(start, end + 1))
+                rows.extend(f"{n + 1}: {lines[n]}" for n in range(start, end + 1))
                 selected_count += end - start + 1
             body = "\n".join(rows)
             capped = [(s, e) for s, e in spans if e - s + 1 >= BLOCK_MAX_LINES - 1]
@@ -307,12 +309,12 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
                 meta["block_capped"] = f"block cut at {BLOCK_MAX_LINES} lines; read \"{display}:{e + 2}-{lines_total}\" to continue"
             if len(spans) == 1:
                 handle_start, handle_end = spans[0][0] + 1, spans[0][1] + 1
-                line_rows = [(n + 1, f"{n + 1:4d}: {lines[n]}") for n in range(spans[0][0], spans[0][1] + 1)]
+                line_rows = [(n + 1, f"{n + 1}: {lines[n]}") for n in range(spans[0][0], spans[0][1] + 1)]
         meta["matches"] = len(spans)
 
     elif mode == "outline":
         picked = _outline_lines(lines, depth=req.depth)
-        body = "\n".join(f"{n + 1:4d}: {lines[n]}" for n in picked) if picked else "(no outline: no indented blocks)"
+        body = "\n".join(f"{n + 1}: {lines[n]}" for n in picked) if picked else "(no outline: no indented blocks)"
         selected_count = len(picked)
         meta["outline_depth"] = req.depth
 
@@ -326,7 +328,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         else:
             start_line = selected[0][0]
             end_line = selected[-1][0]
-            numbered = [f"{n:4d}: {line}" for n, line in selected]
+            numbered = [f"{n}: {line}" for n, line in selected]
             verbatim = [line for _, line in selected]
             body = "\n".join(
                 [f"=== [context {start_line}-{end_line} (numbered)] ===",
@@ -351,7 +353,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
             line_rows = [(n, line) for n, line in selected]
             body = "\n".join(row for _, row in line_rows)
         else:
-            line_rows = [(n, f"{n:4d}: {line}") for n, line in selected]
+            line_rows = [(n, f"{n}: {line}") for n, line in selected]
             body = "\n".join(row for _, row in line_rows)
         selected_count = len(selected)
         if ranges:
@@ -360,12 +362,18 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
 
     effective_cap = min(cap, req.max_bytes) if req.max_bytes else cap
     full_body = body
+    outlines = None
+    if mode in ("auto", "lines") and line_rows and len(full_body.encode("utf-8", errors="replace")) > effective_cap:
+        outlines = [
+            [(i + 1, f"{i + 1}: {lines[i]}") for i in _outline_lines(lines, depth=d)] for d in (2, 1)
+        ]
     body, truncated, continuation, kept_count = _fit_body(
-        full_body, line_rows, effective_cap, lines_total, lambda a, b: f"{display}:{a}-{b}"
+        full_body, line_rows, effective_cap, lines_total, lambda a, b: f"{display}:{a}-{b}",
+        outlines=outlines,
     )
     if kept_count is not None:
         selected_count = kept_count
-    artifact = artifacts.put(full_body, ".read.txt") if truncated else None
+    artifact = artifacts.put(full_body, ".read.txt") if truncated and continuation is None else None
 
     if req.range is None and handle_start is None:
         handle_start, handle_end = None, None
@@ -406,26 +414,68 @@ def _fit_body(
     cap: int,
     lines_total: int,
     next_ref,  # (first_line, last_line) -> the spec that reads the rest
+    *,
+    outlines: list[list[tuple[int, str]]] | None = None,  # candidate outlines, richest first
 ) -> tuple[str, bool, str | None, int | None]:
     """Cut *full_body* to *cap* bytes: on a line boundary with a continuation when rows are known.
 
+    With *outlines*, the cut spends its leftover room on an outline of the lines it did not show.
     Returns (body, truncated, continuation, rows_kept).
     """
     if line_rows and len(full_body.encode("utf-8", errors="replace")) > cap:
+        def _size(text: str) -> int:
+            return len(text.encode("utf-8", errors="replace"))
+
+        def _outline_marker(first: int, last: int, continuation: str, end: int) -> str:
+            return (
+                f"[... truncated: showed lines {first}-{last} of {lines_total}; "
+                f"read \"{continuation}\" for the rest; outline of lines {last + 1}-{end}:]"
+            )
+
+        first_n, end = line_rows[0][0], line_rows[-1][0]
+        limit = max(64, cap - 160)
+        if outlines:
+            reserve = min(sum(_size(row) + 1 for n, row in outlines[-1] if n > first_n), cap // 3)
+            longest = _size(_outline_marker(first_n, end, next_ref(end, end), end)) + 48
+            limit = max(64, cap - longest - reserve)
         kept: list[tuple[int, str]] = []
         used = 0
         for n, row in line_rows:
-            size = len(row.encode("utf-8", errors="replace")) + 1
-            if kept and used + size > max(64, cap - 160):
+            size = _size(row) + 1
+            if kept and used + size > limit:
                 break
             kept.append((n, row))
             used += size
-        first, last, end = kept[0][0], kept[-1][0], line_rows[-1][0]
+        first, last = kept[0][0], kept[-1][0]
         continuation = next_ref(last + 1, end)
         body = "\n".join(row for _, row in kept) + (
             f"\n[... truncated: showed lines {first}-{last} of {lines_total}; "
             f"read \"{continuation}\" for the rest]"
         )
+        if outlines:
+            marker = _outline_marker(first, last, continuation, end)
+            room = cap - used - _size(marker)
+            candidates = [[row for n, row in rows if last < n <= end] for rows in outlines]
+            picked: list[str] = []
+            omitted = 0
+            for candidate in candidates:
+                if sum(_size(row) + 1 for row in candidate) <= room:
+                    picked = candidate
+                    break
+            else:
+                budget_left = room - 40
+                taken = 0
+                for row in candidates[-1]:
+                    if _size(row) + 1 > budget_left:
+                        break
+                    budget_left -= _size(row) + 1
+                    taken += 1
+                picked = candidates[-1][:taken]
+                omitted = len(candidates[-1]) - taken
+            if picked:
+                body = "\n".join([*(row for _, row in kept), marker, *picked])
+                if omitted:
+                    body += f"\n[... {omitted} more outline line(s)]"
         return body, True, continuation, len(kept)
     body, truncated, _ = truncate_text(full_body, cap, style="head")
     return body, truncated, None, None
@@ -456,7 +506,7 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
         meta: dict[str, object] = {"matches": count}
     else:
         selected = select_lines(lines, parse_range(req.range) if req.range else [])
-        line_rows = [(n, f"{n:4d}: {line}") for n, line in selected]
+        line_rows = [(n, f"{n}: {line}") for n, line in selected]
         body = "\n".join(row for _, row in line_rows) or "(no lines selected)"
         shown_lines = len(selected)
         meta = {}
@@ -694,7 +744,7 @@ def _grep_text(
         if previous is not None and idx > previous + 1:
             out.append("--")
         marker = ":" if idx in hit_set else "-"
-        out.append(f"{idx + 1:4d}{marker} {lines[idx]}" if number else lines[idx])
+        out.append(f"{idx + 1}{marker} {lines[idx]}" if number else lines[idx])
         previous = idx
     return "\n".join(out), len(hits)
 
@@ -751,25 +801,29 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         truncated_listing = True
     files = files[: req.max_files]
     out: list[str] = []
+    file_hits: list[tuple[str, int]] = []
     match_count = 0
-    files_with_hits = 0
+    shown_matches = 0
     scanned = 0
+    skipped = 0
     skipped_binary = 0
+    want_rows = req.mode != "files"
     for path in files:
-        if match_count >= req.max_matches:
-            truncated_listing = True
-            break
         try:
             if not req.allow_outside and path.is_symlink() and not path_is_within(root, path.resolve()):
+                skipped += 1
                 continue  # a link inside the tree that points outside cwd
             if path.stat().st_size > 4 * 1024 * 1024:
+                skipped += 1
                 continue
             data = path.read_bytes()
         except OSError:
+            skipped += 1
             continue
         info = decode_bytes(data)
         if info.binary:
             skipped_binary += 1
+            skipped += 1
             continue
         scanned += 1
         rel = relative_display(root, path)
@@ -777,7 +831,10 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         hits = [i for i, line in enumerate(lines) if rx.search(line)]
         if not hits:
             continue
-        files_with_hits += 1
+        file_hits.append((rel, len(hits)))
+        match_count += len(hits)
+        if not want_rows or shown_matches >= req.max_matches:
+            continue
         out.append(f"=== {rel} ===")
         selected: set[int] = set()
         for i in hits:
@@ -788,38 +845,74 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             if previous is not None and idx > previous + 1:
                 out.append("--")
             marker = ":" if idx in hit_set else "-"
-            out.append(f"{idx + 1:4d}{marker} {lines[idx]}")  # path is in the === header ===
+            out.append(f"{idx + 1}{marker} {lines[idx]}")  # path is in the === header ===
             previous = idx
             if idx in hit_set:
-                match_count += 1
-                if match_count >= req.max_matches:
+                shown_matches += 1
+                if shown_matches >= req.max_matches:
                     break
-        if match_count >= req.max_matches:
-            break
 
-    full = "\n".join(out) if out else f"(no matches for {req.pattern})"
-    full_bytes = len(full.encode("utf-8", errors="replace"))
-    clip = max(20, req.max_line)
-    rows = [(i + 1, row if len(row) <= clip else f"{row[:clip]} …[+{len(row) - clip} chars]")
-            for i, row in enumerate(out)]
-    shown = "\n".join(row for _, row in rows) if out else full
-    body, truncated, artifact, continuation = shown, False, None, None
-    if out and len(shown.encode("utf-8", errors="replace")) > cap:
-        # Cut on a report line, keeping the full rows as an artifact the continuation reads by line.
-        artifact = artifacts.put(full, ".grep.txt")
-        body, truncated, continuation, _ = _fit_body(shown, rows, cap, len(out), lambda a, b: f"{artifact}:{a}-{b}")
+    def _size(text: str) -> int:
+        return len(text.encode("utf-8", errors="replace"))
+
+    census_rows = [f"{rel} ({n})" for rel, n in file_hits]
+    census = "\n".join(census_rows)
+    full_rows = "\n".join(out)
+    truncated, artifact, continuation = False, None, None
+    if not file_hits:
+        body = f"(no matches for {req.pattern})"
+        full_bytes = _size(body)
+    elif _size(census) + 1 > cap - 64:
+        census_artifact = artifacts.put(census, ".grep-files.txt")
+        artifact = census_artifact
+        used = 0
+        shown_census = 0
+        for row in census_rows:
+            if used + _size(row) + 1 > cap - 128:
+                break
+            used += _size(row) + 1
+            shown_census += 1
+        body_lines = census_rows[:shown_census]
+        body_lines.append(f"[... {len(census_rows) - shown_census} more file(s); full list: {census_artifact}]")
+        if out:
+            rows_artifact = artifacts.put(full_rows, ".grep.txt")
+            body_lines.append(f"[... match lines: {rows_artifact}]")
+        body = "\n".join(body_lines)
+        continuation = f"{census_artifact}:{shown_census + 1}-{len(file_hits)}"
+        truncated = True
+        full_bytes = _size(census) + (_size(full_rows) + 1 if out else 0)
+    else:
+        body = census
+        full_bytes = _size(census) + (_size(full_rows) + 1 if out else 0)
+        if out:
+            clip = max(20, req.max_line)
+            rows = [(i + 1, row if len(row) <= clip else f"{row[:clip]} …[+{len(row) - clip} chars]")
+                    for i, row in enumerate(out)]
+            shown = "\n".join(row for _, row in rows)
+            room = cap - _size(census) - 1
+            if _size(shown) > room:
+                # Cut on a report line, keeping the full rows as an artifact the continuation reads by line.
+                artifact = artifacts.put(full_rows, ".grep.txt")
+                shown, truncated, continuation, _ = _fit_body(
+                    shown, rows, room, len(out), lambda a, b: f"{artifact}:{a}-{b}"
+                )
+            body = census + "\n" + shown
     return ReadResult(
         id="read", kind="grep", label=req.label or f"grep:{req.pattern}", status="truncated" if truncated else "ok",
         body=body, bytes_total=full_bytes, bytes_shown=len(body.encode("utf-8", errors="replace")),
-        lines_total=len(out), lines_shown=match_count, truncated=truncated,
+        lines_total=len(out), lines_shown=shown_matches, truncated=truncated,
         message="; ".join(m for m in (
+            f"showing {shown_matches} of {match_count} matches (max_matches={req.max_matches})"
+            if want_rows and shown_matches < match_count else "",
             f"{len(files)} file(s) capped at max_files={req.max_files}" if truncated_listing else "",
             f"{excluded} file(s) excluded" if excluded else "",
+            f"{skipped} file(s) skipped (binary, over 4MB, unreadable or outside cwd)" if skipped else "",
         ) if m) or None,
         artifact=artifact,
         meta={
-            "matches": match_count, "files_with_hits": files_with_hits, "files_scanned": scanned,
-            "files_candidates": len(files), "skipped_binary": skipped_binary,
+            "matches": match_count, "matches_shown": shown_matches, "files_with_hits": len(file_hits),
+            "files_scanned": scanned,
+            "files_candidates": len(files), "skipped_binary": skipped_binary, "files_skipped": skipped,
             "truncated_listing": truncated_listing, "excluded": excluded,
             **({"continuation": continuation} if continuation else {}),
         },
@@ -988,6 +1081,98 @@ def _status_rows(out: str, root: Path, top: Path | None) -> list[str]:
                 pass
         rows.append(f"{status} {path}")
     return rows
+
+
+def _git_history_spec(req: ReadRequest, root: Path) -> str:
+    """The one pathspec a history read names: cwd-relative inside cwd, absolute outside it."""
+    path = resolve_path(root, req.paths[0], allow_outside=req.allow_outside, must_exist=False)
+    return relative_display(root, path)
+
+
+def _git_history_result(
+    req: ReadRequest, kind: str, label: str, out: str, cap: int, artifacts: ArtifactStore,
+    suffix: str, meta: dict[str, object] | None = None, note: str = "log",
+) -> ReadResult:
+    """A history body cut on a line boundary; the full text is kept as an artifact the continuation reads."""
+    _, truncated, full_bytes = truncate_text(out, cap, style="head")
+    lines = out.split("\n")
+    meta = dict(meta or {})
+    if not truncated:
+        return ReadResult(
+            id="read", kind=kind, label=label, status="ok", body=out,
+            bytes_total=full_bytes, bytes_shown=len(out.encode("utf-8", errors="replace")),
+            lines_total=len(lines), lines_shown=len(lines), meta=meta,
+        )
+    kept = 0
+    used = 0
+    for line in lines:
+        size = len(line.encode("utf-8", errors="replace")) + 1
+        if used + size > max(64, cap - 64):
+            break
+        used += size
+        kept += 1
+    body = "\n".join(lines[:kept])
+    artifact = artifacts.put(out, suffix)
+    continuation = f"{artifact}:{kept + 1}-{len(lines)}"
+    meta["continuation"] = continuation
+    return ReadResult(
+        id="read", kind=kind, label=label, status="truncated", body=body,
+        bytes_total=full_bytes, bytes_shown=len(body.encode("utf-8", errors="replace")),
+        lines_total=len(lines), lines_shown=kept, truncated=True, artifact=artifact,
+        message=f"{note} truncated at {format_bytes(cap)}; continue with \"{continuation}\"",
+        meta=meta,
+    )
+
+
+def _git_log_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
+    spec = _git_history_spec(req, root)
+    label = req.label or f"git:log:{spec}" + (f":{req.range}" if req.range else "")
+    if req.range:
+        first, _, last = req.range.partition("-")
+        args = ["--literal-pathspecs", "--no-pager", "log", "-L", f"{first},{last}:{spec}",
+                "--format=%h %ad %s", "--date=short", "-n", "5"]
+    else:
+        args = ["--literal-pathspecs", "--no-pager", "log", "--follow", "--format=%h %ad %s",
+                "--date=short", "-n", "15", "--", spec]
+    code, out, err = _git(root, args)
+    if code != 0:
+        return ReadResult(id="read", kind="git_log", label=label, status="error",
+                          message=err.strip() or f"git log failed ({code})")
+    out = out.rstrip("\n")
+    if not out.strip():
+        return ReadResult(id="read", kind="git_log", label=label, status="ok",
+                          body=f"(no commits touch {spec})")
+    return _git_history_result(req, "git_log", label, out, cap, artifacts, ".log.txt")
+
+
+def _git_cochange_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
+    spec = _git_history_spec(req, root)
+    label = req.label or f"git:cochange:{spec}"
+    args = ["--literal-pathspecs", "--no-pager", "log", "--full-diff", "--format=%x00%h", "--name-only",
+            "--relative", "-n", "200", "--", spec]
+    code, out, err = _git(root, args)
+    if code != 0:
+        return ReadResult(id="read", kind="git_cochange", label=label, status="error",
+                          message=err.strip() or f"git log failed ({code})")
+    chunks = [chunk for chunk in out.split("\0") if chunk.strip()]
+    if not chunks:
+        return ReadResult(id="read", kind="git_cochange", label=label, status="ok",
+                          body=f"(no commits touch {spec})", meta={"commits": 0, "files": 0})
+    counts: dict[str, int] = {}
+    for chunk in chunks:
+        names = [line.strip() for line in chunk.splitlines()[1:] if line.strip()]
+        for name in dict.fromkeys(names):
+            if name != spec:
+                counts[name] = counts.get(name, 0) + 1
+    ranked = sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))
+    rows = [f"{len(chunks)} commit(s) touch {spec} (newest 200 searched; files under cwd)"]
+    rows.extend(f"  {count}x {name}" for name, count in ranked[:20])
+    if len(ranked) > 20:
+        rows.append(f"  ... {len(ranked) - 20} more file(s)")
+    return _git_history_result(
+        req, "git_cochange", label, "\n".join(rows), cap, artifacts, ".cochange.txt",
+        meta={"commits": len(chunks), "files": len(counts)}, note="cochange",
+    )
 
 
 def _git_diff_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
@@ -1175,6 +1360,18 @@ def survey(
     used_git_ls = False
     git_top_dirs: set[str] = set()
     git_top_files: set[str] = set()
+    folder_counts: dict[str, int] = {}  # first-level folder -> files
+    child_counts: dict[str, dict[str, int]] = {}  # first-level folder -> second-level folder -> files
+
+    def count_folders(rel_path: str) -> None:
+        parts_f = rel_path.split("/")
+        if len(parts_f) < 2:
+            return
+        folder_counts[parts_f[0]] = folder_counts.get(parts_f[0], 0) + 1
+        if len(parts_f) >= 3:
+            kids = child_counts.setdefault(parts_f[0], {})
+            kids[parts_f[1]] = kids.get(parts_f[1], 0) + 1
+
     if info.git_root:
         code, out, _ = _git(root_p, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
         if code == 0:
@@ -1189,6 +1386,7 @@ def survey(
                     git_top_dirs.add(first + "/")
                 else:
                     git_top_files.add(first)
+                count_folders(raw_rel.replace("\\", "/"))
                 if len(files) >= max_files:
                     truncated_walk = True
                     continue
@@ -1205,29 +1403,15 @@ def survey(
                     break
             if truncated_walk:
                 break
+        for walked in files:
+            count_folders(relative_display(root_p, walked))
 
-    by_ext: dict[str, list[Path]] = {}
     total_size = 0
-    largest: list[tuple[int, Path]] = []
-    tree_summary: dict[str, dict[str, int]] = {}
     for path in files:
         try:
-            size = path.stat().st_size
+            total_size += path.stat().st_size
         except OSError:
             continue
-        total_size += size
-        largest.append((size, path))
-        ext = path.suffix.lower() or "(none)"
-        by_ext.setdefault(ext, []).append(path)
-        rel = relative_display(root_p, path)
-        top_part = rel.split("/")[0] if "/" in rel else "."
-        if top_part not in tree_summary:
-            tree_summary[top_part] = {"files": 0, "bytes": 0}
-        tree_summary[top_part]["files"] += 1
-        tree_summary[top_part]["bytes"] += size
-
-    largest.sort(key=lambda pair: pair[0], reverse=True)
-    largest = largest[:8]
 
     # Top-level entries come from the same file list as every other section, so gitignored
     # folders (build output, scratch, caches) cannot crowd real ones out of the capped list.
@@ -1264,14 +1448,38 @@ def survey(
         recent = [line for line in out.splitlines() if line.strip()]
 
     hot: list[tuple[str, int]] = []
-    code, out, _ = _git(root_p, ["--no-pager", "log", "--pretty=format:", "--name-only", "--relative", "-n", "200"])
+    clusters: list[tuple[str, list[tuple[str, int]]]] = []
+    code, out, _ = _git(root_p, ["--no-pager", "log", "--format=%x00", "--name-only", "--relative", "-n", "200"])
     if code == 0:
+        commits: list[list[str]] = []
+        for chunk in out.split("\0"):
+            names = list(dict.fromkeys(
+                line.strip() for line in chunk.splitlines()
+                if line.strip() and not line.strip().startswith("(")
+            ))
+            if names:
+                commits.append(names)
         counts: dict[str, int] = {}
-        for line in out.splitlines():
-            line = line.strip()
-            if line and not line.startswith("("):
-                counts[line] = counts.get(line, 0) + 1
+        pair_counts: dict[tuple[str, str], int] = {}
+        for names in commits:
+            for name in names:
+                counts[name] = counts.get(name, 0) + 1
+            if len(names) > 30:
+                continue
+            ordered = sorted(names)
+            for i, left in enumerate(ordered):
+                for right in ordered[i + 1:]:
+                    pair_counts[(left, right)] = pair_counts.get((left, right), 0) + 1
         hot = sorted(counts.items(), key=lambda pair: pair[1], reverse=True)[:10]
+        partners: dict[str, list[tuple[str, int]]] = {}
+        for (left, right), count in pair_counts.items():
+            if count >= 3:
+                partners.setdefault(left, []).append((right, count))
+                partners.setdefault(right, []).append((left, count))
+        for anchor, _ in hot:
+            if anchor in partners and len(clusters) < 8:
+                ranked = sorted(partners[anchor], key=lambda pair: (-pair[1], pair[0]))[:5]
+                clusters.append((anchor, ranked))
 
     # Candidate matches with factual reasons
     candidates_dict: dict[str, list[str]] = {}
@@ -1283,7 +1491,6 @@ def survey(
         rel = relative_display(root_p, p)
         candidates_dict.setdefault(rel, []).append("matched focus")
 
-    ext_rows = sorted(by_ext.items(), key=lambda pair: len(pair[1]), reverse=True)
     parts = [f"# Survey: {root_p}"]
     ws = "no git repository"
     if info.git_root:
@@ -1292,19 +1499,19 @@ def survey(
     parts.append(f"Workspace: {ws}")
     parts.append(f"Files walked: {len(files)}" + (" (capped)" if truncated_walk else "")
                  + f", total size {format_bytes(total_size)}")
-    if top_dirs:
-        parts.append("Top-level directories: " + ", ".join(top_dirs))
-    if tree_summary:
-        sorted_tree = sorted(tree_summary.items(), key=lambda x: x[1]["bytes"], reverse=True)[:10]
-        tree_desc = ", ".join(f"{d} ({v['files']} files, {format_bytes(v['bytes'])})" for d, v in sorted_tree)
-        parts.append("Layout tree: " + tree_desc)
+    if folder_counts:
+        parts.append("Tree (files per folder, depth 2):")
+        ranked_folders = sorted(folder_counts.items(), key=lambda pair: (-pair[1], pair[0]))
+        for folder, count in ranked_folders[:20]:
+            parts.append(f"  {folder}/ {count}")
+            kids = sorted(child_counts.get(folder, {}).items(), key=lambda pair: (-pair[1], pair[0]))
+            parts.extend(f"    {child}/ {kid_count}" for child, kid_count in kids[:6])
+            if len(kids) > 6:
+                parts.append(f"    +{len(kids) - 6} more folder(s)")
+        if len(ranked_folders) > 20:
+            parts.append(f"  +{len(ranked_folders) - 20} more folder(s)")
     if top_files:
         parts.append("Top-level files: " + ", ".join(top_files))
-    if ext_rows:
-        parts.append("By extension: " + ", ".join(f"{ext} {len(group)}" for ext, group in ext_rows[:12]))
-    if largest:
-        parts.append("Largest files:")
-        parts.extend(f"  {format_bytes(size):>9} {relative_display(root_p, path)}" for size, path in largest)
     if changed:
         parts.append(f"Changed files: {len(changed)}")
         parts.extend(f"  {row}" for row in changed[:15])
@@ -1318,6 +1525,10 @@ def survey(
     if hot:
         parts.append("Hot spots (last 200 commits):")
         parts.extend(f"  {count:3d}x {path}" for path, count in hot)
+    if clusters:
+        parts.append("Co-change clusters (last 200 commits):")
+        for anchor, ranked in clusters:
+            parts.append(f"  {anchor}: " + ", ".join(f"{name} ({count})" for name, count in ranked))
     if candidates_dict:
         parts.append("Candidate files (factual reasons):")
         for cpath, reasons in list(candidates_dict.items())[:20]:
@@ -1333,8 +1544,6 @@ def survey(
         report.unknowns.append(f"repository walk capped at max_files={max_files}")
     if report.unknowns:
         parts.append("Unknowns: " + "; ".join(report.unknowns))
-    parts.append("")
-    parts.append("Suggested next evidence: batch_read on focus files, then grep for the central symbol or error string.")
 
     text = "\n".join(parts)
     body, truncated, full_bytes = truncate_text(text, max_bytes, style="head")

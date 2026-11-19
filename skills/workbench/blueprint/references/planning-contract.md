@@ -1,6 +1,6 @@
 # Planning contract
 
-**Hidden-choice test:** if two executors competent at local coding but without design authority, following the wording faithfully, could produce materially different behavior, control flow, interfaces, data shape, ordering, compatibility, preservation, verification, or test cases, the plan is not yet implementation-complete. Apply it per step: state only what two such executors could do differently.
+**Hidden-choice test:** if two executors competent at local coding but without design authority, following the wording faithfully, could produce materially different behavior, control flow, interfaces, data shape, ordering, compatibility, preservation, verification, or test cases, the plan is not yet implementation-complete.
 
 ## The rent rule
 
@@ -10,13 +10,13 @@ Future usefulness, genericity, symmetry, elegance, imagined callers, and "while 
 
 ## Intent closure
 
-Repository-derived engineering details (seam, owner, file, helper, data flow, representation, ordering, test and verification shape) are always Blueprint's. For a child of a parent or epic issue, copy each constraint the parent sets for its children verbatim into the request before preparing and give the challenger the parent's text.
+For a child of a parent or epic issue, copy each constraint the parent sets for its children verbatim into the request before preparing and give the challenger the parent's text.
 
 Close every known gap or get the user's recorded acceptance: a requested outcome or load-bearing invariant failing for some producible input, state, configuration, or environment, including one a supported finding names, is a gap however rare or low-consequence. Record the user's answer by amending the request in place ([Earlier plans](earlier-plans.md#commands)); acceptance only in chat, Goal, a report, a non-goal, or a risk is unrecorded. A prediction carried by authored verification is not a gap.
 
 ## Approach and scope
 
-`Goal` states, in a few sentences, the approach, its load-bearing invariants, and scope: what changes, the trust boundary, protected behavior, and non-goals only where someone would reach past them. A non-goal bounds the plan's additions, never a requested outcome, preserved obligation, or consumer. Reuse a current mechanism only once its load-bearing assumptions hold.
+Goal's scope names the trust boundary and protected behavior, and non-goals only where someone would reach past them. A non-goal bounds the plan's additions, never a requested outcome, preserved obligation, or consumer. Reuse a current mechanism only once its load-bearing assumptions hold.
 
 ## Repository traps
 

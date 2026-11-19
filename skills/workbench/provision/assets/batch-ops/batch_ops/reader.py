@@ -379,7 +379,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     summary = None
     kept_count: int | None
     continuation: str | None
-    if mode == "auto" and not req.range and line_rows and full_size > OUTLINE_FIRST_BYTES:
+    if mode == "auto" and not req.range and line_rows and size > OUTLINE_FIRST_BYTES:
         summary = _outline_summary(lines, effective_cap)
     if summary is not None:
         # A large file read whole is mostly skimmed: show its map and let blocks be read from it.
@@ -936,14 +936,34 @@ def _grep_text(
     return "\n".join(out), len(hits), note
 
 
+def _split_scope(pattern: str, root: Path, allow_outside: bool) -> tuple[str, list[str]]:
+    """Read "RE in PATH [PATH..]" as a scoped grep when every word after the last " in " exists."""
+    head, sep, tail = pattern.rpartition(" in ")
+    words = tail.split()
+    if not sep or not head or not words:
+        return pattern, []
+    for word in words:
+        try:
+            if not _expand_paths(root, word) or not all(
+                resolve_path(root, p, allow_outside=allow_outside).exists() for p in _expand_paths(root, word)
+            ):
+                return pattern, []
+        except (OSError, SafetyError):
+            return pattern, []
+    return head, words
+
+
 def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
     if not req.pattern:
         raise SafetyError("grep requires a pattern")
+    pattern, scope = req.pattern, req.paths
+    if not scope:
+        pattern, scope = _split_scope(pattern, root, req.allow_outside)
     if req.fixed:
-        rx, literal_note = _compile_pattern(req.pattern, fixed=True, ignore_case=req.ignore_case), None
+        rx, literal_note = _compile_pattern(pattern, fixed=True, ignore_case=req.ignore_case), None
     else:
-        rx, literal_note = _match_rx(req.pattern, ignore_case=req.ignore_case)  # no second repo scan
-    path_specs = req.paths or ["."]
+        rx, literal_note = _match_rx(pattern, ignore_case=req.ignore_case)  # no second repo scan
+    path_specs = scope or ["."]
     files: list[Path] = []
     seen: set[str] = set()
     truncated_listing = False

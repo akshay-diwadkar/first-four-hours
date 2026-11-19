@@ -252,13 +252,13 @@ async def batch_read(
     cwd: absolute working directory. specs (strings): "a.txt" | "a.txt:10-50" | "a.txt@outline" |
     "a.txt@outline:RE" (lines matching RE) | "a.txt@block:RE" or "a.txt@block:N" (the block or
     section opened there) | "a.txt@context:RE:3" | "a.txt@target:10-20" (verbatim edit search
-    text) | "grep:RE" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
-    "git:cochange:PATH" (files committed with PATH) | "artifact:NAME:N-M". A pattern that is not
+    text) | "grep:RE [in PATH..]" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
+    "git:cochange:PATH" (co-changed files) | "artifact:NAME:N-M". A pattern that is not
     a regex, or matches nothing as one, is matched as literal text, so outline lines paste as-is.
     A file over 24KB read without a range returns its outline; "a.txt:1-N" reads it all.
     Objects: {"path": p, "since": SHA} omits the body while the file keeps the sha an earlier
     read printed; {"grep": RE, "paths": [..], "exclude": [..], "context": 2, "ignore_case": true,
-    "mode": "files"} ("files": per-file counts only); {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
+    "mode": "files"} (per-file counts); {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
     {"compare": [spec, spec]}. mode="survey" maps the repository. budget (only lowers the
     ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. A cut
     read adds an outline of its unshown lines, and the `next:` line lists specs to pass back to

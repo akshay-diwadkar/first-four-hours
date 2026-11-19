@@ -153,6 +153,9 @@ def test_batch_ops_stdio_session(tmp_path):
                     assert f"hits/f{i:02d}.txt (10)" in text
                 assert "=== hits/f05.txt (1 of 10) ===" in text and "=== hits/f06.txt" not in text
 
+                res = await call(session, "batch_read", {"specs": ["grep:needle_census in hits/f02.txt hits/f03.txt"], "cwd": str(repo)})
+                assert "20 match(es) in 2 file(s)" in _text(res)
+
                 res = await call(session, "batch_read", {"specs": [{"git": "diff", "stat": True}], "cwd": str(repo)})
                 assert "notes.txt |" in _text(res) and "@@" not in _text(res)
 

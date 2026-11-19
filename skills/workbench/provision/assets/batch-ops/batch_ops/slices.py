@@ -101,7 +101,7 @@ def apply_slices(text: str, ops: list[str]) -> tuple[str, list[str]]:
                     out: list[str] = []
                     prev = -1
                     for idx in sorted(selected):
-                        if prev != -1 and idx > prev + 1:
+                        if prev != -1 and idx > prev + 1 and ctx > 0:
                             out.append("--")
                         out.append(f"{idx + 1}: {lines[idx]}")
                         prev = idx

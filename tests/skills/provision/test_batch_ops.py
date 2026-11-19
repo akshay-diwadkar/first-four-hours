@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import sys
 import time
@@ -45,6 +46,7 @@ def test_batch_ops_stdio_session(tmp_path):
     fixture["many.md"] = "".join(
         f"## Heading {i}\n\nbody text line for section {i} padded out a bit more\n\n" for i in range(400)
     )
+    fixture["aa/ab/x.txt"] = "x\n"
     for i in range(1, 31):
         fixture[f"hits/f{i:02d}.txt"] = "".join(f"needle_census {n}\n" for n in range(1, 11))
     seed_git(repo, fixture)
@@ -52,6 +54,7 @@ def test_batch_ops_stdio_session(tmp_path):
     notes.write_bytes(b"keep\r\nold line\r\n")
     (repo / "ignored").mkdir(exist_ok=True)
     (repo / "ignored" / "hit.txt").write_text("needle_token\n", encoding="utf-8")
+    (repo / "ignored" / "two.txt").write_text("needle_token\n", encoding="utf-8")
     outside = tmp_path / "outside.txt"
     outside.write_bytes(b"keep\n")
     proc = tmp_path / "proc"
@@ -65,8 +68,17 @@ def test_batch_ops_stdio_session(tmp_path):
         f"open({str(proc / 'parent_alive')!r}, 'w').close()\n"
         "time.sleep(30)\n"
     )
+    server_env = {"PYTHONDONTWRITEBYTECODE": "1"}
+    if os.name == "nt":
+        # No bash on PATH outside %SystemRoot%, so the default shell must be found through Git.
+        system_root = os.path.normcase(os.environ.get("SystemRoot", ""))
+        server_env["PATH"] = os.pathsep.join(
+            entry for entry in os.environ.get("PATH", "").split(os.pathsep)
+            if not (entry and (Path(entry) / "bash.exe").is_file()
+                    and not os.path.normcase(entry).startswith(system_root))
+        )
     params = StdioServerParameters(
-        command=sys.executable, args=[str(SERVER)], cwd=str(repo), env={"PYTHONDONTWRITEBYTECODE": "1"}
+        command=sys.executable, args=[str(SERVER)], cwd=str(repo), env=server_env
     )
 
     async def call(session, name, args):
@@ -77,6 +89,7 @@ def test_batch_ops_stdio_session(tmp_path):
             async with ClientSession(read, write) as session:
                 init = await asyncio.wait_for(session.initialize(), 20)
                 assert "prefixed names" in (init.instructions or "")
+                assert "load all three in one request" in (init.instructions or "")
 
                 tools = await asyncio.wait_for(session.list_tools(), 20)
                 assert sorted(t.name for t in tools.tools) == ["batch_edit", "batch_read", "batch_run"]
@@ -90,7 +103,7 @@ def test_batch_ops_stdio_session(tmp_path):
                     assert "budget" in props
                     assert not [name for name in removed[tool.name] if name in props]
                     if tool.name == "batch_edit":
-                        assert "full_diff" in props
+                        assert "full_diff" in props and "diff" in props
                     if tool.name == "batch_run":
                         assert "slices" in (tool.description or "")
 
@@ -105,6 +118,20 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert re.match(r"# batch_read \(files\) build [0-9a-f]{7}\n", text)
                 assert "must have exactly one of" in text and "unknown read kind" not in text
                 assert "src/a.txt" in text and "ignored/hit.txt" not in text
+                assert "1 gitignored path(s) not searched" in text
+                res = await call(session, "batch_read", {
+                    "specs": [{"grep": "needle_token", "paths": ["ignored"], "ignored": True}],
+                    "cwd": str(repo)})
+                assert not res.isError and _items(res)[0]["status"] == "ok"
+                assert "ignored/hit.txt" in _text(res).replace("\\", "/")
+                res = await call(session, "batch_read", {"specs": ["glob:**/a*/**/*.txt"], "cwd": str(repo)})
+                text = _text(res).replace("\\", "/")
+                assert "matches: 1" in text and text.count("aa/ab/x.txt") == 1
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt@context:block 1:0", {"grep": "needle_census [37]$", "paths": ["hits/f01.txt"]}],
+                    "cwd": str(repo)})
+                text = _text(res).replace("\r", "")
+                assert "block 19:" in text and "3: needle_census 3" in text and "--" not in text.split("\n")
                 res = await call(session, "batch_read", {"specs": [items[0]["handle"] + ":2-2"], "cwd": str(repo)})
                 assert "2: old line" in _text(res) and "1: keep" not in _text(res)
 
@@ -123,8 +150,21 @@ def test_batch_ops_stdio_session(tmp_path):
 
                 res = await call(session, "batch_read", {"specs": ["big.txt"], "cwd": str(repo)})
                 text = _text(res)
-                assert "block 30:" in text and "body 1-1 filler" not in text
-                assert "next (read tool)" not in text and '"big.txt:1-630"' in text
+                assert "body 1-1 filler" in text and _items(res)[0]["status"] == "ok"
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt"], "budget": {"tokens": 4000}, "cwd": str(repo)})
+                text = _text(res)
+                assert "outline only" in text and '"big.txt:1-630"' in text
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt:1-300", "big.txt:301-630", {"path": "big.txt", "range": "301-630"},
+                              "big.txt:331-360"],
+                    "budget": {"tokens": 5000}, "cwd": str(repo)})
+                assert not res.isError
+                assert [i["status"] for i in _items(res)] == ["ok", "deferred", "deferred", "ok"]
+                text = _text(res)
+                assert "300:     body 15-5 filler" in text
+                next_line = [ln for ln in text.split("\n") if ln.startswith("next (read tool): specs=")]
+                assert next_line and '"big.txt:301-630"' in next_line[0] and '"range": "301-630"' in next_line[0]
 
                 res = await call(session, "batch_read", {"specs": ["doc.md@block:## Setup (local"], "cwd": str(repo)})
                 text = _text(res)
@@ -205,6 +245,16 @@ def test_batch_ops_stdio_session(tmp_path):
                 ], "cwd": str(repo)})
                 assert time.monotonic() - start < 15
                 by_label = {i["label"]: i for i in _items(res)}
+                res_default = await call(session, "batch_run", {"commands": [
+                    {"cmd": "echo shell_probe | tr a-z A-Z", "label": "auto"},
+                    {"argv": [sys.executable, "-c", "print('hit 1'); print('x'); print('hit 2')"],
+                     "slices": ["context:hit:0"], "label": "ctx0"},
+                ], "cwd": str(repo)})
+                default_text = _text(res_default).replace("\r", "")
+                assert "3: hit 2" in default_text and "--" not in default_text.split("\n")
+                assert {i["label"]: i["status"] for i in _items(res_default)}["auto"] == "ok"
+                assert "SHELL_PROBE" in default_text
+                assert re.search(r"ms bash - auto" if os.name == "nt" else r"ms sh - auto", default_text)
                 assert by_label["slow"]["status"] == "timeout"
                 assert by_label["bad"]["status"] == "error" and by_label["bad"]["exit_code"] == 3
                 run_text = _text(res)
@@ -284,6 +334,7 @@ def test_batch_ops_stdio_session(tmp_path):
                     "edits": [edit], "new_files": {"deep/er/made.txt": "x\n"},
                     "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]}, "cwd": str(repo)})
                 assert res.isError
+                assert "-old line" in _text(res).replace("\r", "").split("\n")
                 assert notes.read_bytes() == b"keep\r\nold line\r\n"
                 assert not (repo / "deep").exists()
 
@@ -305,8 +356,8 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert not res.isError
                 assert notes.read_bytes() == b"keep\r\nnew line\r\n"
                 edit_lines = _text(res).replace("\r", "").split("\n")
-                assert "+new line" in edit_lines and "-old line" in edit_lines
-                assert " keep" not in edit_lines
+                assert "+new line" not in edit_lines and "@@" not in _text(res)
+                assert "1 replacement(s)" in _text(res) and "hash " in _text(res)
 
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "notes.txt", "search": "new line", "replace": "old line"}],
@@ -339,7 +390,8 @@ def test_batch_ops_stdio_session(tmp_path):
                 sql = repo / "q.sql"
                 sql.write_bytes(b"select 1;\n-- old note\nselect 2;\n")
                 res = await call(session, "batch_edit", {
-                    "edits": [{"path": "q.sql", "search": "-- old note\n", "replace": ""}], "cwd": str(repo)})
+                    "edits": [{"path": "q.sql", "search": "-- old note\n", "replace": ""}],
+                    "diff": "hunks", "cwd": str(repo)})
                 assert not res.isError and sql.read_bytes() == b"select 1;\nselect 2;\n"
                 sql_lines = _text(res).replace("\r", "").split("\n")
                 assert "--- old note" in sql_lines and "--- a/q.sql" not in sql_lines

@@ -275,6 +275,9 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     assert codes(draft().replace(traced, "- R1 → 1, 2 · V9 — not an Owner gate: prose\n", 1), tmp_path) == {"trace.unbacked"}
     owner_gate = draft().replace(traced, traced + "- R2 → Owner gate: the maintainer confirms the wording.\n", 1)
     assert runtime.validate_draft(owner_gate, tmp_path).valid
+    # An owner gate never excuses a step or check it also cites that the plan does not author.
+    assert codes(draft().replace(traced, "- R1 → 9 · V9 · Owner gate: x\n", 1), tmp_path) == {"trace.unbacked"}
+    assert runtime.validate_draft(draft().replace(traced, "- R1 → 1 · V1 · Owner gate: the maintainer confirms 60 a minute\n", 1), tmp_path).valid
     # Optional sections left empty, as the scaffold leaves them, cost no repair; Goal still may not be empty.
     assert runtime.validate_draft(draft().replace("## Implementation\n", "## Decisions\n\n## Implementation\n", 1), tmp_path).valid
     assert "shape.section.empty" in codes(draft().replace("Make absent names normalize predictably for the caller.\n**Tier:** quick\n", "", 1), tmp_path)

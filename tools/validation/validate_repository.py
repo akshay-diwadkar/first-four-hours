@@ -389,6 +389,7 @@ CONTRACT_VERSION_DECLARATIONS = (
     ("skills/sensemaking/ideate/scripts/ideation_contract.py", r'^IDEATE_VERSION = "([^"]+)"$', "sensemaking/ideate", "exact"),
     ("skills/sensemaking/scribe/scripts/check_document.py", r'^BUNDLE_CONTRACT_VERSION = "([^"]+)"$', "sensemaking/scribe", "exact"),
     ("skills/sensemaking/scribe/templates/document-bundle.json", r'^  "contract_version": "([^"]+)",$', "sensemaking/scribe", "exact"),
+    ("skills/workbench/provision/assets/batch-ops/README.md", r'^Version: (\S+)$', "workbench/provision", "exact"),
 )
 
 # Blueprint sealed-contract authority (akshay-diwadkar/skills#464): the HEAD-divergence runtime

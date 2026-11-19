@@ -10,5 +10,6 @@ Establish each fact below from the harness's official documentation, recording i
 - For `ffh-planner`: whether a subagent can start subagents and which setting controls it, and any per-agent prompt-cache lifetime setting. A setting that is missing or unknown means no `ffh-planner` or the harness default, as Agents says.
 - For batch-ops agents: whether an agent can be granted individual MCP tools.
 - For batch-ops: whether the harness runs local stdio MCP servers; how to add, show, list with status, and remove one; and a scope that keeps this machine's paths out of committed project files.
+- For the batch-ops line: the project and user instruction files, and which wins when several exist.
 
 With those facts, follow the workflow. Put the source URLs and date in each agent file where its format allows a comment; otherwise give them in the report.

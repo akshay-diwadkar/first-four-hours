@@ -27,18 +27,18 @@ Pick a provisional tier at intake and re-derive it from your decisions; it can r
 6. **Desk check and trace.** In the ledger, run the [desk check](references/challenge-and-rehearsal.md#desk-check)'s Exists, Launches, and Fits on each planned Proof run and Run, and trace each clause ID to a decision, step, and Run. A gap returns to step 3 or 5, never into the file.
 7. **Write once.** Prepare the workspace exactly as in [README](README.md), then write the whole `blueprint.md` in one write, with [Declared text](references/declared-text.md) and [Incomplete gates](references/incomplete-gates.md) as the planning contract routes, running `check` as the write's verification where your edit tool takes one. Then finish the desk check with Passes. Done when `check` reports no diagnostics.
 8. **Challenge** by tier per [Challenge and rehearsal](references/challenge-and-rehearsal.md), with the [Challenger brief](references/challenger-brief.md).
-9. **Repair once.** Settle every finding against evidence or return it to the user, apply one consolidated edit checked by `check`, and rerun the desk check only for Runs a repair changed or whose input it changed. A second round is a planning failure: name its cause in the report.
+9. **Repair once.** Settle every finding against evidence or return it to the user, apply one consolidated edit checked by `check`, and rerun the desk check on each Proof run and Run whose text or input it changed. A second round is a planning failure: name its cause in the report.
 10. **Seal or stop.** Once the [Seal gate](references/challenge-and-rehearsal.md#seal-gate) holds, check and seal exactly as in [README](README.md); otherwise stop unsealed and report why, never weakening an outcome, check, or proof below what the Seal gate requires. Done when your report names the sealed path or stop and the tier, and distinguishes mechanical seal success, your evidence-backed readiness judgment, and unstarted implementation and verification.
 
 ## Decision ledger
 
-Steps 3-6 keep a short ledger as visible text in this conversation, one line per item: each decision with its reason and the check that would catch it wrong; each Run with its desk-check marks; the trace (`R1 → D1 · step 2 · Run 3`); and open items (user questions, labelled predictions). It is working memory and never a file: `blueprint.md` expands it.
+Steps 3-6 keep a short ledger as visible text in this conversation, one line per item: each decision with its reason and the check that would catch it wrong; each Run with its desk-check marks; the trace (`R1 → D1 · step 2 · Run 3`); and open items (user questions, labelled predictions). It is never a file: `blueprint.md` expands it.
 
 ## Plan text
 
 State only what two faithful executors could do differently. Never restate the approach per step, narrate code the executor will open, list what stays the same unless a plausible executor would break it, or write variable-level pseudocode nothing downstream depends on. Name request clauses by ID instead of paraphrasing them, and cite each command once where the format allows.
 
-The tiered challenge is Blueprint's adversarial review, so Blueprint has no `reason` checkpoints; consult `reason` only when judgment is stuck. Seal and stop reports end with one optional next step fitting the outcome, after a stop the unblocking one: a fenced, self-contained prompt naming the repository and every issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names; start Construct in a fresh session or, per [Construct handoff](references/construct-handoff.md), a subagent when possible: the sealed plan carries every decision.
+The tiered challenge is Blueprint's adversarial review, so it has no `reason` checkpoints; consult `reason` only when judgment is stuck. Seal and stop reports end with one optional next step fitting the outcome, after a stop the unblocking one: a fenced, self-contained prompt naming the repository and every issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names; start Construct in a fresh session or, per [Construct handoff](references/construct-handoff.md), a subagent when possible: the sealed plan carries every decision.
 
 ## Boundaries
 

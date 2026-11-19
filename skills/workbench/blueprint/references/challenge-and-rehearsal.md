@@ -20,7 +20,7 @@ For each Proof run, then each Run, in step order:
 - **Passes:** each `Expect:` holds on the plan's own drafted bytes and a correct implementation of this plan alone.
 - **Fits:** it stays within every suite-size cap, validator allowlist, budget, pinned version, and deadline the change touches, with measured value and headroom recorded.
 
-Exists, Launches, and Fits run on the ledger before writing; Passes runs once the text is drafted. After the repair, rerun it only for Runs the repair changed or whose input it changed.
+Exists, Launches, and Fits run on the ledger before writing; Passes runs once the text is drafted.
 
 ## Challenge
 

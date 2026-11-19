@@ -258,7 +258,7 @@ async def batch_read(
     A file over 24KB read without a range returns its outline; "a.txt:1-N" reads it all.
     Objects: {"path": p, "since": SHA} omits the body while the file keeps the sha an earlier
     read printed; {"grep": RE, "paths": [..], "exclude": [..], "context": 2, "ignore_case": true,
-    "mode": "files"} ("files": per-file counts only); {"git": "diff", "base": REF, "paths": [..]};
+    "mode": "files"} ("files": per-file counts only); {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
     {"compare": [spec, spec]}. mode="survey" maps the repository. budget (only lowers the
     ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. A cut
     read adds an outline of its unshown lines, and the `next:` line lists specs to pass back to
@@ -589,12 +589,13 @@ async def batch_edit(
     """Apply edits, new files, deletes and renames atomically, then optionally verify.
 
     cwd: absolute working directory. edits: [{"path": p, "search": "exact old text", "replace":
-    "new"}], search matching once unless "replace_all": true or "occurrence": N; new_files:
-    {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest: a unified
-    diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}; on
-    failure every file is restored. dry_run=true shows diffs without writing. Diffs show hunk
-    headers and changed lines; full_diff=true or dry_run=true shows full diffs. budget: tokens.
-    Copy search text from the read spec "path@target:N-M".
+    "new"}], search matching once unless "replace_all": true or "occurrence": N (counted after earlier
+    edits); or {"path": p, "range": "N-M", "since": SHA, "replace": "new"}: lines N-M, refused if
+    the sha changed. new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a,
+    "to": b}]; manifest: a unified diff with repository-root paths. verify: "<cmd>" or {"cmd":
+    "...", "timeout": 120}; failure restores every file. dry_run=true shows full diffs without
+    writing; full_diff=true shows them after writing. budget: tokens. Copy search text and SHA
+    from the read "path@target:N-M".
     """
     try:
         root = _root(cwd)

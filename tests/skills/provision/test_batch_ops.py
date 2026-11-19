@@ -35,7 +35,8 @@ def test_batch_ops_stdio_session(tmp_path):
             f"block {k}:\n" + "".join(f"    body {k}-{j} filler text to take up room\n" for j in range(1, 21))
             for k in range(1, 31)
         ),
-        "doc.md": "# Title\n\nIntro.\n\n## Setup (local)\n\nsetup paragraph\n\n## Next\n\nnext paragraph\n",
+        "doc.md": "# Title\n\nIntro.\n\n## Setup (local)\n\nsetup paragraph\n\n## Next\n\nnext paragraph\n\n"
+                  "Under Line\n==========\n\nunder text\n\n- bullet one\n- bullet two\n",
     }
     for i in range(1, 31):
         fixture[f"hits/f{i:02d}.txt"] = "".join(f"needle_census {n}\n" for n in range(1, 11))
@@ -85,16 +86,20 @@ def test_batch_ops_stdio_session(tmp_path):
                         assert "full_diff" in props
                     if tool.name == "batch_run":
                         assert "slices" in (tool.description or "")
-                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5200
 
                 res = await call(session, "batch_read", {
-                    "specs": ["notes.txt", {"grep": "needle_token", "paths": ["."]}], "cwd": str(repo)})
+                    "specs": ["notes.txt", {"grep": "needle_token", "paths": ["."]}, {}, "grep:zz_absent_zz"],
+                    "cwd": str(repo)})
                 assert not res.isError and res.structuredContent is None
                 items = _items(res)
-                assert len(items) == 2
-                assert not [i for i in items if i["status"] in ("error", "missing")]
+                assert [i["status"] for i in items[1:]] == ["ok", "error", "no_match"]
+                assert items[0]["status"] == "ok"
                 text = _text(res).replace("\\", "/")
+                assert re.match(r"# batch_read \(files\) build [0-9a-f]{7}\n", text)
+                assert "must have exactly one of" in text and "unknown read kind" not in text
                 assert "src/a.txt" in text and "ignored/hit.txt" not in text
+                res = await call(session, "batch_read", {"specs": [items[0]["handle"] + ":2-2"], "cwd": str(repo)})
+                assert "2: old line" in _text(res) and "1: keep" not in _text(res)
 
                 res = await call(session, "batch_read", {
                     "specs": ["notes.txt"], "budget": {"tokenz": 5}, "cwd": str(repo)})
@@ -102,8 +107,8 @@ def test_batch_ops_stdio_session(tmp_path):
 
                 res = await call(session, "batch_read", {"specs": ["notes.txt@target:1-2"], "cwd": str(repo)})
                 assert (
-                    "1: keep\n2: old line\n\n=== [target: copy verbatim to batch_edit] ===\nkeep\nold line\n"
-                    "=== [end target] ==="
+                    "~~~\n=== [target lines 1-2: copy verbatim as search, or edit by range with since] ===\n"
+                    "keep\nold line\n=== [end target] ==="
                 ) in _text(res).replace("\r", "")
 
                 res = await call(session, "batch_read", {"specs": ["big.txt"], "cwd": str(repo)})
@@ -115,7 +120,9 @@ def test_batch_ops_stdio_session(tmp_path):
                 text = _text(res)
                 assert "## Setup (local)" in text and "setup paragraph" in text and "## Next" not in text
                 res = await call(session, "batch_read", {"specs": ["doc.md@outline"], "cwd": str(repo)})
-                assert "## Setup (local)" in _text(res) and "## Next" in _text(res)
+                text = _text(res)
+                assert "## Setup (local)" in text and "## Next" in text and "Under Line" in text
+                assert "bullet" not in text
 
                 res = await call(session, "batch_read", {
                     "specs": ["big.txt:1-630"], "budget": {"tokens": 1000}, "cwd": str(repo)})
@@ -144,6 +151,10 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert "300 match(es) in 30 file(s)" in text
                 for i in range(1, 31):
                     assert f"hits/f{i:02d}.txt (10)" in text
+                assert "=== hits/f05.txt (1 of 10) ===" in text and "=== hits/f06.txt" not in text
+
+                res = await call(session, "batch_read", {"specs": [{"git": "diff", "stat": True}], "cwd": str(repo)})
+                assert "notes.txt |" in _text(res) and "@@" not in _text(res)
 
                 res = await call(session, "batch_read", {"specs": [{**grep, "mode": "files"}], "cwd": str(repo)})
                 text = _text(res).replace("\\", "/")
@@ -160,6 +171,8 @@ def test_batch_ops_stdio_session(tmp_path):
                      "label": "nul"},
                     {"cmd": "git --version ||| count", "label": "objslice"},
                     {"argv": [sys.executable, "-c", "print('x')"], "slices": ["grep:zzz"], "label": "emptied"},
+                    {"argv": [sys.executable, "-c", "import sys; sys.stdout.write("
+                              "'\\x1b[31mred\\x1b[0m\\n10%\\r50%\\r100%\\n' + 'same\\n' * 5)"], "label": "noisy"},
                 ], "cwd": str(repo)})
                 assert time.monotonic() - start < 15
                 by_label = {i["label"]: i for i in _items(res)}
@@ -170,7 +183,9 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert "a\\0b699" in run_text and "NUL bytes shown as" in run_text
                 assert by_label["objslice"]["status"] == "ok" and by_label["objslice"]["exit_code"] == 0
                 assert "git version" not in run_text
-                assert "slices kept none of" in run_text
+                assert "slices kept none of" in run_text and by_label["emptied"]["artifact"]
+                assert "red\n100%\nsame\n[... repeated 4 more times]" in run_text.replace("\r", "")
+                assert "\x1b" not in run_text and "50%" not in run_text and by_label["noisy"]["artifact"]
                 nul_read = await call(session, "batch_read", {
                     "specs": [by_label["nul"]["artifact"] + ":1-2"], "cwd": str(repo)})
                 assert "a\\0b0" in _text(nul_read)
@@ -249,11 +264,26 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert " keep" in _text(res).replace("\r", "").split("\n")
 
                 res = await call(session, "batch_edit", {
-                    "edits": [{"path": "../outside.txt", "search": "keep", "replace": "gone"}], "cwd": str(repo)})
-                assert res.isError
+                    "edits": [{"path": "../outside.txt", "search": "keep", "replace": "gone"},
+                              {"path": "nope.txt", "search": "a", "replace": "b"}], "cwd": str(repo)})
+                assert res.isError and "nope.txt: file not found" in _text(res)
                 assert outside.read_bytes() == b"keep\n"
+
+                sha = _items(await call(session, "batch_read", {"specs": ["notes.txt"], "cwd": str(repo)}))[0]["hash"]
+                ranged = {"path": "notes.txt", "range": "2", "replace": "ranged"}
+                res = await call(session, "batch_edit", {"edits": [{**ranged, "since": "0" * 12}], "cwd": str(repo)})
+                assert res.isError and "changed since it was read" in _text(res)
+                assert notes.read_bytes() == b"keep\r\nold line\r\n"
+                res = await call(session, "batch_edit", {"edits": [{**ranged, "since": sha[:12]}], "cwd": str(repo)})
+                assert not res.isError and notes.read_bytes() == b"keep\r\nranged\r\n"
 
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo)})
                 assert not res.isError
+                text = _text(res).replace("\\", "/")
+                assert re.search(r"M notes\.txt \+\d+ -\d+", text) and "Diff stat" not in text
+                res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "hits")})
+                assert "notes.txt" not in _text(res)
+
+                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5200
 
     asyncio.run(asyncio.wait_for(session_run(), 40))

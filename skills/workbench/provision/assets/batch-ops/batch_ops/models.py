@@ -235,6 +235,7 @@ def _format_coverage(cov: Coverage) -> dict[str, Any]:
         "binary": cov.binary,
         "stale": cov.stale,
         "lossy": cov.lossy,
+        "no_match": cov.no_match,
         "not_inspected": list(cov.not_inspected),
         "notes": list(cov.notes),
     }

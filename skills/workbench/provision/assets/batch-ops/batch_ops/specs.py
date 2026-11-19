@@ -116,6 +116,8 @@ def _parse_read_string(value: str) -> ReadRequest:
         return ReadRequest(kind="glob", glob=glob_pattern)
     if s.startswith("handle:"):
         return ReadRequest(kind="handle", handle=s[len("handle:") :])
+    if s.startswith("read:"):  # a read handle pasted as-is
+        return ReadRequest(kind="handle", handle=s)
 
     mode = "auto"
     range_value: str | None = None
@@ -337,6 +339,7 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
             kind=f"git_{git_mode}",
             base=str(data.get("base") or "HEAD"),
             staged=bool(data.get("staged", False)),
+            stat=bool(data.get("stat", False)),
             paths=_str_list(data.get("paths")),
             context=int(data.get("context", 3)),
             **common,
@@ -486,6 +489,8 @@ def parse_edit_spec(spec: Any) -> EditRequest:
     replace = data.get("replace")
     if not path:
         raise SpecError("edit spec requires path")
+    if data.get("range") is not None:
+        return _parse_range_edit(data, path, search, replace)
     if not isinstance(search, str):
         raise SpecError(f"edit for {path}: search must be a string")
     if not isinstance(replace, str):
@@ -513,6 +518,28 @@ def parse_edit_spec(spec: Any) -> EditRequest:
         occurrence=occurrence,
         encoding=data.get("encoding"),
         label=str(data.get("label") or ""),
+    )
+
+
+def _parse_range_edit(data: dict[str, Any], path: str, search: Any, replace: Any) -> EditRequest:
+    if search is not None:
+        raise SpecError(f"edit for {path}: use either search or range, not both")
+    if not isinstance(replace, str):
+        raise SpecError(f"edit for {path}: replace must be a string")
+    found = re.fullmatch(r"\s*(\d+)\s*(?:-\s*(\d+)\s*)?", str(data["range"]))
+    if not found:
+        raise SpecError(f"edit for {path}: range must be N or N-M")
+    start = int(found.group(1))
+    end = int(found.group(2) or start)
+    since = data.get("since")
+    if not isinstance(since, str) or not since.strip():
+        raise SpecError(f"edit for {path}: range needs since, the sha or read handle its read printed")
+    for key in ("replace_all", "occurrence"):
+        if data.get(key):
+            raise SpecError(f"edit for {path}: {key} does not apply to a range edit")
+    return EditRequest(
+        path=path, search="", replace=replace, range=(start, end), since=since.strip(),
+        encoding=data.get("encoding"), label=str(data.get("label") or ""),
     )
 
 

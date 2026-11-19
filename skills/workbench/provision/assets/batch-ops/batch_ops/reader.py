@@ -12,14 +12,16 @@ import asyncio
 import difflib
 import fnmatch
 import glob as globlib
+import json
 import os
 import re
 import subprocess
+import threading
 import unicodedata
 import time
 from pathlib import Path
 
-from .artifacts import ArtifactStore, make_read_handle, parse_read_handle
+from .artifacts import ArtifactStore, make_read_handle, parse_read_handle, since_sha as _since_sha
 from .budget import BudgetTracker, body_budget, tier, water_fill
 from .safety import (
     SafetyError,
@@ -128,6 +130,9 @@ def _read_one(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) 
         "handle": _handle_request,
         "artifact": _artifact_request,
     }
+    if req.kind == "invalid":
+        return ReadResult(id="read", kind="invalid", label=req.label, status="error",
+                          message=req.error or "invalid spec")
     handler = dispatch.get(req.kind)
     if handler is None:
         return ReadResult(id="read", kind=req.kind, label=req.label, status="error",
@@ -273,6 +278,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     }
 
     pattern_note: str | None = None
+    no_match = False  # a pattern that matched nothing is reported, not counted as ok
     if mode in ("context", "grep"):
         if not req.pattern:
             raise SafetyError(f"{mode} mode requires a pattern")
@@ -285,6 +291,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         )
         if match_count == 0:
             body = f"(no matches for {req.pattern})"
+            no_match = True
         meta["matches"] = match_count
         selected_count = body.count("\n") + 1 if body else 0
 
@@ -295,6 +302,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         if not spans:
             body = f"(no matches for {req.pattern})"
             selected_count = 0
+            no_match = True
         else:
             rows: list[str] = []
             selected_count = 0
@@ -324,6 +332,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
             "(no outline: no indented blocks or headings; name heading lines with @outline:PATTERN)")
         body = "\n".join(_outline_row(n, lines[n]) for n in picked) if picked else empty
         selected_count = len(picked)
+        no_match = bool(req.pattern) and not picked
 
     elif mode == "target":
         if not req.range:
@@ -335,13 +344,10 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         else:
             start_line = selected[0][0]
             end_line = selected[-1][0]
-            numbered = [f"{n}: {line}" for n, line in selected]
             verbatim = [line for _, line in selected]
             body = "\n".join(
-                [f"=== [context {start_line}-{end_line} (numbered)] ===",
-                 *numbered,
-                 "",
-                 "=== [target: copy verbatim to batch_edit] ===",
+                [f"=== [target lines {start_line}-{end_line}: copy verbatim as search, "
+                 f"or edit by range with since] ===",
                  *verbatim,
                  "=== [end target] ==="]
             )
@@ -400,6 +406,8 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     handle = make_read_handle(display, sha, handle_start, handle_end)
 
     status = "truncated" if truncated else ("lossy" if info.lossy else "ok")
+    if no_match:
+        status = "no_match"
     message = pattern_note
     if info.lossy:
         message = f"decoded as {info.encoding} with replacement characters"
@@ -576,8 +584,8 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
         meta["continuation"] = continuation
     return ReadResult(
         id="read", kind="artifact", label=req.label, path=display,
-        status="truncated" if truncated else "ok", body=body,
-        bytes_total=len(data), bytes_shown=len(body.encode("utf-8", errors="replace")),
+        status="truncated" if truncated else ("no_match" if req.pattern and not shown_lines else "ok"),
+        body=body, bytes_total=len(data), bytes_shown=len(body.encode("utf-8", errors="replace")),
         lines_total=len(lines), lines_shown=kept if kept is not None else shown_lines,
         truncated=truncated, meta=meta,
         message=note,  # a continuation is named by the body's cut marker and the next: line
@@ -591,17 +599,6 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
 BLOCK_MAX_LINES = 400
 BLOCK_MAX_MATCHES = 5
 _QUOTES = "\"'`"
-
-
-def _since_sha(value: str) -> str | None:
-    value = value.strip()
-    if value.startswith("read:"):
-        try:
-            value = str(parse_read_handle(value)["sha"])
-        except ValueError:
-            return None
-    value = value.lower()
-    return value if len(value) >= 8 and re.fullmatch(r"[0-9a-f]+", value) else None
 
 
 def _width(line: str) -> int:
@@ -694,27 +691,74 @@ def _lead_run(line: str) -> tuple[str, int] | None:
     return char, count
 
 
+def _underline(line: str) -> str | None:
+    """The character of a line made only of one punctuation or symbol character, 3 or more."""
+    text = line.rstrip()
+    if len(text) >= 3 and len(set(text)) == 1 and _starts_with_punct(text):
+        return text[0]
+    return None
+
+
+def _nearest_text(lines: list[str], i: int, step: int) -> str | None:
+    j = i + step
+    while 0 <= j < len(lines) and not lines[j].strip():
+        j += step
+    return lines[j] if 0 <= j < len(lines) else None
+
+
+def _flat_headings(lines: list[str]) -> dict[int, tuple[str, int]]:
+    """Every flat heading: line -> (family, level).
+
+    A lead-run heading ("## Title") stands alone between blank lines; its family is the
+    character, its level the run length.  A line preceded by a blank line and underlined by a
+    line of one repeated punctuation or symbol character is a heading too; underline
+    characters rank in the order they first appear (family "u").  Lines whose nearest
+    non-blank neighbour starts with the same lead run are list items, not headings.
+    """
+    heads: dict[int, tuple[str, int]] = {}
+    ranks: dict[str, int] = {}
+    for i, line in enumerate(lines):
+        if i > 0 and lines[i - 1].strip():
+            continue
+        if line.strip() and line[0] not in " \t" and i + 1 < len(lines):
+            char = _underline(lines[i + 1])
+            if char and lines[i + 1][0] == char and not line.startswith(char):
+                heads[i] = ("u", ranks.setdefault(char, len(ranks) + 1))
+                continue
+        run = _lead_run(line)
+        if run is None or (i + 1 < len(lines) and lines[i + 1].strip()):
+            continue
+        neighbours = (_nearest_text(lines, i, -1), _nearest_text(lines, i, 1))
+        if any(other is not None and _lead_run(other) == run for other in neighbours):
+            continue  # bullets come in runs
+        heads[i] = run
+    return heads
+
+
+_FLAT = threading.local()
+
+
+def _flat_map(lines: list[str]) -> dict[int, tuple[str, int]]:
+    """``_flat_headings`` of *lines*, computed once per list (reads run in threads)."""
+    if getattr(_FLAT, "lines", None) is not lines:
+        _FLAT.lines, _FLAT.heads = lines, _flat_headings(lines)
+    return _FLAT.heads
+
+
 def _flat_header(lines: list[str], i: int) -> tuple[str, int] | None:
-    """The lead run of line *i* when it stands alone between blank lines (or the file's ends):
-    a heading in a file whose structure is not indented."""
-    run = _lead_run(lines[i])
-    if run is None:
-        return None
-    if i > 0 and lines[i - 1].strip():
-        return None
-    if i + 1 < len(lines) and lines[i + 1].strip():
-        return None
-    return run
+    """(family, level) when line *i* is a flat heading: the structure of a file whose
+    structure is not indented."""
+    return _flat_map(lines).get(i)
 
 
 def _section_end(lines: list[str], start: int, limit: int) -> int:
-    """End of a flat section: the line before the next heading with the same character
-    repeated as often or fewer times, trailing blank lines dropped."""
-    char, count = _flat_header(lines, start) or ("", 0)
+    """End of a flat section: the line before the next heading of its family at the same
+    or a higher level, trailing blank lines dropped."""
+    family, level = _flat_header(lines, start) or ("", 0)
     end = start
     for j in range(start + 1, limit):
         other = _flat_header(lines, j)
-        if other and other[0] == char and other[1] <= count:
+        if other and other[0] == family and other[1] <= level:
             break
         end = j
     while end > start and not lines[end].strip():
@@ -723,7 +767,7 @@ def _section_end(lines: list[str], start: int, limit: int) -> int:
 
 
 def _flat_outline(lines: list[str]) -> list[int]:
-    return [i for i in range(len(lines)) if _flat_header(lines, i)]
+    return sorted(_flat_map(lines))
 
 
 def _block_spans(lines: list[str], pattern: str) -> tuple[list[tuple[int, int]], str | None]:
@@ -948,6 +992,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
     files = files[: req.max_files]
     out: list[str] = []
     file_hits: list[tuple[str, int]] = []
+    hit_paths: list[Path] = []
     match_count = 0
     shown_matches = 0
     scanned = 0
@@ -978,10 +1023,23 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         if not hits:
             continue
         file_hits.append((rel, len(hits)))
+        hit_paths.append(path)
         match_count += len(hits)
-        if not want_rows or shown_matches >= req.max_matches:
+
+    quotas = _fair_quota([n for _, n in file_hits], req.max_matches) if want_rows else [0] * len(file_hits)
+    for path, (rel, total_hits), quota in zip(hit_paths, file_hits, quotas):
+        if not quota:
             continue
-        out.append(f"=== {rel} ===")
+        try:
+            lines = decode_bytes(path.read_bytes()).text.splitlines()
+        except OSError:
+            continue
+        hits = [i for i, line in enumerate(lines) if rx.search(line)][:quota]
+        if not hits:
+            continue
+        shown_matches += len(hits)
+        count = f"{len(hits)} of {total_hits}" if len(hits) < total_hits else str(total_hits)
+        out.append(f"=== {rel} ({count}) ===")
         selected: set[int] = set()
         for i in hits:
             selected.update(range(max(0, i - req.context), min(len(lines), i + req.context + 1)))
@@ -993,22 +1051,20 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             marker = ":" if idx in hit_set else "-"
             out.append(f"{idx + 1}{marker} {lines[idx]}")  # path is in the === header ===
             previous = idx
-            if idx in hit_set:
-                shown_matches += 1
-                if shown_matches >= req.max_matches:
-                    break
 
     def _size(text: str) -> int:
         return len(text.encode("utf-8", errors="replace"))
 
     census_rows = [f"{rel} ({n})" for rel, n in file_hits]
-    census = "\n".join(census_rows)
+    # The === headers name every file with rows; the list is needed only when some are cut or left out.
+    rows_cut = not want_rows or any(q < n for q, (_, n) in zip(quotas, file_hits))
+    census = "\n".join(census_rows) if rows_cut else ""
     full_rows = "\n".join(out)
     truncated, artifact, continuation = False, None, None
     if not file_hits:
         body = f"(no matches for {req.pattern})"
         full_bytes = _size(body)
-    elif _size(census) + 1 > cap - 64:
+    elif census and _size(census) + 1 > cap - 64:
         census_artifact = artifacts.put(census, ".grep-files.txt")
         artifact = census_artifact
         used = 0
@@ -1035,16 +1091,17 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             rows = [(i + 1, row if len(row) <= clip else f"{row[:clip]} …[+{len(row) - clip} chars]")
                     for i, row in enumerate(out)]
             shown = "\n".join(row for _, row in rows)
-            room = cap - _size(census) - 1
+            room = cap - (_size(census) + 1 if census else 0)
             if _size(shown) > room:
                 # Cut on a report line, keeping the full rows as an artifact the continuation reads by line.
                 artifact = artifacts.put(full_rows, ".grep.txt")
                 shown, truncated, continuation, _ = _fit_body(
                     shown, rows, room, len(out), lambda a, b: f"{artifact}:{a}-{b}"
                 )
-            body = census + "\n" + shown
+            body = f"{census}\n{shown}" if census else shown
     return ReadResult(
-        id="read", kind="grep", label=req.label or f"grep:{req.pattern}", status="truncated" if truncated else "ok",
+        id="read", kind="grep", label=req.label or f"grep:{req.pattern}",
+        status="truncated" if truncated else ("ok" if file_hits else "no_match"),
         body=body, bytes_total=full_bytes, bytes_shown=len(body.encode("utf-8", errors="replace")),
         lines_total=len(out), lines_shown=shown_matches, truncated=truncated,
         message="; ".join(m for m in (
@@ -1064,6 +1121,30 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             **({"continuation": continuation} if continuation else {}),
         },
     )
+
+
+def _fair_quota(counts: list[int], total: int) -> list[int]:
+    """Rows per file so no file starves the rest: an even share, small files' leftovers
+    passed on; with more files than rows, one row each in file order."""
+    quotas = [0] * len(counts)
+    if total <= 0 or not counts:
+        return quotas
+    if len(counts) >= total:
+        for i in range(total):
+            quotas[i] = 1
+        return quotas
+    left = total
+    order = sorted(range(len(counts)), key=lambda i: counts[i])
+    for k, i in enumerate(order):
+        quotas[i] = min(counts[i], left // (len(order) - k))
+        left -= quotas[i]
+    for i, n in enumerate(counts):  # integer-division remainder, in file order
+        if left <= 0:
+            break
+        if quotas[i] < n:
+            quotas[i] += 1
+            left -= 1
+    return quotas
 
 
 def _git_listed(base: Path) -> list[Path] | None:
@@ -1323,7 +1404,8 @@ def _git_cochange_request(req: ReadRequest, root: Path, cap: int, artifacts: Art
 
 
 def _git_diff_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
-    args = ["--no-pager", "diff", "--no-color", "--no-ext-diff"]
+    args = ["--no-pager", "diff", "--no-color", "--no-ext-diff",
+            "--stat" if req.stat else f"-U{max(0, req.context)}"]
     if req.staged:
         args.append("--cached")
     if req.base and req.base != "HEAD":
@@ -1341,8 +1423,8 @@ def _git_diff_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
                           body="(no changes)", message="working tree matches the requested base")
     body, truncated, full_bytes = truncate_text(out, cap, style="head_tail")
     artifact = artifacts.put(out, ".diff") if truncated else None
-    files = sorted({line[6:].strip() for line in out.splitlines()
-                    if line.startswith("+++ ") and line[6:].strip() not in ("/dev/null",)})
+    files = [] if req.stat else sorted({line[6:].strip() for line in out.splitlines()
+                                        if line.startswith("+++ ") and line[6:].strip() not in ("/dev/null",)})
     return ReadResult(
         id="read", kind="git_diff", label=req.label, status="truncated" if truncated else "ok",
         body=body, bytes_total=full_bytes, bytes_shown=len(body.encode("utf-8", errors="replace")),
@@ -1507,17 +1589,26 @@ def survey(
     used_git_ls = False
     git_top_dirs: set[str] = set()
     git_top_files: set[str] = set()
-    folder_counts: dict[str, int] = {}  # first-level folder -> files
-    child_counts: dict[str, dict[str, int]] = {}  # first-level folder -> second-level folder -> files
+    dir_counts: dict[str, int] = {}  # folder -> files anywhere under it
+    dir_files: dict[str, int] = {}  # folder -> files directly in it
+    dir_kids: dict[str, set[str]] = {}  # folder -> its folders
 
     def count_folders(rel_path: str) -> None:
         parts_f = rel_path.split("/")
-        if len(parts_f) < 2:
-            return
-        folder_counts[parts_f[0]] = folder_counts.get(parts_f[0], 0) + 1
-        if len(parts_f) >= 3:
-            kids = child_counts.setdefault(parts_f[0], {})
-            kids[parts_f[1]] = kids.get(parts_f[1], 0) + 1
+        for depth in range(1, len(parts_f)):
+            folder = "/".join(parts_f[:depth])
+            dir_counts[folder] = dir_counts.get(folder, 0) + 1
+            if depth > 1:
+                dir_kids.setdefault("/".join(parts_f[:depth - 1]), set()).add(folder)
+        if len(parts_f) > 1:
+            parent = "/".join(parts_f[:-1])
+            dir_files[parent] = dir_files.get(parent, 0) + 1
+
+    def chain(folder: str) -> str:
+        """A folder holding only one folder is shown with it: src/main/java as one row."""
+        while not dir_files.get(folder) and len(dir_kids.get(folder, ())) == 1:
+            folder = next(iter(dir_kids[folder]))
+        return folder
 
     if info.git_root:
         code, out, _ = _git(root_p, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
@@ -1579,15 +1670,26 @@ def survey(
                 focus_matches.append(path)
 
     changed: list[str] = []
-    code, out, _ = _git(root_p, ["--no-pager", "status", "--porcelain=v1", "-z", "--untracked-files=normal"])
+    code, out, _ = _git(root_p, ["--no-pager", "status", "--porcelain=v1", "-z", "--untracked-files=normal",
+                                 "--", "."])
     if code == 0:
         changed = _status_rows(out, root_p, Path(info.git_root) if info.git_root else None)
 
-    diff_stat: str | None = None
-    if info.git_root:
-        code, out, _ = _git(root_p, ["--no-pager", "diff", "--stat", "HEAD"])
-        if code == 0 and out.strip():
-            diff_stat = out.strip()
+    line_counts: dict[str, str] = {}  # changed path -> "+added -deleted" against HEAD
+    added_total = deleted_total = 0
+    if info.git_root and changed:
+        code, out, _ = _git(root_p, ["--no-pager", "diff", "--numstat", "--relative", "HEAD", "--", "."])
+        if code == 0:
+            for row in out.splitlines():
+                cells = row.split("\t")
+                if len(cells) != 3:
+                    continue
+                if cells[0].isdigit() and cells[1].isdigit():
+                    added_total += int(cells[0])
+                    deleted_total += int(cells[1])
+                    line_counts[cells[2]] = f"+{cells[0]} -{cells[1]}"
+                else:
+                    line_counts[cells[2]] = "binary"
 
     recent: list[str] = []
     code, out, _ = _git(root_p, ["--no-pager", "log", "--oneline", "-5"])
@@ -1595,6 +1697,7 @@ def survey(
         recent = [line for line in out.splitlines() if line.strip()]
 
     hot: list[tuple[str, int]] = []
+    counts: dict[str, int] = {}
     hubs: set[str] = set()
     groups: list[tuple[int, list[str]]] = []
     code, out, _ = _git(root_p, ["--no-pager", "log", "--format=%x00", "--name-only", "--relative", "-n", "200"])
@@ -1607,7 +1710,6 @@ def survey(
             ))
             if names:
                 commits.append(names)
-        counts: dict[str, int] = {}
         pair_counts: dict[tuple[str, str], int] = {}
         for names in commits:
             for name in names:
@@ -1621,15 +1723,10 @@ def survey(
         hot = sorted(counts.items(), key=lambda pair: pair[1], reverse=True)[:10]
         hubs, groups = _cochange_groups(commits, counts, pair_counts)
 
-    # Candidate matches with factual reasons
-    candidates_dict: dict[str, list[str]] = {}
-    for c in changed:
-        parts_c = c.split(None, 1)
-        if len(parts_c) == 2:
-            candidates_dict.setdefault(parts_c[1], []).append(f"git status: {parts_c[0]}")
-    for p in focus_matches:
-        rel = relative_display(root_p, p)
-        candidates_dict.setdefault(rel, []).append("matched focus")
+    if not info.git_root:
+        report.unknowns.append("no git repository: commit history, diff stat, and ls-files unavailable")
+    if truncated_walk:
+        report.unknowns.append(f"repository walk capped at max_files={max_files}")
 
     parts = [f"# Survey: {root_p}"]
     ws = "no git repository"
@@ -1639,17 +1736,31 @@ def survey(
     parts.append(f"Workspace: {ws}")
     parts.append(f"Files walked: {len(files)}" + (" (capped)" if truncated_walk else "")
                  + f", total size {format_bytes(total_size)}")
-    if folder_counts:
-        parts.append("Tree (files per folder, depth 2):")
-        ranked_folders = sorted(folder_counts.items(), key=lambda pair: (-pair[1], pair[0]))
-        for folder, count in ranked_folders[:20]:
-            parts.append(f"  {folder}/ {count}")
-            kids = sorted(child_counts.get(folder, {}).items(), key=lambda pair: (-pair[1], pair[0]))
-            parts.extend(f"    {child}/ {kid_count}" for child, kid_count in kids[:6])
+    if report.unknowns:  # first, so a cut survey still says what it could not see
+        parts.append("Unknowns: " + "; ".join(report.unknowns))
+    top_folders = sorted((f for f in dir_counts if "/" not in f), key=lambda f: (-dir_counts[f], f))
+    if top_folders:
+        churn: dict[str, int] = {}
+        for name, count in counts.items():
+            for folder in top_folders:
+                if name.startswith(folder + "/"):
+                    churn[folder] = churn.get(folder, 0) + count
+                    break
+        parts.append("Tree (files per folder, depth 2; churn = file changes in the last 200 commits):")
+        shown_top: list[str] = []
+        for folder in top_folders[:20]:
+            label = chain(folder)
+            shown_top.append(label)
+            parts.append(f"  {label}/ {dir_counts[folder]}" + (f", churn {churn[folder]}" if churn.get(folder) else ""))
+            kids = sorted(dir_kids.get(label, ()), key=lambda f: (-dir_counts[f], f))
+            for kid in kids[:6]:
+                parts.append(f"    {chain(kid)[len(label) + 1:]}/ {dir_counts[kid]}")
             if len(kids) > 6:
                 parts.append(f"    +{len(kids) - 6} more folder(s)")
-        if len(ranked_folders) > 20:
-            parts.append(f"  +{len(ranked_folders) - 20} more folder(s)")
+        if len(top_folders) > 20:
+            parts.append(f"  +{len(top_folders) - 20} more folder(s)")
+        parts.append('Zoom (read tool): mode="survey" with cwd one of '
+                     + json.dumps([str(root_p / label) for label in shown_top[:3]]))
     if top_files:
         parts.append("Top-level files: " + ", ".join(top_files))
     if files:
@@ -1658,15 +1769,16 @@ def survey(
             ext = path.suffix.lower() or "(none)"
             by_ext[ext] = by_ext.get(ext, 0) + 1
         ranked_ext = sorted(by_ext.items(), key=lambda pair: (-pair[1], pair[0]))
-        parts.append("By extension: " + ", ".join(f"{ext} {n}" for ext, n in ranked_ext[:10])
+        parts.append(("By extension (walked files only): " if truncated_walk else "By extension: ") + ", ".join(f"{ext} {n}" for ext, n in ranked_ext[:10])
                      + (f", +{len(ranked_ext) - 10} more" if len(ranked_ext) > 10 else ""))
     if changed:
-        parts.append(f"Changed files: {len(changed)}")
-        parts.extend(f"  {row}" for row in changed[:15])
+        totals = f" (+{added_total} -{deleted_total} vs HEAD)" if line_counts else ""
+        parts.append(f"Changed files: {len(changed)}{totals}")
+        for row in changed[:15]:
+            counted = line_counts.get(row.split(None, 1)[-1])
+            parts.append(f"  {row} {counted}" if counted else f"  {row}")
         if len(changed) > 15:
             parts.append(f"  ... {len(changed) - 15} more")
-    if diff_stat:
-        parts.append(f"Diff stat (HEAD):\n  " + "\n  ".join(diff_stat.splitlines()[:10]))
     if recent:
         parts.append("Recent commits:")
         parts.extend(f"  {row}" for row in recent)
@@ -1678,21 +1790,14 @@ def survey(
         for together, members in groups:
             shown = members[:5] + ([f"+{len(members) - 5} more"] if len(members) > 5 else [])
             parts.append(f"  {together} commits together: " + ", ".join(shown))
-    if candidates_dict:
-        parts.append("Candidate files (factual reasons):")
-        for cpath, reasons in list(candidates_dict.items())[:20]:
-            parts.append(f"  {cpath} ({', '.join(reasons)})")
     if focus:
+        changed_paths = {row.split(None, 1)[-1] for row in changed}
         parts.append(f"Focus {focus}: {len(focus_matches)} match(es)")
-        parts.extend(f"  {relative_display(root_p, p)}" for p in focus_matches[:25])
+        for p in focus_matches[:25]:
+            rel = relative_display(root_p, p)
+            parts.append(f"  {rel} (changed)" if rel in changed_paths else f"  {rel}")
         if len(focus_matches) > 25:
             parts.append(f"  ... {len(focus_matches) - 25} more")
-    if not info.git_root:
-        report.unknowns.append("no git repository: commit history, diff stat, and ls-files unavailable")
-    if truncated_walk:
-        report.unknowns.append(f"repository walk capped at max_files={max_files}")
-    if report.unknowns:
-        parts.append("Unknowns: " + "; ".join(report.unknowns))
 
     text = "\n".join(parts)
     body, truncated, full_bytes = truncate_text(text, max_bytes, style="head")
@@ -1714,8 +1819,6 @@ def survey(
         "focus_matches": len(focus_matches), "truncated": truncated,
         "git_root": info.git_root,
     }
-    if truncated_walk:
-        report.unknowns.append(f"repository walk capped at {max_files} files")
     return report
 
 
@@ -1787,6 +1890,8 @@ def collect_coverage(requested: int, results: list[ReadResult]) -> Coverage:
             coverage.stale += 1
         elif result.status == "unchanged":
             coverage.unchanged += 1
+        elif result.status == "no_match":
+            coverage.no_match += 1
         else:
             coverage.failed += 1
         coverage.bytes_total += result.bytes_total or 0

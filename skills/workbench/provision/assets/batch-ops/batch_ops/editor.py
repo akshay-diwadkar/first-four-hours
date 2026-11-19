@@ -15,7 +15,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .artifacts import ArtifactStore
+from .artifacts import ArtifactStore, since_sha
 from .budget import Budget, BudgetTracker, body_budget, water_fill
 from .runner import run_commands
 from .safety import (
@@ -180,6 +180,8 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 grouped[key] = []
                 order.append(str(path))
             grouped[key].append(edit)
+        except FileNotFoundError:
+            plan.errors.append((edit.path, "file not found"))
         except Exception as exc:
             plan.errors.append((edit.path, str(exc)))
 
@@ -203,9 +205,14 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 raise SafetyError(f"file has mixed line endings ({counts_str}); refuse to edit without normalize_eol=true")
             text = to_eol(info.text, info.eol) if (info.mixed_eol and bundle.normalize_eol) else info.text
             total = 0
+            ranged = [e for e in grouped[path_key] if e.range is not None]
+            if ranged:  # line numbers name the file as read, so ranges go first
+                text = _apply_ranges(text, before, ranged, info.eol)
+                total += len(ranged)
             for edit in grouped[path_key]:
-                text, count = _apply_one(text, edit, info.eol)
-                total += count
+                if edit.range is None:
+                    text, count = _apply_one(text, edit, info.eol)
+                    total += count
             after = encode_text(text, info.encoding)
             original_text = decode_bytes(before, encoding_hint).text
             diff = _unified_diff(original_text, text, rel, "modify")
@@ -294,6 +301,8 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 mode=file_mode(path), full_diff=full_diff,
             ))
             _snapshot(plan, path, rel, before, file_mode(path))
+        except FileNotFoundError:
+            plan.errors.append((raw, "file not found"))
         except Exception as exc:
             plan.errors.append((raw, str(exc)))
 
@@ -335,6 +344,8 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
             if destination_before is not None:
                 _snapshot(plan, destination, dest_rel, destination_before, file_mode(destination))
             plan.renames.append((source, destination))
+        except FileNotFoundError:
+            plan.errors.append((rename.source, "file not found"))
         except Exception as exc:
             plan.errors.append((rename.source, str(exc)))
 
@@ -356,6 +367,34 @@ def _snapshot(plan: _Plan, path: Path, rel: str, data: bytes | None, mode: int |
     key = os.path.normcase(str(path))
     if key not in plan.snapshots:
         plan.snapshots[key] = _Snapshot(path=path, rel=rel, data=data, mode=mode)
+
+
+def _apply_ranges(text: str, before: bytes, edits: list[EditRequest], eol: str | None) -> str:
+    """Replace whole lines N-M, only while the file still has the sha its read printed."""
+    sha = sha256_bytes(before)
+    lines = text.splitlines(keepends=True)
+    ordered = sorted(edits, key=lambda e: e.range or (0, 0))
+    previous_end = 0
+    for edit in ordered:
+        expected = since_sha(edit.since or "")
+        if expected is None:
+            raise SafetyError("since must be the sha (8+ hex characters) or read handle a read printed")
+        if not sha.startswith(expected):
+            raise SafetyError(f"file changed since it was read (sha now {sha[:12]}); re-read it")
+        start, end = edit.range or (0, 0)
+        if start < 1 or end < start or end > len(lines):
+            raise SafetyError(f"range {start}-{end} is outside the file ({len(lines)} lines)")
+        if start <= previous_end:
+            raise SafetyError(f"range {start}-{end} overlaps another range edit")
+        previous_end = end
+    for edit in reversed(ordered):
+        start, end = edit.range or (0, 0)
+        line_eol = eol or "\n"
+        new = to_eol(edit.replace, line_eol)
+        if new and not new.endswith(("\n", "\r")) and lines[end - 1].endswith(("\n", "\r")):
+            new += line_eol
+        lines[start - 1:end] = [new] if new else []
+    return "".join(lines)
 
 
 def _apply_one(text: str, edit: EditRequest, eol: str | None) -> tuple[str, int]:

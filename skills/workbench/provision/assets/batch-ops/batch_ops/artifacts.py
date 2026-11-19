@@ -8,6 +8,7 @@ detectable without server state.
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 import time
 from pathlib import Path
@@ -116,10 +117,24 @@ def make_read_handle(path: str, sha: str, start: int | None, end: int | None) ->
     return f"read:{quoted}:{sha[:16]}:{rng}"  # 64-bit prefix: enough to detect change, fewer tokens
 
 
+def since_sha(value: str) -> str | None:
+    """The lowercase sha prefix in a `since` value (a sha of 8+ hex characters or a read handle)."""
+    value = value.strip()
+    if value.startswith("read:"):
+        try:
+            value = str(parse_read_handle(value)["sha"])
+        except ValueError:
+            return None
+    value = value.lower()
+    return value if len(value) >= 8 and re.fullmatch(r"[0-9a-f]+", value) else None
+
+
 def parse_read_handle(handle: str) -> dict[str, object]:
     if not handle.startswith("read:"):
         raise ValueError(f"not a read handle: {handle}")
     parts = handle.split(":")
+    if len(parts) == 5 and parts[3] == "full":  # "<full handle>:N-M" narrows the full read to N-M
+        parts = [*parts[:3], parts[4]]
     if len(parts) != 4:
         raise ValueError(f"malformed read handle: {handle}")
     _, quoted, sha, rng = parts

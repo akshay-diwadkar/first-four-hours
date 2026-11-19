@@ -53,6 +53,7 @@ class ReadRequest:
     # git
     base: str = "HEAD"
     staged: bool = False
+    stat: bool = False  # git diff: per-file change counts only
 
     # compare
     children: list["ReadRequest"] = field(default_factory=list)
@@ -98,6 +99,8 @@ class EditRequest:
     occurrence: int | None = None
     encoding: str | None = None
     label: str = ""
+    range: tuple[int, int] | None = None  # whole lines N-M, instead of search
+    since: str | None = None  # sha prefix or read handle the range was read at
 
 
 @dataclass
@@ -152,7 +155,7 @@ class ReadResult:
     id: str
     kind: str
     label: str
-    status: str = "ok"  # ok | error | missing | skipped | truncated | binary | lossy | stale | unchanged
+    status: str = "ok"  # ok | error | missing | skipped | truncated | binary | lossy | stale | unchanged | no_match
     path: str | None = None
     range: tuple[int, int] | None = None
     body: str = ""
@@ -232,6 +235,7 @@ class Coverage:
     stale: int = 0
     truncated: int = 0
     unchanged: int = 0
+    no_match: int = 0
     commands_run: int = 0
     commands_failed: int = 0
     commands_timed_out: int = 0

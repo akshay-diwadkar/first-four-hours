@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 
+from . import BUILD
 from .safety import estimate_tokens, format_bytes, truncate_text
 from .types import Coverage, EditReport, ReadResult, Report, RunResult
 
@@ -20,7 +21,7 @@ def _budget_line(report: Report) -> str:
 
 def _coverage_lines(coverage: Coverage, *, counts: bool = True) -> list[str]:
     parts = []
-    for label in ("failed", "missing", "skipped", "binary", "lossy", "stale", "truncated", "unchanged"):
+    for label in ("failed", "missing", "skipped", "binary", "lossy", "stale", "truncated", "unchanged", "no_match"):
         value = getattr(coverage, label)
         if value:
             parts.append(f"{label} {value}")
@@ -109,7 +110,7 @@ def _next_line(report: Report) -> str | None:
 
 
 def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
-    lines = [f"# batch_read ({report.mode})"]
+    lines = [f"# batch_read ({report.mode}) build {BUILD}"]
     if any(r.truncated and not (r.meta or {}).get("outline_first") for r in report.reads):
         lines.append(_budget_line(report))
     problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged")]
@@ -179,7 +180,7 @@ def _render_run_item(result: RunResult) -> list[str]:
 
 
 def render_run_report(report: Report, *, max_bytes: int = 64 * 1024) -> str:
-    lines = ["# batch_run"]
+    lines = [f"# batch_run build {BUILD}"]
     runs = report.runs
     if any(r.budget_cut for r in runs):
         lines.append(_budget_line(report))
@@ -212,7 +213,8 @@ def _render_edit(report: EditReport) -> list[str]:
 
 
 def render_edit_report(report: EditReport, *, max_bytes: int = 32 * 1024) -> str:
-    lines = [f"# batch_edit{' (dry run)' if report.dry_run else ''}" + (" - ok" if report.ok else " - failed")]
+    lines = [f"# batch_edit{' (dry run)' if report.dry_run else ''}" + (" - ok" if report.ok else " - failed")
+             + f" build {BUILD}"]
     if report.message:
         lines.append(report.message)
     if report.errors:

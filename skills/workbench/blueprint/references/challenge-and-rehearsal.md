@@ -1,6 +1,17 @@
 # Challenge and rehearsal
 
-Every draft gets an owner walk: rehearse Construct's Verification section yourself, re-deriving the load-bearing premise from source. A standard draft's walk also runs the [Challenger brief](challenger-brief.md), backing each compliant-but-bad case with a fresh observation; an elevated draft leaves the brief to its one fresh challenge.
+Every draft gets an owner walk: the desk check below, then the load-bearing premise re-derived from source. A standard draft's walk also runs the [Challenger brief](challenger-brief.md), backing each compliant-but-bad case with a fresh observation; an elevated draft leaves the brief to its one fresh challenge.
+
+## Desk check
+
+Rehearse Construct's Verification section on paper. For each Proof run in instruction order, then each Run, confirm:
+
+1. **Exists.** Everything it reads exists now or an earlier instruction creates it.
+2. **Launches.** Its argv works as Construct launches it: no shell, repository root, only Construct's inherited environment. Probe its launch safely on the current tree, a planned target through an existing one of the same form; read [Executable contracts](executable-contracts.md) when that cannot settle dispatch.
+3. **Passes on the drafted bytes.** Its `Expect:` holds against the drafted Exact and Frozen text and every other planned file it scans.
+4. **Fits the limits.** It stays within every cap, allowlist, pinned value, and validator rule the change touches, per the planning contract's Repository traps.
+
+Rerun it after every repair.
 
 ## Tier
 
@@ -16,7 +27,7 @@ A skill version raises no signal. Read signals from the draft, not from how easy
 
 ## One fresh challenge
 
-For an elevated draft, launch the challenger as a separate fresh-context subagent; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Give it the request and answers, the draft, evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Tier and Requirement trace, the planning-trap list, Construct's Verification section, [Each turn](delegation-protocol.md#delegation-preserve-authority-bound-labor), and each reference whose branch the draft uses. Withhold your reasoning and any premise you want confirmed. Launch it before your owner walk and, if your harness allows, walk while it works; edit the draft only after its review, then repair all findings together.
+For an elevated draft, launch the challenger as a separate fresh-context subagent; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Give it the request and answers, the draft, evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Desk check, Tier, and Requirement trace, the planning-trap list, Construct's Verification section, [Each turn](delegation-protocol.md#delegation-preserve-authority-bound-labor), and each reference whose branch the draft uses. Withhold your reasoning and any premise you want confirmed. Launch it before your owner walk and, if your harness allows, walk while it works; edit the draft only after its review, then repair all findings together.
 
 ## Repair and re-check
 
@@ -30,10 +41,6 @@ Before sealing, trace each clause of the authoritative request (of a diagnosis, 
 
 ## Seal gate
 
-Seal only when every rule in this file and the planning contract holds, including:
-
-- no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance;
-- where completion or a resume relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source, and proof fails an implementation trusting it;
-- the owner walk, an elevated draft's fresh challenge, and the before-seal `reason` consultation ran.
+Seal only when every rule in this file and the planning contract holds, including that no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance.
 
 If substantive judgment is still required anywhere, the Blueprint is not ready to seal. After sealing, stop.

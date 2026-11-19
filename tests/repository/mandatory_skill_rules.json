@@ -331,9 +331,9 @@
   {
     "id": "plan.resume-reread",
     "skill": "blueprint",
-    "source": "references/challenge-and-rehearsal.md",
+    "source": "references/planning-contract.md",
     "surface": "doctor",
-    "text": "relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source"
+    "text": "Completion and resume reread required postconditions at their source"
   },
   {
     "id": "plan.no-self-accepted-gap",

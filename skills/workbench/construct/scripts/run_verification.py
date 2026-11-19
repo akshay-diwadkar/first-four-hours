@@ -720,6 +720,14 @@ def _closest_diff(expected: str, current: str, path: str) -> str:
     return diff[:DIFF_LIMIT_CHARS]
 
 
+def _raw_offset(raw: str, lf_offset: int) -> int:
+    """Map an offset in the LF-normalized text to the same position in ``raw``."""
+    index = 0
+    for _seen in range(lf_offset):
+        index += 2 if raw.startswith("\r\n", index) else 1
+    return index
+
+
 def _block_mismatch(
     current: str | None, block: blueprint_runtime.TextBlock, state: str, reason: str | None,
     prerequisites: Sequence[int] = (),
@@ -732,15 +740,15 @@ def _block_mismatch(
         found["prerequisites"] = list(prerequisites)
     if current is None or current == blueprint_runtime.UNREADABLE:
         return {**found, "diff": ""}
-    if block.old is None:
+    if block.form == "file":
         diff = "".join(
             difflib.unified_diff(
                 block.text.splitlines(keepends=True), current.splitlines(keepends=True), f"planned {block.path}", f"current {block.path}"
             )
         )
         return {**found, "diff": diff[:DIFF_LIMIT_CHARS]}
-    # An unapplied replacement is best shown against its anchor; a diverged one against its planned text.
-    expected = block.old if state == "unapplied" else block.text
+    # An unapplied edit is best shown against its old text; anything else against its planned text.
+    expected = block.old if state == "unapplied" and block.old is not None else block.text
     return {**found, "diff": _closest_diff(expected, current, block.path)}
 
 
@@ -797,14 +805,8 @@ def _assess_blocks(
                 state, _ = blueprint_runtime.block_state(current, block)
                 if state != "unapplied":
                     continue
-                if block.old is None:
-                    applied = block.text
-                else:
-                    assert current is not None
-                    offsets = blueprint_runtime.line_start_offsets(current, block.old)
-                    assert len(offsets) == 1
-                    applied = current[:offsets[0]] + block.text + current[offsets[0] + len(block.old):]
-                if blueprint_runtime.block_state(applied, block)[0] == "exact":
+                applied, _why = blueprint_runtime.apply_block(current, block)
+                if applied is not None and blueprint_runtime.block_state(applied, block)[0] == "exact":
                     projected[key] = applied
                     pending[key].add(step.number)
     return found
@@ -1515,22 +1517,17 @@ def apply_blocks(repo_root: Path, blueprint_path: Path, number: int, kind: str |
             raise _apply_refused(f"instruction {number} declared text has diverged", found)
         for block in pending_blocks:
             entry = files[view.path_key(block.path)]
-            if block.old is None:
+            expected, why = blueprint_runtime.apply_block(entry["lf"], block)
+            if expected is None:
+                raise _apply_refused(f"{block.path} (Blueprint line {block.line}): where it is applied, {why}")
+            if block.form == "file":
                 entry["raw"] = block.text
-                expected = block.text
             else:
-                offsets = blueprint_runtime.line_start_offsets(entry["lf"], block.old)
-                if len(offsets) != 1:
-                    raise _apply_refused(
-                        f"{block.path} (Blueprint line {block.line}): the replaced text occurs {len(offsets)} times "
-                        "at a line boundary where it is applied; it must occur exactly once"
-                    )
-                line = entry["lf"].count("\n", 0, offsets[0])
-                starts = [0] + [index + 1 for index, char in enumerate(entry["raw"]) if char == "\n"]
-                end = line + block.old.count("\n")
-                eol = "\r\n" if "\r\n" in entry["raw"] else "\n"
-                entry["raw"] = entry["raw"][: starts[line]] + block.text.replace("\n", eol) + entry["raw"][starts[end]:]
-                expected = entry["lf"][: offsets[0]] + block.text + entry["lf"][offsets[0] + len(block.old):]
+                # Splice into the raw bytes so every untouched line keeps its own line ending.
+                start, end = blueprint_runtime.resolve_span(entry["lf"], block)
+                raw = entry["raw"]
+                eol = "\r\n" if "\r\n" in raw else "\n"
+                entry["raw"] = raw[: _raw_offset(raw, start)] + block.text.replace("\n", eol) + raw[_raw_offset(raw, end) :]
             entry["lf"] = entry["raw"].replace("\r\n", "\n")
             if entry["lf"] != expected:
                 raise _apply_refused(f"{block.path} (Blueprint line {block.line}): its line endings cannot be preserved")

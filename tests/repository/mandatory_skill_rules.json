@@ -494,7 +494,7 @@
     "skill": "blueprint",
     "source": "references/challenge-and-rehearsal.md",
     "surface": "doctor",
-    "text": "Planner and challenger judge every wording deliverable and Completion Condition, with its proof, against what each clause it carries requires, read from the request itself, never the plan's restatement: Exact text and pins prove bytes, not meaning, so one narrowing or dropping a clause, even if changed or trimmed after the challenge, is under-scoped."
+    "text": "Planner and challenger judge every wording deliverable and Trace item, with its proof, against what each clause it carries requires, read from the request itself, never the plan's restatement: Exact text and pins prove bytes, not meaning, so one narrowing or dropping a clause, even if changed or trimmed after the challenge, is under-scoped."
   },
   {
     "id": "provision.write-scope",

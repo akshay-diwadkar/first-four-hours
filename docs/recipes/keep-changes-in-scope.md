@@ -50,7 +50,7 @@ What changes: the order summary template and its view test. What does not change
 Main risk: the summary view also builds the confirmation email, so the email gains the fee line too.
 ```
 
-Each step names its target files, and none of them is in the payment module. One completion condition reads: "The payment module is byte-for-byte unchanged. Shown by `git diff --exit-code main -- freshcart/payments`." The main risk is a decision someone has to make, so Priya Raman, FreshCart's product owner, confirms that the email should show the fee too.
+Each step names its target files, and none of them is in the payment module. One Verification Run is `git diff --exit-code main -- freshcart/payments`, and the Trace ties the clause "leave the payment module alone" to it. The main risk is a decision someone has to make, so Priya Raman, FreshCart's product owner, confirms that the email should show the fee too.
 
 ```text
 /construct : Implement the sealed blueprint in .first-four-hours/blueprints/delivery-fee-on-summary/blueprint.md.

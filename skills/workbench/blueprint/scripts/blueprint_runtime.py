@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "1.16.0"
+CONTRACT_VERSION = "2.0.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -160,13 +160,36 @@ RUN_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Run\:\s*", re.IGNORECASE)
 EXPECT_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Expect\:\s*", re.IGNORECASE)
 TIMEOUT_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Timeout\:\s*", re.IGNORECASE)
 TIMEOUT_VALUE_RE = re.compile(r"^(?P<value>\d+)$")
-BLOCK_LABEL_RE = re.compile(r"^\s*(?:[-*][ \t]+)?\*\*(?P<kind>Exact|Frozen)\:\*\*", re.IGNORECASE)
+BLOCK_LABEL_RE = re.compile(
+    r"^\s*(?:[-*][ \t]+)?\*\*(?P<kind>Exact|Frozen|Edit|Replace|Frozen[ \t]+edit|Frozen[ \t]+replace)\:\*\*", re.IGNORECASE
+)
+BLOCK_FORMS = {
+    "exact": ("exact", "file"),
+    "frozen": ("frozen", "file"),
+    "edit": ("exact", "edit"),
+    "replace": ("exact", "range"),
+    "frozen edit": ("frozen", "edit"),
+    "frozen replace": ("frozen", "range"),
+}
 WITH_LABEL_RE = re.compile(r"^\s*(?:[-*][ \t]+)?\*\*With\:\*\*", re.IGNORECASE)
+EDIT_ITEM_RE = re.compile(r"^[-*][ \t]+`(?P<old>[^`\r\n]+)`[ \t]+(?:→|->)[ \t]+`(?P<new>[^`\r\n]+)`[ \t]*$")
+REPLACE_TAIL_RE = re.compile(
+    r"[ \t]*`(?P<path>[^`\r\n]+)`[ \t]+(?:from[ \t]+`(?P<start>[^`\r\n]+)`[ \t]+to[ \t]+(?:`(?P<end>[^`\r\n]+)`|end)"
+    r"|section[ \t]+`(?P<section>#{1,6}[ \t]+[^`\r\n]+)`)[ \t]*"
+)
+MARKDOWN_HEADING_RE = re.compile(r"^(?P<level>#{1,6})[ \t]")
+TIER_RE = re.compile(r"^\s*(?:[-*][ \t]+)?\*\*Tier\:\*\*[ \t]*(?P<tier>\S.*?)[ \t]*$", re.IGNORECASE)
+TIER_BUDGETS = {"quick": 6 * 1024, "standard": 12 * 1024, "critical": 20 * 1024}
+TRACE_ITEM_RE = re.compile(r"^[-*][ \t]+(?P<id>[A-Za-z]*\d+)[ \t]*(?:→|->)[ \t]*(?P<refs>\S.*)$")
+TRACE_RUN_RE = re.compile(r"\bV(?P<number>\d+)\b")
+TRACE_PROOF_RE = re.compile(r"\bP(?P<number>\d+)\b")
+TRACE_STEP_RE = re.compile(r"(?<![\w.])(?P<number>\d+)(?![\w.])")
+REQUEST_ID_RE = re.compile(r"^\s*(?:[-*][ \t]+|\d+\.[ \t]+)?(?:\*\*)?(?P<id>R\d+)\b")
 PROOF_LABEL_RE = re.compile(r"^\s*(?:[-*][ \t]+)?\*\*Proof run\:\*\*", re.IGNORECASE)
 RED_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Red\:\s*", re.IGNORECASE)
 INCOMPLETE_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Incomplete\:\s*", re.IGNORECASE)
 NEAR_LABEL_RE = re.compile(
-    r"^\s*(?:(?:[-*+]|\d+\.)[ \t]+)?[*_`]{0,3}\s*(?:exact|frozen|with|proof(?:\s+run)?|red|incomplete)\s*[*_`]{0,3}\s*:",
+    r"^\s*(?:(?:[-*+]|\d+\.)[ \t]+)?[*_`]{0,3}\s*(?:exact|frozen(?:\s+(?:edit|replace))?|edit|replace|with|proof(?:\s+run)?|red|incomplete)\s*[*_`]{0,3}\s*:",
     re.IGNORECASE,
 )
 FENCE_OPEN_RE = re.compile(r"^(?P<fence>`{3,}|~{3,})")
@@ -239,9 +262,10 @@ TEMPLATE_SENTINEL_RE = re.compile(
     r"^(?:TBD|<fill[ -]?me>|<value>)[.!?]?$",
     re.IGNORECASE,
 )
-REQUIRED_SECTIONS = ("Goal", "Current State", "Implementation", "Verification", "Completion Conditions")
-OPTIONAL_SECTIONS = ("Risks / Recovery",)
-SECTION_ORDER = REQUIRED_SECTIONS + OPTIONAL_SECTIONS
+FACTS_SECTION = "Facts"
+REQUIRED_SECTIONS = ("Goal", "Implementation", "Verification", "Trace")
+OPTIONAL_SECTIONS = (FACTS_SECTION, "Decisions", "Risks / Recovery")
+SECTION_ORDER = ("Goal", FACTS_SECTION, "Decisions", "Implementation", "Verification", "Trace", "Risks / Recovery")
 VERIFICATION_PHASES = ("Before implementation", "After implementation")
 DEFAULT_VERIFICATION_TIMEOUT_SECONDS = 900
 
@@ -339,10 +363,13 @@ class TextBlock:
     """Exact planned text for one step Location.
 
     ``exact`` blocks are implementation text; ``frozen`` blocks are
-    planner-authored proof the executor writes verbatim and never edits. With
-    ``old`` unset the block is the file's entire final content; otherwise the
-    whole lines in ``old`` are replaced by ``text``. Every block line ends in
-    one newline, and comparison is over UTF-8 text with CRLF read as LF.
+    planner-authored proof the executor writes verbatim and never edits. A
+    ``file`` block is a new file's entire content. An ``edit`` block replaces
+    the one occurrence of the substring ``old`` with ``text``. A ``range``
+    block replaces the whole lines its anchors address (``start`` through the
+    line before ``end``, or to the end of the file, or the heading ``section``
+    through the line before the next heading of the same or a higher level)
+    with ``text``. Comparison is over UTF-8 text with CRLF read as LF.
     """
 
     kind: str
@@ -350,10 +377,13 @@ class TextBlock:
     text: str
     line: int
     old: str | None = None
+    form: str = "file"
+    start: str | None = None
+    end: str | None = None
+    section: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        form = "file" if self.old is None else "replace"
-        return {"kind": self.kind, "path": self.path, "line": self.line, "form": form}
+        return {"kind": self.kind, "path": self.path, "line": self.line, "form": self.form}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1277,7 +1307,9 @@ def blueprint_scaffold_text(task_name: str) -> str:
             "",
             "## Goal",
             "",
-            "## Current State",
+            "## Facts",
+            "",
+            "## Decisions",
             "",
             "## Implementation",
             "",
@@ -1285,7 +1317,7 @@ def blueprint_scaffold_text(task_name: str) -> str:
             "",
             "### After implementation",
             "",
-            "## Completion Conditions",
+            "## Trace",
         ]
     ) + "\n"
 
@@ -1480,7 +1512,7 @@ def _section_spans(
             _error(
                 "shape.heading.order",
                 "Blueprint headings are not in the required order.",
-                "Order headings as Goal, Current State, Implementation, Verification, Completion Conditions, and Risks / Recovery.",
+                "Order headings as Goal, Facts, Decisions, Implementation, Verification, Trace, and Risks / Recovery.",
             )
         )
     spans: dict[str, tuple[int, int]] = {}
@@ -1635,11 +1667,11 @@ def _collect_sources(
     fenced: set[int],
     diagnostics: list[Diagnostic],
 ) -> tuple[SourceLocator, ...]:
-    """Bind author-declared decision-critical sources from Current State only."""
+    """Bind author-declared decision-critical sources from Facts only."""
     sources: list[SourceLocator] = []
-    if "Current State" not in spans:
+    if FACTS_SECTION not in spans:
         return ()
-    start, end = spans["Current State"]
+    start, end = spans[FACTS_SECTION]
     for index, raw in enumerate(lines[start:end], start=start):
         if index in fenced:
             continue
@@ -1931,7 +1963,7 @@ def _parse_verification(
                             "expected-failure mode, so this Expect makes the sealed plan "
                             "unexecutable.",
                             "Every authored Run must exit 0 on a correct implementation. Record the "
-                            "pre-change observation as cited evidence in Current State, require exit "
+                            "pre-change observation as cited evidence in Facts, require exit "
                             "0 here, and express a conditional outcome as an observable output value "
                             "the Run reports while still exiting 0.",
                             line=pending["line"],
@@ -2208,14 +2240,27 @@ def _parse_step_proof(
         raw = lines[index]
         label = BLOCK_LABEL_RE.match(raw)
         if label is not None:
-            kind = label.group("kind").lower()
-            span = _strict_span(raw[label.end() :])
+            name = " ".join(label.group("kind").lower().split())
+            kind, form = BLOCK_FORMS[name]
+            title = name.capitalize()
+            tail = raw[label.end() :]
+            start_anchor = end_anchor = section = None
+            if form == "range":
+                replace_match = REPLACE_TAIL_RE.fullmatch(tail)
+                span = replace_match.group("path") if replace_match is not None else None
+                if replace_match is not None:
+                    start_anchor = replace_match.group("start")
+                    end_anchor = replace_match.group("end")
+                    section = replace_match.group("section")
+            else:
+                span = _strict_span(tail)
             path = span.replace("\\", "/") if span else None
             if path is None or path not in states:
                 block_error(
                     "block.location",
-                    f"the {kind.title()} label must cite one backticked path declared by a Location of the same instruction.",
-                    "Write **Exact:** `path` or **Frozen:** `path` naming one of this instruction's Location paths.",
+                    f"the {title} label must cite one backticked path declared by a Location of the same instruction"
+                    + (", then `from `start` to `end``, `from `start` to end`, or `section `## Heading``." if form == "range" else "."),
+                    "Write **Exact:**, **Edit:**, or **Replace:** (or a Frozen form) followed by one of this instruction's Location paths.",
                     index,
                 )
                 continue
@@ -2223,72 +2268,69 @@ def _parse_step_proof(
                 block_error(
                     "block.deleted",
                     f"declared text cannot target the planned-deleted file {path!r}.",
-                    "Drop this block; a deleted target takes no Exact or Frozen text.",
+                    "Drop this block; a deleted target takes no declared text.",
                     index,
                 )
+                continue
+            if form == "file" and states[path] != "new":
+                block_error(
+                    "block.whole_existing",
+                    f"a whole-file block cannot target the existing file {path!r}.",
+                    "Use **Edit:** for substring changes or **Replace:** for a span of whole lines.",
+                    index,
+                )
+                continue
+            if form != "file" and states[path] != "existing":
+                block_error(
+                    "block.replace_new",
+                    f"an {title} block cannot target the planned-new file {path!r}.",
+                    "Give a new file's whole content as one **Exact:** or **Frozen:** fenced block.",
+                    index,
+                )
+                continue
+            if form == "edit":
+                cursor = index
+                items: list[tuple[int, re.Match[str]]] = []
+                while (following := _next_nonempty(lines, cursor, stop)) is not None and following not in fenced:
+                    item = EDIT_ITEM_RE.fullmatch(lines[following])
+                    if item is None:
+                        break
+                    consumed.add(following)
+                    items.append((following, item))
+                    cursor = following
+                if _strict_span(tail) is None or not items:
+                    block_error(
+                        "block.shape",
+                        f"the {title} label must stand alone and be followed by one or more '- `old` → `new`' lines.",
+                        "List each substitution on its own line as - `old text` → `new text`; use **Replace:** when the text holds a backtick or spans lines.",
+                        index,
+                    )
+                    continue
+                for at, item in items:
+                    blocks.append(TextBlock(kind, path, item.group("new"), at + 1, item.group("old"), form="edit"))
                 continue
             first = fence_after(index)
             if first is None:
                 block_error(
                     "block.shape",
-                    f"the {kind.title()} label must be followed by one closed, unindented fenced block.",
+                    f"the {title} label must be followed by one closed, unindented fenced block.",
                     "Put the exact lines in a ``` or ~~~ fence starting at column 0 right after the label.",
                     index,
                 )
                 continue
-            text, closer = first
-            old: str | None = None
-            with_index = _next_nonempty(lines, closer, stop)
-            with_match = WITH_LABEL_RE.match(lines[with_index]) if with_index is not None and with_index not in fenced else None
-            if with_index is not None and with_match is not None:
-                consumed.add(with_index)
-                second = fence_after(with_index)
-                if lines[with_index][with_match.end() :].strip() or second is None:
-                    block_error(
-                        "block.shape",
-                        "**With:** must stand alone and be followed by one closed, unindented fenced block.",
-                        "Put the replacement lines in a fence starting at column 0 right after **With:**.",
-                        with_index,
-                    )
-                    continue
-                old, text = text, second[0]
-                if states[path] != "existing":
-                    block_error(
-                        "block.replace_new",
-                        f"a replacement cannot target the planned-new file {path!r}.",
-                        "Give a new file's whole content as one fenced block.",
-                        index,
-                    )
-                    continue
-                if not old.strip():
-                    block_error("block.empty", "the replaced text is empty.", "Quote the whole existing lines being replaced.", index)
-                    continue
-                if not text.strip():
-                    block_error(
-                        "block.empty",
-                        "the replacement text is empty.",
-                        "Express a deletion by keeping an unchanged neighbouring line in both blocks.",
-                        index,
-                    )
-                    continue
-            elif not text.strip():
-                block_error("block.empty", f"the {kind.title()} block is empty.", "Put the exact planned lines inside the fence.", index)
+            text = first[0]
+            if not text.strip():
+                block_error("block.empty", f"the {title} block is empty.", "Put the exact planned lines inside the fence.", index)
                 continue
-            elif states[path] != "new":
-                block_error(
-                    "block.whole_existing",
-                    f"a whole-file block cannot target the existing file {path!r}.",
-                    "Use a replacement; to rewrite the whole file, quote its full current content as the replaced text.",
-                    index,
-                )
-                continue
-            blocks.append(TextBlock(kind, path, text, index + 1, old))
+            blocks.append(
+                TextBlock(kind, path, text, index + 1, form=form, start=start_anchor, end=end_anchor, section=section)
+            )
             continue
         if WITH_LABEL_RE.match(raw):
             block_error(
-                "block.shape",
-                "**With:** must follow the fenced text an Exact or Frozen label replaces.",
-                "Place **With:** directly after the replaced block.",
+                "block.with_retired",
+                "**With:** is retired.",
+                "Use **Edit:** with - `old` → `new` lines for substring changes, or **Replace:** with anchors for a span of whole lines.",
                 index,
             )
             continue
@@ -2406,30 +2448,109 @@ def _parse_step_proof(
     return tuple(blocks), proof, red
 
 
-def line_start_offsets(text: str, fragment: str) -> list[int]:
-    """Return every offset where ``fragment`` occurs starting at a line boundary."""
+def _offsets(text: str, fragment: str, *, line_start: bool) -> list[int]:
+    """Return every offset where ``fragment`` occurs, only at line boundaries when ``line_start``."""
     offsets: list[int] = []
     position = text.find(fragment)
     while position >= 0:
-        if position == 0 or text[position - 1] == "\n":
+        if not line_start or position == 0 or text[position - 1] == "\n":
             offsets.append(position)
         position = text.find(fragment, position + 1)
     return offsets
 
 
-def replacement_mismatch(current: str, block: TextBlock) -> str | None:
-    """Return why ``current`` does not realize one replacement block, or None.
+def line_start_offsets(text: str, fragment: str) -> list[int]:
+    """Return every offset where ``fragment`` occurs starting at a line boundary."""
+    return _offsets(text, fragment, line_start=True)
 
-    The replacement occurs exactly once at a line boundary and the replaced text
-    occurs nowhere outside it. The seal proves this predicate holds on the
-    faithful result, so it never rejects a correct implementation.
-    """
+
+def _range_span(current: str, block: TextBlock) -> tuple[int, int] | str:
+    """Locate the whole lines a range block's anchors address, or say why they do not resolve."""
+    lines = current.splitlines(keepends=True)
+    starts = [0]
+    for line in lines:
+        starts.append(starts[-1] + len(line))
+    if block.section is not None:
+        heading = block.section.strip()
+        heading_match = MARKDOWN_HEADING_RE.match(heading)
+        assert heading_match is not None
+        level = len(heading_match.group("level"))
+        found = [index for index, line in enumerate(lines) if line.rstrip() == heading]
+        if len(found) != 1:
+            return f"the section heading {heading!r} is {len(found)} lines; it must be exactly one"
+        first = found[0]
+        last = next(
+            (
+                index
+                for index in range(first + 1, len(lines))
+                if (match := MARKDOWN_HEADING_RE.match(lines[index])) is not None and len(match.group("level")) <= level
+            ),
+            len(lines),
+        )
+        return starts[first], starts[last]
+    assert block.start is not None
+    found = [index for index, line in enumerate(lines) if line.startswith(block.start)]
+    if len(found) != 1:
+        where = f" (lines {', '.join(str(index + 1) for index in found[:6])})" if found else ""
+        return f"the start anchor {block.start!r} begins {len(found)} lines{where}; it must begin exactly one"
+    first = found[0]
+    if block.end is None:
+        return starts[first], starts[len(lines)]
+    last = next((index for index in range(first + 1, len(lines)) if lines[index].startswith(block.end)), None)
+    if last is None:
+        return f"no line after the start anchor begins with the end anchor {block.end!r}"
+    return starts[first], starts[last]
+
+
+def resolve_span(current: str, block: TextBlock) -> tuple[int, int] | str:
+    """Locate the text a replacing block replaces in ``current``, or say why it cannot."""
+    if block.form == "range":
+        return _range_span(current, block)
     assert block.old is not None
-    placed = len(line_start_offsets(current, block.text))
+    offsets = _offsets(current, block.old, line_start=False)
+    if len(offsets) != 1:
+        where = ""
+        if offsets:
+            where = " (lines " + ", ".join(str(current.count("\n", 0, offset) + 1) for offset in offsets[:6]) + ")"
+        return f"the old text {block.old!r} occurs {len(offsets)} times{where}; it must occur exactly once"
+    return offsets[0], offsets[0] + len(block.old)
+
+
+def apply_block(current: str | None, block: TextBlock) -> tuple[str | None, str | None]:
+    """Return ``current`` with one block applied, or None and why it cannot be applied."""
+    if block.form == "file":
+        return block.text, None
+    if current is None:
+        return None, "the file is absent"
+    span = resolve_span(current, block)
+    if isinstance(span, str):
+        return None, span
+    return current[: span[0]] + block.text + current[span[1] :], None
+
+
+def replacement_mismatch(current: str, block: TextBlock) -> str | None:
+    """Return why ``current`` does not realize one replacing block, or None.
+
+    An edit's new text occurs exactly once and its old text occurs nowhere
+    outside it; a range's text occurs exactly once at a line boundary and,
+    while its anchors still resolve, is exactly the lines they address. The
+    seal proves this predicate holds on the faithful result, so it never
+    rejects a correct implementation.
+    """
+    if block.form == "range":
+        placed = len(_offsets(current, block.text, line_start=True))
+        if placed != 1:
+            return f"the planned replacement occurs {placed} times at a line boundary; it must occur exactly once"
+        span = _range_span(current, block)
+        if not isinstance(span, str) and current[span[0] : span[1]] != block.text:
+            return "the anchored lines still differ from the planned replacement"
+        return None
+    assert block.old is not None
+    placed = len(_offsets(current, block.text, line_start=False))
     if placed != 1:
-        return f"the planned replacement occurs {placed} times at a line boundary; it must occur exactly once"
-    if len(line_start_offsets(current, block.old)) != len(line_start_offsets(block.text, block.old)):
-        return "the replaced text is still present outside the planned replacement"
+        return f"the planned new text occurs {placed} times; it must occur exactly once"
+    if len(_offsets(current, block.old, line_start=False)) != len(_offsets(block.text, block.old, line_start=False)):
+        return "the old text is still present outside the planned new text"
     return None
 
 
@@ -2440,13 +2561,13 @@ def block_state(current: str | None, block: TextBlock) -> tuple[str, str | None]
     """Classify one block against file text: ``exact``, ``unapplied``, or ``diverged``.
 
     ``current`` is the LF-normalized text, None when the file is absent, or
-    UNREADABLE. A replacement is ``unapplied`` only when its replaced text occurs
-    once at a line boundary and substituting it realizes the block, so the
-    deletion and insert-after-anchor idioms classify correctly.
+    UNREADABLE. A replacing block is ``unapplied`` only when its old text or
+    anchors resolve once and substituting realizes the block, so deletion and
+    insertion idioms classify correctly.
     """
     if current == UNREADABLE:
         return "diverged", "the file is not readable UTF-8 text"
-    if block.old is None:
+    if block.form == "file":
         if current is None:
             return "unapplied", "the file does not exist yet"
         if current == block.text:
@@ -2457,12 +2578,16 @@ def block_state(current: str | None, block: TextBlock) -> tuple[str, str | None]
     reason = replacement_mismatch(current, block)
     if reason is None:
         return "exact", None
-    offsets = line_start_offsets(current, block.old)
-    if len(offsets) == 1:
-        applied = current[: offsets[0]] + block.text + current[offsets[0] + len(block.old) :]
-        if replacement_mismatch(applied, block) is None:
-            return "unapplied", reason
+    applied, _why = apply_block(current, block)
+    if applied is not None and replacement_mismatch(applied, block) is None:
+        return "unapplied", reason
     return "diverged", reason
+
+
+def _anchor_action(block: TextBlock) -> str:
+    if block.form == "range":
+        return "Choose start and end anchors that each begin exactly one line, or name a section by its unique heading."
+    return "Quote more of the surrounding text on both sides of the edit so its old text occurs exactly once."
 
 
 def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> list[Diagnostic]:
@@ -2470,9 +2595,10 @@ def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> l
 
     For each instruction, Frozen blocks then Exact blocks: every block of the
     phase must be ``unapplied`` at the phase checkpoint (Construct checks a
-    phase's blocks together), each replacement anchor must occur once where it
-    is applied, and afterwards every block applied so far must be ``exact``.
-    These are exactly the states red, green, status, and final verify check.
+    phase's blocks together), each edit's old text or range's anchors must
+    resolve once where it is applied, and afterwards every block applied so
+    far must be ``exact``. These are exactly the states red, green, status,
+    and final verify check.
     """
     states: dict[str, str | None] = {}
     keys: dict[str, str] = {}
@@ -2488,7 +2614,7 @@ def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> l
             key = keys[block.path]
             if key in states:
                 continue
-            if block.old is None:
+            if block.form == "file":
                 states[key] = None
                 continue
             try:
@@ -2509,15 +2635,14 @@ def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> l
             blocks = [block for block in step.blocks if block.kind == phase]
             for block in blocks:
                 current = states[keys[block.path]]
-                if block.old is not None and current is not None:
-                    count = len(line_start_offsets(current, block.old))
-                    if count != 1:
+                if block.form != "file" and current is not None:
+                    span = resolve_span(current, block)
+                    if isinstance(span, str):
                         return [
                             _error(
                                 "block.anchor",
-                                f"Instruction {step.number}: the replaced text occurs {count} times at a line "
-                                f"boundary in {block.path!r} before it is applied; it must occur exactly once.",
-                                "Quote enough whole, unchanged lines to identify one location.",
+                                f"Instruction {step.number}: in {block.path!r} before it is applied, {span}.",
+                                _anchor_action(block),
                                 path=block.path,
                                 line=block.line,
                             )
@@ -2529,31 +2654,25 @@ def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> l
                             "block.unprovable",
                             f"Instruction {step.number} {phase} block: before it is applied the file must be in its "
                             f"unapplied state, but {reason or 'it is already realized'}; Construct could not prove it.",
-                            "Widen the replaced and replacement text with unchanged neighbouring lines, or split the change.",
+                            "Widen the old and new text with unchanged neighbouring text, or split the change.",
                             path=block.path,
                             line=block.line,
                         )
                     ]
             for block in blocks:
                 key = keys[block.path]
-                current = states[key]
-                if block.old is None:
-                    states[key] = block.text
-                    continue
-                assert current is not None
-                offsets = line_start_offsets(current, block.old)
-                if len(offsets) != 1:
+                result, reason = apply_block(states[key], block)
+                if result is None:
                     return [
                         _error(
                             "block.anchor",
-                            f"Instruction {step.number}: the replaced text occurs {len(offsets)} times at a line "
-                            f"boundary in {block.path!r} where it is applied; it must occur exactly once.",
-                            "Quote enough whole, unchanged lines to identify one location.",
+                            f"Instruction {step.number}: in {block.path!r} where it is applied, {reason}.",
+                            _anchor_action(block),
                             path=block.path,
                             line=block.line,
                         )
                     ]
-                states[key] = current[: offsets[0]] + block.text + current[offsets[0] + len(block.old) :]
+                states[key] = result
             applied.extend((step.number, block) for block in blocks)
             for number, block in applied:
                 state, reason = block_state(states[keys[block.path]], block)
@@ -2745,13 +2864,17 @@ def _parse_draft(
                 )
             )
     sources = _collect_sources(lines, spans, fenced, diagnostics)
-    locations = tuple(location for step in steps for location in step.locations)
+    unique: dict[tuple[str, str | None, str], TargetLocation] = {}
+    for step in steps:
+        for location in step.locations:
+            unique.setdefault((location.path, location.symbol, location.state), location)
+    locations = tuple(unique.values())
     if not locations and not sources:
         diagnostics.append(
             _error(
                 "locator.missing_required",
                 "The Blueprint must declare at least one decision-critical source or implementation target.",
-                "Cite a current source under Current State or a concrete Location with its State in every instruction.",
+                "Cite a current source under Facts or a concrete Location with its State in every instruction.",
             )
         )
     diagnostics.extend(
@@ -2780,7 +2903,7 @@ def _scan_displaced_declarations(
     """Fail closed on declarations outside their owning surfaces.
 
     Location and State belong inside numbered Implementation step bodies,
-    Source belongs only under Current State, and the retired
+    Source belongs only under Facts, and the retired
     ``**Evidence:**`` / ``**Locator:**`` labels are rejected wherever they
     appear outside fenced code. Ignoring a displaced declaration would let a
     plan bind less mechanical truth than it appears to declare.
@@ -2809,7 +2932,7 @@ def _scan_displaced_declarations(
                 _error(
                     "declaration.retired",
                     f"Retired declaration label is not accepted: {label[:48]}",
-                    "Use **Source:** under Current State and **Location:** with **State:** inside instructions.",
+                    "Use **Source:** under Facts and **Location:** with **State:** inside instructions.",
                     line=index + 1,
                 )
             )
@@ -2848,21 +2971,21 @@ def _scan_displaced_declarations(
             diagnostics.append(
                 _error(
                     "declaration.malformed",
-                    "A line starting with Exact, Frozen, With, Proof, Red, or Incomplete followed by a colon is a reserved "
-                    "declaration but is not spelled exactly, so it would be silently ignored.",
-                    "Write **Exact:** `path`, **Frozen:** `path`, **With:**, **Proof run:** `command`, plain Red:, or plain "
+                    "A line starting with Exact, Frozen, Edit, Replace, With, Proof, Red, or Incomplete followed by a colon is a "
+                    "reserved declaration but is not spelled exactly, so it would be silently ignored.",
+                    "Write **Exact:**, **Edit:**, or **Replace:** (or a Frozen form) and its path, **Proof run:** `command`, plain Red:, or plain "
                     "Incomplete: exactly, "
                     "or rephrase the line (or put it inside a fence) if it is prose.",
                     line=index + 1,
                 )
             )
             continue
-        if SOURCE_RE.match(raw) and section_of(index) != "Current State":
+        if SOURCE_RE.match(raw) and section_of(index) != FACTS_SECTION:
             diagnostics.append(
                 _error(
                     "source.displaced",
-                    "A Source declaration belongs only under Current State.",
-                    "Move **Source:** lines into the Current State section.",
+                    "A Source declaration belongs only under Facts.",
+                    "Move **Source:** lines into the Facts section.",
                     line=index + 1,
                 )
             )
@@ -3698,95 +3821,130 @@ def _deletion_diagnostics(blueprint: Blueprint, view: RepositoryView) -> list[Di
 
 
 def _executable_text_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
-    """Refuse declared text on an executable file beyond a bounded anchored replacement."""
+    """Refuse declared text on an executable file beyond substring edits or a short range."""
     diagnostics: list[Diagnostic] = []
     for step in blueprint.steps:
         for block in step.blocks:
             if PurePosixPath(block.path).suffix.casefold() not in EXECUTABLE_SUFFIXES:
                 continue
-            if block.old is None:
+            if block.form == "file":
                 extent = "is a whole file"
             else:
-                old, new = block.old.splitlines(keepends=True), block.text.splitlines(keepends=True)
-                shorter = min(len(old), len(new))
-                leading = 0
-                while leading < shorter and old[leading] == new[leading]:
-                    leading += 1
-                trailing = 0
-                while leading + trailing < shorter and old[-1 - trailing] == new[-1 - trailing]:
-                    trailing += 1
-                changed = len(new) - leading - trailing
-                if changed <= CODE_EDIT_LINE_LIMIT:
+                changed = block.text.count("\n") + (0 if block.text.endswith("\n") else 1)
+                if block.form == "edit" or changed <= CODE_EDIT_LINE_LIMIT:
                     continue
-                extent = f"changes {changed} lines"
+                extent = f"replaces a span with {changed} lines"
             diagnostics.append(_error(
                 "block.code",
                 f"Instruction {step.number}: {block.kind.title()} text on executable file {block.path!r} {extent}; "
-                "plans give code as prose or pseudocode, and declared text on an executable file is limited to an "
-                f"anchored replacement changing at most {CODE_EDIT_LINE_LIMIT} lines.",
-                "Specify the behavior or test cases in prose, move test data into a data file, or narrow the block to an anchored edit.",
+                "plans give code as prose or pseudocode, and declared text on an executable file is limited to "
+                f"**Edit:** substitutions or a **Replace:** of at most {CODE_EDIT_LINE_LIMIT} lines.",
+                "Specify the behavior or test cases in prose, move test data into a data file, or narrow the change to an **Edit:**.",
                 path=block.path,
                 line=block.line,
             ))
     return diagnostics
 
 
-COMPLETION_ITEM_RE = re.compile(r"^(?:[-*] |\d+\. )")
-EXACT_REFERENCE_RE = re.compile(r"step (\d+)['’]s Exact text")
-
-
-def _completion_proof_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
-    """Refuse a Completion Condition that names no proof the plan authors (seal and check only)."""
+def _section_lines(blueprint: Blueprint, name: str) -> list[tuple[int, str]]:
+    """Return the 1-based number and text of each non-blank, unfenced line in one section."""
     lines = blueprint.text.split("\n")
     fenced = _fenced_indexes(lines)
     _names, spans, _shape = _section_spans(lines, fenced)
-    if "Completion Conditions" not in spans:
+    if name not in spans:
         return []
-    start, end = spans["Completion Conditions"]
-    items: list[tuple[int, list[str]]] = []
-    for index in range(start, end):
-        raw = lines[index]
-        if not raw.strip():
-            continue
-        if not items or (index not in fenced and COMPLETION_ITEM_RE.match(raw)):
-            items.append((index + 1, [raw]))
-        else:
-            items[-1][1].append(raw)
-    commands = {step.argv for step in blueprint.verification}
-    commands.update(step.proof.argv for step in blueprint.steps if step.proof is not None)
-    exact_steps = {step.number for step in blueprint.steps if any(block.kind == "exact" for block in step.blocks)}
+    start, end = spans[name]
+    return [(index + 1, lines[index]) for index in range(start, end) if index not in fenced and lines[index].strip()]
+
+
+def _tier_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
+    """Require one declared tier in Goal and hold the plan to that tier's size budget (seal and check only)."""
+    tiers = [
+        (line, match.group("tier").strip().casefold())
+        for line, raw in _section_lines(blueprint, "Goal")
+        if (match := TIER_RE.match(raw)) is not None
+    ]
+    if len(tiers) != 1 or tiers[0][1] not in TIER_BUDGETS:
+        return [_error(
+            "goal.tier",
+            "Goal must declare exactly one tier as **Tier:** quick, standard, or critical.",
+            "Add one **Tier:** line to Goal naming the tier the plan's decisions earn.",
+            line=tiers[0][0] if tiers else None,
+        )]
+    line, tier = tiers[0]
+    size = len(canonical_body(blueprint.text).encode("utf-8"))
+    budget = TIER_BUDGETS[tier]
+    if size <= budget:
+        return []
+    return [_error(
+        "plan.size",
+        f"The plan is {size} bytes; a {tier} plan holds at most {budget}.",
+        "Cut restatement: state each decision once, drop narration of code the executor will open and of what stays "
+        "the same, and prefer **Edit:** to quoting whole lines. Raise the tier only when its signals apply.",
+        line=line,
+    )]
+
+
+def _request_ids(request_bytes: bytes) -> list[str]:
+    """Return the numbered request clause IDs (R1, R2, ...) a request declares, in order."""
+    found: list[str] = []
+    for raw in request_bytes.decode("utf-8", errors="replace").replace("\r\n", "\n").split("\n"):
+        match = REQUEST_ID_RE.match(raw)
+        if match is not None and match.group("id").upper() not in found:
+            found.append(match.group("id").upper())
+    return found
+
+
+def _trace_diagnostics(blueprint: Blueprint, request_bytes: bytes | None = None) -> list[Diagnostic]:
+    """Hold each Trace item to authored steps and proof, and trace every numbered request clause (seal and check only)."""
+    runs = len(blueprint.verification)
+    proofs = {step.number for step in blueprint.steps if step.proof is not None}
+    steps = {step.number for step in blueprint.steps}
     diagnostics: list[Diagnostic] = []
-    for line, parts in items:
-        text = " ".join(" ".join(parts).split())
-        if COMPLETION_ITEM_RE.sub("", text, count=1).startswith("Owner gate:"):
-            continue
-        if "Shown by" not in text:
+    traced: set[str] = set()
+    for line, raw in _section_lines(blueprint, "Trace"):
+        match = TRACE_ITEM_RE.match(raw)
+        if match is None:
             diagnostics.append(_error(
-                "completion.proof_missing",
-                f"Completion condition on line {line} names no proof.",
-                "End it with Shown by and the exact backticked Run or Proof run command, or step N's Exact text, "
-                "or start it with Owner gate:.",
+                "trace.shape",
+                f"Trace line {line} is not one item.",
+                "Write each Trace line as '- R1 → 2 · V1': the request clause ID, the steps that carry it, and "
+                "the Run (V<n>, the nth Run in Verification) or Proof run (P<step>) that fails without it, or "
+                "'Owner gate: <owner>'.",
                 line=line,
             ))
             continue
-        reference = text.rsplit("Shown by", 1)[1].lstrip()
-        known = False
-        if reference.startswith("`"):
-            span = reference[1:].split("`", 1)
-            if len(span) == 2:
-                try:
-                    known = tuple(shlex.split(span[0], posix=True)) in commands
-                except ValueError:
-                    known = False
-        else:
-            match = EXACT_REFERENCE_RE.match(reference)
-            known = match is not None and int(match.group(1)) in exact_steps
-        if not known:
+        traced.add(match.group("id").upper())
+        refs = match.group("refs")
+        if "Owner gate:" in refs:
+            continue
+        # A note after an em dash or in parentheses is prose, never a reference.
+        refs = re.split(r"—|\(| -- ", refs, maxsplit=1)[0]
+        cited_steps = [int(item.group("number")) for item in TRACE_STEP_RE.finditer(refs)]
+        unknown = [f"V{number}" for number in (int(item.group("number")) for item in TRACE_RUN_RE.finditer(refs)) if not 1 <= number <= runs]
+        unknown += [f"P{number}" for number in (int(item.group("number")) for item in TRACE_PROOF_RE.finditer(refs)) if number not in proofs]
+        unknown += [f"step {number}" for number in cited_steps if number not in steps]
+        proof_named = TRACE_RUN_RE.search(refs) is not None or TRACE_PROOF_RE.search(refs) is not None
+        if unknown or not proof_named or not cited_steps:
+            problem = (
+                f"cites {', '.join(unknown)}, which the plan does not author"
+                if unknown
+                else "needs at least one step and one authored Run or Proof run"
+            )
             diagnostics.append(_error(
-                "completion.proof_unknown",
-                f"Completion condition on line {line} names proof the plan does not author.",
-                "Name an authored Run or Proof run command verbatim, or step N's Exact text of a step that declares one.",
+                "trace.unbacked",
+                f"Trace item {match.group('id')} on line {line} {problem}.",
+                "Cite the steps that carry it and one authored Run (V<n>) or Proof run (P<step>) that fails without it, "
+                "or mark it 'Owner gate: <owner>'.",
                 line=line,
+            ))
+    if request_bytes is not None:
+        missing = [item for item in _request_ids(request_bytes) if item not in traced]
+        if missing:
+            diagnostics.append(_error(
+                "trace.request_missing",
+                f"Request clause {', '.join(missing)} has no Trace item.",
+                "Trace every numbered request clause to the steps that carry it and the proof that fails without it.",
             ))
     return diagnostics
 
@@ -3845,7 +4003,8 @@ def validate_draft(
     diagnostics.extend(_deletion_diagnostics(blueprint, repository))
     diagnostics.extend(_block_sequence_diagnostics(blueprint, repository))
     diagnostics.extend(_executable_text_diagnostics(blueprint))
-    diagnostics.extend(_completion_proof_diagnostics(blueprint))
+    diagnostics.extend(_tier_diagnostics(blueprint))
+    diagnostics.extend(_trace_diagnostics(blueprint))
     diagnostics.extend(_phase_target_diagnostics(blueprint))
     return ValidationResult(blueprint if not diagnostics else None, tuple(diagnostics), repository)
 
@@ -3892,7 +4051,8 @@ def build_proof(
     diagnostics.extend(_deletion_diagnostics(blueprint, view))
     diagnostics.extend(_block_sequence_diagnostics(blueprint, view))
     diagnostics.extend(_executable_text_diagnostics(blueprint))
-    diagnostics.extend(_completion_proof_diagnostics(blueprint))
+    diagnostics.extend(_tier_diagnostics(blueprint))
+    diagnostics.extend(_trace_diagnostics(blueprint, request_bytes))
     diagnostics.extend(_phase_target_diagnostics(blueprint))
     if diagnostics:
         _raise(diagnostics)

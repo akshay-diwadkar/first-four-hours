@@ -23,20 +23,23 @@ A successful seal's `result.blueprint_path` is the sealed file's absolute path; 
 
 Replans, Construct-stop amendments, and request changes: [Earlier plans](references/earlier-plans.md#commands).
 
-Each diagnostic names its fix; before repairing one, read its rule's owner: [Declared text](references/declared-text.md) for `block.*`, `frozen.*`, `declaration.malformed`, and a `proof.*` about an instruction's Proof run or `Red:` line; [Incomplete gates](references/incomplete-gates.md) for `verification.incomplete.*`; otherwise this file or the [planning contract](references/planning-contract.md).
+Each diagnostic names its fix; before repairing one, read its rule's owner: [Declared text](references/declared-text.md) for `block.*`, `frozen.*`, `trace.*`, `goal.tier`, `plan.size`, `declaration.malformed`, and a `proof.*` about an instruction's Proof run or `Red:` line; [Incomplete gates](references/incomplete-gates.md) for `verification.incomplete.*`; otherwise this file or the [planning contract](references/planning-contract.md).
 
 ## Sealed contract
 
 Line 1 is the HTML-comment contract marker `blueprint-contract: <version>`, where preparation writes Blueprint's own version and any version with the same major is accepted; the H1 title follows as the next non-empty line. The document holds:
 
-- `Goal` — only a short approvable summary (approach, load-bearing invariants, what changes, what does not, main risks, user-accepted gaps), with no separate list of what must be true when the work is done;
-- `Current State` — only implementation-relevant repository facts and `**Source:**` citations of existing decision-critical repository files;
-- `Implementation` — ordered `### N.` instructions with their `**Location:**` and `**State:**` (`new`, `existing`, or `deleted`; a removed file is `deleted`, not a `**Source:**`) declarations, exact changes, preservation rules, and each decision in the form the [planning contract](references/planning-contract.md#implementation-instructions) requires;
-- `Verification` — `Run:` commands with observable `Expect:` results, an optional `Incomplete:` line after an `Expect:`, and an optional `### Before implementation` baseline, under the Run rules below;
-- `Completion Conditions` — each required outcome's one statement, as a concrete example ending `Shown by` its proof, or an `Owner gate:` condition, in the form the [planning contract](references/planning-contract.md#verification-and-completion) sets; and
-- `Risks / Recovery` — only when a real recovery path is earned.
+- `Goal` — a few sentences: approach, load-bearing invariants, scope, main risk, user-accepted gaps, and one `**Tier:** quick`, `standard`, or `critical` line;
+- `Facts`, optional — only facts the executor cannot see by opening the files it edits (probe results, budgets and headroom, consumers elsewhere, traps, user answers) and `**Source:**` citations of decision-critical files no step edits;
+- `Decisions`, optional — numbered non-obvious choices, each with its reason;
+- `Implementation` — ordered `### N.` instructions with their `**Location:**` and `**State:**` (`new`, `existing`, or `deleted`; a removed file is `deleted`, not a `**Source:**`) declarations and only what two faithful executors could do differently, in the form the [planning contract](references/planning-contract.md#implementation-instructions) requires;
+- `Verification` — `Run:` commands with observable `Expect:` results, an optional `Incomplete:` line after an `Expect:`, and an optional `### Before implementation` baseline, under the Run rules below; `V1` names the first Run in this section, `V2` the second;
+- `Trace` — one `- R1 → 2, 3 · V1` line per request clause: its ID, the steps that carry it, and the Run (`V<n>`) or step Proof run (`P<step>`) that fails without it, or `Owner gate: <owner>` for one only a named owner can settle, with an optional note after an em dash; `check` refuses an item citing no step or authored proof, and a request clause numbered `R<n>` with no item; and
+- `Risks / Recovery`, optional — only when a real recovery path is earned.
 
-An instruction may also declare step proof that Construct checks mechanically: `**Exact:**` or `**Frozen:**` text for one of its own Location paths, and at most one `**Proof run:**`. The [planning contract](references/planning-contract.md)'s Step proof decides when step proof is earned; [Declared text](references/declared-text.md) owns the rest.
+The whole plan stays within its tier's budget: 6KB for Quick, 12KB for Standard, 20KB for Critical.
+
+An instruction may also declare text that Construct applies and checks mechanically: `**Exact:**` for a new file, `**Edit:**` or `**Replace:**` for an existing one, their `**Frozen:**` forms for proof text, all for its own Location paths, and at most one `**Proof run:**`. The [planning contract](references/planning-contract.md)'s Step proof decides when step proof is earned; [Declared text](references/declared-text.md) owns the rest.
 
 Sealing appends two generated receipts as the final two lines; Construct consumes them. Never author, move, or edit a receipt-prefixed line.
 

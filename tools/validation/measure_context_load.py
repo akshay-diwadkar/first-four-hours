@@ -158,8 +158,19 @@ def _blueprint_runtime() -> ModuleType:
         sys.path.remove(scripts)
 
 
+def _replaced_text(block: Any, runtime: ModuleType, root: Path) -> str:
+    """Return the current text an Edit or Replace block replaces, read from the unmodified tree."""
+    if block.old is not None:
+        return block.old
+    current = (root / block.path).read_text(encoding="utf-8").replace("\r\n", "\n")
+    span = runtime.resolve_span(current, block)
+    if isinstance(span, str):
+        raise ValueError(f"{block.path}: {span}")
+    return current[span[0] : span[1]]
+
+
 def estimate_draft(text: str, root: Path = ROOT) -> dict[str, dict[str, dict[str, dict[str, int | bool]]]]:
-    """Estimate budgets after a Blueprint draft's Exact blocks on agent-loaded guidance."""
+    """Estimate budgets after a Blueprint draft's Exact, Edit, and Replace blocks on agent-loaded guidance."""
     runtime = _blueprint_runtime()
     lines = text.replace("\r\n", "\n").split("\n")
     fenced = runtime._fenced_indexes(lines)
@@ -194,7 +205,7 @@ def estimate_draft(text: str, root: Path = ROOT) -> dict[str, dict[str, dict[str
             skill = parts[2]
             if skill not in limits:
                 raise ValueError(f"{block.path}: skill {skill!r} has no recorded context budget")
-            replaced = 0 if block.old is None else count_tokens(block.old)
+            replaced = 0 if block.form == "file" else count_tokens(_replaced_text(block, runtime, root))
             key = (skill, metric)
             deltas[key] = deltas.get(key, 0) + count_tokens(block.text) - replaced
             counts[key] = counts.get(key, 0) + 1
@@ -221,7 +232,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="measure live guidance against the committed limits")
     parser.add_argument("--format", choices=["json"], help="print per-skill measured tokens, limit, and headroom as one JSON object; exits 0 even when a limit is exceeded")
-    parser.add_argument("--blueprint", metavar="DRAFT", help="estimate each skill's budgets after a Blueprint draft's Exact blocks on SKILL.md and references/ files; prints one JSON object and exits 0 even when an estimate does not fit")
+    parser.add_argument("--blueprint", metavar="DRAFT", help="estimate each skill's budgets after a Blueprint draft's Exact, Edit, and Replace blocks on SKILL.md and references/ files; prints one JSON object and exits 0 even when an estimate does not fit")
     parser.add_argument("--write", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--compare-ref", help=argparse.SUPPRESS)
     parser.add_argument("--exclude-skill", action="append", default=[], help=argparse.SUPPRESS)

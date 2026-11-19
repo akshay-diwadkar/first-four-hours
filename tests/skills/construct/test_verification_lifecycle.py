@@ -84,8 +84,9 @@ STEP_PLAN = blueprint_runtime.CONTRACT_MARKER + """
 
 ## Goal
 Absent names normalize to the empty string, the greeting module exists, and every check invocation is logged.
+**Tier:** quick
 
-## Current State
+## Facts
 `normalize` returns its input unchanged.
 **Source:** `src/names.py`
 **Source:** `docs/names.py`
@@ -98,21 +99,12 @@ Absent names normalize to the empty string, the greeting module exists, and ever
 **Location:** `tests/test_names.py`
 **State:** existing
 
-**Frozen:** `tests/test_names.py`
-```python
-""" + FROZEN_OLD + """```
-**With:**
+**Frozen replace:** `tests/test_names.py` from `print('ready')` to end
 ```python
 """ + FROZEN_NEW + """```
 
-**Exact:** `src/names.py`
-```python
-    return value
-```
-**With:**
-```python
-    return value if value is not None else ''
-```
+**Edit:** `src/names.py`
+- `return value` → `return value if value is not None else ''`
 
 **Proof run:** `python tests/test_names.py`
 Red: AssertionError showing None returned for an absent name
@@ -136,11 +128,7 @@ Expect: the final record reports an empty errors list.
 **Location:** `./src/names.py`
 **State:** existing
 
-**Exact:** `./src/names.py`
-```python
-    return value if value is not None else ''
-```
-**With:**
+**Replace:** `./src/names.py` from `    return value if` to end
 ```python
     return value if value is not None else ''
     # greeting enabled
@@ -156,18 +144,17 @@ Expect: the final record reports an empty errors list.
 Run: `python -B tools/check.py`
 Expect: the final record reports an empty errors list.
 
-## Completion Conditions
-- Absent names normalize to the empty string. Shown by `python -B tools/check.py`.
-- The greeting module exists. Shown by `python -B tools/check.py`.
-- Every repository check invocation prints checking to stderr. Shown by `python -B tools/check.py`.
+## Trace
+- R1 → 1, 2, 3 · V1
 """
 UNAVAILABLE_PLAN = blueprint_runtime.CONTRACT_MARKER + """
 # Blueprint: unavailable proof
 
 ## Goal
 Keep the check green.
+**Tier:** quick
 
-## Current State
+## Facts
 The check passes.
 **Source:** `tools/check.py`
 **Source:** `docs/names.py`
@@ -191,8 +178,8 @@ Run: `python -B tools/deadline.py`
 Expect: the final record reports complete true.
 Incomplete: the final record reports complete false because the deadline was exhausted.
 
-## Completion Conditions
-- The check passes. Shown by `python -B tools/deadline.py`.
+## Trace
+- R1 → 1 · V1
 """
 
 
@@ -298,7 +285,7 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     _write(repo, "tests/test_names.py", FROZEN_TEST)
 
     # A wrong implementation uses attempt 1; status must retain the caller's next attempt.
-    _write(repo, "src/names.py", "def normalize(value):\n    return value or None\n")
+    _write(repo, "src/names.py", "def normalize(value):\n    return None if value is None else value\n")
     code, payload = _prove(capsys, repo, blueprint, 1, "green", 1)
     assert payload["diagnostics"][0]["code"] == "step.attempt_failed"
     assert "attempt=2" in payload["diagnostics"][0]["next_command"]["argv"]
@@ -509,11 +496,11 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     _write(repo, "tools/check.py", check)
     (repo / "tests/test_check.py").unlink()
     # The final unused attempt fails with full output and diff; this run never restarts.
-    _write(repo, "src/names.py", "def normalize(value):\n    return value or None\n")
+    _write(repo, "src/names.py", "def normalize(value):\n    return None if value is None else value\n")
     code, payload = _prove(capsys, repo, blueprint, 1, "green", 3)
     diagnostic = payload["diagnostics"][0]
     assert (code, diagnostic["code"], diagnostic["next_command"]) == (3, "step.attempts_exhausted", None)
-    assert "return value or None" in diagnostic["details"]["diff"]
+    assert "return None if value is None else value" in diagnostic["details"]["diff"]
     assert any("AssertionError: None" in item for item in diagnostic["supporting_evidence"])
     code, payload = _invoke(capsys, repo, blueprint, "--phase", "status")
     diagnostic = payload["diagnostics"][0]
@@ -535,13 +522,13 @@ def _porcelain_status(repo: Path, relative: str) -> str:
 
 RETIRE_STEP = "### 1. Remove the retired file\n**Location:** `retired.txt`\n**State:** deleted\n\nDelete the retired file.\n"
 RED_DELETION_PLAN = (
-    blueprint_runtime.CONTRACT_MARKER + "\n# Blueprint: red deletion\n\n## Goal\nRemove the obsolete file.\n\n## Current State\nThe obsolete file exists.\n\n"
+    blueprint_runtime.CONTRACT_MARKER + "\n# Blueprint: red deletion\n\n## Goal\nRemove the obsolete file.\n**Tier:** quick\n\n## Facts\nThe obsolete file exists.\n\n"
     "## Implementation\n\n### 1. Replace the obsolete file\n**Location:** `obsolete.txt`\n**State:** deleted\n**Location:** `fresh.txt`\n**State:** new\n\n"
     "**Exact:** `fresh.txt`\n~~~text\nfresh\n~~~\n\n"
     "**Proof run:** `git --version`\nRed: the obsolete file is still present\nExpect: prints the Git version.\n\n"
     "### 2. Add the later file\n**Location:** `later.txt`\n**State:** new\n\n**Exact:** `later.txt`\n~~~text\nlater\n~~~\n\n"
     "## Verification\n\n### After implementation\nRun: `git --version`\nExpect: prints the Git version.\n\n"
-    "## Completion Conditions\n- The obsolete file is gone. Shown by `git --version`.\n"
+    "## Trace\n- R1 → 1, 2 · V1\n"
 )
 
 
@@ -551,8 +538,9 @@ def _overwrite_draft() -> str:
 
 ## Goal
 Guard Git-visible and plan-bound content while ignored derived output stays free.
+**Tier:** quick
 
-## Current State
+## Facts
 The seed file exists.
 **Source:** `seed.txt:1`
 **Source:** `scratch/bound.txt:1`
@@ -572,8 +560,8 @@ Create the marker file.
 Run: `python tests/test_overwrite.py`
 Expect: exit 0.
 
-## Completion Conditions
-- The marker exists. Shown by `python tests/test_overwrite.py`.
+## Trace
+- R1 → 1, 2 · V1
 """
 
 

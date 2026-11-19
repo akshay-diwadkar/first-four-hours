@@ -19,11 +19,11 @@
       "mode": "projected",
       "protocol": "skills/workbench/blueprint/references/delegation-protocol.md",
       "owner": "Blueprint owns planning scope, decisions, and the sealed blueprint.md.",
-      "lifecycle": "When another orchestrated handoff invokes Blueprint, Blueprint still owns the planning stage and `blueprint.md`; when ffh-planner launches, the main session hands it that whole stage and only relays its questions and report.",
+      "lifecycle": "When another orchestrated handoff invokes Blueprint, Blueprint still owns the planning stage and `blueprint.md`; only when an orchestrating skill invoked Blueprint or the main context already holds much unrelated work does the main session hand ffh-planner the stage after intake and the first questions, relaying its questions, launching any fresh challenge, and resuming it.",
       "workers": "Bounded read-only repository exploration is earned when it avoids owner context pollution.",
       "specialists": "Material planning review remains owner-consumed judgment rather than cheapest-worker labor.",
       "writes": "Blueprint alone writes blueprint.md; exploration is read-only.",
-      "rationale": "Repository evidence gathering can be cheap to verify while planning authority moves only as a whole stage, to ffh-planner."
+      "rationale": "Repository evidence gathering can be cheap to verify while planning authority moves only as a whole stage, to ffh-planner, which starts no subagent."
     },
     {
       "skill": "construct",

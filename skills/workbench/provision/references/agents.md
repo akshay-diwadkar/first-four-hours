@@ -2,7 +2,7 @@
 
 Each agent's name, description, capabilities, and instructions are locked: write them exactly as given. Only the model and effort belong to the user, and the batch-ops choice below.
 
-Spell each name `ffh-<role>`, or `ffh_<role>` where the harness's reference says so or its documentation does not establish that hyphens work. Every agent may read and search files. None may start another agent except `ffh-planner`, which may start only `ffh-challenger`, `ffh-evidence`, and `ffh-researcher`. Only `ffh-constructor` and `ffh-planner` may edit, write, or delete files; their edits and commands follow the Construct and Blueprint skills, as a generic subagent's would, so they are no limit to enforce. A read-only agent given a shell can still change files through it, so on every harness its no-edit and Shell use limits rest on its instructions and get the workflow's skip-or-accept choice.
+Spell each name `ffh-<role>`, or `ffh_<role>` where the harness's reference says so or its documentation does not establish that hyphens work. Every agent may read and search files. None may start another agent. Only `ffh-constructor` and `ffh-planner` may edit, write, or delete files; their edits and commands follow the Construct and Blueprint skills, as a generic subagent's would, so they are no limit to enforce. A read-only agent given a shell can still change files through it, so on every harness its no-edit and Shell use limits rest on its instructions and get the workflow's skip-or-accept choice.
 
 | Agent | Also allowed | Shell use | Description |
 | --- | --- | --- | --- |
@@ -12,11 +12,11 @@ Spell each name `ffh-<role>`, or `ffh_<role>` where the harness's reference says
 | `ffh-evidence` | nothing more | reading and searching files | First Four Hours evidence worker. Answers one bounded repository question with exact file and line evidence. Use only when a First Four Hours skill's brief calls for it. |
 | `ffh-researcher` | web search and page fetch | reading and searching files | First Four Hours researcher. Answers one bounded research question from current sources and cites them. Use only when a First Four Hours skill's brief calls for it. |
 | `ffh-constructor` | file edits, a shell, and loading skills | what Construct directs | First Four Hours constructor. Runs Construct on the sealed Blueprint its calling skill's brief names, and returns Construct's report. Use only when a First Four Hours skill's brief calls for it. |
-| `ffh-planner` | file edits, a shell, loading skills, and starting `ffh-challenger`, `ffh-evidence`, and `ffh-researcher` | what Blueprint directs | First Four Hours planner. Runs Blueprint on the request its calling skill's brief supplies, and returns Blueprint's seal or stop report. Use only when a First Four Hours skill's brief calls for it. |
+| `ffh-planner` | file edits, a shell, and loading skills | what Blueprint directs | First Four Hours planner. Runs Blueprint on the request its calling skill's brief supplies, and returns Blueprint's seal or stop report. Use only when a First Four Hours skill's brief calls for it. |
 
 `ffh-constructor` and `ffh-planner` each own a whole stage, not a bounded task: recommend the cheapest model and effort that reliably implements and verifies, or plans and seals, a multi-step change unaided, never one chosen for cheap lookups.
 
-Write `ffh-planner` only when its harness's reference says a subagent can start subagents there and `ffh-challenger` is written too; otherwise skip it, delete an existing one after the user confirms, and report that Blueprint plans in the main session. Give it the one-hour prompt-cache lifetime where its harness's reference names a per-agent setting; otherwise report that it keeps the harness default.
+Give `ffh-planner` the one-hour prompt-cache lifetime where its harness's reference names a per-agent setting; otherwise report that it keeps the harness default.
 
 ## batch-ops agents
 
@@ -49,5 +49,5 @@ You are the First Four Hours constructor. The brief from the skill that called y
 `ffh-planner` gets these instead, in the same place:
 
 ```text
-You are the First Four Hours planner. The brief from the skill that called you supplies an authoritative request; run the blueprint skill on it in your own context, as its planner handoff directs for ffh-planner, and follow that skill. Start only ffh-challenger, ffh-evidence, and ffh-researcher, in your harness's spelling: where a skill you run directs a generic subagent, use the one whose role fits; when none fits or launches, follow that skill's rule for a subagent that does not launch. Return Blueprint's full seal or stop report, including its next-step prompt. Report ambiguity or a contradiction instead of widening your scope.
+You are the First Four Hours planner. The brief from the skill that called you supplies an authoritative request; run the blueprint skill on it in your own context, as its planner handoff directs for ffh-planner, and follow that skill. Never start another agent: where a skill you run calls for one, follow that handoff's rules for ffh-planner. Return Blueprint's full seal or stop report, including its next-step prompt. Report ambiguity or a contradiction instead of widening your scope.
 ```

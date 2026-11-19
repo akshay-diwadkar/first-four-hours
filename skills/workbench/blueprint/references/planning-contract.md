@@ -1,6 +1,6 @@
 # Planning contract
 
-**Hidden-choice test:** if two executors competent at local coding but without design authority, following the wording faithfully, could produce materially different behavior, control flow, interfaces, data shape, ordering, compatibility, preservation, verification, or test cases, the plan is not yet implementation-complete.
+**Hidden-choice test:** if two executors competent at local coding but without design authority, following the wording faithfully, could produce materially different behavior, control flow, interfaces, data shape, ordering, compatibility, preservation, verification, or test cases, the plan is not yet implementation-complete. Apply it per step: state only what two such executors could do differently.
 
 ## The rent rule
 
@@ -16,7 +16,7 @@ Close every known gap or get the user's recorded acceptance: a requested outcome
 
 ## Approach and scope
 
-Open `Goal` with the approach and its load-bearing invariants, then scope: what changes, the trust boundary, protected behavior, and non-goals only where someone would reach past them. A non-goal bounds the plan's additions, never a requested outcome, preserved obligation, or consumer. Reuse a current mechanism only once its load-bearing assumptions hold.
+`Goal` states, in a few sentences, the approach, its load-bearing invariants, and scope: what changes, the trust boundary, protected behavior, and non-goals only where someone would reach past them. A non-goal bounds the plan's additions, never a requested outcome, preserved obligation, or consumer. Reuse a current mechanism only once its load-bearing assumptions hold.
 
 ## Repository traps
 
@@ -24,7 +24,7 @@ Account for every trap the change touches in the repository's own planning-trap 
 
 ## Attack the problem
 
-Done when every state, exit path, assumption, and violation path has a decided behavior.
+Attack only behavior the change adds or alters that has real branches, at the depth its tier sets. Done when each such state, exit path, assumption, and violation path has a decided behavior.
 
 - Trace current behavior end to end from the entry the outcome depends on; name the root cause or missing capability at its owner.
 - Confirm every premise about current behavior from source or a safe probe, and an external service's from its current official documentation. Which of its modes to use is the user's choice; one no source settles is an intent question, never an owner check after merge.
@@ -45,7 +45,7 @@ Establish prerequisites through the path that launches the command: executable, 
 
 ## Implementation instructions
 
-Implementation-complete means decision-complete, not code-complete: settle every decision and the proof exposing a wrong outcome, leaving local coding to the executor. Write ordered `### N.` steps in README's sealed shape; `check` enforces their declaration lines. A specified step states its interface, inputs and consumers, helpers to use, input states, transformations, exit paths, preserved behavior, and proof; size it to about one function, ordered so none depends on a later one.
+Implementation-complete means decision-complete, not code-complete: settle every decision and the proof exposing a wrong outcome, leaving local coding to the executor. Write ordered `### N.` steps in README's sealed shape; `check` enforces their declaration lines. A specified step states its decisions and only the constraints a plausible executor would get wrong; size it to about one function, ordered so none depends on a later one.
 
 Decide in prose, with short pseudocode only where prose cannot settle control flow, ordering, or exit paths, backticking each existing helper and inventing no call; beyond an earned anchored edit, leave target-language code and tests to the executor. Data a validator, loader, or schema reads must pass its acceptance rule, traced from source against the drafted bytes, and match a same-kind sibling's keys. Read [Declared text](declared-text.md) before declaring Exact, Frozen, or Proof run text.
 

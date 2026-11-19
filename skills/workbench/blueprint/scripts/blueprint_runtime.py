@@ -3924,14 +3924,16 @@ def _trace_diagnostics(blueprint: Blueprint, request_bytes: bytes | None = None)
         traced.add(match.group("id").upper())
         # A note after an em dash or in parentheses is prose, never a reference or an owner gate.
         refs = re.split(r"—|\(| -- ", match.group("refs"), maxsplit=1)[0]
-        if "Owner gate:" in refs:
-            continue
+        # An owner gate needs no authored proof, but anything it also cites must exist; its owner text is prose.
+        gated = "Owner gate:" in refs
+        if gated:
+            refs = refs.split("Owner gate:", 1)[0]
         cited_steps = [int(item.group("number")) for item in TRACE_STEP_RE.finditer(refs)]
         unknown = [f"V{number}" for number in (int(item.group("number")) for item in TRACE_RUN_RE.finditer(refs)) if not 1 <= number <= runs]
         unknown += [f"P{number}" for number in (int(item.group("number")) for item in TRACE_PROOF_RE.finditer(refs)) if number not in proofs]
         unknown += [f"step {number}" for number in cited_steps if number not in steps]
         proof_named = TRACE_RUN_RE.search(refs) is not None or TRACE_PROOF_RE.search(refs) is not None
-        if unknown or not proof_named or not cited_steps:
+        if unknown or (not gated and (not proof_named or not cited_steps)):
             problem = (
                 f"cites {', '.join(unknown)}, which the plan does not author"
                 if unknown

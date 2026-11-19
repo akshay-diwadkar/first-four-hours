@@ -24,27 +24,29 @@ Load-bearing invariants: responses under the limit are exactly what they are tod
 What changes: the middleware chain, one new module, settings, and one new test module. What does not change: the search handlers, their responses, and the public API.
 
 Main risk: /search/suggest shares the search handler, so it is limited too.
+
+**Tier:** critical
 ```
 
 **Why it's there.** This is the part to read before you go on. In a few lines it states the approach, what must stay true, and what will not change. If the Goal is wrong, nothing below it matters, so it comes first and it is short enough to reject.
 
-## Current State: facts with receipts
+The tier sets how hard the plan was challenged and how long it may be. This plan is Critical because its effect is outward-facing, so a separate fresh-context challenger read it; a Quick plan gets a self-check and must fit in 6KB.
+
+## Facts: what the executor cannot see
 
 ```markdown
-## Current State
+## Facts
 
-- `freshcart/api/middleware.py::build_chain` runs authentication before any handler, so the API key is known to anything added after it.
 - `freshcart/api/client_address.py::client_address` reads the client address from the forwarded header only when the request came through the trusted proxy.
 - `/search` and `/search/suggest` both route to `freshcart/search/handlers.py::search`.
 
-**Source:** `freshcart/api/middleware.py`
 **Source:** `freshcart/api/client_address.py`
 **Source:** `freshcart/search/handlers.py`
 ```
 
-**Why it's there.** Each fact is one the plan depends on, read from the code rather than remembered. The second one matters: an agent writing its own limiter would likely read the forwarded header directly, and any client can forge that header. The plan reuses the trusted helper instead.
+**Why it's there.** Each fact is one the plan depends on, read from the code rather than remembered, and one the executor would not see by opening the files it edits. The first one matters: an agent writing its own limiter would likely read the forwarded header directly, and any client can forge that header. The plan reuses the trusted helper instead. Facts about the files a step edits are not repeated here; the executor opens those anyway.
 
-The `**Source:**` lines bind the plan to the code. Sealing records the exact bytes of every cited file, and `/construct` checks them before it starts. If one of those files changed after planning, `/construct` stops instead of applying a plan written for code that no longer exists.
+The `**Source:**` lines bind the plan to code no step edits; every step's target files are bound the same way. Sealing records the exact bytes of every cited file, and `/construct` checks them before it starts. If one of those files changed after planning, `/construct` stops instead of applying a plan written for code that no longer exists.
 
 ## Implementation: decisions, not code
 
@@ -83,7 +85,7 @@ Expect: exits 0 and reports 4 passed.
 
 `Red:` names the defect the new test must show before the change. A test that already passes on today's code proves nothing about the change, so `/construct` checks that the test fails for that reason first, then passes after the step.
 
-## Verification and completion
+## Verification and the Trace
 
 ```markdown
 ## Verification
@@ -93,22 +95,23 @@ Expect: exits 0 and reports 4 passed.
 Run: `python -m pytest -p no:cacheprovider tests/api tests/search -q`
 Expect: exits 0 with no failures; the existing search tests pass unchanged.
 
-## Completion Conditions
+## Trace
 
-- A client over the limit on /search or /search/suggest gets 429 with Retry-After; under the limit, responses are unchanged. Shown by `python -m pytest -p no:cacheprovider tests/api tests/search -q`.
-- A partner key sending 100 requests in a minute gets no 429. Shown by `python -m pytest -p no:cacheprovider tests/api tests/search -q`.
-- Owner gate: the operations lead confirms that 60 requests a minute suits production traffic.
+- R1 → 2 · P2 · V1 — over the limit on /search or /search/suggest, a client gets 429 with Retry-After
+- R2 → 2 · V1 — under the limit, every response is unchanged
+- A1 → 2 · P2 — a partner key sending 100 requests in a minute gets no 429
+- A2 → Owner gate: the operations lead confirms that 60 requests a minute suits production traffic
 ```
 
 **Why it's there.** Verification is a list of exact commands, each with the result it must show. `/construct` runs them as written and reports each result against its expectation, so "done" means the commands passed, not that an agent said so. `/construct` stops a command that changes a tracked file, an untracked file Git does not ignore, the Git index, HEAD, or any file the plan names, even an ignored one. It never reads through a directory link, and output Git ignores, such as a tool cache, never stops a run.
 
-Completion conditions state outcomes, not tasks. The Goal summarizes the approach and what must stay true; the concrete outcomes, each ending with the command whose result shows it, appear only here, so a condition no check can show stands out as a missing check. The last one starts with `Owner gate:` because no command can settle it; a person has to. `/construct` lists it as pending for its owner and never claims it.
+The Trace is an index, not a restatement. `/blueprint` numbered your request's two clauses R1 and R2 and your answer A1; each line names the steps that carry one and the check that fails without it: `V1` is the first Verification Run, `P2` is step 2's Proof run. Sealing refuses a line that cites no step or no check the plan authors, and a numbered request clause with no line, so an outcome no check can show stands out as a missing check. The last line is `Owner gate:` because no command can settle it; a person has to. `/construct` lists it as pending for its owner and never claims it.
 
 ## What the seal adds, and what it does not
 
 Line 1 of the file is an HTML comment naming the contract version. Sealing appends two generated receipts as the last two lines: `blueprint-proof` records the hash of every cited source and every existing target, and `blueprint-validation` binds the plan's text to that proof. A sealed plan never changes. If the request changes, `/blueprint` writes a new plan in a fresh folder.
 
-The seal proves shape and binding: the sections are in order, each target exists or is absent as declared, and the cited files are the ones the planner read. It does not prove the plan is good. That was the challenger's job. Before sealing, a separate fresh-context agent read the draft the way a faithful executor with no design authority would follow it. In this plan it noticed that step 2 never mentioned `/search/suggest`, which shares the search handler: a faithful executor would have limited it without anyone deciding to. The planner made it explicit in the Goal and the completion conditions, and only then sealed.
+The seal proves shape and binding: the sections are in order, each target exists or is absent as declared, and the cited files are the ones the planner read. It does not prove the plan is good. That was the challenger's job. Before sealing, a separate fresh-context agent read the draft the way a faithful executor with no design authority would follow it. In this plan it noticed that step 2 never mentioned `/search/suggest`, which shares the search handler: a faithful executor would have limited it without anyone deciding to. The planner made it explicit in the Goal and the Trace, and only then sealed.
 
 ## Read next
 

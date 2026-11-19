@@ -18,6 +18,6 @@ To change the request, write the amended request outside the repository and reru
 
 ## Reuse
 
-Amend a stopped plan by preparing with `--predecessor`: edit only what the stop evidence and applied work change, restating applied instructions as Current State. A seal proves shape, not review acceptance: re-derive every premise you keep, except facts read only from files `carryover` reports `unchanged`, never its probes, measurements, or disputed facts.
+Amend a stopped plan by preparing with `--predecessor`: edit only what the stop evidence and applied work change, restating applied instructions as Facts. A seal proves shape, not review acceptance: re-derive every premise you keep, except facts read only from files `carryover` reports `unchanged`, never its probes, measurements, or disputed facts.
 
 An amendment after a `verification.mutated_workspace` stop cites the stopped command and summarizes `changed_paths`, `index_changed`, and `head_changed`, proving writes but not their full surface or writer; it reshapes each writing command, inventorying no writes, never calls that command pure, and names any other writer to drop or state as a limitation.

@@ -20,8 +20,9 @@ DRAFT = blueprint_runtime.CONTRACT_MARKER + """
 
 ## Goal
 Make absent names normalize predictably.
+**Tier:** quick
 
-## Current State
+## Facts
 The seam returns raw input.
 **Source:** `src/names.py:1`
 
@@ -45,9 +46,8 @@ Add the absent-name case next to the existing normalization tests.
 Run: `python tests/test_names.py`
 Expect: exit 0 and the absent-name case passes.
 
-## Completion Conditions
-- Absent names normalize to the requested empty value. Shown by `python tests/test_names.py`.
-- Present names and unrelated callers are unchanged. Shown by `python tests/test_names.py`.
+## Trace
+- R1 → 1, 2 · V1
 """
 
 

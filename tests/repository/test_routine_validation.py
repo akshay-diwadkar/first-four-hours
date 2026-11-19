@@ -17,14 +17,15 @@ SKILL = "skills/workbench/blueprint"
 
 
 def _draft(*blocks: tuple[str, str, tuple[str, ...]]) -> str:
-    # One instruction whose Locations each carry an Exact block: a new file's
-    # whole text, or the replaced text then its replacement.
+    # One instruction whose Locations each carry declared text: a new file's
+    # whole Exact text, or an Edit of old text to new text.
     lines = ["# Budget probe", "", "## Implementation", "", "### 1. Edit guidance"]
     for path, state, texts in blocks:
-        lines += ["", f"**Location:** `{path}`", f"**State:** {state}", "", f"**Exact:** `{path}`"]
-        for position, text in enumerate(texts):
-            lines += ["", "**With:**"] if position else []
-            lines += ["", "```text", text, "```"]
+        lines += ["", f"**Location:** `{path}`", f"**State:** {state}", ""]
+        if state == "new":
+            lines += [f"**Exact:** `{path}`", "", "```text", texts[0], "```"]
+        else:
+            lines += [f"**Edit:** `{path}`", f"- `{texts[0]}` → `{texts[1]}`"]
     return "\n".join(lines) + "\n"
 
 
@@ -148,9 +149,9 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
                        encoding="utf-8")
     assert validator.validate_paper_runtime(runtime) == []
     assert validator.validate_paper_runtime(tmp_path / "absent.html")[0].endswith("paper runtime is missing")
-    # A draft's Exact blocks on agent-loaded guidance estimate measured minus
-    # replaced plus drafted tokens; a new reference adds its whole text, and an
-    # Exact block on any other path is not counted.
+    # A draft's declared text on agent-loaded guidance estimates measured minus
+    # replaced plus drafted tokens; a new reference adds its whole text, and
+    # declared text on any other path is not counted.
     from measure_context_load import estimate_draft, measure
 
     old, new, added = "Old guidance line.", "New guidance line with several more words.", "Probe reference text."
@@ -162,7 +163,7 @@ def test_live_repository_metadata(tmp_path: Path) -> None:
     measured = measure(ROOT)["blueprint"]
     assert set(rows) == {"blueprint"}
     top, references = rows["blueprint"]["top_level"], rows["blueprint"]["references"]
-    assert top["delta"] == count_tokens(new + "\n") - count_tokens(old + "\n")
+    assert top["delta"] == count_tokens(new) - count_tokens(old)
     assert references["delta"] == count_tokens(added + "\n")
     assert (top["spans"], references["spans"]) == (1, 1)
     for metric, row in (("top_level", top), ("references", references)):

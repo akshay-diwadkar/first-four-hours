@@ -49,8 +49,9 @@ def draft(*, risks: bool = False, source: str = "src/names.py:1-3") -> str:
         "",
         "## Goal",
         "Make absent names normalize predictably for the caller.",
+        "**Tier:** quick",
         "",
-        "## Current State",
+        "## Facts",
         "The caller receives inconsistent absent-name behavior from the owning seam.",
         f"**Source:** `{source}`",
         "",
@@ -91,9 +92,8 @@ def draft(*, risks: bool = False, source: str = "src/names.py:1-3") -> str:
             "Run: `python -m pytest -q tests/test_names.py`",
             "Expect: exit 0 and the absent-name case passes.",
             "",
-            "## Completion Conditions",
-            "- The absent name normalizes to the requested empty value. Shown by `python -m pytest -q tests/test_names.py`.",
-            "- Present names and unrelated callers are unchanged. Shown by `python -m pytest -q tests/test_names.py`.",
+            "## Trace",
+            "- R1 → 1, 2 · V1",
         ]
     )
     if risks:
@@ -131,10 +131,7 @@ def _sealed_proof(sealed: str) -> dict[str, Any]:
 
 
 STEP_ONE_STATE = "**State:** existing\n"
-EXACT_REPLACE = (
-    "**Exact:** `src/names.py`\n```python\n    return value.strip()\n```\n"
-    '**With:**\n```python\n    return value.strip() if value else ""\n```\n'
-)
+EXACT_REPLACE = '**Edit:** `src/names.py`\n- `return value.strip()` → `return value.strip() if value else ""`\n'
 FROZEN_PROOF = (
     '**State:** new\n**Location:** `tests/names_cases.txt`\n**State:** new\n\n'
     '**Frozen:** `tests/names_cases.txt`\n```text\nabsent -> ""\n```\n\n'
@@ -143,10 +140,11 @@ FROZEN_PROOF = (
 )
 
 
-DELETION = (
-    "**Exact:** `src/names.py`\n```python\n    return value.strip()\n    # evidence\n```\n"
-    "**With:**\n```python\n    return value.strip()\n```\n"
-)
+DELETION = "**Replace:** `src/names.py` from `    return value.strip()` to end\n```python\n    return value.strip()\n```\n"
+
+
+def code_range(body: str) -> str:
+    return f"**Replace:** `src/names.py` from `    return value.strip()` to end\n```python\n{body}```\n"
 
 
 def with_step_proof(text: str, exact: str = EXACT_REPLACE) -> str:
@@ -154,8 +152,12 @@ def with_step_proof(text: str, exact: str = EXACT_REPLACE) -> str:
     return text.replace("**State:** new\n", FROZEN_PROOF, 1)
 
 
-def replace_block(old: str, new: str) -> str:
-    return f"**Exact:** `src/seq.txt`\n```text\n{old}```\n**With:**\n```text\n{new}```\n"
+def edit_block(*pairs: tuple[str, str]) -> str:
+    return "**Edit:** `src/seq.txt`\n" + "".join(f"- `{old}` → `{new}`\n" for old, new in pairs)
+
+
+def range_block(anchors: str, text: str) -> str:
+    return f"**Replace:** `src/seq.txt` {anchors}\n```text\n{text}```\n"
 
 
 def sequence_codes(tmp_path: Path, content: bytes, *steps: str, alias_step: int | None = None) -> set[str]:
@@ -188,13 +190,14 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     assert "proof.duplicate" in codes(second, tmp_path)
     assert "proof.duplicate" in codes(proved.replace("Red: AssertionError", "Timeout: 5\nTimeout: 9\nRed: AssertionError", 1), tmp_path)
     assert "proof.duplicate" in codes(proved.replace("Red: AssertionError", "Red: first defect\nRed: AssertionError", 1), tmp_path)
-    # Plans carry decisions, not code: declared text on an executable file is refused unless it is an anchored replacement changing at most two lines.
+    # Plans carry decisions, not code: declared text on an executable file is refused beyond Edit substitutions or a two-line Replace.
     assert runtime.validate_draft(proved, tmp_path).valid
-    replacement = '**With:**\n```python\n    return value.strip() if value else ""\n```'
-    at_limit = proved.replace(replacement, '**With:**\n```python\n    if value:\n        return value.strip()\n```', 1)
+    at_limit = with_step_proof(draft(), code_range("    if value:\n        return value.strip()\n"))
     assert runtime.validate_draft(at_limit, tmp_path).valid
-    over_limit = proved.replace(replacement, '**With:**\n```python\n    if value:\n        return value.strip()\n    return ""\n```', 1)
+    over_limit = with_step_proof(draft(), code_range("    if value:\n        return value.strip()\n    return \"\"\n"))
     assert "block.code" in codes(over_limit, tmp_path)
+    # The retired With form is refused by name.
+    assert "block.with_retired" in codes(draft().replace(STEP_ONE_STATE, STEP_ONE_STATE + "\n**With:**\n```text\nx\n```\n", 1), tmp_path)
     whole_test = draft().replace("**State:** new\n", "**State:** new\n\n**Frozen:** `tests/test_names.py`\n```python\nassert normalize(None) == \"\"\n```\n\n"
                                  "**Proof run:** `python -m pytest -q tests/test_names.py`\nExpect: 1 passed.\n", 1)
     assert codes(whole_test, tmp_path) == {"block.code"}
@@ -211,19 +214,30 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     # Whole-file text cannot classify an existing file's unapplied state.
     whole = draft().replace(STEP_ONE_STATE, STEP_ONE_STATE + "\n**Exact:** `src/names.py`\n```python\npass\n```\n", 1)
     assert "block.whole_existing" in codes(whole, tmp_path)
-    # A replacement anchor that matches twice cannot bind one location.
-    assert "block.anchor" in sequence_codes(tmp_path, b"A\nA\n", replace_block("A\n", "B\n"))
-    # Construct checks a phase's blocks together, so a chained anchor is absent at that checkpoint.
-    assert "block.anchor" in sequence_codes(tmp_path, b"a\nz\n", replace_block("a\n", "a\nb\n") + replace_block("b\n", "b\nc\n"))
-    # A faithful step 1 would leave its replacement twice in the partly edited file.
-    assert "block.unprovable" in sequence_codes(tmp_path, b"A\nB\nC\n", replace_block("A\n", "C\n"), replace_block("B\nC\n", "B\nD\n"))
+    # Edit old text that occurs twice cannot bind one location.
+    assert "block.anchor" in sequence_codes(tmp_path, b"A\nA\n", edit_block(("A", "B")))
+    # Construct checks a phase's blocks together, so a chained edit's old text is absent at that checkpoint.
+    assert "block.anchor" in sequence_codes(tmp_path, b"a\nz\n", edit_block(("a", "ab"), ("b", "bc")))
+    # A faithful edit would leave its new text twice in the edited file.
+    assert "block.unprovable" in sequence_codes(tmp_path, b"A\nB\nC\n", edit_block(("A", "C")))
     # A later instruction that consumes earlier declared text leaves the earlier proof unpassable.
-    assert "block.consumed" in sequence_codes(tmp_path, b"a\nz\n", replace_block("a\n", "a\nb\n"),
-                                             replace_block("a\n", "c\n").replace("src/seq.txt", "./src/seq.txt"), alias_step=2)
+    assert "block.consumed" in sequence_codes(tmp_path, b"a\nz\n", edit_block(("a", "ab")),
+                                             edit_block(("ab", "c")).replace("src/seq.txt", "./src/seq.txt"), alias_step=2)
     # A target that is not UTF-8 text can never be proven.
-    assert "block.target_unreadable" in sequence_codes(tmp_path, b"caf\xe9\n", replace_block("x\n", "y\n"))
-    # An anchor that starts mid-line never binds a location.
-    assert "block.anchor" in sequence_codes(tmp_path, b"xA\nAB\n", replace_block("A\n", "C\n"))
+    assert "block.target_unreadable" in sequence_codes(tmp_path, b"caf\xe9\n", edit_block(("x", "y")))
+    # A range anchor that begins no line, or a section heading that is not one line, never binds a location.
+    assert "block.anchor" in sequence_codes(tmp_path, b"xA\nyA\n", range_block("from `A` to end", "C\n"))
+    assert "block.anchor" in sequence_codes(tmp_path, b"## A\nx\n## A\n", range_block("section `## A`", "## A\ny\n"))
+    # A section runs to the next heading of the same or a higher level, and a bounded range stops before its end anchor.
+    markdown = b"# T\n## A\nold\n### A.1\nold\n## B\nkeep\n"
+    assert not {code for code in sequence_codes(tmp_path, markdown, range_block("section `## A`", "## A\nnew\n"),
+                                                 range_block("from `keep` to end", "kept\n")) if code.startswith("block.")}
+    assert not {code for code in sequence_codes(tmp_path, markdown, range_block("from `## A` to `## B`", "## A\nnew\n"))
+                if code.startswith("block.")}
+    # A `#` line inside fenced code is not a heading, so it neither ends a section nor leaves its tail behind.
+    fenced = "# T\n## A\nintro\n```bash\n# comment\nls\n```\ntail\n## B\nkeep\n"
+    section = runtime.TextBlock(kind="exact", path="src/seq.txt", text="## A\nnew\n", line=1, form="range", section="## A")
+    assert runtime.apply_block(fenced, section) == ("# T\n## A\nnew\n## B\nkeep\n", None)
     # An environmental incomplete outcome binds only to a Verification Run's Expect, once.
     orphan = draft().replace("Run: `python -m pytest", "Incomplete: the final record reports complete false\nRun: `python -m pytest", 1)
     assert "verification.incomplete.orphan" in codes(orphan, tmp_path)
@@ -249,21 +263,29 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     # rather than binding to the earlier Run.
     between = draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "Run: `python -m pytest -q tests/test_names.py`\nIncomplete: deadline exhausted\nExpect: exit 0.\n", 1)
     assert "verification.incomplete.orphan" in codes(between, tmp_path)
-    # Every Completion Condition names proof the plan authors, or is an owner gate.
-    shown = " Shown by `python -m pytest -q tests/test_names.py`."
-    no_proof = draft().replace(shown + "\n- Present", ".\n- Present", 1)
-    assert codes(no_proof, tmp_path) == {"completion.proof_missing"}
-    assert codes(draft().replace(shown, " Shown by `python -m pytest -q tests/test_other.py`.", 1), tmp_path) == {"completion.proof_unknown"}
-    owner_gate = draft().replace("## Completion Conditions\n", "## Completion Conditions\n- Owner gate: the maintainer confirms the wording.\n", 1)
+    # Every Trace item names the steps that carry it and proof the plan authors, or is an owner gate.
+    traced = "- R1 → 1, 2 · V1\n"
+    no_proof = draft().replace(traced, "- R1 → 1, 2\n", 1)
+    assert codes(no_proof, tmp_path) == {"trace.unbacked"}
+    assert codes(draft().replace(traced, "- R1 → 1, 3 · V2\n", 1), tmp_path) == {"trace.unbacked"}
+    assert codes(draft().replace(traced, "- R1 → 1, 2 · P2\n", 1), tmp_path) == {"trace.unbacked"}
+    assert runtime.validate_draft(proved.replace(traced, "- R1 → 1, 2 · P2\n", 1), tmp_path).valid
+    assert codes(draft().replace(traced, "- R1 is covered by step 1\n", 1), tmp_path) == {"trace.shape"}
+    # An owner gate named only in the prose note never excuses unauthored proof.
+    assert codes(draft().replace(traced, "- R1 → 1, 2 · V9 — not an Owner gate: prose\n", 1), tmp_path) == {"trace.unbacked"}
+    owner_gate = draft().replace(traced, traced + "- R2 → Owner gate: the maintainer confirms the wording.\n", 1)
     assert runtime.validate_draft(owner_gate, tmp_path).valid
-    exact_condition = "## Completion Conditions\n- The seam edit is applied. Shown by step 1's Exact text.\n"
-    assert runtime.validate_draft(proved.replace("## Completion Conditions\n", exact_condition, 1), tmp_path).valid
-    assert codes(draft().replace("## Completion Conditions\n", exact_condition, 1), tmp_path) == {"completion.proof_unknown"}
-    # A column-0 list line inside a fenced block continues its condition rather than starting one.
-    fenced_condition = "## Completion Conditions\n- The listing shows the expected names:\n```text\n- alpha\n```\nShown by `python -m pytest -q tests/test_names.py`.\n"
-    assert runtime.validate_draft(draft().replace("## Completion Conditions\n", fenced_condition, 1), tmp_path).valid
-    unproven_listing = draft().replace("- Present names and unrelated callers are unchanged. Shown by `python -m pytest -q tests/test_names.py`.\n", "- Unproven listing:\n```text\n- alpha\n```\n", 1)
-    assert codes(unproven_listing, tmp_path) == {"completion.proof_missing"}
+    # An owner gate never excuses a step or check it also cites that the plan does not author.
+    assert codes(draft().replace(traced, "- R1 → 9 · V9 · Owner gate: x\n", 1), tmp_path) == {"trace.unbacked"}
+    assert runtime.validate_draft(draft().replace(traced, "- R1 → 1 · V1 · Owner gate: the maintainer confirms 60 a minute\n", 1), tmp_path).valid
+    # Optional sections left empty, as the scaffold leaves them, cost no repair; Goal still may not be empty.
+    assert runtime.validate_draft(draft().replace("## Implementation\n", "## Decisions\n\n## Implementation\n", 1), tmp_path).valid
+    assert "shape.section.empty" in codes(draft().replace("Make absent names normalize predictably for the caller.\n**Tier:** quick\n", "", 1), tmp_path)
+    # A plan declares one tier and stays within that tier's size budget.
+    assert codes(draft().replace("**Tier:** quick\n", "", 1), tmp_path) == {"goal.tier"}
+    padded = draft().replace("## Facts\n", "## Facts\n" + "The caller depends on this seam. " * 200 + "\n", 1)
+    assert codes(padded, tmp_path) == {"plan.size"}
+    assert runtime.validate_draft(padded.replace("**Tier:** quick", "**Tier:** standard", 1), tmp_path).valid
     # A command never names a file before the step that creates it.
     baseline = draft().replace("### After implementation\n", "### Before implementation\nRun: `python -m pytest -q tests/test_names.py`\nExpect: exit 0.\n\n### After implementation\n", 1)
     assert codes(baseline, tmp_path) == {"verification.target.absent"}
@@ -272,7 +294,7 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     # Sealed plans are never re-judged by these seal-only checks.
     for sealed_shape in (no_proof, early_proof):
         assert not {item.code for item in runtime.parse_blueprint(sealed_shape)[1]
-                    if item.code.startswith(("completion.", "verification.target."))}
+                    if item.code.startswith(("trace.", "plan.size", "verification.target."))}
     # A planned deletion seals against an existing regular file.
     (tmp_path / "src" / "retired.py").write_text("RETIRED = True\n", encoding="utf-8")
     deleted = "**Location:** `src/retired.py`\n**State:** deleted\n"
@@ -280,6 +302,8 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     assert runtime.validate_draft(deleting, tmp_path).valid
     # The deletion is that path's only Location, an absent path cannot be deleted, and no other spelling binds.
     assert "location.deleted.conflict" in codes(deleting.replace(deleted, deleted + "**Location:** `./src/retired.py`\n**State:** existing\n", 1), tmp_path)
+    again = deleting.replace("## Verification", "### 3. Retire again\n" + deleted + "\nRemove the retired module.\n\n## Verification", 1)
+    assert "location.deleted.conflict" in codes(again, tmp_path)
     assert "location.target.missing" in codes(deleting.replace("src/retired.py", "src/absent.py", 1), tmp_path)
     assert "state.unsupported" in codes(deleting.replace("**State:** deleted", "**State:** removed", 1), tmp_path)
     assert "location.deleted.symbol" in codes(deleting.replace("`src/retired.py`\n", "`src/retired.py::RETIRED`\n", 1), tmp_path)
@@ -292,11 +316,19 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     named = [item for item in getattr(refused.value, "diagnostics", ()) if item.code == "source.deleted"]
     assert len(named) == 1 and named[0].path == "./src/retired.py" and "./src/retired.py" in named[0].message
     # The seal itself, which check shares, refuses unproven conditions and commands naming a later-created file.
-    for refused_text, code in ((no_proof, "completion.proof_missing"), (early_proof, "verification.target.absent")):
+    for refused_text, code in ((no_proof, "trace.unbacked"), (early_proof, "verification.target.absent")):
         draft_file.write_text(refused_text, encoding="utf-8")
         with pytest.raises(ValueError) as refused:
             runtime.seal_blueprint(tmp_path, request, draft_file)
         assert code in {item.code for item in getattr(refused.value, "diagnostics", ())}
+    # The seal also traces every numbered request clause.
+    numbered = request.read_bytes()
+    request.write_text("R1 Normalize names.\nR2 Keep unrelated callers unchanged.\n", encoding="utf-8")
+    draft_file.write_text(draft(), encoding="utf-8")
+    with pytest.raises(ValueError) as untraced:
+        runtime.seal_blueprint(tmp_path, request, draft_file)
+    assert [item.code for item in getattr(untraced.value, "diagnostics", ())] == ["trace.request_missing"]
+    request.write_bytes(numbered)
     # A Source reaching the deleted file through a directory link is the same file and is refused too.
     alias = tmp_path / "alias"
     if sys.platform == "win32":
@@ -338,7 +370,7 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
     literal = 'PAYLOAD = """left\vtab\fform\x85nel\u2028line\u2029paragraph\rreturn\n### 7. Literal heading\n**Exact:** `example.txt`\n```text\nexample\n```\n"""\nassert normalize(None) == ""\n'
     plain = plain.replace('```text\nabsent -> ""\n```', '````text\n' + literal + '````')
     # A corrected authoring operation still refuses an empty replacement.
-    assert "block.empty" in codes(plain.replace('**With:**\n```python\n    return value.strip()\n```', '**With:**\n```python\n```', 1), tmp_path)
+    assert "block.empty" in codes(plain.replace('```python\n    return value.strip()\n```', '```python\n```', 1), tmp_path)
     assert "Expect: exit 0" in plain
     assert runtime.validate_draft(plain, tmp_path).valid
     incoming = tmp_path / "incoming.md"
@@ -380,7 +412,7 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
     assert request.read_bytes() == incoming.read_bytes()
     cli = [sys.executable, str(SCRIPTS / "cli.py"), "--repo-root", str(tmp_path), "--input",
            f"request_file={request}", "--input", f"draft_file={draft_file}", "--format", "json"]
-    broken = plain.replace('**With:**\n```python\n    return value.strip()\n```', '**With:**\n```python\n```', 1)
+    broken = plain.replace('```python\n    return value.strip()\n```', '```python\n```', 1)
     draft_file.write_bytes(broken.encode("utf-8"))
     refused = subprocess.run([*cli, "check"], capture_output=True, text=True, check=False)
     assert refused.returncode != 0 and "block.empty" in json.loads(refused.stdout)["blocking_reasons"]
@@ -472,14 +504,14 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
         assess_sealed, assess_repo, request_bytes=assessment, handoff_item="1"
     )
     assert "binding.request.source_item" in {item.code for item in other_item}
-    # A pre-1.5.0 plan sealed the assessment as generic; it still verifies, but only below 1.5.
+    # A 1.x proof is another contract major and is refused, never verified as current.
     unbound = _sealed_proof(assess_sealed)
     del unbound["binding"]["source_item"]
     sealed_version = unbound["version"]
     unbound["version"] = "1.4.0"
     legacy = runtime.render_sealed_blueprint(draft(), unbound)
     _bp, legacy_diagnostics, _view = runtime.verify_sealed_blueprint(legacy, assess_repo, request_bytes=assessment)
-    assert legacy_diagnostics == []
+    assert "proof.version" in {item.code for item in legacy_diagnostics}
     unbound["version"] = sealed_version
     current = runtime.render_sealed_blueprint(draft(), unbound)
     _bp, current_diagnostics, _view = runtime.verify_sealed_blueprint(current, assess_repo, request_bytes=assessment)
@@ -515,7 +547,7 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
     assert blueprint is not None
     assert len(blueprint.steps) == 2
     replace, frozen = blueprint.steps[0].blocks[0], blueprint.steps[1].blocks[0]
-    assert (replace.old, replace.text) == ("    return value.strip()\n    # evidence\n", "    return value.strip()\n")
+    assert (replace.form, replace.start, replace.end, replace.text) == ("range", "    return value.strip()", None, "    return value.strip()\n")
     assert (frozen.kind, frozen.old, frozen.text) == ("frozen", None, literal)
     assert blueprint.steps[1].red == "AssertionError for the absent name"
     assert [step.incomplete for step in blueprint.verification] == ["the final record reports complete false"]

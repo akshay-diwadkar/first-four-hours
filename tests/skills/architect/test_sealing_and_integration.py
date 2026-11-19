@@ -30,8 +30,9 @@ BLUEPRINT_DRAFT = """{marker}
 
 ## Goal
 Add a payment retry limit behind the payment boundary without touching callers.
+**Tier:** quick
 
-## Current State
+## Facts
 The payment configuration holds the provider timeout.
 **Source:** `payments/config.py:1`
 
@@ -55,8 +56,8 @@ Import the retry limit for the payment service.
 Run: `python -m pytest -q tests/test_checkout.py`
 Expect: exit 0 and checkout still passes.
 
-## Completion Conditions
-- The retry limit is declared once for the payment service. Shown by `python -m pytest -q tests/test_checkout.py`.
+## Trace
+- R1 → 1 · V1
 """
 
 
@@ -249,8 +250,8 @@ def test_snapshot_binding_clean_git_success_and_head_mismatch(tmp_path: Path) ->
         "### After implementation\n"
         "Run: `python -m pytest -q tests/test_checkout.py`\n"
         "Expect: exit 0 and checkout still passes.\n\n"
-        "## Completion Conditions\n"
-        "- The payment retry has a backoff delay. Shown by `python -m pytest -q tests/test_checkout.py`.\n"
+        "## Trace\n"
+        "- R1 → 1 · V1\n"
     )
     seal_plan(amendment_plan, amendment_draft)
     (repo / "payments" / "backoff.py").write_text("DELAY = 1\n", encoding="utf-8")

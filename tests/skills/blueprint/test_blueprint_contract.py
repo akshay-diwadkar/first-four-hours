@@ -234,6 +234,10 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
                                                  range_block("from `keep` to end", "kept\n")) if code.startswith("block.")}
     assert not {code for code in sequence_codes(tmp_path, markdown, range_block("from `## A` to `## B`", "## A\nnew\n"))
                 if code.startswith("block.")}
+    # A `#` line inside fenced code is not a heading, so it neither ends a section nor leaves its tail behind.
+    fenced = "# T\n## A\nintro\n```bash\n# comment\nls\n```\ntail\n## B\nkeep\n"
+    section = runtime.TextBlock(kind="exact", path="src/seq.txt", text="## A\nnew\n", line=1, form="range", section="## A")
+    assert runtime.apply_block(fenced, section) == ("# T\n## A\nnew\n## B\nkeep\n", None)
     # An environmental incomplete outcome binds only to a Verification Run's Expect, once.
     orphan = draft().replace("Run: `python -m pytest", "Incomplete: the final record reports complete false\nRun: `python -m pytest", 1)
     assert "verification.incomplete.orphan" in codes(orphan, tmp_path)
@@ -267,8 +271,13 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     assert codes(draft().replace(traced, "- R1 → 1, 2 · P2\n", 1), tmp_path) == {"trace.unbacked"}
     assert runtime.validate_draft(proved.replace(traced, "- R1 → 1, 2 · P2\n", 1), tmp_path).valid
     assert codes(draft().replace(traced, "- R1 is covered by step 1\n", 1), tmp_path) == {"trace.shape"}
+    # An owner gate named only in the prose note never excuses unauthored proof.
+    assert codes(draft().replace(traced, "- R1 → 1, 2 · V9 — not an Owner gate: prose\n", 1), tmp_path) == {"trace.unbacked"}
     owner_gate = draft().replace(traced, traced + "- R2 → Owner gate: the maintainer confirms the wording.\n", 1)
     assert runtime.validate_draft(owner_gate, tmp_path).valid
+    # Optional sections left empty, as the scaffold leaves them, cost no repair; Goal still may not be empty.
+    assert runtime.validate_draft(draft().replace("## Implementation\n", "## Decisions\n\n## Implementation\n", 1), tmp_path).valid
+    assert "shape.section.empty" in codes(draft().replace("Make absent names normalize predictably for the caller.\n**Tier:** quick\n", "", 1), tmp_path)
     # A plan declares one tier and stays within that tier's size budget.
     assert codes(draft().replace("**Tier:** quick\n", "", 1), tmp_path) == {"goal.tier"}
     padded = draft().replace("## Facts\n", "## Facts\n" + "The caller depends on this seam. " * 200 + "\n", 1)
@@ -290,6 +299,8 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     assert runtime.validate_draft(deleting, tmp_path).valid
     # The deletion is that path's only Location, an absent path cannot be deleted, and no other spelling binds.
     assert "location.deleted.conflict" in codes(deleting.replace(deleted, deleted + "**Location:** `./src/retired.py`\n**State:** existing\n", 1), tmp_path)
+    again = deleting.replace("## Verification", "### 3. Retire again\n" + deleted + "\nRemove the retired module.\n\n## Verification", 1)
+    assert "location.deleted.conflict" in codes(again, tmp_path)
     assert "location.target.missing" in codes(deleting.replace("src/retired.py", "src/absent.py", 1), tmp_path)
     assert "state.unsupported" in codes(deleting.replace("**State:** deleted", "**State:** removed", 1), tmp_path)
     assert "location.deleted.symbol" in codes(deleting.replace("`src/retired.py`\n", "`src/retired.py::RETIRED`\n", 1), tmp_path)

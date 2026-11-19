@@ -1520,7 +1520,8 @@ def _section_spans(
         end = headings[position + 1][1] if position + 1 < len(headings) else len(lines)
         spans[name] = (start + 1, end)
         content = [line for line in lines[start + 1 : end] if line.strip()]
-        if not content:
+        # An empty optional section is as good as absent, so the scaffold's never costs a repair.
+        if not content and name not in OPTIONAL_SECTIONS:
             diagnostics.append(
                 _error(
                     "shape.section.empty",
@@ -2475,7 +2476,9 @@ def _range_span(current: str, block: TextBlock) -> tuple[int, int] | str:
         heading_match = MARKDOWN_HEADING_RE.match(heading)
         assert heading_match is not None
         level = len(heading_match.group("level"))
-        found = [index for index, line in enumerate(lines) if line.rstrip() == heading]
+        # A `#` line inside fenced code is not a heading, so it never names or ends a section.
+        fenced = _fenced_indexes([line.rstrip("\r\n") for line in lines])
+        found = [index for index, line in enumerate(lines) if index not in fenced and line.rstrip() == heading]
         if len(found) != 1:
             return f"the section heading {heading!r} is {len(found)} lines; it must be exactly one"
         first = found[0]
@@ -2483,7 +2486,9 @@ def _range_span(current: str, block: TextBlock) -> tuple[int, int] | str:
             (
                 index
                 for index in range(first + 1, len(lines))
-                if (match := MARKDOWN_HEADING_RE.match(lines[index])) is not None and len(match.group("level")) <= level
+                if index not in fenced
+                and (match := MARKDOWN_HEADING_RE.match(lines[index])) is not None
+                and len(match.group("level")) <= level
             ),
             len(lines),
         )
@@ -3779,13 +3784,15 @@ def _deletion_diagnostics(blueprint: Blueprint, view: RepositoryView) -> list[Di
         except (OSError, ValueError):
             return False  # location/source resolution already reports unresolvable paths
 
+    # Every step's own Locations, not the per-file deduplicated list, so a repeated deletion is seen.
+    locations = tuple(location for step in blueprint.steps for location in step.locations)
     deleted: dict[str, TargetLocation] = {}
-    for location in blueprint.locations:
+    for location in locations:
         found = key(location.path) if location.state == "deleted" else None
         if found is not None:
             deleted.setdefault(found, location)
     diagnostics: list[Diagnostic] = []
-    for location in blueprint.locations:
+    for location in locations:
         if location.state == "deleted" and location.symbol is not None:
             diagnostics.append(_error(
                 "location.deleted.symbol",
@@ -3915,11 +3922,10 @@ def _trace_diagnostics(blueprint: Blueprint, request_bytes: bytes | None = None)
             ))
             continue
         traced.add(match.group("id").upper())
-        refs = match.group("refs")
+        # A note after an em dash or in parentheses is prose, never a reference or an owner gate.
+        refs = re.split(r"—|\(| -- ", match.group("refs"), maxsplit=1)[0]
         if "Owner gate:" in refs:
             continue
-        # A note after an em dash or in parentheses is prose, never a reference.
-        refs = re.split(r"—|\(| -- ", refs, maxsplit=1)[0]
         cited_steps = [int(item.group("number")) for item in TRACE_STEP_RE.finditer(refs)]
         unknown = [f"V{number}" for number in (int(item.group("number")) for item in TRACE_RUN_RE.finditer(refs)) if not 1 <= number <= runs]
         unknown += [f"P{number}" for number in (int(item.group("number")) for item in TRACE_PROOF_RE.finditer(refs)) if number not in proofs]

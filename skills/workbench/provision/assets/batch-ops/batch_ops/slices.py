@@ -28,7 +28,10 @@ _FAIL_PATTERN = re.compile(r"\b(fail(s|ed|ure|ures|ing)?|errors?|exceptions?|pan
 
 def apply_slices(text: str, ops: list[str]) -> tuple[str, list[str]]:
     """Apply slice operators in order and return (text, errors)."""
-    lines = text.replace("\r\n", "\n").replace("\r", "\n").splitlines()
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    lines = normalized.split("\n")
+    if not normalized or normalized.endswith("\n"):
+        lines.pop()
     errors: list[str] = []
 
     for op_index, raw_op in enumerate(ops):

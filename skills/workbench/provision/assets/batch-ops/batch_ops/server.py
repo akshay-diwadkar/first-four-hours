@@ -19,6 +19,7 @@ from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import model_validator
 
+from . import BUILD
 from .artifacts import ArtifactStore
 from .budget import Budget, BudgetTracker, cap_tokens
 from .safety import format_bytes
@@ -205,8 +206,12 @@ def _artifacts() -> ArtifactStore:
     return store
 
 
+def _error_title(tool: str) -> str:
+    return f"# {tool} error build {BUILD}"
+
+
 def _error_text(tool: str, exc: BaseException, hint: str = "") -> str:
-    msg = f"# {tool} error\n{type(exc).__name__}: {exc}\n"
+    msg = f"{_error_title(tool)}\n{type(exc).__name__}: {exc}\n"
     if hint:
         msg += f"\nHint: {hint}\n"
     return msg
@@ -254,7 +259,7 @@ async def batch_read(
     section opened there) | "a.txt@context:RE:3" | "a.txt@target:10-20" (verbatim edit search
     text) | "grep:RE [in PATH..]" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
     "git:cochange:PATH" (co-changed files) | "artifact:NAME:N-M". A pattern that is not
-    a regex, or matches nothing as one, is matched as literal text, so outline lines paste as-is.
+    a regex (or, in an @ spec, matches nothing) is matched as literal text, so outline lines paste as-is.
     A file over 24KB read without a range returns its outline; "a.txt:1-N" reads it all.
     Objects: {"path": p, "since": SHA} omits the body while the file keeps the sha an earlier
     read printed; {"grep": RE, "paths": [..], "exclude": [..], "context": 2, "ignore_case": true,
@@ -297,7 +302,7 @@ async def batch_read(
 
         if mode not in ("files", "batch", "auto", "survey"):
             err_msg = (
-                f"# batch_read error\nunknown mode: {mode}\n"
+                f"{_error_title('batch_read')}\nunknown mode: {mode}\n"
                 "Expected mode='files' (default) or mode='survey'."
             )
             return BatchToolResult(
@@ -308,7 +313,7 @@ async def batch_read(
 
         if not raw_specs:
             err_msg = (
-                "# batch_read error\nspecs must not be empty (or pass mode='survey' for a repository map)\n"
+                f"{_error_title('batch_read')}\nspecs must not be empty (or pass mode='survey' for a repository map)\n"
                 "Example: specs=['src/app.txt:1-50']"
             )
             return BatchToolResult(
@@ -437,7 +442,7 @@ async def batch_run(
         store = _artifacts()
         if not raw_cmds:
             err_msg = (
-                "# batch_run error\ncommands must not be empty\n"
+                f"{_error_title('batch_run')}\ncommands must not be empty\n"
                 "Example: commands=['<test command> ||| fails']"
             )
             return BatchToolResult(

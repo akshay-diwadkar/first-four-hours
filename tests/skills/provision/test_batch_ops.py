@@ -38,6 +38,13 @@ def test_batch_ops_stdio_session(tmp_path):
         "doc.md": "# Title\n\nIntro.\n\n## Setup (local)\n\nsetup paragraph\n\n## Next\n\nnext paragraph\n\n"
                   "Under Line\n==========\n\nunder text\n\n- bullet one\n- bullet two\n",
     }
+    fixture["cut.md"] = (
+        "# Top\n\n" + "".join(f"para {i}\n" for i in range(3, 399)) + "\n\n"
+        + "".join(f"more {i}\n" for i in range(9))
+    )
+    fixture["many.md"] = "".join(
+        f"## Heading {i}\n\nbody text line for section {i} padded out a bit more\n\n" for i in range(400)
+    )
     for i in range(1, 31):
         fixture[f"hits/f{i:02d}.txt"] = "".join(f"needle_census {n}\n" for n in range(1, 11))
     seed_git(repo, fixture)
@@ -104,6 +111,9 @@ def test_batch_ops_stdio_session(tmp_path):
                 res = await call(session, "batch_read", {
                     "specs": ["notes.txt"], "budget": {"tokenz": 5}, "cwd": str(repo)})
                 assert res.isError and "tokenz" in _text(res)
+                assert re.match(r"# batch_read error build [0-9a-f]{7}\n", _text(res))
+                res = await call(session, "batch_read", {"specs": [], "cwd": str(repo)})
+                assert res.isError and re.match(r"# batch_read error build [0-9a-f]{7}\n", _text(res))
 
                 res = await call(session, "batch_read", {"specs": ["notes.txt@target:1-2"], "cwd": str(repo)})
                 assert (
@@ -123,6 +133,22 @@ def test_batch_ops_stdio_session(tmp_path):
                 text = _text(res)
                 assert "## Setup (local)" in text and "## Next" in text and "Under Line" in text
                 assert "bullet" not in text
+                res = await call(session, "batch_read", {"specs": ["cut.md@block:# Top"], "cwd": str(repo)})
+                assert 'read "cut.md:399-409" to continue' in _text(res)
+
+                res = await call(session, "batch_read", {
+                    "specs": ["many.md"], "budget": {"tokens": 500}, "cwd": str(repo)})
+                text = _text(res).replace("\r", "")
+                next_line = [ln for ln in text.split("\n") if ln.startswith("next (read tool): specs=")]
+                found = re.findall(r'"(artifact:[^:"]+:(\d+)-400)"', next_line[0]) if next_line else []
+                assert len(found) == 1
+                spec, first = found[0][0], int(found[0][1])
+                assert first > 1
+                assert f'more outline line(s): "{spec}"' in text
+                assert f": ## Heading {first - 2}\n" in text and f": ## Heading {first - 1}\n" not in text
+                res = await call(session, "batch_read", {"specs": [spec], "cwd": str(repo)})
+                assert f"{first}: {4 * (first - 1) + 1}: ## Heading {first - 1}" in _text(res)
+                assert ": ## Heading 399" in _text(res)
 
                 res = await call(session, "batch_read", {
                     "specs": ["big.txt:1-630"], "budget": {"tokens": 1000}, "cwd": str(repo)})
@@ -198,8 +224,30 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert not (proc / "child_alive").exists()
 
                 res = await call(session, "batch_run", {"commands": [
-                    {"argv": [sys.executable, "-c", "raise SystemExit(1)"], "ok_exit": [0, 1]}], "cwd": str(repo)})
-                assert not res.isError and _items(res)[0]["status"] == "ok"
+                    {"argv": [sys.executable, "-c", "raise SystemExit(1)"], "ok_exit": [0, 1], "label": "okexit"},
+                    {"argv": [sys.executable, "-c",
+                              "import sys; sys.stdout.write('same\\n' * 300 + "
+                              "''.join(f'unique line number {i} padded padded\\n' for i in range(400)))"],
+                     "label": "folded"},
+                    {"argv": [sys.executable, "-c",
+                              "print('a'); print('-' * 40); print('b\\x0cc'); print('d')"],
+                     "slices": ["target:2-3"], "label": "dashes"},
+                ], "cwd": str(repo)})
+                by_label = {i["label"]: i for i in _items(res)}
+                assert not res.isError and by_label["okexit"]["status"] == "ok"
+                run_text = _text(res).replace("\r", "")
+                assert ("=== [target: copy verbatim to batch_edit] ===\n" + "-" * 40
+                        + "\nb\x0cc\n=== [end target] ===") in run_text
+                hint = re.search(r'omitted: "(artifact:[^"]+):1-387"', run_text)
+                assert hint
+                res_tail = await call(session, "batch_read", {"specs": [hint.group(1) + ":387-388"], "cwd": str(repo)})
+                assert "387: unique line number 384 padded padded" in _text(res_tail)
+                assert "388: unique line number 385 padded padded" in _text(res_tail)
+                raw_lines = [ln for ln in run_text.split("\n") if "output condensed" in ln and 'raw: "artifact:' in ln]
+                assert raw_lines
+                raw_ref = re.search(r'raw: "(artifact:[^"]+)"', raw_lines[0])
+                assert raw_ref and raw_ref.group(1) != hint.group(1)
+                assert run_text.count("output condensed") == 1
 
                 lf = repo / "lf.txt"
                 lf.write_bytes(b"one\n")
@@ -280,9 +328,26 @@ def test_batch_ops_stdio_session(tmp_path):
                 res = await call(session, "batch_edit", {"edits": [{**ranged, "since": sha[:12]}], "cwd": str(repo)})
                 assert not res.isError and notes.read_bytes() == b"keep\r\nranged\r\n"
 
+                ff = repo / "ff.txt"
+                ff.write_bytes(b"a\x0cb\nc\n")
+                ff_hash = _items(await call(session, "batch_read", {"specs": ["ff.txt"], "cwd": str(repo)}))[0]["hash"]
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "ff.txt", "range": "1", "since": ff_hash[:12], "replace": "X"}],
+                    "cwd": str(repo)})
+                assert not res.isError and ff.read_bytes() == b"X\nb\nc\n"
+
+                sql = repo / "q.sql"
+                sql.write_bytes(b"select 1;\n-- old note\nselect 2;\n")
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "q.sql", "search": "-- old note\n", "replace": ""}], "cwd": str(repo)})
+                assert not res.isError and sql.read_bytes() == b"select 1;\nselect 2;\n"
+                sql_lines = _text(res).replace("\r", "").split("\n")
+                assert "--- old note" in sql_lines and "--- a/q.sql" not in sql_lines
+
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo)})
                 assert not res.isError
                 text = _text(res).replace("\\", "/")
+                assert re.match(r"# batch_read \(survey\) build [0-9a-f]{7}\n# Survey: ", text)
                 assert re.search(r"M notes\.txt \+\d+ -\d+", text) and "Diff stat" not in text
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "hits")})
                 assert "notes.txt" not in _text(res)

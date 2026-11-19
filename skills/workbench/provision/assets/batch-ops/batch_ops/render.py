@@ -135,7 +135,7 @@ def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
     lines.extend(_footer(report.artifacts, [r.artifact for r in report.reads]))
     text = "\n".join(lines).rstrip() + "\n"
     if report.mode == "survey" and report.body:
-        text = report.body.rstrip() + "\n\n" + "\n".join(_coverage_lines(report.coverage)) + "\n"
+        text = f"# batch_read (survey) build {BUILD}\n" + report.body.rstrip() + "\n\n" + "\n".join(_coverage_lines(report.coverage)) + "\n"
         if report.artifacts:
             text += "artifacts:\n" + "\n".join(f"  - {item}" for item in dict.fromkeys(report.artifacts)) + "\n"
     return _finish(text, report, max_bytes)

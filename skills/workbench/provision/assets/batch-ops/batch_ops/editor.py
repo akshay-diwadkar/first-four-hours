@@ -369,6 +369,11 @@ def _snapshot(plan: _Plan, path: Path, rel: str, data: bytes | None, mode: int |
         plan.snapshots[key] = _Snapshot(path=path, rel=rel, data=data, mode=mode)
 
 
+def _ends_in_break(s: str) -> bool:
+    """True when *s* ends in any line boundary ``str.splitlines`` splits on."""
+    return bool(s) and s.splitlines(keepends=True)[-1] != s.splitlines()[-1]
+
+
 def _apply_ranges(text: str, before: bytes, edits: list[EditRequest], eol: str | None) -> str:
     """Replace whole lines N-M, only while the file still has the sha its read printed."""
     sha = sha256_bytes(before)
@@ -391,7 +396,7 @@ def _apply_ranges(text: str, before: bytes, edits: list[EditRequest], eol: str |
         start, end = edit.range or (0, 0)
         line_eol = eol or "\n"
         new = to_eol(edit.replace, line_eol)
-        if new and not new.endswith(("\n", "\r")) and lines[end - 1].endswith(("\n", "\r")):
+        if new and not _ends_in_break(new) and _ends_in_break(lines[end - 1]):
             new += line_eol
         lines[start - 1:end] = [new] if new else []
     return "".join(lines)
@@ -484,7 +489,6 @@ def fit_diffs(
         change.diff_truncated = True
 
 
-_FILE_HEADERS = ("--- ", "+++ ")  # the path is already in the report's item header
 _DIFF_HEADERS = ("diff --git", "rename ", "new file", "deleted file", "@@", "\\")
 
 
@@ -509,7 +513,7 @@ def _clip_at(line: str, limit: int, start: int) -> str:
 
 
 def _is_changed(line: str) -> bool:
-    return line[:1] in ("+", "-") and not line.startswith(_FILE_HEADERS)
+    return line[:1] in ("+", "-")
 
 
 def _head_paired(condensed: str, cap: int) -> str:
@@ -572,10 +576,17 @@ def _head_paired(condensed: str, cap: int) -> str:
 
 def _condense(diff: str) -> str:
     """A unified diff without its context lines or file header: hunk headers and changed lines."""
-    return "\n".join(
-        line for line in diff.splitlines()
-        if line.startswith(_DIFF_HEADERS) or _is_changed(line)
-    )
+    kept: list[str] = []
+    in_hunk = False
+    for line in diff.splitlines():
+        if line.startswith("@@"):
+            in_hunk = True
+        if in_hunk:
+            if line.startswith(("@@", "\\")) or _is_changed(line):
+                kept.append(line)
+        elif line.startswith(_DIFF_HEADERS):
+            kept.append(line)
+    return "\n".join(kept)
 
 
 # ---------------------------------------------------------------------------

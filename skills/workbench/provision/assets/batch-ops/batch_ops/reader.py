@@ -306,13 +306,13 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         else:
             rows: list[str] = []
             selected_count = 0
-            for index, (start, end) in enumerate(spans):
+            for index, (start, end, _) in enumerate(spans):
                 if index:
                     rows.append("--")
                 rows.extend(f"{n + 1}: {lines[n]}" for n in range(start, end + 1))
                 selected_count += end - start + 1
             body = "\n".join(rows)
-            capped = [(s, e) for s, e in spans if e - s + 1 >= BLOCK_MAX_LINES - 1]
+            capped = [(s, e) for s, e, cut in spans if cut]
             if capped:
                 s, e = capped[0]
                 meta["block_capped"] = f"block cut at {BLOCK_MAX_LINES} lines; read \"{display}:{e + 2}-{lines_total}\" to continue"
@@ -383,9 +383,14 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
         summary = _outline_summary(lines, effective_cap)
     if summary is not None:
         # A large file read whole is mostly skimmed: show its map and let blocks be read from it.
-        body, kept_count = summary
+        body, kept_count, all_rows = summary
         truncated, continuation = True, None
         meta["outline_first"] = True
+        if all_rows is not None:
+            ref = artifacts.put("\n".join(all_rows), ".outline.txt")
+            continuation = f"{ref}:{kept_count + 1}-{len(all_rows)}"
+            body += f"\n[... {len(all_rows) - kept_count} more outline line(s): \"{continuation}\"]"
+            meta["continuation"] = continuation
     else:
         outlines = None
         if mode in ("auto", "lines") and line_rows and full_size > effective_cap:
@@ -451,7 +456,7 @@ def _outline_row(index: int, line: str) -> str:
     return row if len(row) <= OUTLINE_ROW_CHARS else row[:OUTLINE_ROW_CHARS] + " …"
 
 
-def _outline_summary(lines: list[str], cap: int) -> tuple[str, int] | None:
+def _outline_summary(lines: list[str], cap: int) -> tuple[str, int, list[str] | None] | None:
     """The richest outline of *lines* that fits, cut with a count when even depth 1 does not;
     None when the file has no outline."""
     rows: list[str] = []
@@ -460,18 +465,18 @@ def _outline_summary(lines: list[str], cap: int) -> tuple[str, int] | None:
         if not rows:
             return None
         if len("\n".join(rows).encode("utf-8", errors="replace")) <= min(cap - 64, OUTLINE_SUMMARY_BYTES):
-            return "\n".join(rows), len(rows)
+            return "\n".join(rows), len(rows), None
     if len("\n".join(rows).encode("utf-8", errors="replace")) <= cap - 64:
-        return "\n".join(rows), len(rows)
+        return "\n".join(rows), len(rows), None
     kept: list[str] = []
     used = 0
     for row in rows:
         size = len(row.encode("utf-8", errors="replace")) + 1
-        if used + size > cap - 64:
+        if used + size > cap - 128:
             break
         kept.append(row)
         used += size
-    return "\n".join(kept) + f"\n[... {len(rows) - len(kept)} more outline line(s)]", len(kept)
+    return "\n".join(kept), len(kept), rows
 
 
 def _fit_body(
@@ -626,7 +631,7 @@ def _starts_with_punct(line: str) -> bool:
     return category[0] in "PS" and category != "Pc"  # connector punctuation ("_") is a word char, as in \w
 
 
-def _block_end(lines: list[str], start: int) -> int:
+def _block_end(lines: list[str], start: int, limit: int | None = None) -> int:
     """End of the block opened at ``start`` (0-based, inclusive).
 
     Lines deeper than the match belong to it. Before any deeper line, a lone token at the
@@ -637,10 +642,12 @@ def _block_end(lines: list[str], start: int) -> int:
     with no deeper lines opens a section that runs to the next heading of its level or above.
     """
     base = _width(lines[start])
-    limit = min(len(lines), start + BLOCK_MAX_LINES)
+    if limit is None:
+        limit = min(len(lines), start + BLOCK_MAX_LINES)
+    stop = limit
 
     def next_nonblank(k: int) -> int | None:
-        for m in range(k + 1, limit):
+        for m in range(k + 1, stop):
             if lines[m].strip():
                 return m
         return None
@@ -648,7 +655,7 @@ def _block_end(lines: list[str], start: int) -> int:
     end = start
     seen_body = False
     j = start + 1
-    while j < limit:
+    while j < stop:
         line = lines[j]
         if not line.strip():
             j += 1
@@ -675,7 +682,7 @@ def _block_end(lines: list[str], start: int) -> int:
             end = j
         break
     if not seen_body and _flat_header(lines, start):
-        return _section_end(lines, start, limit)
+        return _section_end(lines, start, stop)
     return end
 
 
@@ -770,21 +777,30 @@ def _flat_outline(lines: list[str]) -> list[int]:
     return sorted(_flat_map(lines))
 
 
-def _block_spans(lines: list[str], pattern: str) -> tuple[list[tuple[int, int]], str | None]:
+def _block_cap(lines: list[str], start: int, end: int) -> bool:
+    """True when the same scan without the line limit ends after *end*."""
+    if start + BLOCK_MAX_LINES >= len(lines):
+        return False
+    return _block_end(lines, start, len(lines)) > end
+
+
+def _block_spans(lines: list[str], pattern: str) -> tuple[list[tuple[int, int, bool]], str | None]:
     """Blocks opened by lines matching *pattern*, or by line N when the pattern is a number."""
     if re.fullmatch(r"\d+", pattern.strip()):
         n = int(pattern)
         if not 1 <= n <= len(lines):
             raise SafetyError(f"block line {n} is outside the file ({len(lines)} lines)")
-        return [(n - 1, _block_end(lines, n - 1))], None
+        end = _block_end(lines, n - 1)
+        return [(n - 1, end, _block_cap(lines, n - 1, end))], None
     rx, note = _match_rx(pattern, lines=lines)
-    spans: list[tuple[int, int]] = []
+    spans: list[tuple[int, int, bool]] = []
     for i, line in enumerate(lines):
         if not rx.search(line):
             continue
         if spans and i <= spans[-1][1]:
             continue  # already inside the previous block
-        spans.append((i, _block_end(lines, i)))
+        end = _block_end(lines, i)
+        spans.append((i, end, _block_cap(lines, i, end)))
         if len(spans) >= BLOCK_MAX_MATCHES:
             break
     return spans, note

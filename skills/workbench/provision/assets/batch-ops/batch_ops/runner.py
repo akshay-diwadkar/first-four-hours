@@ -193,6 +193,8 @@ class _Executed:
     stdout_changed: bool = False  # condensed or sliced: the raw stream is kept as an artifact
     stderr_changed: bool = False
     note: str = ""  # what condensing or slicing dropped; the artifact names are added later
+    trim_text: str = ""  # the stdout text the trim counted
+    raw_stdout_ref: str | None = None
 
 
 def _blank(req: RunRequest, status: str, message: str) -> _Executed:
@@ -327,11 +329,6 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         result.message = f"{result.message}; {note}" if result.message else note
 
     notes: list[str] = []
-    stdout_text, done.stdout_changed = _condense(stdout_text)
-    stderr_text, done.stderr_changed = _condense(stderr_text)
-    if done.stdout_changed or done.stderr_changed:
-        notes.append("output condensed (overwritten, repeated, or long divider lines)")
-
     if req.slices:
         before_out, before_err = stdout_text, stderr_text
         stdout_text, errors = apply_slices(stdout_text, req.slices)
@@ -349,7 +346,12 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         elif stdout_text != before_out or stderr_text != before_err:
             total = len(before_out.splitlines()) + len(before_err.splitlines())
             notes.append(f"sliced from {total} line(s)")
-    elif result.status != "ok":
+    else:
+        stdout_text, done.stdout_changed = _condense(stdout_text)
+        stderr_text, done.stderr_changed = _condense(stderr_text)
+        if done.stdout_changed or done.stderr_changed:
+            notes.append("output condensed (overwritten, repeated, or long divider lines)")
+    if not req.slices and result.status != "ok":
         # A long failure keeps its failure windows and the summary at its end.
         for stream in ("stdout", "stderr"):
             text = stdout_text if stream == "stdout" else stderr_text
@@ -369,6 +371,7 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         out_lines = stdout_text.splitlines()
         if len(out_lines) > SUCCESS_TAIL:
             omitted = len(out_lines) - SUCCESS_TAIL
+            done.trim_text = stdout_text
             stdout_text = "\n".join(
                 [f"[... {omitted} earlier lines of passing output omitted: \"{_ARTIFACT_SLOT}:1-{omitted}\"]"]
                 + out_lines[-SUCCESS_TAIL:]
@@ -395,9 +398,11 @@ def _decode_output(data: bytes) -> tuple[str, bool]:
 def _name_trimmed_artifact(done: _Executed, artifacts: ArtifactStore) -> None:
     """Save a trimmed passing stream and put its name in the trim hint, so the hint is a
     spec to paste.  Runs before the budget is shared, so the sizes include the real name."""
-    if done.trimmed and done.stdout_raw:
-        done.result.stdout_artifact = artifacts.put(done.stdout_raw, ".stdout.txt")
+    if done.trimmed:
+        done.result.stdout_artifact = artifacts.put(done.trim_text, ".stdout.txt")
         done.stdout = done.stdout.replace(_ARTIFACT_SLOT, done.result.stdout_artifact, 1)
+        if done.stdout_raw and done.stdout_raw != done.trim_text.encode("utf-8"):
+            done.raw_stdout_ref = artifacts.put(done.stdout_raw, ".stdout.txt")
 
 
 def _blen(text: str) -> int:
@@ -446,13 +451,16 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
     if result.budget_cut and not result.message:
         ref = result.stdout_artifact or result.stderr_artifact
         result.message = f"output cut to fit; full stream: \"{ref}\"" if ref else "output cut to fit"
+    stdout_ref = done.raw_stdout_ref or (result.stdout_artifact if done.stdout_changed else None)
+    stderr_ref = result.stderr_artifact if done.stderr_changed else None
+    named = (result.message or "") + result.stdout
+    refs = [ref for ref in (stdout_ref, stderr_ref) if ref and ref not in named]
+    raw_part = "raw: " + ", ".join(f'"{ref}"' for ref in refs) if refs else ""
     if done.note:
-        refs = [ref for ref, changed in ((result.stdout_artifact, done.stdout_changed),
-                                         (result.stderr_artifact, done.stderr_changed)) if ref and changed]
-        named = (result.message or "") + result.stdout
-        refs = [ref for ref in refs if ref not in named]
-        note = done.note + ("; raw: " + ", ".join(f'"{ref}"' for ref in refs) if refs else "")
+        note = done.note + ("; " + raw_part if raw_part else "")
         result.message = f"{result.message}; {note}" if result.message else note
+    elif raw_part:
+        result.message = f"{result.message}; {raw_part}" if result.message else raw_part
     return result
 
 

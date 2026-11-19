@@ -35,6 +35,7 @@ READ_MODES = {
     "list",
     "block",
     "outline",
+    "files",
     "diff",
     "changed",
     "compare",
@@ -76,7 +77,20 @@ def _parse_read_string(value: str) -> ReadRequest:
         raise SpecError("read spec must not be empty")
 
     if s in ("@survey", "survey"):
-        raise SpecError('use batch_read(mode="survey") for a repository survey')
+        raise SpecError('pass mode="survey" with no specs for a repository survey')
+
+    if s.startswith("git:cochange:"):
+        cochange_path = s[len("git:cochange:") :]
+        if not cochange_path:
+            raise SpecError("git:cochange needs a path")
+        return ReadRequest(kind="git_cochange", paths=[cochange_path])
+    if s.startswith("git:log:"):
+        log_rest = s[len("git:log:") :]
+        log_match = re.match(r"^(.*):(\d+-\d+)$", log_rest)
+        log_path, log_range = (log_match.group(1), log_match.group(2)) if log_match else (log_rest, None)
+        if not log_path:
+            raise SpecError("git:log needs a path")
+        return ReadRequest(kind="git_log", paths=[log_path], range=log_range)
 
     if s.startswith("git:diff"):
         return ReadRequest(kind="git_diff")
@@ -86,7 +100,7 @@ def _parse_read_string(value: str) -> ReadRequest:
         grep_pattern = s[len("grep:") :]
         if not grep_pattern:
             raise SpecError("grep spec requires a pattern")
-        return ReadRequest(kind="grep", pattern=grep_pattern, max_files=5000)
+        return ReadRequest(kind="grep", pattern=grep_pattern, max_files=5000, context=0)
     if s.startswith("artifact:"):
         ref = s[len("artifact:") :]
         m = re.match(r"^(.+?):(\d+(?:-\d+)?)$", ref)
@@ -102,6 +116,8 @@ def _parse_read_string(value: str) -> ReadRequest:
         return ReadRequest(kind="glob", glob=glob_pattern)
     if s.startswith("handle:"):
         return ReadRequest(kind="handle", handle=s[len("handle:") :])
+    if s.startswith("read:"):  # a read handle pasted as-is
+        return ReadRequest(kind="handle", handle=s)
 
     mode = "auto"
     range_value: str | None = None
@@ -119,13 +135,14 @@ def _parse_read_string(value: str) -> ReadRequest:
             ("context:", "context"),
             ("grep:", "grep"),
             ("block:", "block"),
+            ("outline:", "outline"),
         ):
             if suffix.startswith(prefix):
                 mode = op_mode
                 rest = suffix[len(prefix) :]
                 if op_mode in ("target", "raw", "lines"):
                     range_value = rest
-                elif op_mode in ("grep", "block"):
+                elif op_mode in ("grep", "block", "outline"):
                     if not rest:
                         raise SpecError(f"{op_mode} spec requires a pattern")
                     pattern = rest
@@ -230,6 +247,8 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
     )
 
     if kind_key == "path":
+        if mode == "files":
+            raise SpecError("mode files applies only to grep")
         path = str(data["path"])
         if not path:
             raise SpecError("path must not be empty")
@@ -296,12 +315,31 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
 
     if kind_key == "git":
         git_mode = str(data["git"])
-        if git_mode not in ("diff", "changed"):
-            raise SpecError("git must be 'diff' or 'changed'")
+        if git_mode not in ("diff", "changed", "log", "cochange"):
+            raise SpecError("git must be 'diff', 'changed', 'log' or 'cochange'")
+        if git_mode in ("log", "cochange"):
+            git_paths = _str_list(data.get("paths"))
+            if len(git_paths) != 1 or not git_paths[0].strip():
+                raise SpecError("git log and git cochange take exactly one path in paths")
+            git_range: str | None = None
+            if data.get("range") is not None:
+                if git_mode != "log":
+                    raise SpecError("range applies only to git log")
+                git_range = str(data["range"]).strip()
+                range_match = re.match(r"^(\d+)-(\d+)$", git_range)
+                if not range_match or not (1 <= int(range_match.group(1)) <= int(range_match.group(2))):
+                    raise SpecError("git log range must be N-M with 1 <= N <= M")
+            return ReadRequest(
+                kind=f"git_{git_mode}",
+                paths=[git_paths[0]],
+                range=git_range,
+                **common,
+            )
         return ReadRequest(
             kind=f"git_{git_mode}",
             base=str(data.get("base") or "HEAD"),
             staged=bool(data.get("staged", False)),
+            stat=bool(data.get("stat", False)),
             paths=_str_list(data.get("paths")),
             context=int(data.get("context", 3)),
             **common,
@@ -367,6 +405,13 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
     cmd = str(data["cmd"]) if data.get("cmd") is not None else None
     if cmd is not None and not cmd.strip():
         raise SpecError("cmd must not be empty")
+    cmd_slices: list[str] = []
+    if cmd is not None and " ||| " in cmd:
+        cmd_parts = cmd.split(" ||| ")
+        cmd = cmd_parts[0].strip()
+        cmd_slices = [p.strip() for p in cmd_parts[1:] if p.strip()]
+        if not cmd:
+            raise SpecError("cmd must not be empty")
     argv = data.get("argv")
     if argv is not None:
         if not isinstance(argv, list) or not argv or not all(isinstance(a, str) for a in argv):
@@ -396,8 +441,17 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
         slices = [str(p).strip() for p in slices_raw if str(p).strip()]
     else:
         raise SpecError("slices must be a list or string")
+    if cmd_slices:
+        if slices:
+            raise SpecError("put slices after ' ||| ' in cmd or in slices, not both")
+        slices = cmd_slices
 
     max_bytes = _positive_int(data.get("max_bytes", 16384), "max_bytes")
+    ok_raw = data.get("ok_exit", [0])
+    ok_list = [ok_raw] if isinstance(ok_raw, int) and not isinstance(ok_raw, bool) else ok_raw
+    if (not isinstance(ok_list, list) or not ok_list
+            or not all(isinstance(c, int) and not isinstance(c, bool) for c in ok_list)):
+        raise SpecError("ok_exit must be an exit code or a non-empty list of exit codes")
     label = str(data.get("label") or "")
     display = _display(label, cmd if cmd is not None else " ".join(argv or []))
 
@@ -416,6 +470,7 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
         merge_streams=bool(data.get("merge_streams", False)),
         max_bytes=max_bytes,
         display=display,
+        ok_exit=[int(c) for c in ok_list],
     )
 
 
@@ -434,6 +489,8 @@ def parse_edit_spec(spec: Any) -> EditRequest:
     replace = data.get("replace")
     if not path:
         raise SpecError("edit spec requires path")
+    if data.get("range") is not None:
+        return _parse_range_edit(data, path, search, replace)
     if not isinstance(search, str):
         raise SpecError(f"edit for {path}: search must be a string")
     if not isinstance(replace, str):
@@ -461,6 +518,28 @@ def parse_edit_spec(spec: Any) -> EditRequest:
         occurrence=occurrence,
         encoding=data.get("encoding"),
         label=str(data.get("label") or ""),
+    )
+
+
+def _parse_range_edit(data: dict[str, Any], path: str, search: Any, replace: Any) -> EditRequest:
+    if search is not None:
+        raise SpecError(f"edit for {path}: use either search or range, not both")
+    if not isinstance(replace, str):
+        raise SpecError(f"edit for {path}: replace must be a string")
+    found = re.fullmatch(r"\s*(\d+)\s*(?:-\s*(\d+)\s*)?", str(data["range"]))
+    if not found:
+        raise SpecError(f"edit for {path}: range must be N or N-M")
+    start = int(found.group(1))
+    end = int(found.group(2) or start)
+    since = data.get("since")
+    if not isinstance(since, str) or not since.strip():
+        raise SpecError(f"edit for {path}: range needs since, the sha or read handle its read printed")
+    for key in ("replace_all", "occurrence"):
+        if data.get(key):
+            raise SpecError(f"edit for {path}: {key} does not apply to a range edit")
+    return EditRequest(
+        path=path, search="", replace=replace, range=(start, end), since=since.strip(),
+        encoding=data.get("encoding"), label=str(data.get("label") or ""),
     )
 
 

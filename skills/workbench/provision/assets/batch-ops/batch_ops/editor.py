@@ -15,7 +15,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .artifacts import ArtifactStore
+from .artifacts import ArtifactStore, since_sha
 from .budget import Budget, BudgetTracker, body_budget, water_fill
 from .runner import run_commands
 from .safety import (
@@ -180,6 +180,8 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 grouped[key] = []
                 order.append(str(path))
             grouped[key].append(edit)
+        except FileNotFoundError:
+            plan.errors.append((edit.path, "file not found"))
         except Exception as exc:
             plan.errors.append((edit.path, str(exc)))
 
@@ -203,9 +205,14 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 raise SafetyError(f"file has mixed line endings ({counts_str}); refuse to edit without normalize_eol=true")
             text = to_eol(info.text, info.eol) if (info.mixed_eol and bundle.normalize_eol) else info.text
             total = 0
+            ranged = [e for e in grouped[path_key] if e.range is not None]
+            if ranged:  # line numbers name the file as read, so ranges go first
+                text = _apply_ranges(text, before, ranged, info.eol)
+                total += len(ranged)
             for edit in grouped[path_key]:
-                text, count = _apply_one(text, edit, info.eol)
-                total += count
+                if edit.range is None:
+                    text, count = _apply_one(text, edit, info.eol)
+                    total += count
             after = encode_text(text, info.encoding)
             original_text = decode_bytes(before, encoding_hint).text
             diff = _unified_diff(original_text, text, rel, "modify")
@@ -294,6 +301,8 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 mode=file_mode(path), full_diff=full_diff,
             ))
             _snapshot(plan, path, rel, before, file_mode(path))
+        except FileNotFoundError:
+            plan.errors.append((raw, "file not found"))
         except Exception as exc:
             plan.errors.append((raw, str(exc)))
 
@@ -335,6 +344,8 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
             if destination_before is not None:
                 _snapshot(plan, destination, dest_rel, destination_before, file_mode(destination))
             plan.renames.append((source, destination))
+        except FileNotFoundError:
+            plan.errors.append((rename.source, "file not found"))
         except Exception as exc:
             plan.errors.append((rename.source, str(exc)))
 
@@ -356,6 +367,39 @@ def _snapshot(plan: _Plan, path: Path, rel: str, data: bytes | None, mode: int |
     key = os.path.normcase(str(path))
     if key not in plan.snapshots:
         plan.snapshots[key] = _Snapshot(path=path, rel=rel, data=data, mode=mode)
+
+
+def _ends_in_break(s: str) -> bool:
+    """True when *s* ends in any line boundary ``str.splitlines`` splits on."""
+    return bool(s) and s.splitlines(keepends=True)[-1] != s.splitlines()[-1]
+
+
+def _apply_ranges(text: str, before: bytes, edits: list[EditRequest], eol: str | None) -> str:
+    """Replace whole lines N-M, only while the file still has the sha its read printed."""
+    sha = sha256_bytes(before)
+    lines = text.splitlines(keepends=True)
+    ordered = sorted(edits, key=lambda e: e.range or (0, 0))
+    previous_end = 0
+    for edit in ordered:
+        expected = since_sha(edit.since or "")
+        if expected is None:
+            raise SafetyError("since must be the sha (8+ hex characters) or read handle a read printed")
+        if not sha.startswith(expected):
+            raise SafetyError(f"file changed since it was read (sha now {sha[:12]}); re-read it")
+        start, end = edit.range or (0, 0)
+        if start < 1 or end < start or end > len(lines):
+            raise SafetyError(f"range {start}-{end} is outside the file ({len(lines)} lines)")
+        if start <= previous_end:
+            raise SafetyError(f"range {start}-{end} overlaps another range edit")
+        previous_end = end
+    for edit in reversed(ordered):
+        start, end = edit.range or (0, 0)
+        line_eol = eol or "\n"
+        new = to_eol(edit.replace, line_eol)
+        if new and not _ends_in_break(new) and _ends_in_break(lines[end - 1]):
+            new += line_eol
+        lines[start - 1:end] = [new] if new else []
+    return "".join(lines)
 
 
 def _apply_one(text: str, edit: EditRequest, eol: str | None) -> tuple[str, int]:
@@ -401,7 +445,9 @@ def _unified_diff(before: str, after: str, rel: str, action: str) -> str:
     )
 
 
-def fit_diffs(report: EditReport, budget_bytes: int, artifacts: ArtifactStore) -> None:
+def fit_diffs(
+    report: EditReport, budget_bytes: int, artifacts: ArtifactStore, *, condense: bool = False
+) -> None:
     """Share the report budget across diffs so every file's status line stays visible.
 
     Small diffs keep everything; larger ones split what is left (max-min fair) and are cut
@@ -410,6 +456,11 @@ def fit_diffs(report: EditReport, budget_bytes: int, artifacts: ArtifactStore) -
     changes = report.changes
     if not changes:
         return
+    fulls = [c.diff for c in changes]
+    if condense:
+        for change in changes:
+            if change.diff:
+                change.diff = _condense(change.diff)
     sizes = [len(c.diff.encode("utf-8", errors="replace")) for c in changes]
     verify_bytes = sum(r.bytes_shown for r in report.verify)
     total = max(0, body_budget(budget_bytes, len(changes) + len(report.verify)) - verify_bytes)
@@ -417,13 +468,17 @@ def fit_diffs(report: EditReport, budget_bytes: int, artifacts: ArtifactStore) -
         shares = sizes
     else:
         shares = water_fill(sizes, [0] * len(changes), total, floor=160)
-    for change, size, share in zip(changes, sizes, shares):
+    for change, size, share, full in zip(changes, sizes, shares, fulls):
         share = min(share, MAX_DIFF_BYTES)  # no single diff dominates a report
         if size <= share:
             continue
         if not change.diff_artifact:
-            change.diff_artifact = artifacts.put(change.diff, ".edit.diff")
+            change.diff_artifact = artifacts.put(full, ".edit.diff")
             report.artifacts.append(change.diff_artifact)
+        if condense:
+            change.diff = _head_paired(change.diff, max(0, share - 64)) + "\n[... changed lines cut to fit the report]"
+            change.diff_truncated = True
+            continue
         # Spend the share on what changed: drop context lines first, then cut if still too big.
         condensed = _condense(change.diff)
         room = max(0, share - 64)
@@ -434,7 +489,6 @@ def fit_diffs(report: EditReport, budget_bytes: int, artifacts: ArtifactStore) -
         change.diff_truncated = True
 
 
-_FILE_HEADERS = ("--- ", "+++ ")  # the path is already in the report's item header
 _DIFF_HEADERS = ("diff --git", "rename ", "new file", "deleted file", "@@", "\\")
 
 
@@ -459,7 +513,7 @@ def _clip_at(line: str, limit: int, start: int) -> str:
 
 
 def _is_changed(line: str) -> bool:
-    return line[:1] in ("+", "-") and not line.startswith(_FILE_HEADERS)
+    return line[:1] in ("+", "-")
 
 
 def _head_paired(condensed: str, cap: int) -> str:
@@ -522,10 +576,17 @@ def _head_paired(condensed: str, cap: int) -> str:
 
 def _condense(diff: str) -> str:
     """A unified diff without its context lines or file header: hunk headers and changed lines."""
-    return "\n".join(
-        line for line in diff.splitlines()
-        if line.startswith(_DIFF_HEADERS) or _is_changed(line)
-    )
+    kept: list[str] = []
+    in_hunk = False
+    for line in diff.splitlines():
+        if line.startswith("@@"):
+            in_hunk = True
+        if in_hunk:
+            if line.startswith(("@@", "\\")) or _is_changed(line):
+                kept.append(line)
+        elif line.startswith(_DIFF_HEADERS):
+            kept.append(line)
+    return "\n".join(kept)
 
 
 # ---------------------------------------------------------------------------

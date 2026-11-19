@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -22,14 +23,19 @@ from typing import Any
 from .artifacts import ArtifactStore
 from .budget import BudgetTracker, body_budget, tier, water_fill
 from .safety import SafetyError, decode_bytes, format_bytes, relative_display, resolve_path, truncate_text
-from .slices import apply_slices
+from .slices import _filter_failures, apply_slices
 from .types import RunRequest, RunResult
 
 CAPTURE_LIMIT = 16 * 1024 * 1024  # per stream, in memory
-SUCCESS_HEAD = 20  # lines kept from the start of a long passing output
-SUCCESS_TAIL = 60  # lines kept from its end (summaries live there)
+SUCCESS_TAIL = 15  # lines kept from the end of a long passing output (summaries live there)
+SUCCESS_TRIM_BYTES = 4 * 1024  # passing outputs larger than this are trimmed to their tail
 _ARTIFACT_SLOT = "@@STDOUT_ARTIFACT@@"  # filled with the artifact reference once it is saved
 DEFAULT_PARALLEL = 4
+FAIL_FRAME_BYTES = 8 * 1024  # a failing stream larger than this keeps its failure windows and tail
+FOLD_MIN = 3  # this many identical lines in a row fold into one line and a count
+RUN_MAX = 10  # a longer run of one punctuation or symbol character is cut to this length
+_ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]")
+_LONG_RUN = re.compile(r"([^\w\s])\1{%d,}" % RUN_MAX)
 
 
 @dataclass
@@ -71,7 +77,8 @@ def _resolve_shell(req: RunRequest, root: Path) -> tuple[list[str], str]:
     if shell in ("bash", "sh"):
         exe = shutil.which(shell)
         if not exe:
-            raise SafetyError(f"{shell} is not available on PATH")
+            hint = '; pass "shell": "powershell", or "argv"' if os.name == "nt" else ""
+            raise SafetyError(f"{shell} is not available on PATH{hint}")
         if shell == "bash":
             return [exe, "-c"], "bash"
         return [exe, "-c"], "sh"
@@ -101,7 +108,38 @@ def _build_process_args(req: RunRequest, root: Path) -> tuple[list[str], str]:
 
 
 def _normalize_output(text: str) -> str:
-    return text.replace("\r\n", "\n").replace("\r", "\n")
+    """Terminal escape sequences removed and line endings made "\\n"; nothing visible is lost."""
+    return _ANSI.sub("", text).replace("\r\n", "\n")
+
+
+def _condense(text: str) -> tuple[str, bool]:
+    """Output as a terminal would leave it, made shorter: a line rewritten in place with "\\r"
+    keeps its last state, identical lines in a row fold into one and a count, and long runs of
+    one punctuation or symbol character are cut.  True when anything was dropped."""
+    changed = False
+    rows: list[str] = []
+    for line in text.split("\n"):
+        if "\r" in line:
+            states = [s for s in line.split("\r") if s]
+            changed = changed or len(states) > 1
+            line = states[-1] if states else ""
+        short = _LONG_RUN.sub(lambda m: m.group(1) * RUN_MAX, line)
+        changed = changed or short != line
+        rows.append(short)
+    out: list[str] = []
+    i = 0
+    while i < len(rows):
+        j = i
+        while j + 1 < len(rows) and rows[j + 1] == rows[i]:
+            j += 1
+        out.append(rows[i])
+        if rows[i].strip() and j - i + 1 >= FOLD_MIN:
+            out.append(f"[... repeated {j - i} more times]")
+            changed = True
+        else:
+            out.extend(rows[i + 1:j + 1])
+        i = j + 1
+    return "\n".join(out), changed
 
 
 async def _kill_tree(process: asyncio.subprocess.Process) -> None:
@@ -152,6 +190,11 @@ class _Executed:
     stdout_raw: bytes = b""
     stderr_raw: bytes = b""
     trimmed: bool = False  # long passing output already cut to head and tail
+    stdout_changed: bool = False  # condensed or sliced: the raw stream is kept as an artifact
+    stderr_changed: bool = False
+    note: str = ""  # what condensing or slicing dropped; the artifact names are added later
+    trim_text: str = ""  # the stdout text the trim counted
+    raw_stdout_ref: str | None = None
 
 
 def _blank(req: RunRequest, status: str, message: str) -> _Executed:
@@ -251,13 +294,12 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         if timed_out:
             result.status = "timeout"
             result.message = f"timed out after {timeout:.1f}s; partial output kept"
-        elif process.returncode == 0:
+        elif process.returncode in req.ok_exit:
             result.status = "ok"
             if req.merge_streams and stdout_cap.data:
                 result.message = "stderr merged into stdout"
         else:
-            result.status = "error"
-            result.message = f"exit code {process.returncode}"
+            result.status = "error"  # the header shows the exit code
 
     except FileNotFoundError as exc:
         result.status = "error"
@@ -276,26 +318,62 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
             await _kill_tree(process)
         return done
 
-    stdout_text = _normalize_output(decode_bytes(bytes(stdout_cap.data)).text)
-    stderr_text = _normalize_output(decode_bytes(bytes(stderr_cap.data)).text)
+    stdout_text, stdout_nul = _decode_output(bytes(stdout_cap.data))
+    stderr_text, stderr_nul = _decode_output(bytes(stderr_cap.data))
+    stdout_text = _normalize_output(stdout_text)
+    stderr_text = _normalize_output(stderr_text)
+    stdout_visible = stdout_text.encode("utf-8") if stdout_nul else None
+    stderr_visible = stderr_text.encode("utf-8") if stderr_nul else None
+    if stdout_nul or stderr_nul:
+        note = "NUL bytes shown as \\0"
+        result.message = f"{result.message}; {note}" if result.message else note
 
+    notes: list[str] = []
     if req.slices:
+        before_out, before_err = stdout_text, stderr_text
         stdout_text, errors = apply_slices(stdout_text, req.slices)
         result.slice_errors.extend(f"stdout {e}" for e in errors)
         if not req.merge_streams:
             stderr_text, errors = apply_slices(stderr_text, req.slices)
             result.slice_errors.extend(f"stderr {e}" for e in errors)
+        done.stdout_changed = done.stdout_changed or stdout_text != before_out
+        done.stderr_changed = done.stderr_changed or stderr_text != before_err
+        if not stdout_text and not stderr_text and (stdout_cap.data or stderr_cap.data):
+            notes.append(
+                f"slices kept none of "
+                f"{format_bytes(len(stdout_cap.data) + len(stderr_cap.data))} of output"
+            )
+        elif stdout_text != before_out or stderr_text != before_err:
+            total = len(before_out.splitlines()) + len(before_err.splitlines())
+            notes.append(f"sliced from {total} line(s)")
+    else:
+        stdout_text, done.stdout_changed = _condense(stdout_text)
+        stderr_text, done.stderr_changed = _condense(stderr_text)
+        if done.stdout_changed or done.stderr_changed:
+            notes.append("output condensed (overwritten, repeated, or long divider lines)")
+    if not req.slices and result.status != "ok":
+        # A long failure keeps its failure windows and the summary at its end.
+        for stream in ("stdout", "stderr"):
+            text = stdout_text if stream == "stdout" else stderr_text
+            if _blen(text) <= FAIL_FRAME_BYTES:
+                continue
+            framed = "\n".join(_filter_failures(text.splitlines(), None)) + "\n"
+            if stream == "stdout":
+                stdout_text, done.stdout_changed = framed, True
+            else:
+                stderr_text, done.stderr_changed = framed, True
+            notes.append(f"{stream} framed to failure windows and its last lines")
+    done.note = "; ".join(notes)
 
     # A passing command's long output is rarely read in full: keep its head and tail.
     # Failures keep everything (failure-first), and explicit slices always win.
-    if not req.slices and result.status == "ok":
+    if not req.slices and result.status == "ok" and _blen(stdout_text) > SUCCESS_TRIM_BYTES:
         out_lines = stdout_text.splitlines()
-        if len(out_lines) > SUCCESS_HEAD + SUCCESS_TAIL + 40:
-            omitted = len(out_lines) - SUCCESS_HEAD - SUCCESS_TAIL
+        if len(out_lines) > SUCCESS_TAIL:
+            omitted = len(out_lines) - SUCCESS_TAIL
+            done.trim_text = stdout_text
             stdout_text = "\n".join(
-                out_lines[:SUCCESS_HEAD]
-                + [f"[... {omitted} lines of passing output omitted; read them with batch_read "
-                   f"\"{_ARTIFACT_SLOT}:{SUCCESS_HEAD + 1}-{SUCCESS_HEAD + omitted}\" ...]"]
+                [f"[... {omitted} earlier lines of passing output omitted: \"{_ARTIFACT_SLOT}:1-{omitted}\"]"]
                 + out_lines[-SUCCESS_TAIL:]
             ) + "\n"
             done.trimmed = True
@@ -305,16 +383,26 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         result.message = f"{result.message}; {note}" if result.message else note
 
     done.stdout, done.stderr = stdout_text, stderr_text
-    done.stdout_raw, done.stderr_raw = bytes(stdout_cap.data), bytes(stderr_cap.data)
+    done.stdout_raw = stdout_visible if stdout_visible is not None else bytes(stdout_cap.data)
+    done.stderr_raw = stderr_visible if stderr_visible is not None else bytes(stderr_cap.data)
     return done
+
+
+def _decode_output(data: bytes) -> tuple[str, bool]:
+    """Decode command output; a NUL byte anywhere shows as the two characters \\0."""
+    if data.startswith((b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff")) or b"\x00" not in data:
+        return decode_bytes(data).text, False
+    return data.decode("utf-8", errors="replace").replace("\x00", "\\0"), True
 
 
 def _name_trimmed_artifact(done: _Executed, artifacts: ArtifactStore) -> None:
     """Save a trimmed passing stream and put its name in the trim hint, so the hint is a
     spec to paste.  Runs before the budget is shared, so the sizes include the real name."""
-    if done.trimmed and done.stdout_raw:
-        done.result.stdout_artifact = artifacts.put(done.stdout_raw, ".stdout.txt")
+    if done.trimmed:
+        done.result.stdout_artifact = artifacts.put(done.trim_text, ".stdout.txt")
         done.stdout = done.stdout.replace(_ARTIFACT_SLOT, done.result.stdout_artifact, 1)
+        if done.stdout_raw and done.stdout_raw != done.trim_text.encode("utf-8"):
+            done.raw_stdout_ref = artifacts.put(done.stdout_raw, ".stdout.txt")
 
 
 def _blen(text: str) -> int:
@@ -347,7 +435,9 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
 
     stdout_text, stdout_cut = cut(done.stdout, out_cap)
     stderr_text, stderr_cut = cut(done.stderr, err_cap)
-    stdout_cut = stdout_cut or done.trimmed
+    result.budget_cut = stdout_cut or stderr_cut
+    stdout_cut = stdout_cut or done.trimmed or done.stdout_changed
+    stderr_cut = stderr_cut or done.stderr_changed
 
     if stdout_cut and done.stdout_raw and not result.stdout_artifact:
         result.stdout_artifact = artifacts.put(done.stdout_raw, ".stdout.txt")
@@ -358,9 +448,19 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
     result.stderr = stderr_text
     result.truncated = stdout_cut or stderr_cut
     result.bytes_shown = _blen(stdout_text) + _blen(stderr_text)
-    if result.truncated and not result.message:
+    if result.budget_cut and not result.message:
         ref = result.stdout_artifact or result.stderr_artifact
-        result.message = f"output cut to fit; full stream: batch_read \"{ref}\"" if ref else "output cut to fit"
+        result.message = f"output cut to fit; full stream: \"{ref}\"" if ref else "output cut to fit"
+    stdout_ref = done.raw_stdout_ref or (result.stdout_artifact if done.stdout_changed else None)
+    stderr_ref = result.stderr_artifact if done.stderr_changed else None
+    named = (result.message or "") + result.stdout
+    refs = [ref for ref in (stdout_ref, stderr_ref) if ref and ref not in named]
+    raw_part = "raw: " + ", ".join(f'"{ref}"' for ref in refs) if refs else ""
+    if done.note:
+        note = done.note + ("; " + raw_part if raw_part else "")
+        result.message = f"{result.message}; {note}" if result.message else note
+    elif raw_part:
+        result.message = f"{result.message}; {raw_part}" if result.message else raw_part
     return result
 
 

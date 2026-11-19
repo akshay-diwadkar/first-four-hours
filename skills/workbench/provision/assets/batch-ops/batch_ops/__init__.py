@@ -11,3 +11,18 @@ official ``mcp`` package and Pydantic; the CLI (``batch_ops.cli``) uses the core
 """
 
 from __future__ import annotations
+
+import hashlib
+from pathlib import Path
+
+
+def _build_id() -> str:
+    """7 hex characters naming this exact source, so a report shows which server build ran."""
+    digest = hashlib.sha256()
+    for source in sorted(Path(__file__).parent.glob("*.py")):
+        digest.update(source.name.encode())
+        digest.update(source.read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()[:7]
+
+
+BUILD = _build_id()

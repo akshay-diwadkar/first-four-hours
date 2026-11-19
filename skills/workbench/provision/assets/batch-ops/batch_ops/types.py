@@ -53,6 +53,7 @@ class ReadRequest:
     # git
     base: str = "HEAD"
     staged: bool = False
+    stat: bool = False  # git diff: per-file change counts only
 
     # compare
     children: list["ReadRequest"] = field(default_factory=list)
@@ -86,6 +87,7 @@ class RunRequest:
     merge_streams: bool = False
     max_bytes: int = 16384
     display: str = ""
+    ok_exit: list[int] = field(default_factory=lambda: [0])  # exit codes that count as success
 
 
 @dataclass
@@ -97,6 +99,8 @@ class EditRequest:
     occurrence: int | None = None
     encoding: str | None = None
     label: str = ""
+    range: tuple[int, int] | None = None  # whole lines N-M, instead of search
+    since: str | None = None  # sha prefix or read handle the range was read at
 
 
 @dataclass
@@ -151,7 +155,7 @@ class ReadResult:
     id: str
     kind: str
     label: str
-    status: str = "ok"  # ok | error | missing | skipped | truncated | binary | lossy | stale | unchanged
+    status: str = "ok"  # ok | error | missing | skipped | truncated | binary | lossy | stale | unchanged | no_match
     path: str | None = None
     range: tuple[int, int] | None = None
     body: str = ""
@@ -187,6 +191,7 @@ class RunResult:
     stderr_artifact: str | None = None
     message: str | None = None
     slice_errors: list[str] = field(default_factory=list)
+    budget_cut: bool = False  # output cut to fit the report budget (not the passing-output trim)
 
 
 @dataclass
@@ -230,6 +235,7 @@ class Coverage:
     stale: int = 0
     truncated: int = 0
     unchanged: int = 0
+    no_match: int = 0
     commands_run: int = 0
     commands_failed: int = 0
     commands_timed_out: int = 0

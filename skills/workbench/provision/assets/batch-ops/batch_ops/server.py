@@ -593,14 +593,14 @@ async def batch_edit(
 ) -> BatchToolResult:
     """Apply edits, new files, deletes and renames atomically, then optionally verify.
 
-    cwd: absolute working directory. edits: [{"path": p, "search": "exact old text", "replace":
-    "new"}], search matching once unless "replace_all": true or "occurrence": N (counted after earlier
-    edits); or {"path": p, "range": "N-M", "since": SHA, "replace": "new"}: lines N-M, refused if
-    the sha changed. new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a,
-    "to": b}]; manifest: a unified diff with repository-root paths. verify: "<cmd>" or {"cmd":
-    "...", "timeout": 120}; failure restores every file. dry_run=true shows full diffs without
-    writing; full_diff=true shows them after writing. budget: tokens. Copy search text and SHA
-    from the read "path@target:N-M".
+    cwd: absolute working directory. edits: [{"path": p, "range": "N-M", "since": SHA, "replace":
+    "new"}] replaces lines N-M unless the file changed since a read printed that sha; or
+    {"path": p, "search": "exact old text", "replace": "new"} (text from read "path@target:N-M"),
+    matching once unless "replace_all": true or "occurrence": N (counted after earlier edits).
+    new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest:
+    a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120};
+    failure restores every file. dry_run=true shows full diffs without writing; full_diff=true
+    shows them after writing. budget: tokens.
     """
     try:
         root = _root(cwd)

@@ -51,11 +51,11 @@ Five skills produce work that `/blueprint` can plan from, and you decide whether
 `/blueprint` brings in other help within its own run, not as separate stages:
 
 - It asks [`/ideate`](../skills/ideate.md) for options only when no viable solution is apparent or the evidence cannot rank the directions. You make the final selection unless you already chose or delegated it.
-- `/blueprint` attacks its own draft before sealing. A risky plan also gets one separate fresh-context challenger, and without one `/blueprint` does not seal that plan.
+- `/blueprint` attacks its own draft before sealing, at a depth set by the plan's risk. A Critical plan gets one separate fresh-context challenger instead, and without one `/blueprint` does not seal that plan.
 
 ## Reason checkpoints
 
-`/architect`, `/assess`, `/blueprint`, `/charter`, `/diagnose`, `/temper`, `/ticket`, `/ideate`, `/scribe`, `/tutor`, and `/examiner` consult [`/reason`](../skills/reason.md) at their own judgment points, such as before committing to an approach, after a failure, and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start `/reason` yourself.
+`/architect`, `/assess`, `/charter`, `/diagnose`, `/temper`, `/ticket`, `/ideate`, `/scribe`, `/tutor`, and `/examiner` consult [`/reason`](../skills/reason.md) at their own judgment points, such as before committing to an approach, after a failure, and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start `/reason` yourself. `/blueprint` has no checkpoints: its tiered challenge is its adversarial review, and it consults `/reason` only when its judgment is stuck.
 
 ## Routing
 

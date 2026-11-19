@@ -12,9 +12,9 @@
 | `ffh-evidence` | Answers one bounded repository question with exact file and line evidence. | None. | `/architect` and `/diagnose`, for evidence workers that need only file reads; `/blueprint`, `/architect`, and `/diagnose`, for a large sweep of more than about 8 files or a whole-repository search. | A generic subagent for evidence workers. A large sweep is done by the main agent. |
 | `ffh-researcher` | Answers one bounded research question from current sources and cites them. | Web search and page fetch. | `/ideate`, for its research workers. | A generic subagent. |
 | `ffh-constructor` | Runs `/construct` on a sealed plan and returns its report. | File edits, a shell, and loading skills, used as `/construct` directs. | `/blueprint`, when it hands a sealed plan to `/construct`. | A generic subagent. |
-| `ffh-planner` | Runs `/blueprint`'s whole planning stage and returns its seal or stop report. | File edits, a shell, and loading skills, used as `/blueprint` directs; may start only `ffh-challenger`, `ffh-evidence`, and `ffh-researcher`. | `/blueprint`. | `/blueprint` plans in the main session. |
+| `ffh-planner` | Runs `/blueprint`'s planning stage after `/blueprint` has asked the questions it can already see, and returns its seal or stop report. | File edits, a shell, and loading skills, used as `/blueprint` directs. | `/blueprint`, when another skill orchestrating a larger task starts it or the session already holds much unrelated work. | `/blueprint` plans in the main session. |
 
-No other subagent may start a subagent. `ffh-constructor` cannot start the conformance review its `/construct` run earns, so it reports the review as earned and not run, and the agent that started it launches the review or reports it as not run.
+No subagent may start another. `ffh-planner` stops when its plan needs a fresh challenger, a question answered, or `/ideate`, and `/blueprint` in the main session does that and resumes it. `ffh-constructor` cannot start the conformance review its `/construct` run earns, so it reports the review as earned and not run, and the agent that started it launches the review or reports it as not run.
 
 ## Choosing models
 
@@ -23,7 +23,7 @@ No other subagent may start a subagent. `ffh-constructor` cannot start the confo
 ## Harness differences
 
 - On Codex and OpenCode the names use underscores, such as `ffh_planner`.
-- `ffh-planner` is written only where a subagent can start subagents and `ffh-challenger` is written too. On Codex and OpenCode that requires raising `agents.max_depth` or `experimental.subagent_depth` to 2, which `/provision` offers to do.
+- No subagent starts another, so no harness needs nested subagents. On Codex and OpenCode, `/provision` offers to remove the `agents.max_depth` or `experimental.subagent_depth` setting an earlier version may have raised to 2.
 - On Claude Code, `ffh-planner` keeps a one-hour prompt cache.
 - A read-only subagent with a shell could still change files through it, so on every harness its no-edit limit rests on its instructions. `/provision` asks you to skip such a subagent or accept that limit.
 

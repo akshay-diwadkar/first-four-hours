@@ -1,28 +1,38 @@
 # Challenge and rehearsal
 
-Every draft gets an owner walk: rehearse Construct's Verification section yourself, re-deriving the load-bearing premise from source. A standard draft's walk also runs the [Challenger brief](challenger-brief.md), backing each compliant-but-bad case with a fresh observation; an elevated draft leaves the brief to its one fresh challenge.
-
 ## Tier
 
-A draft is **elevated** when it shows any of these, else **standard**:
+A plan is **Critical** when its decisions show any of these:
 
-- a Location creating, changing, or deleting a validator, a shared runtime, configuration or fixtures read by anything other than the confined package's own tests, or code (script, test, runtime) not confined to one package or directory whose own tests exercise it directly;
-- a budgeted or deadline gate whose limit changes or whose headroom the change can plausibly consume;
-- a changed contract another skill, package, or service consumes, or Locations in more than one (docs and changelog excepted);
-- an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service);
-- a change to Blueprint's or Construct's seal runtime.
+- a change to a validator, a shared runtime, or Blueprint's or Construct's seal runtime;
+- a deadline gate whose measured headroom the change can plausibly consume;
+- a changed contract that another skill, package, or service parses or executes;
+- an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service).
 
-A skill version raises no signal. Read signals from the draft, not from how easy the work seems; one you cannot rule out counts.
+Otherwise it is **Standard** when a consumer outside the changed package, or a propagation to another file, matters, else **Quick**. A skill version raises no signal. Read signals from the decisions, not from how easy the work seems.
 
-## One fresh challenge
+## Desk check
 
-For an elevated draft, launch the challenger as a separate fresh-context subagent; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Give it the request and answers, the draft, evidence pointers, the [planning contract](planning-contract.md), the [Challenger brief](challenger-brief.md), this file's Tier and Requirement trace, the planning-trap list, Construct's Verification section, [Each turn](delegation-protocol.md#delegation-preserve-authority-bound-labor), and each reference whose branch the draft uses. Withhold your reasoning and any premise you want confirmed. Launch it before your owner walk and, if your harness allows, walk while it works; edit the draft only after its review, then repair all findings together.
+For each Proof run, then each Run, in step order:
 
-## Repair and re-check
+- **Exists:** everything it reads, selects, or imports exists now or an earlier step creates it.
+- **Launches:** its argv works as Construct launches it: no shell, repository root, inherited environment, the interpreter that resolves there. Probe it, or an existing target in the same form.
+- **Passes:** each `Expect:` holds on the plan's own drafted bytes and a correct implementation of this plan alone.
+- **Fits:** it stays within every suite-size cap, validator allowlist, budget, pinned version, and deadline the change touches, with measured value and headroom recorded.
+
+Exists, Launches, and Fits run on the ledger before writing; Passes runs once the text is drafted. After the repair, rerun it only for Runs the repair changed or whose input it changed.
+
+## Challenge
+
+- **Quick:** check that no hidden choice is left, every clause ID has a step and a Run, and no proof passes a wrong result.
+- **Standard:** run the [Challenger brief](challenger-brief.md) yourself, one compliant-but-bad implementation per decision, backing each with a fresh observation.
+- **Critical:** one fresh challenge, launched once the draft passes `check`; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Launch exactly one, giving it only the request and answers, the draft, the [Challenger brief](challenger-brief.md), the repository's planning-trap list, and the three to five load-bearing premises you name with evidence pointers; withhold your reasoning. Wait for its review, then repair. As `ffh-planner`, return the draft for your parent to launch it, per [Planner handoff](planner-handoff.md).
+
+One user request gets at most one fresh challenge, amendments included, counting other independent reviews and drafts carried to a fresh workspace; repair against the findings you have. One returning no review stops you. When later repairs would replace the basis or architecture, stop unsealed and report the failing premise. A Critical signal found later earns the challenge if none ran, else run the brief's Critical re-enumeration yourself.
+
+## Repair
 
 Re-verify each finding against the request and current source, weighing user authority, evidence, and consequence rather than confidence. Closure names the repaired instruction and the evidence or decided branch defeating the counterexample; unsupported closure blocks seal. A needed fact earns one bounded exploration; ask all user-owned choices at once, amend the request in place ([Earlier plans](earlier-plans.md#commands)), and repair only what the answers change. Reread each changed declared block as the file holds it, and drop work that stopped earning.
-
-One user request gets at most one fresh challenge, amendments included, counting other independent reviews and drafts carried to a fresh workspace; repair against the findings you have. One returning no review stops you. When later repairs would replace the basis or architecture, stop unsealed and report the failing premise. A Tier signal found later earns the challenge if none ran, else run the brief's elevated re-enumeration yourself.
 
 ## Requirement trace
 
@@ -34,6 +44,6 @@ Seal only when every rule in this file and the planning contract holds, includin
 
 - no known gap weakens a requested outcome or load-bearing invariant unless the authoritative request records the user's acceptance;
 - where completion or a resume relies on earlier recorded state or a relationship that an earlier run of this work established, it is reread at its source, and proof fails an implementation trusting it;
-- the owner walk, an elevated draft's fresh challenge, and the before-seal `reason` consultation ran.
+- the desk check passed and the tier's challenge ran.
 
 If substantive judgment is still required anywhere, the Blueprint is not ready to seal. After sealing, stop.

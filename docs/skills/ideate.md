@@ -27,12 +27,12 @@ Start it yourself with `/ideate`, or the agent may start it when your request ma
 
 ## What you get
 
-A sealed `ideation.md` in the ignored folder `.first-four-hours/ideations/<slug>/`. It opens with **What to do**, written so you can act on it without knowing the format:
+A sealed `ideation.md` in the ignored folder `.first-four-hours/ideations/<slug>/`. It opens with the goal, decision criteria, and scope, then **What to do**, written so you can act on it without knowing the format:
 
 - `Outcome`: `recommended direction`, with the viable choices; `run an experiment first`, with the experiment that would decide between them; or `research limit reached`, with what the research could not establish;
 - `Final choice`: `yours to make`, `made by you`, or `delegated` within a scope you set. A recommendation is never your approval.
 
-The goal, decision criteria, and research coverage, including the web searches run, follow it, then the evidence, the options explored, and what would change the answer.
+The viable options follow it, each in its own subsection, then what would change the answer. The search behind them comes next, including each dropped candidate and why, then the evidence, which opens with the research coverage, including the web searches run. A suggested follow-up, when there is one, comes last.
 
 ## When it stops
 

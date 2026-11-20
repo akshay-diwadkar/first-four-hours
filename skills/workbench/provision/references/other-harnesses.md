@@ -7,7 +7,6 @@ Establish each fact below from the harness's official documentation, recording i
 - How to set an agent's model and effort, and how to list the models offered now.
 - How to grant or withhold reading, searching, file edits, a shell, web access, loading skills, and starting other agents, and which of those the harness enforces.
 - How to see that an agent loaded, with its model and limits.
-- For `ffh-planner`: any per-agent prompt-cache lifetime setting. A setting that is missing or unknown means the harness default.
 - For batch-ops agents: whether an agent can be granted individual MCP tools.
 - For batch-ops: whether the harness runs local stdio MCP servers; how to add, show, list with status, and remove one; and a scope that keeps this machine's paths out of committed project files.
 - For the batch-ops line: the project and user instruction files, and which wins when several exist.

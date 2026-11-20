@@ -2,7 +2,7 @@
 name: assess
 description: Assess a PR or code change against its issue/spec, acceptance criteria, repository rules, tests, and base behavior for correctness, code quality, maintainability, and proportionate security. Use for PR review, re-review, acceptance-criteria checks, or merge readiness.
 metadata:
-  version: "1.10.0"
+  version: "1.10.1"
 ---
 
 # Assess
@@ -42,4 +42,4 @@ python /absolute/skill-root/scripts/cli.py --repo-root /absolute/repo \
   --input output=<prepared output_path> --format json check
 ```
 
-Report the sealed result, path, and each finding's severity, defect, and scenario as sealed, with no approval or readiness claim beyond it. When the result is `findings` and `target` is a pull request's URL, read [publishing](references/publishing.md) and offer to post them. Stop after one current `assessment.md` is sealed and checked and any offer is settled. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.
+Open the report body with ``**Result:** `<result>` ``, for `findings` followed by each severity's count, most severe first, as in ``**Result:** `findings` (1 × P1, 2 × P3)``. Then report the path and each finding's severity, defect, and scenario as sealed, with no approval or readiness claim beyond it. When the result is `findings` and `target` is a pull request's URL, read [publishing](references/publishing.md) and offer to post them. Stop after one current `assessment.md` is sealed and checked and any offer is settled. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.

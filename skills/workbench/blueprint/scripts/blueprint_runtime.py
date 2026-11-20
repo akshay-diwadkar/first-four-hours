@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "2.0.1"
+CONTRACT_VERSION = "2.0.2"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -2652,6 +2652,29 @@ def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> l
                                 line=block.line,
                             )
                         ]
+                    if block.form == "range" and span[1] < len(current):
+                        # A range keeps its end-anchor line or next heading; a block ending with that line duplicates it.
+                        kept = current.splitlines(keepends=True)
+                        offset = 0
+                        for kept_line in kept:
+                            if offset == span[1]:
+                                kept_text = kept_line.rstrip("\r\n").rstrip()
+                                break
+                            offset += len(kept_line)
+                        else:
+                            kept_text = ""
+                        last_text = next((part.rstrip() for part in reversed(block.text.split("\n")) if part.strip()), "")
+                        if kept_text and kept_text == last_text:
+                            return [
+                                _error(
+                                    "block.boundary_repeated",
+                                    f"Instruction {step.number}: in {block.path!r} the block's last non-empty line {kept_text!r} repeats "
+                                    "the line its range keeps, so applying it leaves that line twice.",
+                                    "Drop that line from the block or move the end anchor past it: a range keeps its end-anchor line and a section keeps its next heading.",
+                                    path=block.path,
+                                    line=block.line,
+                                )
+                            ]
                 state, reason = block_state(current, block)
                 if state != "unapplied":
                     return [

@@ -234,6 +234,11 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
                                                  range_block("from `keep` to end", "kept\n")) if code.startswith("block.")}
     assert not {code for code in sequence_codes(tmp_path, markdown, range_block("from `## A` to `## B`", "## A\nnew\n"))
                 if code.startswith("block.")}
+    # A block that changes its own first line but repeats the kept boundary line leaves that line twice (the duplicated-heading defect).
+    assert "block.boundary_repeated" in sequence_codes(tmp_path, markdown, range_block("from `## A` to `## B`", "## Z\nnew\n## B\n"))
+    assert "block.boundary_repeated" in sequence_codes(tmp_path, markdown, range_block("section `## A`", "## Z\nnew\n## B\n\n"))
+    assert not {code for code in sequence_codes(tmp_path, b"x\n- a\n- b\n", range_block("from `x` to `- `", "y\n- new\n"))
+                if code.startswith("block.")}
     # A `#` line inside fenced code is not a heading, so it neither ends a section nor leaves its tail behind.
     fenced = "# T\n## A\nintro\n```bash\n# comment\nls\n```\ntail\n## B\nkeep\n"
     section = runtime.TextBlock(kind="exact", path="src/seq.txt", text="## A\nnew\n", line=1, form="range", section="## A")

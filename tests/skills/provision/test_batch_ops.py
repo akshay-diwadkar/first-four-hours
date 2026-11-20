@@ -405,6 +405,29 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                                  "v12 = 12", "src/fail.py:1-"):
                     assert unwanted not in shown.replace("\\", "/").split("stdout")[0]
 
+                uni_name = chr(0x6570) + chr(0x636e) + ".py"
+                uni_src = repo / "src" / uni_name
+                uni_ign = repo / "ignored" / (chr(0x6570) + ".txt")
+                uni_src.write_text("".join(f"w{n} = {n}\n" for n in range(1, 10)), encoding="utf-8")
+                (repo / "ignored").mkdir(exist_ok=True)
+                uni_ign.write_text("secret_row\n", encoding="utf-8")
+                uni_script = (
+                    "import sys; sys.stdout.reconfigure(encoding='utf-8'); "
+                    "print('ignored/\\u6570.txt:1: x'); print('src/\\u6570\\u636e.py:5: boom'); raise SystemExit(1)"
+                )
+                try:
+                    res = await call(session, "batch_run", {"commands": [
+                        {"argv": [sys.executable, "-c", uni_script], "label": "short"},
+                    ], "cwd": str(repo)})
+                finally:
+                    uni_src.unlink()
+                    uni_ign.unlink()
+                uni_text = _text(res).replace("\r", "")
+                assert "source now (> marks cited lines):" in uni_text
+                assert "src/" + uni_name + ":2-8" in uni_text
+                assert "> 5  w5 = 5" in uni_text
+                assert "secret_row" not in uni_text and "source lines dropped" not in uni_text
+
                 (repo / "src" / "other.txt").write_bytes(b"o1\no2\no3\n")
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "src/other.txt", "search": "o3", "replace": "o4"}],

@@ -517,13 +517,14 @@ def _ignored_paths(root: Path, paths: list[str]) -> set[str]:
     try:
         proc = subprocess.run(
             ["git", "-C", str(root), "check-ignore", "-z", "--stdin"],
-            input="\0".join(paths), capture_output=True, text=True, timeout=10,
+            input="\0".join(paths).encode("utf-8", "surrogateescape"),
+            capture_output=True, timeout=10,
         )
-    except (OSError, subprocess.SubprocessError):
+        if proc.returncode not in (0, 1):
+            return set()
+        return {p for p in proc.stdout.decode("utf-8", "surrogateescape").split("\0") if p}
+    except Exception:  # noqa: BLE001 - locating must never lose a command's result
         return set()
-    if proc.returncode not in (0, 1):
-        return set()
-    return {p for p in proc.stdout.split("\0") if p}
 
 
 def _render_windows(picked: list[tuple[str, int]], files: dict[str, list[str]]) -> str:
@@ -613,13 +614,14 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
     result = done.result
     cap = _stream_cap(done.req, max_output)
     source_dropped = False
+    need = [min(_blen(done.stdout), cap), min(_blen(done.stderr), cap)]
     if result.source:
-        if _blen(result.source) > share // 3:
+        source_len = _blen(result.source)
+        if sum(need) + source_len > share and source_len > share // 3:
             result.source = ""
             source_dropped = True
         else:
-            share -= _blen(result.source)
-    need = [min(_blen(done.stdout), cap), min(_blen(done.stderr), cap)]
+            share -= source_len
     out_cap, err_cap = (cap, cap) if sum(need) <= share else water_fill(need, [0, 0], share, floor=128)
 
     def cut(text: str, limit: int) -> tuple[str, bool]:

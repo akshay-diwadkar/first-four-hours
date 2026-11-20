@@ -156,11 +156,53 @@ def test_findings_result_binds_file_and_assessed_source_locators(
         (unexplained, "bundle.field_missing", "scenario"),
         ({**finding, "scenario": []}, "finding.scenario_missing", "findings[0].scenario"),
         ({**finding, "scenario": ["   "]}, "bundle.string_invalid", "findings[0].scenario[0]"),
+        (
+            {**finding, "scenario": ["A reviewer edits reader.py:111 to drop the guard."]},
+            "finding.scenario_technical",
+            "findings[0].scenario[0]",
+        ),
+        (
+            {**finding, "scenario": ["A customer opens the list.", "The page calls `render()` twice."]},
+            "finding.scenario_technical",
+            "findings[0].scenario[1]",
+        ),
+        (
+            {**finding, "scenario": ["See service.py#L4 for the rule."]},
+            "finding.scenario_technical",
+            "findings[0].scenario[0]",
+        ),
     ):
         with pytest.raises(AssessError) as refused:
             validate_bundle(_bundle(tmp_path, assessed_sources=sources, result="findings", findings=[candidate]))
         assert refused.value.code == code
         assert "findings[0]" in refused.value.message and label in refused.value.message
+    with pytest.raises(AssessError) as technical:
+        validate_bundle(
+            _bundle(
+                tmp_path,
+                assessed_sources=sources,
+                result="findings",
+                findings=[{**finding, "scenario": ["A reviewer edits reader.py:111 to drop the guard."]}],
+            )
+        )
+    assert "locators" in technical.value.message
+    validate_bundle(
+        _bundle(
+            tmp_path,
+            assessed_sources=sources,
+            result="findings",
+            findings=[
+                {
+                    **finding,
+                    "scenario": [
+                        "At 10:30 a customer opens service.py.",
+                        "The ratio 1.5:2 still holds.",
+                        "Rated P2: rare, and the list comes back after a reload.",
+                    ],
+                }
+            ],
+        )
+    )
     output = prepare_assessment_workspace(repo, "case").output_path
     high = _bundle(tmp_path, assessed_sources=sources, result="findings", findings=[unsupported[0]])
     refused_seal, _ = _seal(repo, tmp_path, high, output)
@@ -309,6 +351,11 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     _git(repo, "update-ref", "refs/heads/assess-base", base)
     assert output.read_bytes() == sealed_bytes
     body = artifact.removesuffix("\n").rpartition("\n")[0] + "\n"
+    earlier = body.replace("A caller reads the changed value in service.py.", "A caller reads service.py:1.", 1)
+    earlier_digest = hashlib.sha256(earlier.encode("utf-8")).hexdigest()
+    earlier_text = f"{earlier}<!-- assessment-result: {contract.CONTRACT_VERSION}; sha256: {earlier_digest} -->\n"
+    parse_result(earlier_text)
+    assert contract._parse_findings(earlier)[0]["scenario"][0] == "A caller reads service.py:1."
     title, *sections = body.split("\n## ")
     by_heading = {section.split("\n", 1)[0]: section for section in sections}
     old_order = ["Target", "Assessed snapshots", "Result", "Examined", "Findings", "Limitations"]

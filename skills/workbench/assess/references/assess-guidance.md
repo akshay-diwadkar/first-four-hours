@@ -54,7 +54,7 @@ Choose the level from the evidenced consequence, affected scope, reachable condi
 - `limitations`: `[]` only when you claim none; include self-review for any part of a self-authored change that no fresh-context owner or delegate examined.
 - Each finding: `severity` (a level from Severity above, spelled exactly), `defect`, `scenario`, `locators`, `consequence`, `required_truth` (truth to restore, not an implementation), and `basis`: `observed` only when you ran or reproduced the failure and cite a `proof` snapshot of its output, else `reasoned`.
   - `defect` is one plain sentence stating what is wrong; `consequence` says only who is affected and how badly.
-  - `scenario` is a non-empty array of short steps a reader can follow from a concrete trigger to the wrong outcome, set against what should happen, each resting on the finding's locators. For a missing protection, show its absence going unnoticed, such as removing the guard while the suite still passes. Scale it to the finding: two or three steps suit a `P3`.
+  - `scenario` is a non-empty array of short steps telling a plain-language story from the affected person's side: who does what, what they see, and what they should have seen, each resting on the finding's locators. Leave paths, line numbers, code names, and test-tampering or mutation steps to locators and proof; sealing refuses a `file:line` reference or backticked code. For missing proof, tell the risk: a later change quietly breaks the behavior, nobody is warned, and people see the wrong outcome. The last step says why this severity in the reader's terms, matching that level's row in Severity above: how likely, how bad, how reversible. Two or three steps suit a `P3`.
 
 ## Reassessment and stop
 

@@ -284,6 +284,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_read", {"specs": [{**grep, "blocks": True}], "cwd": str(repo)})
                 text = _text(res).replace("\\", "/")
                 assert "blocks skipped: 300 matches over 20" in text and "=== hits/f05.txt (1 of 10) ===" in text
+                assert not re.search(r"(?m)^\d+- ", text)  # plain rows: no window lines past 20 matches
 
                 start = time.monotonic()
                 res = await call(session, "batch_run", {"commands": [

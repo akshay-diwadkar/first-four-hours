@@ -58,7 +58,8 @@ def _valid_body(
         "## Goal\n"
         "- Goal: reduce p99 query latency under 100ms\n"
         "- Decision criteria: latency reduction, implementation complexity\n"
-        "- Scope / non-goals: query processing pipeline; no hardware expansion\n\n"
+        "- Scope / non-goals: query processing pipeline; no hardware expansion\n"
+        "- Already known: the team already tried a database index\n\n"
         "## What to do\n"
         f"- Outcome: {outcome}\n"
         "- Final choice: yours to make\n\n"
@@ -68,17 +69,7 @@ def _valid_body(
         "## What would change the answer\n"
         "An index rebuild wins if the cache hit rate falls below 70%.\n\n"
         "## Exploration\n\n"
-        "Search shape: alternative\n"
-        "- Obvious defaults: add a database index\n"
-        "- Simplify/eliminate: drop the slow join\n"
-        "- Invert/relax an authorized constraint: not applicable — the latency target is the user's\n"
-        "- Domain transfer: Strategy A, CDN-style response caching\n"
-        "- Combine mechanisms: Strategy A with an L2 cache tier\n"
-        "- Actor/timing/control: precompute results at write time\n"
-        "- Failure recovery: serve stale results on a miss\n"
-        "- Preserve baseline: keep the 500ms pipeline\n\n"
-        "### Dropped\n"
-        "- Precompute at write time: write volume makes it costlier than caching\n\n"
+        "- Precompute at write time — write volume makes it costlier than caching\n\n"
         "## Evidence\n\n"
         f"{RESEARCH}\n"
         f"{local_section}"
@@ -159,17 +150,17 @@ def test_contract_rules_refuse_violations_not_lookalikes() -> None:
         "- Cheapest decisive experiment: test with 10k items; metric: hit rate; "
         "pass/fail: >80%; duration: 1h; cost/effort: low\n"
     )
-    candidates = "### Suggested follow-up candidates\n- none\n\n### Dropped"
+    candidates = "### Suggested follow-up candidates\n- none\n\n- Precompute at write time"
 
     # Subheadings that only start like a section heading are not that heading.
     lookalikes = _valid_body(what_to_do="### What to do before choosing\n" + default_prose).replace(
-        "### Dropped", "### Evidence gaps\n- none\n\n### Dropped"
+        "- Precompute at write time", "### Evidence gaps\n- none\n\n- Precompute at write time"
     )
     assert codes(lookalikes) == []
     # A real duplicate section heading is still refused.
     assert "ideation.duplicate_heading" in codes(_valid_body() + "## Evidence\n")
     # The optional heading is matched by whole line too, for both its position and its count.
-    with_candidates = _valid_body().replace("### Dropped", candidates)
+    with_candidates = _valid_body().replace("- Precompute at write time", candidates)
     assert codes(with_candidates) == []
     assert codes(with_candidates + "\n## Suggested follow-up\nAsk blueprint to plan Strategy A.\n") == []
 
@@ -193,12 +184,11 @@ def test_contract_rules_refuse_violations_not_lookalikes() -> None:
         "ideation.decisive_experiment_incomplete"
     ]
 
-    # The obvious defaults are always named.
+    # The other outcome and final-choice values validate with no diagnostics.
+    assert codes(_valid_body(outcome="research limit reached")) == []
     assert codes(
-        _valid_body().replace(
-            "- Obvious defaults: add a database index", "- Obvious defaults: not applicable — nothing obvious"
-        )
-    ) == ["ideation.obvious_defaults_missing"]
+        _valid_body().replace("- Final choice: yours to make", "- Final choice: delegated — cache scope; user message")
+    ) == []
 
     # Each surviving option gets its own subsection; text without one is refused.
     assert codes(_valid_body().replace("### Strategy A — Local Caching\n", "")) == ["ideation.empty_viable_options"]

@@ -74,8 +74,8 @@
       "protocol": "skills/sensemaking/ideate/references/delegation-protocol.md",
       "owner": "Ideate owns framing, synthesis, conclusions, and the sealed ideation.md.",
       "lifecycle": "When Blueprint planning or another orchestrated handoff consults Ideate, Ideate owns ideation.md and the caller keeps its own decisions.",
-      "workers": "Bounded research may be delegated when it materially improves evidence breadth or context quality.",
-      "specialists": "An earned Reason challenge may test a consequential claim.",
+      "workers": "In the Deep tier, read-only research workers each search one survey class in parallel.",
+      "specialists": "In the Deep tier, one fresh challenger attacks the draft before sealing; Ideate re-verifies and decides.",
       "writes": "Research workers are read-only; Ideate alone writes ideation.md and its receipt.",
       "rationale": "Research labor can be bounded independently while ideation judgments and synthesis remain owner-owned."
     },

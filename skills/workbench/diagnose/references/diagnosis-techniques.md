@@ -31,7 +31,9 @@ Run such a probe in place only when every write it makes is suppressed or redire
 
 Save a copy's output under `evidence_root`, outside the copy, as `capture` evidence with `agent-probe` provenance and an `origin` naming the copy's revision; its observation states how the copy differs from the target, such as missing ignored configuration, submodules, or large files. `command` evidence runs only in the target. Remove the copy after sealing.
 
-## Missing facts
+## Objective
+
+Frame the objective as the outcome the user would check, quoting their request. When an outside report started the work, such as a scanner alert, failing CI, or a review comment, that outcome includes whether the report itself would change: a real finding can leave it in place, and an unreachable claim can still be reported. Give every `reason` checkpoint the user's request verbatim beside your framing. Before sealing, check the findings against that objective and record any part they leave unsettled in `limitations` and the final report.
 
 Pursue the cheapest decision-changing evidence path first; interpretation and acceptance stay diagnosis-owned. Ask through `reason` one minimum question only for irreducible user-only expected-behavior, operational, or policy facts. Re-verify a Reason result against current evidence and decide; persist only its accepted consequence, never Reason state or artifacts.
 

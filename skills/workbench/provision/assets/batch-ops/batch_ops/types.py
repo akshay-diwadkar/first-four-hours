@@ -49,6 +49,7 @@ class ReadRequest:
     max_matches: int = 200
     exclude: list[str] = field(default_factory=list)  # grep: path globs to skip
     max_line: int = 300  # grep: clip match lines to this many characters
+    blocks: bool = False  # grep: expand each shown hit to its enclosing block or section
 
     # git
     base: str = "HEAD"
@@ -131,6 +132,7 @@ class VerifyRequest:
     env: dict[str, str] = field(default_factory=dict)
     shell: str = "auto"
     label: str = "verify"
+    slices: list[str] = field(default_factory=list)
 
 
 @dataclass

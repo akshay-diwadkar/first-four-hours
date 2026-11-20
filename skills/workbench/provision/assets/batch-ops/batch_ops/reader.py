@@ -800,6 +800,38 @@ def _block_cap(lines: list[str], start: int, end: int) -> bool:
     return _block_end(lines, start, len(lines)) > end
 
 
+BLOCK_WINDOW_LINES = 100
+
+
+def _hit_window(lines: list[str], hit: int) -> set[int]:
+    """Line indexes shown for one grep hit in blocks mode: the largest enclosing block or
+    section of at most BLOCK_WINDOW_LINES lines, else the hit's neighbourhood plus the
+    opening line of the smallest enclosing block."""
+    openers: list[int] = []
+    if _block_end(lines, hit) > hit:
+        openers.append(hit)
+    narrowest = _width(lines[hit])
+    for k in range(hit - 1, max(-1, hit - BLOCK_MAX_LINES - 1), -1):
+        if not lines[k].strip():
+            continue
+        width = _width(lines[k])
+        if width < narrowest:
+            narrowest = width
+            openers.append(k)
+        elif _flat_header(lines, k):
+            openers.append(k)
+    kept = [(k, _block_end(lines, k)) for k in openers]
+    kept = [(k, end) for k, end in kept if end >= hit]
+    fits = [(k, end) for k, end in kept if end - k + 1 <= BLOCK_WINDOW_LINES]
+    if fits:
+        start, end = max(fits, key=lambda span: span[1] - span[0])
+        return set(range(start, end + 1))
+    window = set(range(max(0, hit - 5), min(len(lines), hit + 6)))
+    if kept:
+        window.add(min(kept, key=lambda span: span[1] - span[0])[0])
+    return window
+
+
 def _block_spans(lines: list[str], pattern: str) -> tuple[list[tuple[int, int, bool]], str | None]:
     """Blocks opened by lines matching *pattern*, or by line N when the pattern is a number."""
     if re.fullmatch(r"\d+", pattern.strip()):
@@ -1099,12 +1131,16 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         count = f"{len(hits)} of {total_hits}" if len(hits) < total_hits else str(total_hits)
         out.append(f"=== {rel} ({count}) ===")
         selected: set[int] = set()
+        windowed = req.blocks and want_rows and match_count <= 20
         for i in hits:
-            selected.update(range(max(0, i - req.context), min(len(lines), i + req.context + 1)))
+            if windowed:
+                selected.update(_hit_window(lines, i))
+            else:
+                selected.update(range(max(0, i - req.context), min(len(lines), i + req.context + 1)))
         previous = None
         hit_set = set(hits)
         for idx in sorted(selected):
-            if previous is not None and idx > previous + 1 and req.context > 0:
+            if previous is not None and idx > previous + 1 and (req.context > 0 or windowed):
                 out.append("--")
             marker = ":" if idx in hit_set else "-"
             out.append(f"{idx + 1}{marker} {lines[idx]}")  # path is in the === header ===
@@ -1164,6 +1200,8 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         lines_total=len(out), lines_shown=shown_matches, truncated=truncated,
         message="; ".join(m for m in (
             literal_note or "",
+            f"blocks skipped: {match_count} matches over 20; narrow the pattern or paths"
+            if req.blocks and want_rows and match_count > 20 else "",
             f"showing {shown_matches} of {match_count} matches (max_matches={req.max_matches})"
             if want_rows and shown_matches < match_count else "",
             f"{len(files)} file(s) capped at max_files={req.max_files}" if truncated_listing else "",

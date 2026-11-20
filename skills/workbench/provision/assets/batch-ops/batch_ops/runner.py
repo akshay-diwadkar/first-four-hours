@@ -629,6 +629,7 @@ def make_verify_run(req, index: int = 0) -> RunRequest:  # noqa: ANN001 - avoids
         timeout=req.timeout,
         env=req.env,
         shell=req.shell,
+        slices=list(req.slices),
         priority="must",
         max_bytes=32 * 1024,
     )

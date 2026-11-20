@@ -81,6 +81,11 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         f"## Heading {i}\n\nbody text line for section {i} padded out a bit more\n\n" for i in range(400)
     )
     fixture["aa/ab/x.txt"] = "x\n"
+    fixture["blocks.txt"] = (
+        "alpha:\n    beta one\n    target_mark first\n    target_mark again\n    beta two\n"
+        "gamma:\n    delta\n    target_mark second\n    delta tail\nwide:\n"
+        + "".join(f"    {'target_mark deep' if n == 120 else f'row {n}'}\n" for n in range(1, 151))
+    )
     for i in range(1, 31):
         fixture[f"hits/f{i:02d}.txt"] = "".join(f"needle_census {n}\n" for n in range(1, 11))
     seed_git(repo, fixture)
@@ -265,6 +270,21 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                     assert f"hits/f{i:02d}.txt (10)" in text
                 assert "===" not in text and "needle_census 1" not in text
 
+                bgrep = {"grep": "target_mark", "paths": ["blocks.txt"]}
+                res = await call(session, "batch_read", {"specs": [{**bgrep, "blocks": True}], "cwd": str(repo)})
+                text = _text(res).replace("\r", "")
+                assert text.count("1- alpha:") == 1
+                for row in ("3:     target_mark first", "9-     delta tail", "10- wide:", "125- ", "135- ",
+                            "130:     target_mark deep"):
+                    assert row in text
+                assert not re.search(r"(?m)^(124|136|60)- ", text)
+                assert "--" in text.split("\n")
+                res = await call(session, "batch_read", {"specs": [bgrep], "cwd": str(repo)})
+                assert "1- alpha:" not in _text(res)
+                res = await call(session, "batch_read", {"specs": [{**grep, "blocks": True}], "cwd": str(repo)})
+                text = _text(res).replace("\\", "/")
+                assert "blocks skipped: 300 matches over 20" in text and "=== hits/f05.txt (1 of 10) ===" in text
+
                 start = time.monotonic()
                 res = await call(session, "batch_run", {"commands": [
                     {"argv": [sys.executable, "-c", parent_script], "label": "slow", "timeout": 2},
@@ -347,6 +367,15 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 kept = _text(res).replace("\r", "").split("\n")
                 assert res.isError and "-two" in kept and "+three" in kept
                 assert lf.read_bytes().replace(b"\r\n", b"\n") == b"three\n"
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "lf.txt", "search": "three", "replace": "four"}],
+                    "verify": "git --version ||| count", "cwd": str(repo)})
+                assert not res.isError
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "lf.txt", "search": "four", "replace": "five"}],
+                    "verify": {"cmd": "git --version ||| count"}, "cwd": str(repo)})
+                assert not res.isError
+                assert lf.read_bytes().replace(b"\r\n", b"\n") == b"five\n"
 
                 sub = str(repo / "src")
                 res = await call(session, "batch_edit", {
@@ -445,6 +474,6 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "hits")})
                 assert "notes.txt" not in _text(res)
 
-                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5200
+                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5300
 
     asyncio.run(asyncio.wait_for(session_run(), 40))

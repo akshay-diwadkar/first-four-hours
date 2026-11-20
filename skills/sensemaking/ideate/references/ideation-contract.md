@@ -27,7 +27,10 @@ Required non-empty fields:
 - Goal:
 - Decision criteria:
 - Scope / non-goals:
+- Already known:
 ```
+
+`Already known:` names what the user already knows, has tried, or ruled out, and the answers anyone gives first: the bar an option must clear to count as new.
 
 ### What to do
 
@@ -58,7 +61,7 @@ For a path search, with or without a fork, state why the recommended order beats
 
 ### Viable options
 
-Required. Each surviving candidate, ordering, or path gets its own `###` subsection holding only what distinguishes it under the decision criteria. Path options describe causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
+Required. Each surviving candidate, ordering, or path gets its own `###` subsection holding only what distinguishes it under the decision criteria, opening with `- Beyond known:` and what it adds beyond `Already known:`, or `none —` and why it stays viable. Path options describe causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
 
 Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); `run an experiment first` needs one. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
 
@@ -68,23 +71,7 @@ Required, the one such record: the strongest challenge to What to do, the condit
 
 ### Exploration
 
-Exploration opens with the divergence record, required in every search:
-
-```text
-Search shape: alternative | path | path with a fork
-- Obvious defaults:
-- Simplify/eliminate:
-- Invert/relax an authorized constraint:
-- Domain transfer:
-- Combine mechanisms:
-- Actor/timing/control:
-- Failure recovery:
-- Preserve baseline:
-```
-
-A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer.
-
-Then `### Dropped` lists each dropped candidate with a one-line reason.
+Required: one line per dropped candidate, `- <candidate> — <decision criterion it lost on>`, or one line saying why none was dropped. The survey map, lens results, and search shape stay in the ledger.
 
 ### Evidence
 
@@ -94,7 +81,7 @@ Evidence opens with the required research record:
 - Research: settled | diminishing returns | unavailable sources | user limit — <coverage; limitations>
 ```
 
-It starts with why research stopped (`settled` when more search could not change the answer, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: playbooks and sources used, the web searches run, and what was unavailable, skipped, or user-excluded. The sealer refuses an ideation with no External evidence row naming a source unless research stopped for `user limit`, whose coverage then names the user's web opt-out, or `unavailable sources`, whose coverage names why web research could not be done; record a web search that found nothing relevant as an External evidence row saying so.
+It starts with why research stopped (`settled` when more search could not change the answer, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: each survey class searched, or why it was skipped, the sources used, and what was unavailable or user-excluded. The sealer refuses an ideation with no External evidence row naming a source unless research stopped for `user limit`, whose coverage then names the user's web opt-out, or `unavailable sources`, whose coverage names why web research could not be done; record a web search that found nothing relevant as an External evidence row saying so.
 
 Evidence rows sit in tables under three optional fixed subsections; the subsection names the source kind, so rows carry no ID or code. Every table line in Evidence sits under one of them, below its exact header; these subsections and headers appear nowhere else.
 
@@ -124,44 +111,28 @@ The sealer writes only `.first-four-hours/ideations/<slug>/ideation.md` inside `
 
 ### Framing
 
-Before generating, ask what problem the stated goal serves and whether a reframed goal would remove that problem. A reframe that would becomes a candidate, usually under Simplify/eliminate; note a rejected reframe in `Scope / non-goals:`.
+Ask what problem the stated goal serves and whether a reframed goal would remove it; such a reframe is a candidate, and a rejected one is noted in `Scope / non-goals:`.
 
 ### Generation
 
-Diverge before judging feasibility, in every domain. Generate a wide, cheap candidate set from the lenses before research; research then tests, extends, or eliminates candidates and may add new ones, so candidates are never limited to what research found. First ideas tend to be the typical ones, so name them on the `Obvious defaults:` line first and make every other causal lens look past them: a default stays an eligible candidate but fills no other causal lens line except `Preserve baseline:`, which names the status quo even when it is also a default, and a lens that yields nothing beyond the defaults reads not applicable with its reason. After the lenses, imagine every candidate so far forbidden and add whatever then appears. Collapse duplicate mechanisms. Evaluate only survivors in depth: compare each against the lead and the baseline rather than scoring it alone, and recombine parts of survivors that won on different criteria into a further candidate. Record every dropped candidate with a one-line reason, in alternative and path searches alike. No idea count is imposed: generation is complete when every lens is accounted for and the forbidden-set pass has run.
+Generate from the survey, not memory: each mechanism it found becomes a candidate or a ledger line saying why not. Name the obvious defaults first, `Already known:` plus answers a typical agent gives first; they stay eligible. Then probe the gaps with lenses: simplify or eliminate the requirement; invert or relax a constraint within your authority; transfer from a distant field; combine mechanisms whose strengths cover each other; shift who acts, when, or who decides; recover from failure instead of preventing it; keep the baseline. More ideas or personas add little variety; the survey supplies it. Collapse duplicates by mechanism, then forbid the defaults and every candidate so far and generate again. Done when every survey mechanism and lens has a ledger line and the forbidden pass ran.
 
-### Search shapes and lenses
+Pick the search shape by problem: **alternative**, approaches to one goal chosen alone or combined; **path**, where sequencing and prerequisites dominate; **path with a fork**, a sequence with a fork to resolve. For a path, propose competing orderings too: risk-first, value-first, reversible-first, dependency-forced, cheapest-learning-first.
 
-Choose the search structure that best fits the problem:
-- **Alternatives:** approaches to one goal that can be chosen alone or combined, with no required order, evaluated against decision criteria, impact, risk, effort, and confidence; recommend a combination when evidence supports it.
-- **Paths:** ordering, dependency, or multi-step problems where sequencing and prerequisites dominate; trace milestones, prerequisites, sequencing rationale, genuine forks, and dead ends avoided.
-- **Path with a fork:** a sequence with an architectural fork that needs option resolution, or an option whose selection continues into a causal or strategy progression.
+### Saturation
 
-Causal-divergence lenses, for every search:
-- **Obvious defaults:** Answers a typical agent would give first.
-- **Simplify/eliminate:** Remove requirement or bypass problem.
-- **Invert/relax an authorized constraint:** Only alter constraints within Ideate’s delegated authority.
-- **Domain transfer:** State the problem without its domain's nouns, borrow from a distant field that solved it, and query the web with that statement when web research is allowed.
-- **Combine mechanisms:** Pair mechanisms whose strengths cover each other's weaknesses.
-- **Actor/timing/control:** Shift who acts, when, or who decides; generate from at least two named, differently informed perspectives (such as stakeholder, adjacent-field specialist, adversary), not one blended view.
-- **Failure recovery:** Shift from preventing failure to limiting or recovering from it.
-- **Preserve baseline:** Keep the status quo as a legitimate candidate when evidence does not justify intervention.
-
-Sequencing lenses, for path searches with or without a fork; each proposes a competing ordering, never a justification of an order already chosen:
-- **Risk-first:** Retire the step most likely to fail first.
-- **Value-first:** Deliver the most valuable outcome earliest.
-- **Reversible-first:** Take reversible steps before irreversible commitments.
-- **Dependency-forced:** Follow the order prerequisites impose.
-- **Cheapest-learning-first:** Start with the cheapest step that resolves the largest unknown.
-
-### Dominant discriminator and search saturation
-
-When possibilities remain, identify the dominant discriminator: the cheapest credible observation, decision, or authority that could materially change the conclusion or next commitment. Once every lens is accounted for and the forbidden-set pass has run, stop search when:
+Identify the dominant discriminator: the cheapest credible observation, decision, or authority that could change the conclusion or next commitment. After the second round, stop when:
 - remaining possibilities collapse to the same mechanism or causal/dependency path;
-- one recommended direction or coherent causal/dependency path is supported across all material evidence-backed discriminators;
+- one direction or path is supported across all material evidence-backed discriminators;
 - remaining variation is downstream or cosmetic;
 - distinguishing evidence or authority is genuinely unavailable; or
 - more search cannot plausibly change the conclusion or next commitment.
+
+### Challenge
+
+- **Quick:** check the draft against each pre-seal check.
+- **Standard:** argue the strongest case for the best losing candidate beyond the known set and for the baseline, each backed by a fresh source, then repair.
+- **Deep:** one fresh challenger per [Delegation protocol](delegation-protocol.md); repair against its findings.
 
 ### Possibility space and feasibility
 
@@ -172,7 +143,7 @@ Look beyond mechanisms the repository already uses. An option is not disqualifie
 Classify each blocker before asking:
 - **Evidence-owned:** Gather a decision-changing observation.
 - **Ideate-owned:** Decide directly using criteria and authority.
-- **Materially user-owned:** Ask exactly one minimum action-changing question through Reason, or directly when Reason is unnecessary. If the user delegates that blocker ("you decide"), decide it within Ideate authority.
+- **Materially user-owned:** Ask the minimum action-changing questions together, in the intake batch when visible then. If the user delegates that blocker ("you decide"), decide it within Ideate authority.
 - **Unavailable or untestable evidence:** Preserve uncertainty: use `run an experiment first` for one testable decision-changing discriminator or `research limit reached` for insufficient/unobtainable coverage.
 
 ### Consumption
@@ -181,14 +152,15 @@ Return the sealed path to the user or invoking owner. A consumer reads What to d
 
 ### Reason boundary
 
-A Reason challenge targets a consequential researched provisional conclusion or load-bearing claim; Reason cannot choose Ideate's conclusion or next commitment. Ideate re-verifies Reason evidence; only its accepted consequence persists in `ideation.md`.
+Reason, consulted only when judgment is stuck, cannot choose Ideate's conclusion or next commitment; Ideate re-verifies its evidence, and only the accepted consequence persists in `ideation.md`.
 
 ## Pre-seal checks
 
 Repair the draft until each holds:
 - Every material conclusion, number, or absolute claim (such as "100%") traces to an evidence row or a calculation from one, or is labelled an estimate, `assumption-backed:`, or `hypothesis:`.
 - Each source a material conclusion rests on was opened, is the work cited, and states the row's finding at the passage its Locator names; a search result or abstract alone does not count. Trace a secondary source to its primary, checked the same way, or mark the row secondary and untraced. A row you could not open says so; label its conclusion as above.
-- The leading candidate was searched for prior art (who built or tried it, and what happened) in every source research could use; an evidence row records that search, even when nothing turned up.
-- A recommendation built only from `Obvious defaults:` answers, alone or combined, states why each other lens candidate lost.
+- Every viable option beyond `Already known:` was searched for prior art (who built or tried it, and what happened) in every source research could use; an evidence row records that search, even when nothing turned up.
+- Each viable option opens with its `- Beyond known:` line.
+- A recommendation built only from known or obvious answers names, for each candidate beyond them, the decision criterion it lost on; fewer sources is not a criterion.
 - When What to do makes the next commitment depend on an experiment's result, Outcome is `run an experiment first`.
-- Prose holds no file-edit instructions.
+- The draft fits its tier's size, and prose holds no file-edit instructions.

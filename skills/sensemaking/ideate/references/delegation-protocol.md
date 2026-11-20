@@ -1,16 +1,14 @@
 # Delegation Protocol
 
-When Blueprint planning or another orchestrated handoff consults Ideate, Ideate owns ideation.md and the caller keeps its own decisions. Delegation is optional. Skip it when the primary agent can complete the research efficiently without subagents.
+When Blueprint planning or another orchestrated handoff consults Ideate, Ideate owns ideation.md and the caller keeps its own decisions. Only the Deep tier delegates.
 
 ## Research workers
 
-When the harness has an `ffh-researcher` agent (or `ffh_researcher`) that launches, launch each research worker as that agent; otherwise launch a generic subagent.
+Launch one worker per survey class, never per candidate, in parallel: as `ffh-researcher` (or `ffh_researcher`) when it launches, else a generic subagent. Give each the goal, scope and non-goals, `Already known:`, its class and playbook guidance, exclusions, and stop condition. Workers stay read-only and never write `ideation.md`; their returns are candidate evidence Ideate verifies before use. Retry one materially incomplete worker once, then record the gap in the `Research:` coverage.
 
-Delegate bounded read-only research — local material gathering, external prior art, evidence and trade-off collection, or constraint inventory — only when it materially improves coverage or context quality. Give each worker an immutable frame: goal, scope and non-goals, assigned role, bounded source classes, selected playbooks, available context identifiers, explicit exclusions, and stop condition. Workers stay read-only and must never write `ideation.md`; their returns are candidate evidence that Ideate verifies before use. Retry one materially incomplete worker at most once, then record the gap as a research limitation.
+## Fresh challenger
 
-## Adversarial specialist
-
-Add one capable adversarial specialist only when challenging the provisional lead could materially change the search: it argues counter-arguments and disconfirmation while Ideate re-verifies its evidence and decides. Parallelize only independent workers; when subagents are unavailable, run them sequentially.
+Before sealing, launch exactly one: `ffh-challenger` (or `ffh_challenger`) when it launches, else a generic subagent at least as capable as you. Give it only the draft's text, the goal and criteria, `Already known:`, and three to five load-bearing claims with their sources, withholding your reasoning, and ask for the strongest case that a dropped or unconsidered candidate, or the baseline, should win; it cannot search the web, so verify what it points to. Re-verify each finding and decide. When no subagent launches, research and challenge locally as Standard does and say so in the `Research:` coverage.
 
 <!-- delegation-projection:begin -->
 ### Delegation: preserve authority, bound labor

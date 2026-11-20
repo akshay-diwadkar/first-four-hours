@@ -23,7 +23,7 @@ Start it yourself with `/ideate`, or the agent may start it when your request ma
 
 ## What happens
 
-`/ideate` frames the goal and decision criteria, names the obvious answers first, then generates candidates from several angles that look past them, all before judging any. It tests, extends, or eliminates them with the cheapest evidence that could change the conclusion, compares the survivors with each other and with the current approach, and recombines their strongest parts. It searches the web for prior art and current practice as well as any repository, unless you tell it not to, and records when you opted out or web research could not be done. It keeps mechanisms the evidence supports apart from untested hypotheses. It consults [`/reason`](reason.md) at its judgment points.
+`/ideate` first records what you already know, have tried, or ruled out, and the answers anyone gives first, so a new idea has a bar to clear. It picks a tier: Quick by default, Standard when several real directions compete or the choice is costly to reverse, and Deep when stakes are high or the field is broad, which adds parallel researchers and a fresh challenger. Before it names any candidate it runs a broad survey: the problem described plainly, failures and postmortems, recent work, extreme users, and the primary sources of the field, preferring papers, practitioner write-ups, and issue trackers over popular summaries. It searches the web for prior art and current practice as well as any repository, unless you tell it not to, and records when you opted out or web research could not be done. It generates candidates from what the survey found, searches for who tried each less obvious idea and what happened, compares the survivors with each other and with the current approach, and challenges its own answer. An idea beyond what you already know never loses only because it has fewer sources. It consults [`/reason`](reason.md) only when its judgment is stuck.
 
 ## What you get
 
@@ -32,7 +32,7 @@ A sealed `ideation.md` in the ignored folder `.first-four-hours/ideations/<slug>
 - `Outcome`: `recommended direction`, with the viable choices; `run an experiment first`, with the experiment that would decide between them; or `research limit reached`, with what the research could not establish;
 - `Final choice`: `yours to make`, `made by you`, or `delegated` within a scope you set. A recommendation is never your approval.
 
-The viable options follow it, each in its own subsection, then what would change the answer. The search behind them comes next, including each dropped candidate and why, then the evidence, which opens with the research coverage, including the web searches run. A suggested follow-up, when there is one, comes last.
+The goal section also records `Already known:`, what you already know, have tried, or ruled out. The viable options follow What to do, each in its own subsection opening with `Beyond known:`, what it adds beyond that. Then comes what would change the answer, then Exploration, one line per dropped candidate with the decision criterion it lost on, then the evidence, which opens with the research coverage, including each survey class searched. A suggested follow-up, when there is one, comes last.
 
 ## When it stops
 
@@ -44,7 +44,7 @@ The viable options follow it, each in its own subsection, then what would change
 
 **What it refuses, and why.** It never manufactures a winner. When the evidence cannot justify a choice, it names the experiment that would decide or reports the limit of the research. It keeps mechanisms the evidence supports apart from untested ideas, and it does not dismiss an idea only because no one has built it in this project. Its recommendation is never your approval: you make the final selection, and a choice you already made stands without being asked again.
 
-**Floor and ceiling.** A weaker agent generates candidates before judging them, then tests each with the cheapest evidence that could change the conclusion. A stronger agent ranges as widely as the goal deserves, while the cost stays in proportion to the decision.
+**Floor and ceiling.** A weaker agent surveys the field before it generates candidates, then tests each less obvious one with the cheapest evidence that could change the conclusion. A stronger agent ranges as widely as the goal deserves, while the cost stays in proportion to the decision.
 
 ## Related skills
 

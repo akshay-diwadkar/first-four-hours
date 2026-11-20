@@ -20,7 +20,7 @@ from ideation_workspace import WORKSPACE_DIR, WORKSPACE_PARTS
 # Structural constants
 # ---------------------------------------------------------------------------
 
-IDEATE_VERSION = "3.0.0"
+IDEATE_VERSION = "4.0.0"
 
 GOAL_HEADING = "## Goal"
 WHAT_TO_DO_HEADING = "## What to do"
@@ -69,7 +69,7 @@ WHAT_TO_DO_REQUIRED_FIELDS = (
 GOAL_REQUIRED_FIELDS = (
     "- Goal:",
     "- Decision criteria:",
-    "- Scope / non-goals:",
+    "- Scope / non-goals:", "- Already known:",
 )
 EVIDENCE_REQUIRED_FIELDS = ("- Research:",)
 
@@ -79,27 +79,7 @@ SUPPORT_BASIS_PREFIXES = (
     "hypothesis:",
 )
 
-SEARCH_SHAPES = ("alternative", "path", "path with a fork")
-SEQUENCED_SHAPES = ("path", "path with a fork")
-SEARCH_SHAPE_RE = re.compile(r"^Search shape:[ \t]*(.*)$", re.MULTILINE)
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
-CAUSAL_LENSES = (
-    "Obvious defaults",
-    "Simplify/eliminate",
-    "Invert/relax an authorized constraint",
-    "Domain transfer",
-    "Combine mechanisms",
-    "Actor/timing/control",
-    "Failure recovery",
-    "Preserve baseline",
-)
-SEQUENCING_LENSES = (
-    "Risk-first",
-    "Value-first",
-    "Reversible-first",
-    "Dependency-forced",
-    "Cheapest-learning-first",
-)
 
 PROHIBITED_RE = re.compile(
     r"```(?:diff|patch)\s*\n(?:@@|\+\+\+|---)",
@@ -500,40 +480,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
         )
     exploration_body = _section_body(text, EXPLORATION_HEADING)
     if not exploration_body.strip():
-        errors.append(Diagnostic("ideation.empty_exploration", "Exploration section must be non-empty"))
-
-    # Divergence record: a search shape and one line per required lens, outside HTML comments,
-    # checked for presence only
-    visible_exploration = HTML_COMMENT_RE.sub("", exploration_body)
-    shape_m = SEARCH_SHAPE_RE.search(visible_exploration)
-    shape = shape_m.group(1).strip() if shape_m else ""
-    if shape not in SEARCH_SHAPES:
-        errors.append(
-            Diagnostic(
-                "ideation.invalid_search_shape",
-                "Exploration must declare 'Search shape: alternative | path | path with a fork'",
-            )
-        )
-    required_lenses = CAUSAL_LENSES + (SEQUENCING_LENSES if shape in SEQUENCED_SHAPES else ())
-    for lens in required_lenses:
-        if not re.search(rf"^- {re.escape(lens)}:[ \t]*\S", visible_exploration, re.MULTILINE):
-            errors.append(
-                Diagnostic(
-                    "ideation.lens_unaccounted",
-                    f"Exploration must account for lens '{lens}': write '- {lens}: <candidate>' "
-                    f"or '- {lens}: not applicable — <one-line reason>'",
-                )
-            )
-
-    obvious_m = re.search(r"^- Obvious defaults:[ \t]*(.*)$", visible_exploration, re.MULTILINE)
-    if obvious_m and obvious_m.group(1).strip().casefold().startswith("not applicable"):
-        errors.append(
-            Diagnostic(
-                "ideation.obvious_defaults_missing",
-                "'- Obvious defaults:' must name at least one answer a typical agent would give first; "
-                "it is never not applicable",
-            )
-        )
+        errors.append(Diagnostic("ideation.empty_exploration", "Exploration must not be empty: list each dropped candidate and the criterion it lost on"))
 
     # Decisive experiments anywhere in the document
     experiment_re = re.compile(

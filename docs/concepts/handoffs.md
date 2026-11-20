@@ -55,7 +55,7 @@ Five skills produce work that `/blueprint` can plan from, and you decide whether
 
 ## Reason checkpoints
 
-`/architect`, `/assess`, `/charter`, `/diagnose`, `/temper`, `/ticket`, `/ideate`, `/scribe`, `/tutor`, and `/examiner` consult [`/reason`](../skills/reason.md) at their own judgment points, such as before committing to an approach, after a failure, and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start `/reason` yourself. `/blueprint` has no checkpoints: its tiered challenge is its adversarial review, and it consults `/reason` only when its judgment is stuck.
+`/architect`, `/assess`, `/charter`, `/diagnose`, `/temper`, `/ticket`, `/scribe`, `/tutor`, and `/examiner` consult [`/reason`](../skills/reason.md) at their own judgment points, such as before committing to an approach, after a failure, and before presenting a result. These consultations happen inside the owning skill and leave no file; they are not steps you run. You can also start `/reason` yourself. `/blueprint` and `/ideate` have no checkpoints: their tiered challenge is their adversarial review, and they consult `/reason` only when judgment is stuck.
 
 ## Routing
 

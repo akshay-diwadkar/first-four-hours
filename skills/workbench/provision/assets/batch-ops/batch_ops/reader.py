@@ -1687,13 +1687,20 @@ def _cut_command(text: str) -> str:
     return text if len(text) <= 160 else text[:157] + "..."
 
 
+class _SourceNotRead(Exception):
+    """A command source exists but was not read; the message says why."""
+
+
 def _read_source(path: Path) -> str | None:
-    try:
-        if not path.is_file() or path.stat().st_size > 1024 * 1024:
-            return None
-        return path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    """Return the text of `path`, or None when absent; raise _SourceNotRead when present but unread."""
+    if not path.is_file():
         return None
+    try:
+        if path.stat().st_size > 1024 * 1024:
+            raise _SourceNotRead("over 1 MB")
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise _SourceNotRead("unreadable") from exc
 
 
 def _workflow_steps(text: str) -> list[str]:
@@ -1741,8 +1748,13 @@ def _survey_commands(root_p: Path) -> list[str]:
         ) if workflows.is_dir() else []
     except OSError:
         names = []
+        rows.append("  .github/workflows: not read (unreadable)")
     for name in names[:5]:
-        text = _read_source(workflows / name)
+        try:
+            text = _read_source(workflows / name)
+        except _SourceNotRead as exc:
+            rows.append(f"  .github/workflows/{name}: steps not read ({exc})")
+            continue
         steps = _workflow_steps(text) if text is not None else []
         if not steps:
             continue
@@ -1754,7 +1766,11 @@ def _survey_commands(root_p: Path) -> list[str]:
         rows.append(f"  +{len(names) - 5} more workflow file(s)")
 
     for make_name in ("Makefile", "makefile", "GNUmakefile"):
-        text = _read_source(root_p / make_name)
+        try:
+            text = _read_source(root_p / make_name)
+        except _SourceNotRead as exc:
+            rows.append(f"  {make_name}: targets not read ({exc})")
+            break
         if text is None:
             continue
         targets: list[str] = []
@@ -1771,7 +1787,11 @@ def _survey_commands(root_p: Path) -> list[str]:
             rows.append(f"  {make_name}: {shown}{more}")
         break
 
-    text = _read_source(root_p / "package.json")
+    try:
+        text = _read_source(root_p / "package.json")
+    except _SourceNotRead as exc:
+        text = None
+        rows.append(f"  package.json: scripts not read ({exc})")
     if text is not None:
         try:
             data = json.loads(text)

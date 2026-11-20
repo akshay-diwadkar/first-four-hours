@@ -98,6 +98,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     )
     fixture["package.json"] = '{"scripts": {"test": "vitest run", "build": "tsc"}}\n'
     fixture["src/package.json"] = "{bad\n"
+    fixture["src/Makefile"] = "big:\n" + "#" * (1024 * 1024)
+    fixture["src/GNUmakefile"] = "fallback:\n"
     seed_git(repo, fixture)
     notes = repo / "notes.txt"
     notes.write_bytes(b"keep\r\nold line\r\n")
@@ -489,6 +491,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert "make VAR" not in survey_text and "make deps" not in survey_text and "cc -o" not in survey_text
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "src")})
                 assert "package.json: scripts not read (invalid JSON)" in _text(res)
+                assert "Makefile: targets not read (over 1 MB)" in _text(res) and "make fallback" not in _text(res)
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "hits")})
                 assert "notes.txt" not in _text(res) and "Commands (" not in _text(res)
 

@@ -479,7 +479,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
             )
         )
     exploration_body = _section_body(text, EXPLORATION_HEADING)
-    if not exploration_body.strip():
+    if not HTML_COMMENT_RE.sub("", exploration_body).strip():
         errors.append(Diagnostic("ideation.empty_exploration", "Exploration must not be empty: list each dropped candidate and the criterion it lost on"))
 
     # Decisive experiments anywhere in the document

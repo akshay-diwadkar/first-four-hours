@@ -144,7 +144,8 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
         ("bare-stop", research, "- Research: settled\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
         ("unknown-stop", research, "- Research: condition met — docs only\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
         ("no-known", "- Already known: the team ruled out scaling the API servers on cost\n", "", ["ideation.field_empty"], "'- Already known:'"),
-        ("empty-exploration", "- Scale out the API servers — the user ruled it out on cost\n", "", ["ideation.empty_exploration"], "must not be empty"),
+        # A dropped-candidate record hidden in an HTML comment is invisible to a reader, so it does not count.
+        ("empty-exploration", "- Scale out the API servers — the user ruled it out on cost\n", "<!-- dropped: scale out -->\n", ["ideation.empty_exploration"], "must not be empty"),
     ):
         variant = tmp_path / f"{slug}.md"
         variant.write_text(_valid_draft().replace(old, new), encoding="utf-8")

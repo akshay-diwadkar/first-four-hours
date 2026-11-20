@@ -2,7 +2,7 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "2.0.1"
+  version: "2.0.2"
 ---
 
 Plan in this session. Hand planning to `ffh-planner` only when [Planner handoff](references/planner-handoff.md) says to; then it plans and you relay.

@@ -157,14 +157,14 @@ def test_batch_ops_stdio_session(tmp_path):
                 assert "outline only" in text and '"big.txt:1-630"' in text
                 res = await call(session, "batch_read", {
                     "specs": ["big.txt:1-300", "big.txt:301-630", {"path": "big.txt", "range": "301-630"},
-                              "big.txt:331-360"],
+                              "big.txt:331-360", "big.txt:1-630"],
                     "budget": {"tokens": 5000}, "cwd": str(repo)})
                 assert not res.isError
-                assert [i["status"] for i in _items(res)] == ["ok", "deferred", "deferred", "ok"]
+                assert [i["status"] for i in _items(res)] == ["ok", "deferred", "deferred", "ok", "deferred"]
                 text = _text(res)
                 assert "300:     body 15-5 filler" in text
                 next_line = [ln for ln in text.split("\n") if ln.startswith("next (read tool): specs=")]
-                assert next_line and '"big.txt:301-630"' in next_line[0] and '"range": "301-630"' in next_line[0]
+                assert next_line and '"big.txt:301-630"' in next_line[0] and '"range": "301-630"' in next_line[0] and '"big.txt:1-630"' in next_line[0]
 
                 res = await call(session, "batch_read", {"specs": ["doc.md@block:## Setup (local"], "cwd": str(repo)})
                 text = _text(res)
@@ -306,6 +306,13 @@ def test_batch_ops_stdio_session(tmp_path):
                     "cwd": str(repo)})
                 assert not res.isError
                 assert lf.read_bytes().replace(b"\r\n", b"\n") == b"two\n"
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "lf.txt", "search": "two", "replace": "three"}],
+                    "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]},
+                    "rollback_on_failure": False, "cwd": str(repo)})
+                kept = _text(res).replace("\r", "").split("\n")
+                assert res.isError and "-two" in kept and "+three" in kept
+                assert lf.read_bytes().replace(b"\r\n", b"\n") == b"three\n"
 
                 sub = str(repo / "src")
                 res = await call(session, "batch_edit", {

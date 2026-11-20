@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "2.1.0"
+CONTRACT_VERSION = "2.2.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -2595,7 +2595,43 @@ def _anchor_action(block: TextBlock) -> str:
     return "Quote more of the surrounding text on both sides of the edit so its old text occurs exactly once."
 
 
-def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> list[Diagnostic]:
+def _preview_lines(after: str, start: int, text: str) -> list[str]:
+    """Show a block as applied: two lines of context at each edge, changed lines marked with `+`."""
+    lines = after.split("\n")
+    if lines and lines[-1] == "" and after.endswith("\n"):
+        lines.pop()
+    if not lines:
+        return []
+    first = after.count("\n", 0, start)
+    last = after.count("\n", 0, start + len(text) - 1) if text else first
+    windows = [(first - 2, first + 1)]
+    if text:
+        windows.append((last - 1, last + 2))
+    clipped = [(max(low, 0), min(high, len(lines) - 1)) for low, high in windows]
+    merged: list[list[int]] = []
+    for low, high in clipped:
+        if low > high:
+            continue
+        if merged and low <= merged[-1][1] + 1:
+            merged[-1][1] = max(merged[-1][1], high)
+        else:
+            merged.append([low, high])
+    shown: list[str] = []
+    for position, (low, high) in enumerate(merged):
+        if position:
+            shown.append("…")
+        for index in range(low, high + 1):
+            mark = "+" if text and first <= index <= last else " "
+            shown.append(f"{mark}{index + 1:>5}| {lines[index][:160]}")
+    return shown
+
+
+def _block_sequence_diagnostics(
+    blueprint: Blueprint,
+    view: RepositoryView,
+    *,
+    previews: list[dict[str, Any]] | None = None,
+) -> list[Diagnostic]:
     """Simulate a faithful executor and prove every Construct check point passes.
 
     For each instruction, Frozen blocks then Exact blocks: every block of the
@@ -2652,29 +2688,6 @@ def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> l
                                 line=block.line,
                             )
                         ]
-                    if block.form == "range" and span[1] < len(current):
-                        # A range keeps its end-anchor line or next heading; a block ending with that line duplicates it.
-                        kept = current.splitlines(keepends=True)
-                        offset = 0
-                        for kept_line in kept:
-                            if offset == span[1]:
-                                kept_text = kept_line.rstrip("\r\n").rstrip()
-                                break
-                            offset += len(kept_line)
-                        else:
-                            kept_text = ""
-                        last_text = next((part.rstrip() for part in reversed(block.text.split("\n")) if part.strip()), "")
-                        if kept_text and kept_text == last_text:
-                            return [
-                                _error(
-                                    "block.boundary_repeated",
-                                    f"Instruction {step.number}: in {block.path!r} the block's last non-empty line {kept_text!r} repeats "
-                                    "the line its range keeps, so applying it leaves that line twice.",
-                                    "Drop that line from the block or move the end anchor past it: a range keeps its end-anchor line and a section keeps its next heading.",
-                                    path=block.path,
-                                    line=block.line,
-                                )
-                            ]
                 state, reason = block_state(current, block)
                 if state != "unapplied":
                     return [
@@ -2700,6 +2713,17 @@ def _block_sequence_diagnostics(blueprint: Blueprint, view: RepositoryView) -> l
                             line=block.line,
                         )
                     ]
+                if previews is not None and block.form != "file":
+                    span = resolve_span(states[key] or "", block)
+                    if not isinstance(span, str):
+                        previews.append(
+                            {
+                                "step": step.number,
+                                "path": block.path,
+                                "kind": block.kind,
+                                "lines": _preview_lines(result, span[0], block.text),
+                            }
+                        )
                 states[key] = result
             applied.extend((step.number, block) for block in blocks)
             for number, block in applied:
@@ -3887,13 +3911,17 @@ def _section_lines(blueprint: Blueprint, name: str) -> list[tuple[int, str]]:
     return [(index + 1, lines[index]) for index in range(start, end) if index not in fenced and lines[index].strip()]
 
 
-def _tier_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
-    """Require one declared tier in Goal and hold the plan to that tier's size budget (seal and check only)."""
-    tiers = [
+def _declared_tiers(blueprint: Blueprint) -> list[tuple[int, str]]:
+    return [
         (line, match.group("tier").strip().casefold())
         for line, raw in _section_lines(blueprint, "Goal")
         if (match := TIER_RE.match(raw)) is not None
     ]
+
+
+def _tier_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
+    """Require one declared tier in Goal and refuse a plan past 1.5 times that tier's size budget (seal and check only)."""
+    tiers = _declared_tiers(blueprint)
     if len(tiers) != 1 or tiers[0][1] not in TIER_BUDGETS:
         return [_error(
             "goal.tier",
@@ -3904,15 +3932,121 @@ def _tier_diagnostics(blueprint: Blueprint) -> list[Diagnostic]:
     line, tier = tiers[0]
     size = len(canonical_body(blueprint.text).encode("utf-8"))
     budget = TIER_BUDGETS[tier]
-    if size <= budget:
+    limit = budget * 3 // 2
+    if size <= limit:
         return []
     return [_error(
         "plan.size",
-        f"The plan is {size} bytes; a {tier} plan holds at most {budget}.",
+        f"The plan is {size} bytes; a {tier} plan has a {budget}-byte budget and is refused past {limit}.",
         "Cut restatement: state each decision once, drop narration of code the executor will open and of what stays "
         "the same, and prefer **Edit:** to quoting whole lines. Raise the tier only when its signals apply.",
         line=line,
     )]
+
+
+_VERSION_RE = re.compile(r"(?<![\d.])\d+\.\d+\.\d+(?!\d|\.\d)")
+
+
+def _reach_needles(blueprint: Blueprint) -> list[str]:
+    needles: list[str] = []
+    for step in blueprint.steps:
+        for block in step.blocks:
+            if block.form != "edit" or not block.old:
+                continue
+            dropped = set(_VERSION_RE.findall(block.old)) - set(_VERSION_RE.findall(block.text))
+            found = [block.old, *(m.group(0) for m in _VERSION_RE.finditer(block.old) if m.group(0) in dropped)]
+            for needle in found:
+                if needle not in needles:
+                    needles.append(needle)
+    return needles
+
+
+def _reach_notes(blueprint: Blueprint, repo_root: Path, view: RepositoryView) -> list[dict[str, Any]]:
+    needles = _reach_needles(blueprint)
+    if not needles:
+        return []
+    argv = ["git", "grep", "--no-index", "--exclude-standard", "-n", "-F", "-I"]
+    for needle in needles:
+        argv += ["-e", needle]
+    argv += ["--", ".", ":(exclude).first-four-hours"]
+    try:
+        completed = subprocess.run(argv, cwd=repo_root, capture_output=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return [{"unavailable": str(exc) or type(exc).__name__}]
+    if completed.returncode == 1:
+        return []
+    if completed.returncode != 0:
+        stderr = completed.stderr.decode("utf-8", errors="replace").strip().splitlines()
+        return [{"unavailable": stderr[0] if stderr else f"git grep exited {completed.returncode}"}]
+    plan_keys: set[str] = set()
+    for location in blueprint.locations:
+        try:
+            plan_keys.add(view.path_key(location.path))
+        except (OSError, ValueError):
+            continue
+    hits: list[tuple[str, str, str]] = []
+    for raw in completed.stdout.decode("utf-8", errors="replace").splitlines():
+        parts = raw.split(":", 2)
+        if len(parts) != 3:
+            continue
+        path, number, content = parts
+        try:
+            if view.path_key(path) in plan_keys:
+                continue
+        except (OSError, ValueError):
+            pass
+        hits.append((path, number, content))
+    notes: list[dict[str, Any]] = []
+    for needle in needles:
+        # git splits a multi-line pattern into one pattern per line, so a hit holds any one of its lines.
+        pieces = [piece for piece in needle.split("\n") if piece]
+        mine = [hit for hit in hits if any(piece in hit[2] for piece in pieces)]
+        if not mine:
+            continue
+        first: dict[str, str] = {}
+        for path, number, _content in mine:
+            first.setdefault(path, f"{path}:{number}")
+        notes.append({"text": needle[:80], "count": len(mine), "at": list(first.values())[:10]})
+    return notes
+
+
+def check_notes(text: str, repo_root: Path) -> dict[str, Any]:
+    """Information for a draft that passes check: block previews, reach outside the plan, and size past budget.
+
+    Never raises and never changes validity; a part that fails reports ``unavailable``.
+    """
+    notes: dict[str, Any] = {}
+    blueprint: Blueprint | None = None
+    view: RepositoryView | None = None
+    try:
+        blueprint, _diagnostics = _parse_draft(text)
+        view = RepositoryView(repo_root)
+        if blueprint is None:
+            raise ValueError("the draft does not parse")
+    except Exception as exc:  # noqa: BLE001 - notes are information and must never raise
+        failed = [{"unavailable": str(exc) or type(exc).__name__}]
+        return {"previews": failed, "reach": list(failed)}
+    try:
+        previews: list[dict[str, Any]] = []
+        problems = _block_sequence_diagnostics(blueprint, view, previews=previews)
+        if problems:
+            raise ValueError(problems[0].message)
+        notes["previews"] = previews
+    except Exception as exc:  # noqa: BLE001
+        notes["previews"] = [{"unavailable": str(exc) or type(exc).__name__}]
+    try:
+        notes["reach"] = _reach_notes(blueprint, repo_root, view)
+    except Exception as exc:  # noqa: BLE001
+        notes["reach"] = [{"unavailable": str(exc) or type(exc).__name__}]
+    try:
+        tiers = _declared_tiers(blueprint)
+        if len(tiers) == 1 and tiers[0][1] in TIER_BUDGETS:
+            size = len(canonical_body(blueprint.text).encode("utf-8"))
+            if size > TIER_BUDGETS[tiers[0][1]]:
+                notes["size"] = {"tier": tiers[0][1], "bytes": size, "budget": TIER_BUDGETS[tiers[0][1]]}
+    except Exception:  # noqa: BLE001
+        pass
+    return notes
 
 
 def _request_ids(request_bytes: bytes) -> list[str]:

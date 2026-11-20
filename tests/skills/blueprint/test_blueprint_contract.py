@@ -160,18 +160,22 @@ def range_block(anchors: str, text: str) -> str:
     return f"**Replace:** `src/seq.txt` {anchors}\n```text\n{text}```\n"
 
 
-def sequence_codes(tmp_path: Path, content: bytes, *steps: str, alias_step: int | None = None) -> set[str]:
-    """Seal-check a plan whose instructions edit one existing file through declared text."""
+def sequence_plan(tmp_path: Path, content: bytes, *steps: str, alias_step: int | None = None) -> str:
+    """Write src/seq.txt and return a plan whose instructions edit it through declared text."""
     (tmp_path / "src" / "seq.txt").write_bytes(content)
     body = "".join(
         f"### {number}. Edit step {number}\n**Location:** `{'./' if number == alias_step else ''}src/seq.txt`\n**State:** existing\n\n{blocks}\n"
         for number, blocks in enumerate(steps, start=1)
     )
-    plan = draft().split("## Implementation\n", 1)[0] + "## Implementation\n\n" + body + "## Verification" + draft().split("## Verification", 1)[1]
-    return codes(plan, tmp_path)
+    return draft().split("## Implementation\n", 1)[0] + "## Implementation\n\n" + body + "## Verification" + draft().split("## Verification", 1)[1]
 
 
-def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
+def sequence_codes(tmp_path: Path, content: bytes, *steps: str, alias_step: int | None = None) -> set[str]:
+    """Seal-check a plan whose instructions edit one existing file through declared text."""
+    return codes(sequence_plan(tmp_path, content, *steps, alias_step=alias_step), tmp_path)
+
+
+def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     text = draft().replace("Run: `python -m pytest -q tests/test_names.py`", "Run: `git commit -m done`", 1)
     assert "verification.git.mutation" in codes(text, tmp_path)
     # Each draft below is an independent refusal with its own input and code.
@@ -234,9 +238,32 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
                                                  range_block("from `keep` to end", "kept\n")) if code.startswith("block.")}
     assert not {code for code in sequence_codes(tmp_path, markdown, range_block("from `## A` to `## B`", "## A\nnew\n"))
                 if code.startswith("block.")}
-    # A block that changes its own first line but repeats the kept boundary line leaves that line twice (the duplicated-heading defect).
-    assert "block.boundary_repeated" in sequence_codes(tmp_path, markdown, range_block("from `## A` to `## B`", "## Z\nnew\n## B\n"))
-    assert "block.boundary_repeated" in sequence_codes(tmp_path, markdown, range_block("section `## A`", "## Z\nnew\n## B\n\n"))
+    # A block repeating the kept boundary line is no longer refused; the check preview shows the duplicate.
+    repeated = sequence_plan(tmp_path, markdown, range_block("from `## A` to `## B`", "## Z\nnew\n## B\n"))
+    assert not {code for code in codes(repeated, tmp_path) if code.startswith("block.")}
+    assert not {code for code in sequence_codes(tmp_path, markdown, range_block("section `## A`", "## Z\nnew\n## B\n\n"))
+                if code.startswith("block.")}
+    (tmp_path / "src" / "seq.txt").write_bytes(markdown)
+    shown = runtime.check_notes(repeated, tmp_path)["previews"]
+    assert [entry["lines"] for entry in shown] == [["     1| # T", "+    2| ## Z", "+    3| new", "+    4| ## B", "     5| ## B", "     6| keep"]]
+    # Previews show two lines of context at each edge, marking changed lines, with one gap marker between separate windows.
+    seven = b"1\n2\n3\n4\n5\n6\n7\n"
+    one = runtime.check_notes(sequence_plan(tmp_path, seven, edit_block(("4", "four"))), tmp_path)["previews"]
+    assert [entry["lines"] for entry in one] == [["     2| 2", "     3| 3", "+    4| four", "     5| 5", "     6| 6"]]
+    wide = range_block("from `2` to `7`", "a\nb\nc\nd\ne\nf\n")
+    gap = runtime.check_notes(sequence_plan(tmp_path, seven, wide), tmp_path)["previews"]
+    assert len(gap) == 1 and gap[0]["lines"].count("…") == 1
+    # Reach lists other copies of an edit's old text or dropped version, never Locations or the Blueprint workspace.
+    pinned = sequence_plan(tmp_path, b"version 1.2.3\n", edit_block(("version 1.2.3", "version 1.3.0")))
+    (tmp_path / "pins.txt").write_text("pinned 1.2.3\n", encoding="utf-8")
+    (tmp_path / ".first-four-hours" / "old").mkdir(parents=True)
+    (tmp_path / ".first-four-hours" / "old" / "blueprint.md").write_text("version 1.2.3\n", encoding="utf-8")
+    assert runtime.check_notes(pinned, tmp_path)["reach"] == [{"text": "1.2.3", "count": 1, "at": ["pins.txt:1"]}]
+    # Notes never raise: a host without git degrades reach to unavailable and keeps the previews.
+    monkeypatch.setenv("PATH", "")
+    degraded = runtime.check_notes(pinned, tmp_path)
+    assert len(degraded["reach"]) == 1 and list(degraded["reach"][0]) == ["unavailable"] and degraded["previews"]
+    monkeypatch.undo()
     assert not {code for code in sequence_codes(tmp_path, b"x\n- a\n- b\n", range_block("from `x` to `- `", "y\n- new\n"))
                 if code.startswith("block.")}
     # A `#` line inside fenced code is not a heading, so it neither ends a section nor leaves its tail behind.
@@ -288,7 +315,11 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path) -> None:
     assert "shape.section.empty" in codes(draft().replace("Make absent names normalize predictably for the caller.\n**Tier:** quick\n", "", 1), tmp_path)
     # A plan declares one tier and stays within that tier's size budget.
     assert codes(draft().replace("**Tier:** quick\n", "", 1), tmp_path) == {"goal.tier"}
-    padded = draft().replace("## Facts\n", "## Facts\n" + "The caller depends on this seam. " * 200 + "\n", 1)
+    # Past its tier's budget a plan only gets a size note; the refusal limit is 1.5 times the budget.
+    padded = draft().replace("## Facts\n", "## Facts\n" + "The caller depends on this seam. " * 249 + "\n", 1)
+    assert runtime.validate_draft(padded, tmp_path).valid
+    assert runtime.check_notes(padded, tmp_path)["size"] == {"tier": "quick", "bytes": 9214, "budget": 6144}
+    padded = draft().replace("## Facts\n", "## Facts\n" + "The caller depends on this seam. " * 250 + "\n", 1)
     assert codes(padded, tmp_path) == {"plan.size"}
     assert runtime.validate_draft(padded.replace("**Tier:** quick", "**Tier:** standard", 1), tmp_path).valid
     # A command never names a file before the step that creates it.
@@ -427,11 +458,13 @@ def test_prepare_seal_and_readback(tmp_path: Path) -> None:
     assert checked.returncode == 0, checked.stdout + checked.stderr
     envelope = json.loads(checked.stdout)
     assert envelope["result"]["check_only"] is True and envelope["artifacts"] == []
+    previews = [entry for entry in envelope["result"]["notes"]["previews"] if entry["path"] == "src/names.py"]
+    assert previews and any(line.startswith("+") and "return value.strip()" in line for line in previews[0]["lines"])
     assert draft_file.read_bytes() == plain.encode("utf-8")
     sealed_run = subprocess.run([*cli, "run"], capture_output=True, text=True, check=False)
     assert sealed_run.returncode == 0, sealed_run.stdout + sealed_run.stderr
     envelope = json.loads(sealed_run.stdout)
-    assert envelope["artifacts"] == [] and "check_only" not in envelope["result"]
+    assert envelope["artifacts"] == [] and "check_only" not in envelope["result"] and "notes" not in envelope["result"]
     assert Path(envelope["result"]["blueprint_path"]).resolve() == draft_file.resolve()
     sealed = draft_file.read_bytes().decode("utf-8")
     assert runtime.canonical_body(sealed) == plain

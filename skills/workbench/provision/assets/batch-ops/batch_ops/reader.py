@@ -1692,10 +1692,10 @@ class _SourceNotRead(Exception):
 
 
 def _read_source(path: Path) -> str | None:
-    """Return the text of `path`, or None when absent; raise _SourceNotRead when present but unread."""
-    if not path.is_file():
-        return None
+    """Return the text of `path`, or None when absent; raise _SourceNotRead when present but unread or its presence cannot be checked."""
     try:
+        if not path.is_file():
+            return None
         if path.stat().st_size > 1024 * 1024:
             raise _SourceNotRead("over 1 MB")
         return path.read_text(encoding="utf-8", errors="replace")

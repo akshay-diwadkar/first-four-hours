@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import importlib
 import json
 import os
@@ -101,6 +102,21 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     fixture["src/Makefile"] = "big:\n" + "#" * (1024 * 1024)
     fixture["src/GNUmakefile"] = "fallback:\n"
     seed_git(repo, fixture)
+    reader = importlib.import_module("batch_ops.reader")
+    denied = {repo / ".github" / "workflows" / "ci.yml", repo / "package.json"}
+    original_stat = Path.stat
+
+    def guarded_stat(self, *args, **kwargs):
+        if self in denied:
+            raise PermissionError(errno.EACCES, "Permission denied")
+        return original_stat(self, *args, **kwargs)
+
+    with monkeypatch.context() as m:
+        m.setattr(Path, "stat", guarded_stat)
+        rows = reader._survey_commands(repo)
+    assert "  .github/workflows/ci.yml: steps not read (unreadable)" in rows
+    assert "  package.json: scripts not read (unreadable)" in rows
+    assert "  Makefile: make build, make test, make lint" in rows
     notes = repo / "notes.txt"
     notes.write_bytes(b"keep\r\nold line\r\n")
     (repo / "ignored").mkdir(exist_ok=True)

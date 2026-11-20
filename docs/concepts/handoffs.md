@@ -34,7 +34,7 @@ Deliverables you asked for are not handoffs and stay committable: `/scribe`'s do
 
 ## Planning and execution
 
-[`/blueprint`](../skills/blueprint.md) owns every planning decision; [`/construct`](../skills/construct.md) owns carrying them out. `/construct` may fix its own coding mistakes inside a valid plan, but when the plan is stale, wrong, or incomplete against the actual code it stops with `plan-contradiction` instead of redesigning. The fix is a new `/blueprint` run in a fresh task folder, followed by a fresh `/construct` run. Review findings from [`/assess`](../skills/assess.md) go the same way, so the planner keeps every decision. `/blueprint` may run its whole planning stage in an [`ffh-planner` subagent](../reference/agents.md), which still owns every decision, while your session only relays questions and the report.
+[`/blueprint`](../skills/blueprint.md) owns every planning decision; [`/construct`](../skills/construct.md) owns carrying them out. `/construct` may fix its own coding mistakes inside a valid plan, but when the plan is stale, wrong, or incomplete against the actual code it stops with `plan-contradiction` instead of redesigning. The fix is a new `/blueprint` run in a fresh task folder, followed by a fresh `/construct` run. Review findings from [`/assess`](../skills/assess.md) go the same way, so the planner keeps every decision.
 
 ## Inputs to planning
 

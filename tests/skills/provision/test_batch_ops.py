@@ -88,6 +88,16 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     )
     for i in range(1, 31):
         fixture[f"hits/f{i:02d}.txt"] = "".join(f"needle_census {n}\n" for n in range(1, 11))
+    fixture[".github/workflows/ci.yml"] = (
+        "name: ci\njobs:\n  t:\n    steps:\n      - run: pytest -q\n"
+        "      - name: lint\n        run: |\n          ruff check .\n          ruff format --check .\n          echo done\n"
+        "      - name: ship\n        run: >-\n          deploy --env prod\n          --fast\n"
+    )
+    fixture["Makefile"] = (
+        ".PHONY: build test lint\nVAR := x\nbuild: deps\n\tcc -o app main.c\ntest lint:\n\techo t\n%.o: %.c\n"
+    )
+    fixture["package.json"] = '{"scripts": {"test": "vitest run", "build": "tsc"}}\n'
+    fixture["src/package.json"] = "{bad\n"
     seed_git(repo, fixture)
     notes = repo / "notes.txt"
     notes.write_bytes(b"keep\r\nold line\r\n")
@@ -472,8 +482,15 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 text = _text(res).replace("\\", "/")
                 assert re.match(r"# batch_read \(survey\) build [0-9a-f]{7}\n# Survey: ", text)
                 assert re.search(r"M notes\.txt \+\d+ -\d+", text) and "Diff stat" not in text
+                survey_text = text.replace("\r", "")
+                assert "  .github/workflows/ci.yml:\n    pytest -q\n    ruff check . (+2 more lines)\n    deploy --env prod --fast\n" in survey_text
+                assert "  Makefile: make build, make test, make lint\n" in survey_text
+                assert "  package.json scripts:\n    test: vitest run\n    build: tsc\n" in survey_text
+                assert "make VAR" not in survey_text and "make deps" not in survey_text and "cc -o" not in survey_text
+                res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "src")})
+                assert "package.json: scripts not read (invalid JSON)" in _text(res)
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "hits")})
-                assert "notes.txt" not in _text(res)
+                assert "notes.txt" not in _text(res) and "Commands (" not in _text(res)
 
                 assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5300
 

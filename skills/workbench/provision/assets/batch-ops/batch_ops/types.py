@@ -40,7 +40,7 @@ class ReadRequest:
     glob: str | None = None
     expand: bool = False
     max_files: int = 200
-    include_ignored: bool = False  # glob: also list files git ignores
+    include_ignored: bool = False  # glob and grep: also list files git ignores
 
     # grep
     paths: list[str] = field(default_factory=list)
@@ -67,6 +67,9 @@ class ReadRequest:
 
     # parse failure kept in-band so one bad spec never aborts the batch
     error: str | None = None
+
+    # the spec this request was parsed from, so a deferred item can be listed whole in next:
+    source: str | dict | None = None
 
 
 @dataclass
@@ -236,6 +239,7 @@ class Coverage:
     truncated: int = 0
     unchanged: int = 0
     no_match: int = 0
+    deferred: int = 0
     commands_run: int = 0
     commands_failed: int = 0
     commands_timed_out: int = 0

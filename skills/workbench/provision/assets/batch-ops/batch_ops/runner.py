@@ -9,6 +9,7 @@ produced before the timeout is still returned.
 from __future__ import annotations
 
 import asyncio
+import functools
 import os
 import re
 import shutil
@@ -62,6 +63,39 @@ async def _read_stream(stream: asyncio.StreamReader | None, capture: _Captured) 
             capture.dropped += len(chunk)
 
 
+@functools.lru_cache(maxsize=1)
+def _git_bash() -> str | None:
+    """Git for Windows' bash.exe, found through ``git --exec-path``; None elsewhere or on any failure."""
+    if os.name != "nt":
+        return None
+    try:
+        proc = subprocess.run(
+            ["git", "--exec-path"], stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=5,
+        )
+        if proc.returncode != 0:
+            return None
+        candidate = Path(proc.stdout.strip()).parents[2] / "bin" / "bash.exe"
+        return str(candidate) if candidate.is_file() else None
+    except Exception:
+        return None
+
+
+@functools.lru_cache(maxsize=1)
+def _auto_bash() -> str | None:
+    """First bash.exe on PATH outside %SystemRoot% (that one is the WSL launcher), else Git Bash."""
+    system_root = os.path.normcase(os.environ.get("SystemRoot") or "")
+    for entry in (os.environ.get("PATH") or "").split(os.pathsep):
+        entry = entry.strip().strip('"')
+        if not entry:
+            continue
+        if system_root and os.path.normcase(entry).startswith(system_root):
+            continue
+        candidate = Path(entry) / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return _git_bash()
+
+
 def _resolve_shell(req: RunRequest, root: Path) -> tuple[list[str], str]:
     """Return (argv prefix, shell name) for a string command."""
     shell = req.shell or "auto"
@@ -72,10 +106,21 @@ def _resolve_shell(req: RunRequest, root: Path) -> tuple[list[str], str]:
         raise SafetyError("shell='direct' requires argv, not cmd")
 
     if shell == "auto":
-        shell = "cmd" if os.name == "nt" else "sh"
+        if os.name != "nt":
+            shell = "sh"
+        else:
+            bash = _auto_bash()
+            if bash:
+                return [bash, "-c"], "bash"
+            exe = shutil.which("pwsh") or shutil.which("powershell")
+            if not exe:
+                raise SafetyError('no bash or PowerShell found; pass "shell": "cmd"')
+            return [exe, "-NoProfile", "-NonInteractive", "-Command"], "powershell"
 
     if shell in ("bash", "sh"):
         exe = shutil.which(shell)
+        if not exe and shell == "bash" and os.name == "nt":
+            exe = _git_bash()
         if not exe:
             hint = '; pass "shell": "powershell", or "argv"' if os.name == "nt" else ""
             raise SafetyError(f"{shell} is not available on PATH{hint}")

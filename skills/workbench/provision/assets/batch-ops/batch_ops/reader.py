@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 
 from .artifacts import ArtifactStore, make_read_handle, parse_read_handle, since_sha as _since_sha
-from .budget import BudgetTracker, body_budget, tier, water_fill
+from .budget import BudgetTracker, body_budget, tier
 from .safety import (
     SafetyError,
     decode_bytes,
@@ -40,7 +40,6 @@ from .types import Coverage, ReadRequest, ReadResult, Report, Workspace
 from .workspace import git_root_fast, path_is_within, workspace_info
 
 MAX_FILE_BYTES = 32 * 1024 * 1024
-OUTLINE_FIRST_BYTES = 24 * 1024  # an unranged read larger than this returns the file's outline
 DEFAULT_PARALLEL = 8
 VCS_DIRS = {".git", ".hg", ".svn"}
 
@@ -62,12 +61,12 @@ async def read_batch(
     parallel: int = DEFAULT_PARALLEL,
     max_output: int = 64 * 1024,
 ) -> list[ReadResult]:
-    """Read every request concurrently, then share the batch budget by what each produced.
+    """Read every request concurrently, then fit the batch budget item by item.
 
-    Pass 1 reads each item under its own per-item cap.  The batch budget is then shared
-    with ``water_fill`` (small items keep everything, the rest split what is left), and only
-    items that produced more than their share are read again under that share, which cuts
-    them on a line boundary with a continuation.  Unused budget is never wasted.
+    Pass 1 reads each item under its own per-item cap.  Items are then admitted greedily in
+    (priority tier, request order): one that fits is kept whole, one larger than the whole body
+    budget is cut while at least half of it remains, and any other is deferred whole, its
+    original spec carried in ``next:``.  The first item in order is always shown or cut.
     """
     root_p = Path(root).resolve()
     deadline = time.monotonic() + max(1.0, tracker.budget.time_s)
@@ -103,14 +102,31 @@ async def read_batch(
 
     results = list(await asyncio.gather(*(first(i, req) for i, req in enumerate(requests))))
 
-    shares = water_fill([r.bytes_shown for r in results], [tier(r.priority) for r in requests],
-                        body_budget(tracker.budget.bytes, len(requests)))
-    redo = [i for i, r in enumerate(results) if r.bytes_shown > shares[i] + 256]
-    if redo:
-        again = await asyncio.gather(*(run(requests[i], shares[i]) for i in redo))
-        for i, result in zip(redo, again):
-            if result.status not in ("error", "skipped"):
-                results[i] = result  # a failed re-read keeps the pass-1 result
+    total = body_budget(tracker.budget.bytes, len(requests))
+    remaining = total
+    for i in sorted(range(len(requests)), key=lambda k: (tier(requests[k].priority), k)):
+        size = results[i].bytes_shown
+        if size <= remaining:
+            remaining -= size
+        elif size > total and remaining * 2 >= total:
+            again = await run(requests[i], remaining)
+            if again.status not in ("error", "skipped"):
+                results[i] = again  # a failed re-read keeps the pass-1 result
+            remaining -= min(remaining, results[i].bytes_shown)
+        else:
+            request = requests[i]
+            source = request.source
+            if source is None:
+                source = request.path or request.glob or request.pattern or request.label
+            meta: dict[str, object] = {"continuation": source}
+            if request.allow_outside:
+                meta["outside"] = True
+            results[i] = ReadResult(
+                id="read", kind=request.kind, label=request.label or str(source), path=request.path,
+                status="deferred",
+                message="not shown: the report budget ran out; listed whole in next:",
+                meta=meta,
+            )
     tracker.used_bytes = sum(r.bytes_shown for r in results)
     for index, result in enumerate(results, start=1):
         result.id = f"R{index}"
@@ -379,7 +395,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     summary = None
     kept_count: int | None
     continuation: str | None
-    if mode == "auto" and not req.range and line_rows and size > OUTLINE_FIRST_BYTES:
+    if mode == "auto" and not req.range and line_rows and full_size > effective_cap:
         summary = _outline_summary(lines, effective_cap)
     if summary is not None:
         # A large file read whole is mostly skimmed: show its map and let blocks be read from it.
@@ -417,8 +433,8 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     if info.lossy:
         message = f"decoded as {info.encoding} with replacement characters"
     if summary is not None:
-        message = (f"outline only: {lines_total} lines, {format_bytes(info.bytes_total)}; read blocks or "
-                   f"ranges from it, or \"{display}:1-{lines_total}\" for the whole file")
+        message = (f"outline only: {lines_total} lines, {format_bytes(info.bytes_total)}, too big for this "
+                   f"report; read blocks or ranges from it, or \"{display}:1-{lines_total}\" in parts")
     elif truncated:
         # The continuation is named by the body's cut marker and the report's next: line.
         message = f"body truncated to {format_bytes(effective_cap)}; full file is {format_bytes(info.bytes_total)}"
@@ -944,7 +960,7 @@ def _grep_text(
     previous = None
     hit_set = set(hits)
     for idx in chosen:
-        if previous is not None and idx > previous + 1:
+        if previous is not None and idx > previous + 1 and context > 0:
             out.append("--")
         marker = ":" if idx in hit_set else "-"
         out.append(f"{idx + 1}{marker} {lines[idx]}" if number else lines[idx])
@@ -983,6 +999,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
     files: list[Path] = []
     seen: set[str] = set()
     truncated_listing = False
+    ignored_paths = 0
 
     for spec in path_specs:
         for candidate in _expand_paths(root, spec):
@@ -994,9 +1011,14 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             if resolved.is_file():
                 files.append(resolved)
             elif resolved.is_dir():
-                listed = _git_listed(resolved)
+                listed = _git_listed(resolved, ignored=req.include_ignored)
                 if listed is not None:
                     files.extend(listed)
+                    if not req.include_ignored:
+                        code, skipped_out, _ = _git(resolved, ["ls-files", "--others", "--ignored",
+                                                              "--exclude-standard", "--directory", "-z"])
+                        if code == 0:
+                            ignored_paths += sum(1 for name in skipped_out.split("\0") if name)
                     continue
                 for dirpath, dirnames, filenames in os.walk(resolved):
                     dirnames[:] = sorted(d for d in dirnames if not _skipped_dir(d))
@@ -1082,7 +1104,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         previous = None
         hit_set = set(hits)
         for idx in sorted(selected):
-            if previous is not None and idx > previous + 1:
+            if previous is not None and idx > previous + 1 and req.context > 0:
                 out.append("--")
             marker = ":" if idx in hit_set else "-"
             out.append(f"{idx + 1}{marker} {lines[idx]}")  # path is in the === header ===
@@ -1147,6 +1169,8 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             f"{len(files)} file(s) capped at max_files={req.max_files}" if truncated_listing else "",
             f"{excluded} file(s) excluded" if excluded else "",
             f"{skipped} file(s) skipped (binary, over 4MB, unreadable or outside cwd)" if skipped else "",
+            f"{ignored_paths} gitignored path(s) not searched; add \"ignored\": true to a grep object to include them"
+            if ignored_paths else "",
         ) if m) or None,
         artifact=artifact,
         meta={
@@ -1154,6 +1178,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             "files_scanned": scanned,
             "files_candidates": len(files), "skipped_binary": skipped_binary, "files_skipped": skipped,
             "truncated_listing": truncated_listing, "excluded": excluded,
+            **({"ignored_skipped": ignored_paths} if ignored_paths else {}),
             **({"continuation": continuation} if continuation else {}),
         },
     )
@@ -1183,9 +1208,11 @@ def _fair_quota(counts: list[int], total: int) -> list[int]:
     return quotas
 
 
-def _git_listed(base: Path) -> list[Path] | None:
-    """Tracked plus untracked, non-ignored files under *base*, or None outside a git repository."""
-    code, out, _ = _git(base, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+def _git_listed(base: Path, ignored: bool = False) -> list[Path] | None:
+    """Tracked plus untracked files under *base* (ignored ones only when *ignored*), or None outside git."""
+    args = ["ls-files", "--cached", "--others", "-z"] if ignored else [
+        "ls-files", "--cached", "--others", "--exclude-standard", "-z"]
+    code, out, _ = _git(base, args)
     if code != 0:
         return None
     return [base / name for name in out.split("\0") if name and not name.endswith("/")]
@@ -1211,6 +1238,7 @@ def _glob_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
     total_matches = 0
     outside = 0
     ignored = 0
+    seen_files: set[str] = set()
     if Path(pattern).is_absolute():
         iterator = globlib.iglob(pattern, recursive=True)
     else:
@@ -1234,6 +1262,10 @@ def _glob_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             candidate = candidate.resolve()
         except OSError:
             continue
+        key = os.path.normcase(str(candidate))
+        if key in seen_files:
+            continue
+        seen_files.add(key)
         inside = path_is_within(root, candidate)
         if not inside and not req.allow_outside:
             outside += 1  # "../*" or an absolute pattern reaching outside cwd
@@ -1928,6 +1960,8 @@ def collect_coverage(requested: int, results: list[ReadResult]) -> Coverage:
             coverage.unchanged += 1
         elif result.status == "no_match":
             coverage.no_match += 1
+        elif result.status == "deferred":
+            coverage.deferred += 1
         else:
             coverage.failed += 1
         coverage.bytes_total += result.bytes_total or 0

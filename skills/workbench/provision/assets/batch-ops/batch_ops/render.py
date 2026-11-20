@@ -21,7 +21,8 @@ def _budget_line(report: Report) -> str:
 
 def _coverage_lines(coverage: Coverage, *, counts: bool = True) -> list[str]:
     parts = []
-    for label in ("failed", "missing", "skipped", "binary", "lossy", "stale", "truncated", "unchanged", "no_match"):
+    for label in ("failed", "missing", "skipped", "deferred", "binary", "lossy", "stale", "truncated",
+                  "unchanged", "no_match"):
         value = getattr(coverage, label)
         if value:
             parts.append(f"{label} {value}")
@@ -77,6 +78,8 @@ def _render_read_item(result: ReadResult) -> list[str]:
     lines = [head]
     if result.message:
         lines.append(f"  {result.message}")
+    if result.status == "deferred":
+        return lines
     if result.hash:
         lines.append(f"  sha: {result.hash[:12]}")
     meta = result.meta or {}
@@ -100,7 +103,8 @@ def _render_read_item(result: ReadResult) -> list[str]:
 
 def _next_line(report: Report) -> str | None:
     """Every cut or misspelled item's continuation, as the specs to pass back to the read tool."""
-    specs = [str(r.meta["continuation"]) for r in report.reads if r.meta and r.meta.get("continuation")]
+    specs = [r.meta["continuation"] if isinstance(r.meta["continuation"], dict) else str(r.meta["continuation"])
+             for r in report.reads if r.meta and r.meta.get("continuation")]
     if not specs:
         return None
     line = f"next (read tool): specs={json.dumps(specs)}"
@@ -111,9 +115,10 @@ def _next_line(report: Report) -> str | None:
 
 def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
     lines = [f"# batch_read ({report.mode}) build {BUILD}"]
-    if any(r.truncated and not (r.meta or {}).get("outline_first") for r in report.reads):
+    if any((r.truncated and not (r.meta or {}).get("outline_first")) or r.status == "deferred"
+           for r in report.reads):
         lines.append(_budget_line(report))
-    problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged")]
+    problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged", "deferred")]
     if problems:
         lines.append("problems: " + ", ".join(f"{r.id} {r.status}" for r in problems))
     next_line = _next_line(report)

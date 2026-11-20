@@ -58,6 +58,12 @@ def _as_dict(spec: Any, what: str) -> dict[str, Any]:
 # Reads
 # ---------------------------------------------------------------------------
 def parse_read_spec(spec: Any) -> ReadRequest:
+    request = _parse_read_spec(spec)
+    request.source = spec if isinstance(spec, (str, dict)) else _as_dict(spec, "read spec")
+    return request
+
+
+def _parse_read_spec(spec: Any) -> ReadRequest:
     if isinstance(spec, str):
         s = spec.strip()
         if s.startswith("{") and s.endswith("}"):
@@ -310,6 +316,7 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
             max_files=_positive_int(data.get("max_files", 5000), "max_files"),
             exclude=_str_list(data.get("exclude")),
             max_line=_positive_int(data.get("max_line", 300), "max_line"),
+            include_ignored=bool(data.get("ignored", False)),
             **common,
         )
 

@@ -128,7 +128,7 @@ mcp = _SlimFastMCP(
         "per-command timeouts, failures first; batch_edit applies several edits atomically with "
         "dry-run and rollback on verification failure. Your client may list these tools under "
         "prefixed names: call them by the names it lists. Reads and edits stay inside cwd unless "
-        "allow_outside=true."
+        "allow_outside=true. If your client loads tool schemas on demand, load all three in one request."
     ),
 )
 
@@ -256,18 +256,18 @@ async def batch_read(
 
     cwd: absolute working directory. specs (strings): "a.txt" | "a.txt:10-50" | "a.txt@outline" |
     "a.txt@outline:RE" (lines matching RE) | "a.txt@block:RE" or "a.txt@block:N" (the block or
-    section opened there) | "a.txt@context:RE:3" | "a.txt@target:10-20" (verbatim edit search
-    text) | "grep:RE [in PATH..]" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
-    "git:cochange:PATH" (co-changed files) | "artifact:NAME:N-M". A pattern that is not
-    a regex (or, in an @ spec, matches nothing) is matched as literal text, so outline lines paste as-is.
-    A file over 24KB read without a range returns its outline; "a.txt:1-N" reads it all.
-    Objects: {"path": p, "since": SHA} omits the body while the file keeps the sha an earlier
-    read printed; {"grep": RE, "paths": [..], "exclude": [..], "context": 2, "ignore_case": true,
+    section opened there) | "a.txt@context:RE:3" | "a.txt@target:10-20" (edit search text) |
+    "grep:RE [in PATH..]" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
+    "git:cochange:PATH" (files often changed with PATH; check before editing it) | "artifact:NAME:N-M".
+    Non-regex patterns, and @ patterns matching nothing, match literally.
+    An unranged file read too big for the report returns its outline.
+    Objects: {"path": p, "since": SHA} omits the body of a file still at the sha a read printed;
+    {"grep": RE, "paths": [..], "exclude": [..], "ignored": true, "context": 2, "ignore_case": true,
     "mode": "files"} (per-file counts); {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
     {"compare": [spec, spec]}. mode="survey" maps the repository. budget (only lowers the
     ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. A cut
-    read adds an outline of its unshown lines, and the `next:` line lists specs to pass back to
-    this tool as-is with the same cwd. allow_outside=true reads absolute paths outside cwd.
+    read outlines its unshown lines; pass the `next:` specs back as-is with the same cwd.
+    allow_outside=true reads absolute paths outside cwd.
     """
     raw_specs = specs
     try:
@@ -428,13 +428,13 @@ async def batch_run(
     cwd: absolute working directory. commands: "@label: <cmd> ||| fails ||| tail:30" (slices:
     fails, head:N, tail:N, lines:N-M, grep:RE, grepv:RE, count, dedupe); {"cmd": "...",
     "timeout": 60, "cwd": "sub", "shell": "auto|cmd|powershell|bash|sh", "slices": ["tail:30"],
-    "ok_exit": [0, 1]} (exit codes that are not failures, e.g. a search that may find nothing);
+    "ok_exit": [0, 1]} (exit codes that are not failures);
     or {"argv": [...], "slices": [...]} (no shell). An object's cmd may end in " ||| " slices
     instead of "slices", not both. A timeout kills the process tree and keeps partial output.
     parallel=1 runs in order; fail_fast=true skips the rest after a failure; dry_run=true
     validates only. budget (only lowers the ~10k-token report cap): tokens, or {"tokens",
     "item_tokens", "time_s", "max_output"}. Passing output over 4KB keeps its last lines; cut
-    output is kept as "artifact:NAME", which the read tool reads as "artifact:NAME:N-M".
+    output is kept as "artifact:NAME"; read it as "artifact:NAME:N-M".
     """
     raw_cmds = commands
     try:
@@ -583,6 +583,7 @@ async def batch_edit(
     cwd: str = ".",
     dry_run: bool = False,
     full_diff: bool = False,
+    diff: Literal["stat", "hunks", "full"] | None = None,
     verify: str | dict[str, Any] | None = None,
     rollback_on_failure: bool = True,
     overwrite: bool = False,
@@ -599,8 +600,8 @@ async def batch_edit(
     matching once unless "replace_all": true or "occurrence": N (counted after earlier edits).
     new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest:
     a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120};
-    failure restores every file. dry_run=true shows full diffs without writing; full_diff=true
-    shows them after writing. budget: tokens.
+    failure restores every file, so one call writes and checks. diff: "stat" (default; failures
+    show hunks), "hunks" or "full" (full_diff=true); dry_run=true shows full diffs. budget: tokens.
     """
     try:
         root = _root(cwd)
@@ -725,7 +726,14 @@ async def batch_edit(
         if ctx:
             await ctx.report_progress(90, 100)
 
-        fit_diffs(report, budget_tok * 4, store, condense=not (dry_run or full_diff))  # every file's status stays visible
+        diff_mode = "full" if full_diff else (diff or "stat")
+        if dry_run or diff_mode == "full":
+            fit_diffs(report, budget_tok * 4, store, condense=False)
+        elif diff_mode == "hunks" or not report.ok:
+            fit_diffs(report, budget_tok * 4, store, condense=True)  # every file's status stays visible
+        else:
+            for change in report.changes:
+                change.diff = ""
         if cap_note:
             report.message = f"{report.message}; {cap_note}" if report.message else cap_note
         text = render_edit_report(report, max_bytes=budget_tok * 4)

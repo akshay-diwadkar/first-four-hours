@@ -1677,6 +1677,141 @@ def _compare_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifact
 # ---------------------------------------------------------------------------
 # Survey
 # ---------------------------------------------------------------------------
+_RUN_STEP = re.compile(r"^(\s*)(?:-\s+)?run:\s*(.*)$")
+_MAKE_TARGET = re.compile(
+    r"^([A-Za-z0-9_][A-Za-z0-9_.-]*(?:[ \t]+[A-Za-z0-9_][A-Za-z0-9_.-]*)*)[ \t]*::?(?![=:])"
+)
+
+
+def _cut_command(text: str) -> str:
+    return text if len(text) <= 160 else text[:157] + "..."
+
+
+class _SourceNotRead(Exception):
+    """A command source exists but was not read; the message says why."""
+
+
+def _read_source(path: Path) -> str | None:
+    """Return the text of `path`, or None when absent; raise _SourceNotRead when present but unread or its presence cannot be checked."""
+    try:
+        if not path.is_file():
+            return None
+        if path.stat().st_size > 1024 * 1024:
+            raise _SourceNotRead("over 1 MB")
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise _SourceNotRead("unreadable") from exc
+
+
+def _workflow_steps(text: str) -> list[str]:
+    lines = text.splitlines()
+    steps: list[str] = []
+    i = 0
+    while i < len(lines):
+        m = _RUN_STEP.match(lines[i])
+        i += 1
+        if not m:
+            continue
+        column = lines[i - 1].index("run:")
+        value = m.group(2).strip()
+        if value[:1] in ("|", ">"):
+            block: list[str] = []
+            while i < len(lines):
+                line = lines[i]
+                if line.strip() and len(line) - len(line.lstrip()) <= column:
+                    break
+                if line.strip():
+                    block.append(line.strip())
+                i += 1
+            if not block:
+                continue
+            if value[0] == "|":
+                command = block[0] + (f" (+{len(block) - 1} more lines)" if len(block) > 1 else "")
+            else:
+                command = " ".join(block)
+        else:
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
+            if not value:
+                continue
+            command = value
+        steps.append(_cut_command(command))
+    return list(dict.fromkeys(steps))
+
+
+def _survey_commands(root_p: Path) -> list[str]:
+    rows: list[str] = []
+    workflows = root_p / ".github" / "workflows"
+    try:
+        names = sorted(
+            (p.name for p in workflows.iterdir() if p.suffix in (".yml", ".yaml")),
+        ) if workflows.is_dir() else []
+    except OSError:
+        names = []
+        rows.append("  .github/workflows: not read (unreadable)")
+    for name in names[:5]:
+        try:
+            text = _read_source(workflows / name)
+        except _SourceNotRead as exc:
+            rows.append(f"  .github/workflows/{name}: steps not read ({exc})")
+            continue
+        steps = _workflow_steps(text) if text is not None else []
+        if not steps:
+            continue
+        rows.append(f"  .github/workflows/{name}:")
+        rows.extend(f"    {s}" for s in steps[:8])
+        if len(steps) > 8:
+            rows.append(f"    +{len(steps) - 8} more")
+    if len(names) > 5:
+        rows.append(f"  +{len(names) - 5} more workflow file(s)")
+
+    for make_name in ("Makefile", "makefile", "GNUmakefile"):
+        try:
+            text = _read_source(root_p / make_name)
+        except _SourceNotRead as exc:
+            rows.append(f"  {make_name}: targets not read ({exc})")
+            break
+        if text is None:
+            continue
+        targets: list[str] = []
+        for line in text.splitlines():
+            if not line or line[0] in " \t":
+                continue
+            m = _MAKE_TARGET.match(line)
+            if m:
+                targets.extend(m.group(1).split())
+        targets = list(dict.fromkeys(targets))
+        if targets:
+            shown = ", ".join(f"make {t}" for t in targets[:15])
+            more = f", +{len(targets) - 15} more" if len(targets) > 15 else ""
+            rows.append(f"  {make_name}: {shown}{more}")
+        break
+
+    try:
+        text = _read_source(root_p / "package.json")
+    except _SourceNotRead as exc:
+        text = None
+        rows.append(f"  package.json: scripts not read ({exc})")
+    if text is not None:
+        try:
+            data = json.loads(text)
+        except ValueError:
+            data = None
+        if not isinstance(data, dict):
+            rows.append("  package.json: scripts not read (invalid JSON)")
+        else:
+            scripts = data.get("scripts")
+            items = [(k, v) for k, v in scripts.items() if isinstance(v, str)] if isinstance(scripts, dict) else []
+            if items:
+                rows.append("  package.json scripts:")
+                rows.extend(f"    {k}: {_cut_command(v)}" for k, v in items[:15])
+                if len(items) > 15:
+                    rows.append(f"    +{len(items) - 15} more")
+    if rows:
+        rows.insert(0, "Commands (CI workflow steps, Makefile targets, package.json scripts):")
+    return rows
+
+
 def survey(
     root: str | Path,
     *,
@@ -1877,6 +2012,7 @@ def survey(
         ranked_ext = sorted(by_ext.items(), key=lambda pair: (-pair[1], pair[0]))
         parts.append(("By extension (walked files only): " if truncated_walk else "By extension: ") + ", ".join(f"{ext} {n}" for ext, n in ranked_ext[:10])
                      + (f", +{len(ranked_ext) - 10} more" if len(ranked_ext) > 10 else ""))
+    parts.extend(_survey_commands(root_p))
     if changed:
         totals = f" (+{added_total} -{deleted_total} vs HEAD)" if line_counts else ""
         parts.append(f"Changed files: {len(changed)}{totals}")

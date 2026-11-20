@@ -264,7 +264,7 @@ async def batch_read(
     Objects: {"path": p, "since": SHA} omits the body of a file still at the sha a read printed;
     {"grep": RE, "paths": [..], "exclude": [..], "ignored": true, "context": 2, "ignore_case": true,
     "mode": "files" (per-file counts), "blocks": true (each hit's enclosing block)}; {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
-    {"compare": [spec, spec]}. mode="survey" maps the repository. budget (only lowers the
+    {"compare": [spec, spec]}. mode="survey" maps the repository and its build/test commands. budget (only lowers the
     ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. A cut
     read outlines its unshown lines; pass the `next:` specs back as-is with the same cwd.
     allow_outside=true reads absolute paths outside cwd.

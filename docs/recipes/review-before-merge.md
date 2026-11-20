@@ -52,6 +52,7 @@ It is Friday afternoon. Checkout engineer Mateo Rojas's branch adds shareable sh
   - Signed-in customer Amara opens list 41, one of Amara's own shared lists.
   - Amara changes 41 to 42 in the address; list 42 belongs to Lars and was never shared with Amara.
   - The endpoint returns Lars's list. Issue #40 says Amara should be refused.
+  - Rated P1: any signed-in customer can do this today by changing one number, and a private list once read cannot be made private again.
 - Consequence: every customer's private lists are readable by any other signed-in customer.
 - Required truth: issue #40 allows a list to be opened only by its owner and by people with its link.
 
@@ -64,6 +65,7 @@ It is Friday afternoon. Checkout engineer Mateo Rojas's branch adds shareable sh
   - Before deploy, a customer has a saved list.
   - The migration adds the sharing column, so the list's value in it is empty.
   - The list page treats the empty value as an error, and the customer gets an error page instead of the list.
+  - Rated P1: it hits every customer with a saved list on deploy day, but no list is lost, so restoring a default brings them all back.
 - Consequence: every customer with a saved list loses access to it after deploy.
 - Required truth: existing lists keep working and stay private.
 ```

@@ -17,13 +17,14 @@ from urllib.parse import quote
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.9.2"
+CONTRACT_VERSION = "1.10.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
 ASSESSMENT_WORKSPACE_DIR = "/".join(ASSESSMENT_WORKSPACE_PARTS)
 ASSESSMENT_WORKSPACE_RULE = f"/{ASSESSMENT_WORKSPACE_DIR}/"
 RESULTS = {"clear", "findings", "blocked"}
+SCENARIO_CODE_RE = re.compile(r"`|[\w./\\-]+\.[A-Za-z][A-Za-z0-9]*(?::|#L)\d+")
 TOP_LEVEL_FIELDS = {
     "schema_version",
     "target",
@@ -658,6 +659,13 @@ def validate_bundle(raw: Any) -> dict[str, Any]:
         if not isinstance(raw_scenario, list) or not raw_scenario:
             raise _fail("finding.scenario_missing", f"{label}.scenario must be a non-empty array of steps")
         scenario = _string_list(raw_scenario, f"{label}.scenario")
+        for index, step in enumerate(scenario):
+            if SCENARIO_CODE_RE.search(step):
+                raise _fail(
+                    "finding.scenario_technical",
+                    f"{label}.scenario[{index}] must tell the story in plain words; move file:line references "
+                    "and backticked code into the finding's locators or evidence",
+                )
         findings.append(
             {
                 "severity": severity,

@@ -16,13 +16,12 @@ from ideation_contract import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 RESEARCH = "- Research: settled — searched cache and index options on the web; no production load traces\n"
-
-
-def _valid_what_would_change() -> str:
-    return (
-        "## What would change the answer\n"
-        "An index rebuild wins if the cache hit rate falls below 70%.\n"
-    )
+OPTION = (
+    "### Strategy A — Local Caching\n"
+    "- Mechanism: In-memory LRU cache\n"
+    "- Support basis: evidence-backed: the example.com caching benchmark\n"
+    "- Cheapest decisive experiment: test with 10k items; metric: hit rate; pass/fail: >80%; duration: 1h; cost/effort: low\n"
+)
 
 
 def _valid_body(
@@ -30,29 +29,8 @@ def _valid_body(
     local_rows: str = "",
     contextual_rows: str = "",
     ext_rows: str = "| Found X | https://example.com | § 2 | 2026-07 | high |\n",
-    exploration: str | None = None,
     what_to_do: str = "Proceed with Strategy A as primary direction based on the example.com benchmark.\n",
 ) -> str:
-    if exploration is None:
-        exploration = (
-            "## Exploration\n\n"
-            "### Divergence\n"
-            "Search shape: alternative\n"
-            "- Obvious defaults: add a database index\n"
-            "- Simplify/eliminate: drop the slow join\n"
-            "- Invert/relax an authorized constraint: not applicable — the latency target is the user's\n"
-            "- Domain transfer: Strategy A, CDN-style response caching\n"
-            "- Combine mechanisms: Strategy A with an L2 cache tier\n"
-            "- Actor/timing/control: precompute results at write time\n"
-            "- Failure recovery: serve stale results on a miss\n"
-            "- Preserve baseline: keep the 500ms pipeline\n\n"
-            "### Dropped\n"
-            "- Precompute at write time: write volume makes it costlier than caching\n\n"
-            "### Strategy A — Local Caching\n"
-            "- Mechanism: In-memory LRU cache\n"
-            "- Support basis: evidence-backed: the example.com caching benchmark\n"
-            "- Cheapest decisive experiment: test with 10k items; metric: hit rate; pass/fail: >80%; duration: 1h; cost/effort: low\n"
-        )
     local_section = ""
     if local_rows:
         local_section = (
@@ -77,21 +55,35 @@ def _valid_body(
 
     return (
         "# Ideation: Optimize Query Latency\n\n"
+        "## Goal\n"
+        "- Goal: reduce p99 query latency under 100ms\n"
+        "- Decision criteria: latency reduction, implementation complexity\n"
+        "- Scope / non-goals: query processing pipeline; no hardware expansion\n\n"
         "## What to do\n"
         f"- Outcome: {outcome}\n"
         "- Final choice: yours to make\n\n"
         f"{what_to_do}\n"
-        "## Goal and research\n"
-        "- Goal: reduce p99 query latency under 100ms\n"
-        "- Decision criteria: latency reduction, implementation complexity\n"
-        "- Scope / non-goals: query processing pipeline; no hardware expansion\n"
-        f"{RESEARCH}\n"
+        "## Viable options\n\n"
+        f"{OPTION}\n"
+        "## What would change the answer\n"
+        "An index rebuild wins if the cache hit rate falls below 70%.\n\n"
+        "## Exploration\n\n"
+        "Search shape: alternative\n"
+        "- Obvious defaults: add a database index\n"
+        "- Simplify/eliminate: drop the slow join\n"
+        "- Invert/relax an authorized constraint: not applicable — the latency target is the user's\n"
+        "- Domain transfer: Strategy A, CDN-style response caching\n"
+        "- Combine mechanisms: Strategy A with an L2 cache tier\n"
+        "- Actor/timing/control: precompute results at write time\n"
+        "- Failure recovery: serve stale results on a miss\n"
+        "- Preserve baseline: keep the 500ms pipeline\n\n"
+        "### Dropped\n"
+        "- Precompute at write time: write volume makes it costlier than caching\n\n"
         "## Evidence\n\n"
+        f"{RESEARCH}\n"
         f"{local_section}"
         f"{ext_section}"
         f"{contextual_section}"
-        f"{exploration}\n\n"
-        f"{_valid_what_would_change()}"
     )
 
 
@@ -120,8 +112,8 @@ def test_readable_evidence_tables_keep_row_checks(tmp_path: Path) -> None:
     # A table outside the three evidence kinds, or an evidence table outside Evidence,
     # would skip their checks, so each is refused.
     stray = body.replace(
-        "## Exploration",
-        "### Notes\n\n| Claim | Source |\n| --- | --- |\n| x | y |\n\n## Exploration",
+        "### External evidence",
+        "### Notes\n\n| Claim | Source |\n| --- | --- |\n| x | y |\n\n### External evidence",
         1,
     )
     assert [e.code for e in validate_ideation(stray, repo_root=tmp_path)] == ["ideation.unrecognized_evidence_table"]
@@ -207,3 +199,6 @@ def test_contract_rules_refuse_violations_not_lookalikes() -> None:
             "- Obvious defaults: add a database index", "- Obvious defaults: not applicable — nothing obvious"
         )
     ) == ["ideation.obvious_defaults_missing"]
+
+    # The surviving options are expanded under their own section, never left implied.
+    assert codes(_valid_body().replace(OPTION, "")) == ["ideation.empty_viable_options"]

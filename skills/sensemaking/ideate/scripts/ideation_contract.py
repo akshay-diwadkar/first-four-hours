@@ -20,19 +20,23 @@ from ideation_workspace import WORKSPACE_DIR, WORKSPACE_PARTS
 # Structural constants
 # ---------------------------------------------------------------------------
 
-IDEATE_VERSION = "2.2.4"
+IDEATE_VERSION = "3.0.0"
 
+GOAL_HEADING = "## Goal"
 WHAT_TO_DO_HEADING = "## What to do"
-GOAL_AND_RESEARCH_HEADING = "## Goal and research"
+VIABLE_OPTIONS_HEADING = "## Viable options"
 WHAT_WOULD_CHANGE_HEADING = "## What would change the answer"
+EXPLORATION_HEADING = "## Exploration"
+EVIDENCE_HEADING = "## Evidence"
 SUGGESTED_FOLLOW_UP_HEADING = "## Suggested follow-up"
 
 REQUIRED_HEADINGS = (
+    GOAL_HEADING,
     WHAT_TO_DO_HEADING,
-    GOAL_AND_RESEARCH_HEADING,
-    "## Evidence",
-    "## Exploration",
+    VIABLE_OPTIONS_HEADING,
     WHAT_WOULD_CHANGE_HEADING,
+    EXPLORATION_HEADING,
+    EVIDENCE_HEADING,
 )
 OPTIONAL_HEADINGS = (
     SUGGESTED_FOLLOW_UP_HEADING,
@@ -62,12 +66,12 @@ WHAT_TO_DO_REQUIRED_FIELDS = (
     "- Outcome:",
     "- Final choice:",
 )
-GOAL_AND_RESEARCH_REQUIRED_FIELDS = (
+GOAL_REQUIRED_FIELDS = (
     "- Goal:",
     "- Decision criteria:",
     "- Scope / non-goals:",
-    "- Research:",
 )
+EVIDENCE_REQUIRED_FIELDS = ("- Research:",)
 
 SUPPORT_BASIS_PREFIXES = (
     "evidence-backed:",
@@ -340,17 +344,16 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
     if sec_opt_idx != -1:
         if len(follow_up_offsets) > 1:
             errors.append(Diagnostic("ideation.duplicate_heading", f"optional heading {SUGGESTED_FOLLOW_UP_HEADING!r} appears multiple times"))
-        change_offsets = _heading_offsets(text, WHAT_WOULD_CHANGE_HEADING)
-        sec_change_idx = change_offsets[0] if change_offsets else -1
-        if sec_change_idx != -1 and sec_opt_idx < sec_change_idx:
-            errors.append(Diagnostic("ideation.heading_order", "Suggested follow-up must appear after What would change the answer"))
+        if valid_positions and sec_opt_idx < max(valid_positions):
+            errors.append(Diagnostic("ideation.heading_order", "Suggested follow-up must be the last section"))
 
-    # 3. Required fields of What to do and Goal and research
+    # 3. Required fields of Goal, What to do, and Evidence
     what_to_do_body = _section_body(text, WHAT_TO_DO_HEADING)
-    goal_and_research_body = _section_body(text, GOAL_AND_RESEARCH_HEADING)
+    evidence_section = _section_body(text, EVIDENCE_HEADING)
     for body, fields in (
+        (_section_body(text, GOAL_HEADING), GOAL_REQUIRED_FIELDS),
         (what_to_do_body, WHAT_TO_DO_REQUIRED_FIELDS),
-        (goal_and_research_body, GOAL_AND_RESEARCH_REQUIRED_FIELDS),
+        (evidence_section, EVIDENCE_REQUIRED_FIELDS),
     ):
         for field in fields:
             line_re = re.compile(rf"^{re.escape(field)}[ \t]*(.*)$", re.MULTILINE)
@@ -358,7 +361,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
             if not m or not m.group(1).strip():
                 errors.append(Diagnostic("ideation.field_empty", f"required field is missing or empty: {field!r}"))
 
-    research_m = RESEARCH_RE.search(goal_and_research_body)
+    research_m = RESEARCH_RE.search(evidence_section)
     research_valid = False
     if research_m:
         research_errors = _validate_research_record(research_m.group(1))
@@ -399,10 +402,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
             )
         )
 
-    # 5. Evidence section
-    evidence_section = _section_body(text, "## Evidence")
-
-    # 6. Evidence rows, read by their fixed subsection
+    # 5. Evidence rows, read by their fixed subsection
     rows, table_errors = _evidence_rows(evidence_section)
     errors.extend(table_errors)
 
@@ -489,8 +489,16 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
                 )
             )
 
-    # 7. Exploration section
-    exploration_body = _section_body(text, "## Exploration")
+    # 6. Viable options and Exploration sections
+    options_body = _section_body(text, VIABLE_OPTIONS_HEADING)
+    if not HTML_COMMENT_RE.sub("", options_body).strip():
+        errors.append(
+            Diagnostic(
+                "ideation.empty_viable_options",
+                "Viable options must give each surviving candidate, ordering, or path its own '###' subsection",
+            )
+        )
+    exploration_body = _section_body(text, EXPLORATION_HEADING)
     if not exploration_body.strip():
         errors.append(Diagnostic("ideation.empty_exploration", "Exploration section must be non-empty"))
 
@@ -527,13 +535,13 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
             )
         )
 
-    # Check for decisive experiments inside Exploration or document
+    # Decisive experiments anywhere in the document
     experiment_re = re.compile(
         r"^[ \t]*- (?:Cheapest decisive experiment|Next experiment):[ \t]*(.+)$",
         re.MULTILINE | re.IGNORECASE,
     )
     for exp_m in experiment_re.finditer(text):
-        errors.extend(_validate_decisive_experiment("Exploration", exp_m.group(1)))
+        errors.extend(_validate_decisive_experiment("Viable options", exp_m.group(1)))
     if outcome == "run an experiment first" and not experiment_re.search(HTML_COMMENT_RE.sub("", text)):
         errors.append(
             Diagnostic(
@@ -547,7 +555,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
     what_would_change_body = _section_body(text, WHAT_WOULD_CHANGE_HEADING)
 
     # Check support bases if declared
-    for support_m in re.finditer(r"^- Support basis:[ \t]*(.+)$", exploration_body, re.MULTILINE):
+    for support_m in re.finditer(r"^- Support basis:[ \t]*(.+)$", options_body + exploration_body, re.MULTILINE):
         kind, remainder = _parse_support_basis(support_m.group(1))
         if kind is None:
             errors.append(

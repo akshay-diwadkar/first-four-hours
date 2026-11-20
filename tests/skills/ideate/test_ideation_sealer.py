@@ -22,20 +22,21 @@ def _valid_draft() -> str:
     # A small two-option decision: only the required records, no filler fields.
     return (
         "# Ideation: Reduce Latency\n\n"
+        "## Goal\n"
+        "- Goal: reduce p99 query latency below 200ms\n"
+        "- Decision criteria: latency reduction, effort\n"
+        "- Scope / non-goals: API layer; no database hardware replacement\n\n"
         "## What to do\n"
         "- Outcome: recommended direction\n"
         "- Final choice: yours to make\n\n"
         "Option 1 leads with the verified caching benchmark; Option 2 stays a viable choice.\n\n"
-        "## Goal and research\n"
-        "- Goal: reduce p99 query latency below 200ms\n"
-        "- Decision criteria: latency reduction, effort\n"
-        "- Scope / non-goals: API layer; no database hardware replacement\n"
-        "- Research: settled — vendor docs, a web search, and one caching benchmark; no production traces\n\n"
-        "## Evidence\n\n"
-        "### External evidence\n\n"
-        "| Finding | Source | Locator | Date/freshness | Relevance |\n"
-        "| --- | --- | --- | --- | --- |\n"
-        "| Caching cuts latency | https://example.com | § 2 | 2026-07 | high |\n\n"
+        "## Viable options\n\n"
+        "### Option 1: Add In-memory Cache\n"
+        "- Support basis: evidence-backed: the example.com caching benchmark\n\n"
+        "### Option 2: Keep the Current API Layer\n"
+        "- Support basis: assumption-backed: no trace yet shows lookups dominate latency\n\n"
+        "## What would change the answer\n\n"
+        "Option 2 wins if payload size, not lookups, drives latency.\n\n"
         "## Exploration\n\n"
         "Search shape: alternative\n"
         "- Obvious defaults: scale out the API servers\n"
@@ -46,10 +47,12 @@ def _valid_draft() -> str:
         "- Actor/timing/control: not applicable — requests are already asynchronous\n"
         "- Failure recovery: not applicable — the target concerns the success path\n"
         "- Preserve baseline: Option 2, keep the current API layer\n\n"
-        "### Option 1: Add In-memory Cache\n"
-        "- Support basis: evidence-backed: the example.com caching benchmark\n\n"
-        "## What would change the answer\n\n"
-        "Option 2 wins if payload size, not lookups, drives latency.\n"
+        "## Evidence\n\n"
+        "- Research: settled — vendor docs, a web search, and one caching benchmark; no production traces\n\n"
+        "### External evidence\n\n"
+        "| Finding | Source | Locator | Date/freshness | Relevance |\n"
+        "| --- | --- | --- | --- | --- |\n"
+        "| Caching cuts latency | https://example.com | § 2 | 2026-07 | high |\n"
     )
 
 
@@ -106,9 +109,11 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
     sealed_bytes = destination.read_bytes()
     # The title opens the handoff; the receipt is its final line.
     assert sealed_bytes.startswith(b"# Ideation: ")
-    assert sealed_bytes.splitlines()[-1].startswith(b"<!-- ideation-handoff: 2.2.4; sha256: ")
-    # What to do opens the handoff, so a reader acts on it before any evidence.
-    assert sealed_bytes.split(b"\n## ", 1)[1].startswith(b"What to do\n")
+    assert sealed_bytes.splitlines()[-1].startswith(b"<!-- ideation-handoff: 3.0.0; sha256: ")
+    # The goal frames What to do and the viable options; the search and evidence trail follow them.
+    assert [line for line in sealed_bytes.decode().splitlines() if line.startswith("## ")] == [
+        "## Goal", "## What to do", "## Viable options", "## What would change the answer", "## Exploration", "## Evidence",
+    ]
     assert b"- Final choice: yours to make\n" in sealed_bytes
 
     # Re-sealing the sealed handoff reproduces it and keeps one exclude rule;
@@ -126,27 +131,25 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
     # its repair, and nothing is written.
     research = "- Research: settled — vendor docs, a web search, and one caching benchmark; no production traces\n"
     baseline = "- Preserve baseline: Option 2, keep the current API layer\n\n"
-    survivor = (
-        "### Option 1: Add In-memory Cache\n"
-        "- Support basis: evidence-backed: the example.com caching benchmark\n\n"
-        "## What would change the answer\n\n"
-    )
     choice = "- Final choice: yours to make\n"
     action_prose = "Option 1 leads with the verified caching benchmark; Option 2 stays a viable choice.\n\n"
     draft_text = _valid_draft()
+    goal_start = draft_text.index("## Goal\n")
     action_start = draft_text.index("## What to do\n")
-    framing_start = draft_text.index("## Goal and research\n")
-    change_start = draft_text.index("## What would change the answer\n")
-    opening_onward = draft_text[action_start:change_start]
-    action_last = draft_text[framing_start:change_start] + draft_text[action_start:framing_start]
+    options_start = draft_text.index("## Viable options\n")
+    baseline_start = draft_text.index(baseline)
+    opening = draft_text[goal_start:options_start]
+    action_first = draft_text[action_start:options_start] + draft_text[goal_start:action_start]
+    options_to_baseline = draft_text[options_start:baseline_start] + baseline
+    baseline_in_action = baseline + draft_text[options_start:baseline_start]
     for slug, old, new, codes, repair in (
         ("missing", choice, "", ["ideation.field_empty"], "'- Final choice:'"),
         ("unowned", choice, "- Final choice: made by you\n", ["ideation.invalid_final_choice"], "<choice; source>"),
         ("undelegated", choice, "- Final choice: delegated\n", ["ideation.invalid_final_choice"], "<scope; source>"),
         # A 1.x state is refused, never kept as an alias.
         ("legacy-outcome", "- Outcome: recommended direction\n", "- Outcome: decision-ready\n", ["ideation.invalid_outcome"], "recommended direction"),
-        # What to do must open the handoff and say what to do, not only carry its fields.
-        ("action-last", opening_onward, action_last, ["ideation.heading_order"], "canonical order"),
+        # The goal frames What to do, which must say what to do, not only carry its fields.
+        ("action-first", opening, action_first, ["ideation.heading_order"], "canonical order"),
         ("fields-only", action_prose, "", ["ideation.empty_what_to_do"], "plain language"),
         ("no-research", research, "", ["ideation.field_empty"], "'- Research:'"),
         ("bare-stop", research, "- Research: settled\n", ["ideation.invalid_research_record"], "<coverage searched; limitations>"),
@@ -154,7 +157,7 @@ def test_cli_seals_into_ignored_workspace_and_fails_closed(tmp_path: Path) -> No
         ("no-shape", "Search shape: alternative\n", "", ["ideation.invalid_search_shape"], "'Search shape: alternative | path | path with a fork'"),
         ("skipped-lens", "- Domain transfer: Option 1, response caching\n", "", ["ideation.lens_unaccounted"], "'- Domain transfer: <candidate>'"),
         ("no-defaults", "- Obvious defaults: scale out the API servers\n", "", ["ideation.lens_unaccounted"], "'- Obvious defaults: <candidate>'"),
-        ("misplaced-lens", baseline + survivor, survivor + baseline, ["ideation.lens_unaccounted"], "'- Preserve baseline: <candidate>'"),
+        ("misplaced-lens", options_to_baseline, baseline_in_action, ["ideation.lens_unaccounted"], "'- Preserve baseline: <candidate>'"),
         ("unordered-path", "Search shape: alternative\n", "Search shape: path\n", ["ideation.lens_unaccounted"] * 5, "'- Cheapest-learning-first: <candidate>'"),
         # Orderings hidden in an HTML comment are invisible to a reader, so they do not count.
         (

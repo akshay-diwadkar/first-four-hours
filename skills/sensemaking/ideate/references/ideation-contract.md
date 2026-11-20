@@ -6,11 +6,12 @@ Exact `ideation.md` format. Python enforces structure and syntax only; idea qual
 
 ```text
 # Ideation: <goal>
+## Goal
 ## What to do
-## Goal and research
-## Evidence
-## Exploration
+## Viable options
 ## What would change the answer
+## Exploration
+## Evidence
 ## Suggested follow-up   ← omit when absent
 ```
 
@@ -18,9 +19,19 @@ Title first line with non-empty goal. Headings in canonical order, once each. Re
 
 ## Deterministic rules
 
+### Goal
+
+Required non-empty fields:
+
+```text
+- Goal:
+- Decision criteria:
+- Scope / non-goals:
+```
+
 ### What to do
 
-The opening section: a reader who knows nothing of this format acts from it alone. Two required fields:
+The decision section: a reader who knows nothing of this format acts from it alone. Two required fields:
 
 ```text
 - Outcome: recommended direction | run an experiment first | research limit reached
@@ -45,28 +56,15 @@ After the fields, required prose states, in plain language grounded in the decis
 
 For a path search, with or without a fork, state why the recommended order beats the competing orderings. Ranking and comparison tables are optional and used only when they materially aid alternative search.
 
-### Goal and research
+### Viable options
 
-Required non-empty fields:
+Required. Each surviving candidate, ordering, or path gets its own `###` subsection holding only what distinguishes it under the decision criteria. Path options describe causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
 
-```text
-- Goal:
-- Decision criteria:
-- Scope / non-goals:
-- Research: settled | diminishing returns | unavailable sources | user limit — <coverage; limitations>
-```
+Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); `run an experiment first` needs one. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
 
-`Research:` is the one research record. It begins with why research stopped (`settled` when more search could not change the answer, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: playbooks and sources used, the web searches run, and what was unavailable, skipped, or user-excluded. The sealer refuses an ideation with no External evidence row naming a source unless research stopped for `user limit`, whose coverage then names the user's web opt-out, or `unavailable sources`, whose coverage names why web research could not be done; record a web search that found nothing relevant as an External evidence row saying so.
+### What would change the answer
 
-### Evidence
-
-Evidence rows sit in tables under three optional fixed subsections; the subsection names the source kind, so rows carry no ID or code. Every table line in Evidence sits under one of them, below its exact header; these subsections and headers appear nowhere else.
-
-- `### Local evidence` — repository files. Header: `| Claim | Source path | Locator | Verification |`. Path: a regular file under `--repo-root`; non-empty locator/verification; `hash-verified` needs the file's current SHA-256.
-- `### External evidence` — publications and other outside sources. Header: `| Finding | Source | Locator | Date/freshness | Relevance |`.
-- `### Contextual evidence` — user facts that are neither repository files nor publications. Header: `| Claim | Source description | Locator | Verification |`; non-empty locator/verification.
-
-Elsewhere, cite evidence by what it is, such as its source and finding, never by a number or invented code; an `evidence-backed:` support basis names the evidence it rests on.
+Required, the one such record: the strongest challenge to What to do, the condition under which another candidate, ordering, or the baseline would win, and the uncertainty that remains.
 
 ### Exploration
 
@@ -86,13 +84,25 @@ Search shape: alternative | path | path with a fork
 
 A `path` or `path with a fork` shape also requires `- Risk-first:`, `- Value-first:`, `- Reversible-first:`, `- Dependency-forced:`, and `- Cheapest-learning-first:`. Each lens line names the candidate or ordering it yielded, or reads `not applicable — <one-line reason>`; `- Obvious defaults:` always names at least one answer.
 
-Then `### Dropped` lists each dropped candidate with a one-line reason, and each surviving candidate, ordering, or path gets its own subsection holding only what distinguishes it under the decision criteria. Path exploration, with or without a fork, describes causal, dependency, or strategy progression inside the problem only, never an implementation plan or schedule.
+Then `### Dropped` lists each dropped candidate with a one-line reason.
 
-Write each decisive experiment as one line, `- Cheapest decisive experiment: <action>; metric: <metric>; pass/fail: <rule>; duration: <bound>; cost/effort: <bound>` (or `- Next experiment:` with the same components); `run an experiment first` needs one. Support bases, when used, require valid prefixes (`evidence-backed:`, `assumption-backed:`, `hypothesis:`).
+### Evidence
 
-### What would change the answer
+Evidence opens with the required research record:
 
-Required non-empty section, the one record of what would change the answer: the strongest challenge to What to do, the condition under which another candidate, ordering, or the baseline would win, and the uncertainty that remains.
+```text
+- Research: settled | diminishing returns | unavailable sources | user limit — <coverage; limitations>
+```
+
+It starts with why research stopped (`settled` when more search could not change the answer, `diminishing returns`, `unavailable sources`, or `user limit`), then ` — ` and the coverage: playbooks and sources used, the web searches run, and what was unavailable, skipped, or user-excluded. The sealer refuses an ideation with no External evidence row naming a source unless research stopped for `user limit`, whose coverage then names the user's web opt-out, or `unavailable sources`, whose coverage names why web research could not be done; record a web search that found nothing relevant as an External evidence row saying so.
+
+Evidence rows sit in tables under three optional fixed subsections; the subsection names the source kind, so rows carry no ID or code. Every table line in Evidence sits under one of them, below its exact header; these subsections and headers appear nowhere else.
+
+- `### Local evidence` — repository files. Header: `| Claim | Source path | Locator | Verification |`. Path: a regular file under `--repo-root`; non-empty locator/verification; `hash-verified` needs the file's current SHA-256.
+- `### External evidence` — publications and other outside sources. Header: `| Finding | Source | Locator | Date/freshness | Relevance |`.
+- `### Contextual evidence` — user facts that are neither repository files nor publications. Header: `| Claim | Source description | Locator | Verification |`; non-empty locator/verification.
+
+Elsewhere, cite evidence by what it is, such as its source and finding, never by a number or invented code; an `evidence-backed:` support basis names the evidence it rests on.
 
 ### Suggested follow-up
 
@@ -167,7 +177,7 @@ Classify each blocker before asking:
 
 ### Consumption
 
-Return the sealed path to the user or invoking owner. A consumer reads What to do and the viable options in Exploration without replaying research. While the final choice is `yours to make` it presents the recommendation and viable choices and obtains the user's final selection before committing; `made by you` and `delegated` stand without asking again. Inside Blueprint planning, Ideate is a bounded consultation that returns this result to the planner, not a separate upstream stage. Ideate never plans or implements.
+Return the sealed path to the user or invoking owner. A consumer reads What to do and Viable options without replaying research. While the final choice is `yours to make` it presents the recommendation and viable choices and obtains the user's final selection before committing; `made by you` and `delegated` stand without asking again. Inside Blueprint planning, Ideate is a bounded consultation that returns this result to the planner, not a separate upstream stage. Ideate never plans or implements.
 
 ### Reason boundary
 

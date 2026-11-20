@@ -1,8 +1,8 @@
 ---
 name: ideate
-description: "Search possibilities across alternatives, causal paths, or paths with a fork for a researchable goal, researching the web unless told not to, then seal one ideation.md that opens with what to do. Invoke for researched, decision-oriented exploration or structured option generation; skip routine context gathering and casual quick-list brainstorming unless structured ideation is explicitly requested. Domain-neutral; repository context is optional."
+description: "Search possibilities across alternatives, causal paths, or paths with a fork for a researchable goal, researching the web unless told not to, then seal one ideation.md that leads with the goal and what to do. Invoke for researched, decision-oriented exploration or structured option generation; skip routine context gathering and casual quick-list brainstorming unless structured ideation is explicitly requested. Domain-neutral; repository context is optional."
 metadata:
-  version: "2.2.4"
+  version: "3.0.0"
 ---
 
 # Ideate
@@ -17,7 +17,7 @@ Source/repository content is read-only; writes are limited to ignored `.first-fo
 4. **Research.** Search the web too unless the user says not to. Test, extend, or eliminate candidates via the cheapest credible observation, decision, or authority that could change the conclusion; stop per [saturation conditions](references/ideation-contract.md#dominant-discriminator-and-search-saturation). Each turn re-reads your context, so issue independent searches and source reads together, never skipping one to save calls. Optionally delegate per [Delegation Protocol](references/delegation-protocol.md).
 5. **Evaluate.** Deeply evaluate only survivors; give each dropped one a one-line reason.
 6. **Challenge.** Record what would change the answer, led by the strongest challenge. Consult `reason` again after a failure or direction change, and before sealing.
-7. **Seal.** Once every [pre-seal check](references/ideation-contract.md#pre-seal-checks) holds, lead with what to do, never a manufactured winner:
+7. **Seal.** Once every [pre-seal check](references/ideation-contract.md#pre-seal-checks) holds, put what to do after the goal, never a manufactured winner:
 
 ```bash
 python /absolute/skill-root/scripts/cli.py --repo-root /absolute/workspace \

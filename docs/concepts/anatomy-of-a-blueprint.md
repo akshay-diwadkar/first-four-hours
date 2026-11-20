@@ -30,7 +30,7 @@ Main risk: /search/suggest shares the search handler, so it is limited too.
 
 **Why it's there.** This is the part to read before you go on. In a few lines it states the approach, what must stay true, and what will not change. If the Goal is wrong, nothing below it matters, so it comes first and it is short enough to reject.
 
-The tier sets how hard the plan was challenged and how long it may be. This plan is Critical because its effect is outward-facing, so a separate fresh-context challenger read it; a Quick plan gets a self-check and must fit in 6KB.
+The tier sets how hard the plan was challenged and how long it may be. This plan is Critical because its effect is outward-facing, so a separate fresh-context challenger read it; a Quick plan gets a self-check and is held to about 6KB.
 
 ## Facts: what the executor cannot see
 

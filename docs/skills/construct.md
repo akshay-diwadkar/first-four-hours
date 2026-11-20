@@ -27,7 +27,7 @@ The request is one line because the plan already made every decision.
 
 ## What you get
 
-Your worktree with the change applied, and a report of the instructions, proof results, checks run before the change, each final verification command with its expected result and whether the output met it, and whether protected paths and HEAD are unchanged. Conditions marked `Owner gate:` are listed as pending for their owner.
+Your worktree with the change applied, and a report of the instructions, proof results, checks run before the change, each final verification command with its expected result and whether the output met it, any repair it made to lines a plan's declared text wrote or bordered, flagged as a plan defect, and whether protected paths and HEAD are unchanged. Conditions marked `Owner gate:` are listed as pending for their owner.
 
 ## When it stops
 

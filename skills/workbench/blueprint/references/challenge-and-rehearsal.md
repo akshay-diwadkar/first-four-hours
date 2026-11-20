@@ -9,7 +9,7 @@ A plan is **Critical** when its decisions show any of these:
 - a changed contract that another skill, package, or service parses or executes;
 - an irreversible or outward-facing effect (deleting data, migrating state, publishing, pushing, calling an external service).
 
-Otherwise it is **Standard** when a consumer outside the changed package, or a propagation to another file, matters, else **Quick**. A skill version raises no signal. Read signals from the decisions, not from how easy the work seems.
+Otherwise it is **Standard** when a consumer outside the changed package, or a propagation to another file, matters, or check reports a reach hit the plan neither edits nor names in Facts as left alone, else **Quick**. A skill version raises no signal. Read signals from the decisions, not from how easy the work seems.
 
 ## Desk check
 
@@ -17,10 +17,8 @@ For each Proof run, then each Run, in step order:
 
 - **Exists:** everything it reads, selects, or imports exists now or an earlier step creates it.
 - **Launches:** its argv works as Construct launches it: no shell, repository root, inherited environment, the interpreter that resolves there. Probe it, or an existing target in the same form.
-- **Passes:** each `Expect:` holds on the plan's own drafted bytes and a correct implementation of this plan alone.
+- **Passes:** each `Expect:` holds on the plan's own drafted bytes and a correct implementation of this plan alone, and each check preview reads as intended at both edges.
 - **Fits:** it stays within every suite-size cap, validator allowlist, budget, pinned version, and deadline the change touches, with measured value and headroom recorded.
-
-Exists, Launches, and Fits run on the ledger before writing; Passes runs once the text is drafted.
 
 ## Challenge
 

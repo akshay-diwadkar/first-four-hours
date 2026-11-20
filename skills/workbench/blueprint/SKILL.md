@@ -2,7 +2,7 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "2.1.0"
+  version: "2.2.0"
 ---
 
 Plan in this session.

@@ -12,6 +12,7 @@ from blueprint_runtime import (
     PROOF_RE,
     VALIDATION_RE,
     Diagnostic,
+    check_notes,
     replace_canonical_blueprint,
     verify_sealed_blueprint,
     write_utf8,
@@ -115,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         write_utf8(
             json.dumps(
-                _sealed_payload(str(args.draft.resolve()), True, False, True),
+                {**_sealed_payload(str(args.draft.resolve()), True, False, True), "notes": check_notes(draft_text, args.repo_root)},
                 sort_keys=True,
                 separators=(",", ":"),
             )

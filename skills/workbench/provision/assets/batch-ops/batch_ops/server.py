@@ -263,7 +263,7 @@ async def batch_read(
     An unranged file read too big for the report returns its outline.
     Objects: {"path": p, "since": SHA} omits the body of a file still at the sha a read printed;
     {"grep": RE, "paths": [..], "exclude": [..], "ignored": true, "context": 2, "ignore_case": true,
-    "mode": "files"} (per-file counts); {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
+    "mode": "files" (per-file counts), "blocks": true (each hit's enclosing block)}; {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
     {"compare": [spec, spec]}. mode="survey" maps the repository. budget (only lowers the
     ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. A cut
     read outlines its unshown lines; pass the `next:` specs back as-is with the same cwd.
@@ -599,7 +599,7 @@ async def batch_edit(
     {"path": p, "search": "exact old text", "replace": "new"} (text from read "path@target:N-M"),
     matching once unless "replace_all": true or "occurrence": N (counted after earlier edits).
     new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest:
-    a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120};
+    a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}, cmd may end in " ||| " slices;
     failure restores every file, so one call writes and checks. diff: "stat" (default; failures
     show hunks), "hunks" or "full" (full_diff=true); dry_run=true shows full diffs. budget: tokens.
     """

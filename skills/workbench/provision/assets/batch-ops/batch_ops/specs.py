@@ -317,6 +317,7 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
             exclude=_str_list(data.get("exclude")),
             max_line=_positive_int(data.get("max_line", 300), "max_line"),
             include_ignored=bool(data.get("ignored", False)),
+            blocks=bool(data.get("blocks", False)),
             **common,
         )
 
@@ -603,7 +604,11 @@ def parse_verify(spec: Any) -> VerifyRequest | None:
         text = spec.strip()
         if not text:
             raise SpecError("verify command must not be empty")
-        return VerifyRequest(cmd=text)
+        parts = text.split(" ||| ")
+        command = parts[0].strip()
+        if not command:
+            raise SpecError("verify command must not be empty")
+        return VerifyRequest(cmd=command, slices=[p.strip() for p in parts[1:] if p.strip()])
     data = _as_dict(spec, "verify spec")
     if bool(data.get("cmd")) == bool(data.get("argv")):
         raise SpecError("verify must have exactly one of cmd or argv")
@@ -615,8 +620,17 @@ def parse_verify(spec: Any) -> VerifyRequest | None:
     env_raw = data.get("env") or {}
     if not isinstance(env_raw, dict):
         raise SpecError("verify env must be an object")
+    cmd = str(data["cmd"]) if data.get("cmd") is not None else None
+    slices: list[str] = []
+    if cmd is not None and " ||| " in cmd:
+        parts = cmd.split(" ||| ")
+        cmd = parts[0].strip()
+        slices = [p.strip() for p in parts[1:] if p.strip()]
+        if not cmd:
+            raise SpecError("verify command must not be empty")
     return VerifyRequest(
-        cmd=str(data["cmd"]) if data.get("cmd") is not None else None,
+        cmd=cmd,
+        slices=slices,
         argv=argv,
         cwd=str(data["cwd"]) if data.get("cwd") is not None else None,
         timeout=float(data.get("timeout", 120)),

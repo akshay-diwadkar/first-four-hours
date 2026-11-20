@@ -481,6 +481,7 @@ async def batch_run(
             fail_fast=fail_fast,
             dry_run=dry_run,
             max_output=max_output,
+            locate=True,
         )
 
         valid_slots = [i for i, slot in enumerate(slots) if slot is None]

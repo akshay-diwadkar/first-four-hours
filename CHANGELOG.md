@@ -11,6 +11,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Blueprint 1.15.0: when `ffh-planner` launches, Blueprint settles the questions it can already see, hands it the whole planning stage, relays its questions word for word, records your answers in the request, resumes it, and relays its final report. It falls back to planning in the main session when the planner cannot launch or cannot start the subagents it needs; without the planner it plans as before. Blueprint seals plans with contract version 1.15.0.
 - Provision 3.2.0: the batch-ops grep object takes `"blocks": true` to return each hit's largest enclosing block or section up to 100 lines, merged per file, with plain rows past 20 matches. `batch_edit`'s `verify` now accepts ` ||| ` slices instead of failing in the shell and rolling back. Rerun `/provision` to update batch-ops.
 - Provision 3.3.0: the batch-ops survey lists GitHub Actions run steps, Makefile targets, and package.json scripts in the surveyed folder, and says when one of them can't be read or parsed. Rerun `/provision` to update batch-ops.
+- Provision 3.4.0: when a batch-ops `batch_run` command fails or times out, its report adds the source lines, as they are on disk now, around the first three `path:line`, `path(line)`, or `File "path", line N` references in its output that name text files in the repository git doesn't ignore. `batch_edit` verification output is unchanged. Rerun `/provision` to update batch-ops.
 
 ### Changed
 

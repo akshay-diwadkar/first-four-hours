@@ -3,7 +3,7 @@ name: provision
 description: Set up First Four Hours on the harness running it. Installs the installed skills' Python requirements after confirmation and writes ffh-* subagents for the suite's delegated work, each on the model and effort the user chooses from the harness's current list. Use on first install, after a harness or model update to refresh stale choices, or to remove those subagents.
 disable-model-invocation: true
 metadata:
-  version: "3.3.0"
+  version: "3.4.0"
 ---
 
 # Provision

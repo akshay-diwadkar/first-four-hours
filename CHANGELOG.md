@@ -30,6 +30,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 - Construct 1.15.6: ships the Blueprint 1.15.0 runtime copy, so it reports contract version 1.15.0. It still accepts every sealed 1.x plan.
 - Architect 1.1.3, Assess 1.9.2, Blueprint 1.15.0, Construct 1.15.6, Diagnose 1.2.2, Ideate 2.2.4 and Reason 1.3.2: an agent that reports its tools unavailable before doing any work now counts as not launched, so they fall back as when it is absent. Context budgets rise per skill and metric by the measured growth: Architect references 24, Assess references 24, Blueprint top level 36 and references 493, Construct references 24, Diagnose references 24, Ideate references 24, Reason references 24, Provision top level 68 and references 1774.
 
+### Security
+
+- Provision 3.0.1: on Linux and macOS, batch-ops now keeps overflow output in a private per-user folder, `<temp>/batch_ops-<uid>`, mode 700. Each tool call fails with an error naming the folder if it is a link, belongs to someone else, or has another mode, so another local user can no longer plant or swap the output an agent reads back. `BATCH_OPS_ARTIFACT_DIR` picks another folder. Windows is unchanged. Rerun `/provision` to update batch-ops.
+
 ## [2.4.1] - 2026-11-14
 
 ### Changed

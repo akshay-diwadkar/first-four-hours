@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 import os
 import re
+import shutil
+import stat
 import sys
+import tempfile
 import time
 from pathlib import Path
 
+import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -26,7 +31,36 @@ def _items(result) -> list[dict]:
     return result.meta[ENVELOPE]["items"]
 
 
-def test_batch_ops_stdio_session(tmp_path):
+def test_batch_ops_stdio_session(tmp_path, monkeypatch):
+    monkeypatch.delenv("BATCH_OPS_ARTIFACT_DIR", raising=False)
+    tmp = tmp_path / "tmp"
+    tmp.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp))
+    monkeypatch.syspath_prepend(str(SERVER.parent))
+    ArtifactStore = importlib.import_module("batch_ops.artifacts").ArtifactStore
+    SafetyError = importlib.import_module("batch_ops.safety").SafetyError
+
+    if sys.platform == "win32":
+        store = ArtifactStore()
+        assert store.root == tmp / "batch_ops"
+        assert store.get(store.put(b"x")) == b"x"
+    else:
+        store = ArtifactStore()
+        default_root = tmp / f"batch_ops-{os.geteuid()}"
+        assert store.root == default_root
+        assert stat.S_IMODE(default_root.lstat().st_mode) == 0o700
+        assert store.get(store.put(b"x")) == b"x"
+        default_root.chmod(0o755)
+        with pytest.raises(SafetyError):
+            ArtifactStore()
+        shutil.rmtree(default_root)
+        elsewhere = tmp_path / "elsewhere"
+        elsewhere.mkdir(mode=0o700)
+        default_root.symlink_to(elsewhere, target_is_directory=True)
+        with pytest.raises(SafetyError):
+            ArtifactStore()
+        default_root.unlink()
+
     repo = tmp_path / "repo"
     fixture = {
         ".gitignore": "ignored/\n",

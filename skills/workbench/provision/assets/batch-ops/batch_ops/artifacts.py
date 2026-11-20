@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import os
 import re
+import stat
+import sys
 import tempfile
 import time
 from pathlib import Path
 from urllib.parse import quote, unquote
 
-from .safety import atomic_write_bytes, sha256_bytes
+from .safety import SafetyError, atomic_write_bytes, sha256_bytes
 
 
 class ArtifactStore:
@@ -26,12 +28,36 @@ class ArtifactStore:
         max_bytes: int = 200 * 1024 * 1024,
     ) -> None:
         env_root = os.environ.get("BATCH_OPS_ARTIFACT_DIR")
-        self.root = Path(root or env_root or (Path(tempfile.gettempdir()) / "batch_ops")).expanduser()
-        self.root.mkdir(parents=True, exist_ok=True)
-        try:
-            os.chmod(self.root, 0o700)
-        except OSError:
-            pass
+        if not root and not env_root and sys.platform != "win32":
+            euid = os.geteuid()
+            self.root = Path(tempfile.gettempdir()) / f"batch_ops-{euid}"
+            created = True
+            try:
+                os.mkdir(self.root, 0o700)
+            except FileExistsError:
+                created = False
+            if created:
+                os.chmod(self.root, 0o700)
+            st = os.lstat(self.root)
+            problems = []
+            if not stat.S_ISDIR(st.st_mode):
+                problems.append("is not a real directory (it may be a link)")
+            if st.st_uid != euid:
+                problems.append("is not owned by the current user")
+            if stat.S_IMODE(st.st_mode) != 0o700:
+                problems.append("does not have mode 700")
+            if problems:
+                raise SafetyError(
+                    f"artifact folder {self.root} {' and '.join(problems)}; "
+                    "set BATCH_OPS_ARTIFACT_DIR to use another directory"
+                )
+        else:
+            self.root = Path(root or env_root or (Path(tempfile.gettempdir()) / "batch_ops")).expanduser()
+            self.root.mkdir(parents=True, exist_ok=True)
+            try:
+                os.chmod(self.root, 0o700)
+            except OSError:
+                pass
         self.ttl_s = max(60, int(ttl_s))
         self.max_bytes = max(1024 * 1024, int(max_bytes))
         self._last_cleanup = 0.0

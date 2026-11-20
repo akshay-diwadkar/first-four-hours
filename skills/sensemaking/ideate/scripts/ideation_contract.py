@@ -491,7 +491,7 @@ def validate_ideation(text: str, repo_root: Path | None = None) -> list[Diagnost
 
     # 6. Viable options and Exploration sections
     options_body = _section_body(text, VIABLE_OPTIONS_HEADING)
-    if not HTML_COMMENT_RE.sub("", options_body).strip():
+    if not re.search(r"^### +\S", HTML_COMMENT_RE.sub("", options_body), re.MULTILINE):
         errors.append(
             Diagnostic(
                 "ideation.empty_viable_options",

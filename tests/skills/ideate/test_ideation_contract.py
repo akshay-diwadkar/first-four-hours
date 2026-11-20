@@ -200,5 +200,5 @@ def test_contract_rules_refuse_violations_not_lookalikes() -> None:
         )
     ) == ["ideation.obvious_defaults_missing"]
 
-    # The surviving options are expanded under their own section, never left implied.
-    assert codes(_valid_body().replace(OPTION, "")) == ["ideation.empty_viable_options"]
+    # Each surviving option gets its own subsection; text without one is refused.
+    assert codes(_valid_body().replace("### Strategy A — Local Caching\n", "")) == ["ideation.empty_viable_options"]

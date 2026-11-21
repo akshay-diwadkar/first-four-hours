@@ -28,7 +28,7 @@ For removed or replaced behavior, decide each state it refused or produced: cove
 Then, for each Proof run, then each Run, in step order:
 
 - **Exists:** everything it reads, selects, or imports exists now or an earlier step creates it.
-- **Launches:** its argv works as Construct launches it: no shell, repository root, inherited environment, the interpreter that resolves there. Probe it, or an existing target in the same form.
+- **Launches:** its argv works as Construct launches it, with the interpreter that resolves there. Probe it, or an existing target in the same form.
 - **Passes:** each `Expect:` holds on the plan's own drafted bytes and a correct implementation of this plan alone, seen through every layer between its command and the output it checks (wrapper, normalizer, subprocess) by current-tree probe, and each check preview reads as intended at both edges.
 - **Rejects:** a Proof run names a plausible wrong implementation, and its drafted assertions fail on that implementation.
 - **Fits:** it stays within every suite-size cap, validator allowlist, budget, pinned version, and deadline the change touches, with measured value and headroom recorded.

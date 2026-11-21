@@ -2,10 +2,11 @@
 
 The worst runbook reads beautifully and is wrong at step 4, at 3 a.m., for someone who has never seen the service.
 
-Documentation that reads well but cannot be followed is the costly kind: a wrong flag in a runbook surfaces in the middle of an incident. `/scribe` writes from your sources, keeps commands, paths, values, warnings, and recovery steps exactly, and records a gap instead of filling it. An audit checks an existing document without changing it.
+Documentation that reads well but cannot be followed is the costly kind: a wrong flag in a runbook surfaces in the middle of an incident. `/scribe` writes from your sources, keeps commands, paths, values, warnings, and recovery steps exactly, and records a gap instead of filling it. An audit checks an existing document without changing it. An agent writing from memory produces flags that look right; `/scribe` writes from the sources you name.
 
 ## Use this when
 
+- A generated guide uses commands, flags, or packages that do not exist.
 - A runbook, procedure, setup guide, notice, error message, or reference page must carry supplied facts exactly.
 - You want an existing document checked against its sources.
 
@@ -21,6 +22,8 @@ Documentation that reads well but cannot be followed is the costly kind: a wrong
 4. Once that owner has closed the gap, ask `/scribe` to write again.
 
 To check existing documents against their sources later, ask `/scribe` to audit them. An audit never modifies a document: it writes its report, one section per document, to `.first-four-hours/scribes/<slug>/scribe-audit.md`, and revising a document is a separate write.
+
+Nothing reruns an audit when the code changes later, so run one when the sources change.
 
 ## A worked scenario
 

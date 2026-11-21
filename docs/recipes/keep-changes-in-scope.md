@@ -9,6 +9,7 @@ A request that only says what to do leaves everything else open, and a rule in a
 - An agent keeps changing, deleting, or "simplifying" code you did not ask it to touch.
 - Your rules file says not to, and the diff does it anyway.
 - Code near the change must stay exactly as it is, and your request would not say so on its own.
+- An agent deleted, skipped, or loosened tests to make them pass.
 
 ## Use something else when
 
@@ -18,7 +19,7 @@ A request that only says what to do leaves everything else open, and a rule in a
 
 ## Steps
 
-1. Start `/blueprint` with the change and, in the same request, what must not change: the files, the behavior, the interfaces. Name them. "Don't touch anything else" is not something a check can show.
+1. Start `/blueprint` with the change and, in the same request, what must not change: the files, the behavior, the interfaces. Name them. "Don't touch anything else" is not something a check can show. Name the existing tests that must not change too: "make the tests pass" lets the agent change the tests instead of the code. The plan can then check them with a Verification Run such as `git diff --exit-code main -- tests/payments`. A vague rule gives the agent nothing exact to keep.
 2. Read the sealed plan's Goal. Each thing you named should appear in its load-bearing invariants or under what does not change, and the completion conditions should name the check that shows it. Anything missing there is not protected. A sealed plan never changes, so ask `/blueprint` for a new plan that states it.
 3. Start `/construct` on the sealed plan in a Git worktree. It never changes the plan's method, scope, or decisions. When the code turns out to need something the plan does not allow, it stops with `plan-contradiction` instead of widening the change.
 4. Read `/construct`'s report. A completion report means every instruction was applied, the plan's verification passed, and the final diff matches the plan.
@@ -68,4 +69,5 @@ The tempting shortcut was the one from last month: ask for the change and trust 
 
 - Something you asked to protect is missing from the Goal or the completion conditions: ask `/blueprint` for a new plan that names it. A sealed plan never changes ([`/blueprint`](../skills/blueprint.md)).
 - `/construct` stops with `plan-contradiction` because the change really does need the protected code: decide whether that is acceptable, then run a new `/blueprint` with the original request, your decision, and `/construct`'s evidence ([`/construct`](../skills/construct.md)).
+- Your rules file looks ignored entirely: check that your agent loaded it at all. The plan still holds the boundary, because it lives in the plan.
 - `/construct` stops any other way: follow the table on [`/construct`](../skills/construct.md).

@@ -2,10 +2,11 @@
 
 You have seen this bug before. Last quarter someone patched it where it showed, the tickets stopped, and everyone moved on. Now it is back, somewhere else.
 
-When the cause is unknown, an agent tends to patch the place where the symptom shows, and the bug comes back somewhere else. `/diagnose` finds the cause from evidence first, without editing anything. The fix is then planned for one finding.
+When the cause is unknown, an agent tends to patch the place where the symptom shows, and the bug comes back somewhere else. `/diagnose` finds the cause from evidence first, without editing anything. The fix is then planned for one finding. A new chat, smaller steps, or a revert clears the agent's context but establishes no cause; `/diagnose` establishes it from evidence before anyone edits.
 
 ## Use this when
 
+- Each fix breaks something else, and the next brings the first failure back.
 - Something is wrong and you do not know why: a defect, a bottleneck, or runtime behavior you cannot explain by reading the code.
 - You want evidence of what is worth improving instead of generic advice.
 - The agent said the bug was fixed, and the same failure came back.

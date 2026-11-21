@@ -2,10 +2,11 @@
 
 Many codebases have a second cache. Nobody decided to build it. An agent could not find the first one, or could not tell it was allowed to use it.
 
-When no one has decided which part of the code owns a job, agents add a new helper, cache, or pipeline beside the one that already exists, and the codebase grows two ways to do one thing. `/architect` decides where the responsibility belongs first. `/blueprint` then plans around that decision instead of guessing.
+When no one has decided which part of the code owns a job, agents add a new helper, cache, or pipeline beside the one that already exists, and the codebase grows two ways to do one thing. `/architect` decides where the responsibility belongs first. `/blueprint` then plans around that decision instead of guessing. A one-way-to-do-it rule, a utilities index, or a duplicate-code check in CI catches some copies, can miss one written under another name, and decides no owner.
 
 ## Use this when
 
+- Agents keep writing a new helper beside an existing one, even when your rules ask for minimal diffs.
 - The open question is a boundary, a dependency direction, who owns some state, or whether to consolidate duplicated mechanisms.
 - You suspect the design needs work but have no specific target.
 - An agent added an abstraction "for flexibility" that nobody asked for, and you want the structure decided instead of accumulated.

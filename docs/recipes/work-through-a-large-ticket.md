@@ -2,7 +2,7 @@
 
 On Monday the session knew everything. By Thursday a new session asks the questions you answered on Monday, and you answer them again, slightly differently.
 
-Large work spread over several sessions loses the thread: each session rediscovers what was decided, or one session tries everything and stops half-done. `/ticket` splits the work into tickets that each fit one session and keeps their real dependencies. In each session it picks one ready ticket and checks it against the current code before planning.
+Large work spread over several sessions loses the thread: each session rediscovers what was decided, or one session tries everything and stops half-done. `/ticket` splits the work into tickets that each fit one session and keeps their real dependencies. In each session it picks one ready ticket and checks it against the current code before planning. Compaction loses decisions that lived only in chat, and a hand-kept notes file or a hook that re-injects context lasts only while someone keeps it current; these skills hand work on through files they write.
 
 ## Use this when
 

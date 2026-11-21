@@ -7,7 +7,9 @@ Studying for a written examination mixes two jobs, learning the ideas and practi
 ## Use this when
 
 - You are learning a subject over several sessions toward a goal or a date.
+- You use an AI for your studies and suspect you are learning less: `/tutor` checks understanding instead of assuming it.
 - You are preparing for a specific written examination.
+- Your practice scores are high but you doubt they will hold in the real paper: `/examiner` writes new papers from the researched specification and marks your attempts against its scheme.
 
 ## Use something else when
 

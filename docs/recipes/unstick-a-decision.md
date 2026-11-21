@@ -2,10 +2,11 @@
 
 Some decisions stall in silence: the agent reads one more file, then another. Others sail through on an assumption everyone shares and nobody has checked. Both are expensive.
 
-An agent that cannot decide keeps gathering context, or commits to an approach that rests on an assumption no one checked, and the side quest costs more than the decision. `/reason` is a short, bounded check: it restores a stuck decision, challenges one load-bearing claim, or asks you what only you can answer.
+An agent that cannot decide keeps gathering context, or commits to an approach that rests on an assumption no one checked, and the side quest costs more than the decision. `/reason` is a short, bounded check: it restores a stuck decision, challenges one load-bearing claim, or asks you what only you can answer. A "be critical" line in a rules file changes tone, not whether a claim was checked; `/reason` challenges the claim when it matters.
 
 ## Use this when
 
+- The agent agrees with whatever you say, or drops a correct answer when you push back with no new argument.
 - A decision is stuck because the goal, evidence, cause, or options are unresolved.
 - You want a proposal or claim challenged before you rely on it.
 
@@ -13,6 +14,7 @@ An agent that cannot decide keeps gathering context, or commits to an approach t
 
 - The options need researching and comparing: [`/ideate`](../skills/ideate.md).
 - The cause of a problem is unknown: [Fix the bug without patching the symptom](fix-a-bug.md).
+- You get a different stack or design answer each time: the deciding constraints are missing, so state the goal and constraints with [`/ideate`](../skills/ideate.md), which leaves the choice to you.
 - The work is mechanical, with nothing left to judge, such as carrying out a sealed plan: it needs no `/reason` ([`/reason`](../skills/reason.md)).
 
 ## Steps

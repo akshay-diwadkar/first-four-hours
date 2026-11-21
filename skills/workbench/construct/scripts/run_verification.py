@@ -54,6 +54,7 @@ class ConstructError(ValueError):
         details: dict[str, Any] | None = None,
         valid_repairs: Sequence[str] | None = None,
         next_command: dict[str, Any] | None = None,
+        next_command_final: bool = False,
     ) -> None:
         super().__init__(message)
         self.code = code
@@ -65,6 +66,7 @@ class ConstructError(ValueError):
         self.details = details
         self.valid_repairs = tuple(valid_repairs) if valid_repairs else None
         self.next_command = next_command
+        self.next_command_final = next_command_final
         self.path = "blueprint.md"
 
     def _required_action(self) -> str:
@@ -89,6 +91,7 @@ class ConstructError(ValueError):
                 "valid_repairs": list(self.valid_repairs or (action,)),
                 "supporting_evidence": list(self.evidence),
                 "next_command": self.next_command,
+                **({"next_command_final": True} if self.next_command_final else {}),
                 "details": {"owner": self.owner, **(self.details or {})},
             },
             skill="construct",
@@ -1190,6 +1193,7 @@ def run_verification(
                 if incomplete is not None:
                     details["reverify_command"] = error.next_command
                     error.next_command = None
+                    error.next_command_final = True
                     error.valid_repairs = (
                         "If the output shows the declared incomplete outcome and no failure it does not explain, report "
                         "verification incomplete with this output as evidence: never passed, not a plan contradiction, and "
@@ -1200,6 +1204,7 @@ def run_verification(
                 elif prediction is not None:
                     details["reverify_command"] = error.next_command
                     error.next_command = None
+                    error.next_command_final = True
                     error.valid_repairs = (
                         "The Run settles a declared prediction: when the output shows the prediction failed, carry out its "
                         "decided fallback and run details.reverify_command, or, when it says stop, stop as plan-contradiction "

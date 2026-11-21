@@ -326,6 +326,7 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     code, payload = _run_phase(capsys, repo, blueprint, "before")
     diagnostic = payload["diagnostics"][0]
     assert (code, diagnostic["code"], diagnostic["next_command"]) == (3, "blueprint.invalid", None)
+    assert "next_command_final" not in diagnostic
     evidence = "\n".join(diagnostic["supporting_evidence"])
     assert "src/names.py" in evidence and "run status instead" in evidence
 
@@ -425,13 +426,15 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
         "stderr": ["[2001 earlier lines omitted]", "y" * 500 + " ... [500 characters omitted] ... " + "y" * 500, "checking"],
     }
     assert run_summary == [expected]
-    # A failing Run with a declared prediction returns it with the reverify command held back and carries the summary through the CLI stop; the CLI wrapper restores a rerun next_command.
+    # A failing Run with a declared prediction returns it with the reverify command held back and carries the summary through the CLI stop; the opt-in keeps the null next_command through the CLI wrapper.
     _write(repo, "tools/check.py", "import sys\nprint('broken', file=sys.stderr)\nsys.exit(1)\n")
     completed = subprocess.run(after_command["argv"], cwd=after_command["cwd"], capture_output=True,
                                text=True, encoding="utf-8", check=False)
     assert completed.returncode == 3, completed.stdout + completed.stderr
     diagnostic = json.loads(completed.stdout)["diagnostics"][0]
     assert diagnostic["code"] == "verification.step_failed"
+    assert diagnostic["next_command"] is None
+    assert diagnostic["next_command_final"] is True
     assert diagnostic["details"]["prediction"] == "the check reports no errors on the 400-record input; on failure, stop and return to Blueprint."
     assert "reverify" in diagnostic["details"]["reverify_command"]["argv"]
     assert diagnostic["required_action"].startswith("The Run settles a declared prediction") and "incomplete" not in diagnostic["details"]
@@ -443,7 +446,20 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     code, payload = _run_phase(capsys, repo, blueprint, "after")
     diagnostic = payload["diagnostics"][0]
     assert (code, diagnostic["code"], diagnostic["next_command"]) == (3, "verification.step_failed", None)
+    assert diagnostic["next_command_final"] is True
     assert diagnostic["details"]["prediction"] == "the check reports no errors on the 400-record input; on failure, stop and return to Blueprint."
+    # The Construct copy of the shared runtime honors the opt-in only when it is exactly True.
+    import _diagnostic_contract
+
+    fallback = {"argv": ["rerun"], "cwd": "."}
+    own = {"argv": ["own"], "cwd": "."}
+    minimal = {"code": "sample.code", "message": "sample", "next_command": None}
+    context = {"skill": "construct", "phase": "verify", "artifact": "blueprint.md", "path": "blueprint.md", "next_command": fallback}
+    plain = _diagnostic_contract.normalize_diagnostic(minimal, **context)
+    assert plain["next_command"] == fallback and "next_command_final" not in plain
+    assert _diagnostic_contract.normalize_diagnostic({**minimal, "next_command_final": "true"}, **context)["next_command"] == fallback
+    assert _diagnostic_contract.normalize_diagnostic({**minimal, "next_command_final": True}, **context)["next_command"] is None
+    assert _diagnostic_contract.normalize_diagnostic({**minimal, "next_command": own, "next_command_final": True}, **context)["next_command"] == own
     # Launch errors and timeouts report no exit code, never the synthetic 127 or -9.
     for argv, timeout, status in (
         (("missing-tool-505",), 5, "launch_error"),
@@ -497,10 +513,20 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     code, payload = _run_phase(capsys, repo, unavailable, "after")
     diagnostic = payload["diagnostics"][0]
     assert (code, diagnostic["code"], diagnostic["next_command"]) == (3, "verification.step_failed", None)
+    assert diagnostic["next_command_final"] is True
     assert diagnostic["details"]["incomplete"].startswith("the final record reports complete false")
     assert "reverify" in diagnostic["details"]["reverify_command"]["argv"]
     assert diagnostic["required_action"].startswith("If the output shows the declared incomplete outcome")
     assert diagnostic["details"]["prediction"] == "the deadline check completes; on failure, stop and return to Blueprint."
+    # A failed Run that declares neither Incomplete nor Prediction keeps its reverify command and sets no opt-in.
+    undeclared_plan = (UNAVAILABLE_PLAN
+                       .replace("Incomplete: the final record reports complete false because the deadline was exhausted.\n", "")
+                       .replace("Prediction: the deadline check completes; on failure, stop and return to Blueprint.\n", ""))
+    undeclared = _seal(repo, "undeclared", undeclared_plan)
+    code, payload = _run_phase(capsys, repo, undeclared, "after")
+    diagnostic = payload["diagnostics"][0]
+    assert (code, diagnostic["code"]) == (3, "verification.step_failed")
+    assert "reverify" in diagnostic["next_command"]["argv"] and "next_command_final" not in diagnostic
 
     # Expose the diverged-step route rather than the specified-target drift guard.
     _write(repo, "tools/check.py", check)
@@ -510,6 +536,7 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     code, payload = _prove(capsys, repo, blueprint, 1, "green", 3)
     diagnostic = payload["diagnostics"][0]
     assert (code, diagnostic["code"], diagnostic["next_command"]) == (3, "step.attempts_exhausted", None)
+    assert "next_command_final" not in diagnostic
     assert "return None if value is None else value" in diagnostic["details"]["diff"]
     assert any("AssertionError: None" in item for item in diagnostic["supporting_evidence"])
     code, payload = _invoke(capsys, repo, blueprint, "--phase", "status")

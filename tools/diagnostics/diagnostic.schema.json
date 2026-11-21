@@ -54,6 +54,7 @@
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     },
+    "next_command_final": {"type": "boolean"},
     "next_command": {
       "oneOf": [
         {"type": "null"},

@@ -295,6 +295,30 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path, monkeypa
     # rather than binding to the earlier Run.
     between = draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "Run: `python -m pytest -q tests/test_names.py`\nIncomplete: deadline exhausted\nExpect: exit 0.\n", 1)
     assert "verification.incomplete.orphan" in codes(between, tmp_path)
+    # A prediction binds to one After implementation Run's Expect, in either order with Incomplete, and sealed plans ignore a misplaced one.
+    prediction = "Prediction: the check passes on the large input; on failure, stop and return to Blueprint.\n"
+    p_orphan = draft().replace("Run: `python -m pytest", prediction + "Run: `python -m pytest", 1)
+    assert "verification.prediction.orphan" in codes(p_orphan, tmp_path)
+    p_between = draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "Run: `python -m pytest -q tests/test_names.py`\n" + prediction + "Expect: exit 0.\n", 1)
+    assert "verification.prediction.orphan" in codes(p_between, tmp_path)
+    p_before = draft().replace("### After implementation\n", "### Before implementation\nRun: `python -m pytest -q tests/test_names.py`\nExpect: exit 0.\n" + prediction + "\n### After implementation\n", 1)
+    assert "verification.prediction.before" in codes(p_before, tmp_path)
+    p_twice = draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + prediction + prediction, 1)
+    assert "verification.prediction.duplicate" in codes(p_twice, tmp_path)
+    assert "verification.prediction.placeholder" in codes(draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "Prediction: TBD\n", 1), tmp_path)
+    p_displaced = draft().replace(STEP_ONE_STATE, STEP_ONE_STATE + "\n" + prediction, 1)
+    assert "verification.prediction.displaced" in codes(p_displaced, tmp_path)
+    assert "declaration.malformed" in codes(draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "**Prediction:** x\n", 1), tmp_path)
+    after_expect = draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + prediction, 1)
+    after_incomplete = draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "Incomplete: complete false\n" + prediction, 1)
+    assert codes(after_expect, tmp_path) == codes(draft(), tmp_path)
+    assert codes(after_incomplete, tmp_path) == codes(draft(), tmp_path)
+    bound = runtime._parse_draft(after_expect)[0]
+    assert bound is not None and bound.verification[0].to_dict()["prediction"] == prediction.strip()[len("Prediction: "):]
+    plain = runtime._parse_draft(draft())[0]
+    assert plain is not None and "prediction" not in plain.verification[0].to_dict()
+    for stray in (p_orphan, p_displaced, draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "**Prediction:** x\n", 1), draft().replace(STEP_ONE_STATE, STEP_ONE_STATE + "\n**Prediction:** x\n", 1)):
+        assert {item.code for item in runtime.parse_blueprint(stray)[1]} == {item.code for item in runtime.parse_blueprint(draft())[1]}
     # Every Trace item names the steps that carry it and proof the plan authors, or is an owner gate.
     traced = "- R1 → 1, 2 · V1\n"
     no_proof = draft().replace(traced, "- R1 → 1, 2\n", 1)

@@ -22,22 +22,9 @@ Goal's scope names the trust boundary and protected behavior, and non-goals only
 
 Account for every trap the change touches in the repository's own planning-trap list, when its guidance names one. Search the repository for each edited path and any tool writing a hash, receipt, or copy of it; for each check, validator, loader, or packaging rule enumerating any directory holding a new, deleted, or renamed path, or its file type; for the old value of any changed version or identifier others compare against; and for the registrations, allowlists, and vendored copies of any reused mechanism; plan each refresh or companion edit as a step.
 
-## Attack the problem
+## Behavior, not mechanism
 
-Attack only behavior the change adds or alters that has real branches, at the depth its tier sets. Done when each such state, exit path, assumption, and violation path has a decided behavior.
-
-- Trace current behavior end to end from the entry the outcome depends on; name the root cause or missing capability at its owner.
-- Confirm every premise about current behavior from source or a safe probe, and an external service's from its current official documentation. Which of its modes to use is the user's choice; one no source settles is an intent question, never an owner check after merge.
-- When a failed premise changes what the user wants built, ask. Otherwise plan from confirmed behavior, fixing only problems that occur and keeping every outcome.
-- For every added or changed behavior, settle from source:
-
-1. **Input states.** Each value class a branch-relevant input can hold (closed, deleted, archived; absent, empty, duplicate, malformed, stale) and its behavior; an unproducible state earns nothing, an excluded producible one a fail-closed stop.
-2. **Exit paths.** Each way it finishes (success, each block, each caught or escaping error) and what each emits, persists, and preserves; discarding validated evidence or reporting false validity is a defect.
-3. **Output consumers.** Each consumer of each created or changed output, what it must decide, and the signal that lets it act and audit.
-4. **Assumptions.** Each premise about state, relationships, ordering, or environment: where it is produced, whether it can be absent, stale, partial, or changed before use, and the behavior then. Completion and resume reread required postconditions at their source, never **prior-run state** (a success marker, recorded status, link, item marked done, or relationship an earlier run established); decide where each is reread and what happens when it is missing, changed, or partial. An ungroundable premise is a fact to gather or a user question, never executor freedom.
-5. **Invariant violations.** For each load-bearing invariant or prohibited outcome, every producible input, state, configuration, or environment still reaching it, including indirectly resolved identities (default target, alias, shared name), and how the plan rejects or proves each: could a weak implementation look compliant while it stays reachable?
-
-For removed or replaced behavior, decide each state it refused or produced: covered, dropped in user-facing notes, or a user question. Record decisions in Implementation and prove the distinct ones in Verification, without a state matrix.
+Specify behavior: the outcome and its edge cases. Fix a mechanism, such as a pattern, formula, algorithm, or I/O mode, only when something outside the code requires it, such as a format another tool parses or an exact user-facing string, and state that reason. An "X or Y" whose options behave differently is an open choice, including one a repair adds.
 
 ## Commands and evidence
 
@@ -49,7 +36,7 @@ Implementation-complete means decision-complete, not code-complete: settle every
 
 Decide in prose, with short pseudocode only where prose cannot settle control flow, ordering, or exit paths, backticking each existing helper and inventing no call; beyond an earned anchored edit, leave target-language code and tests to the executor. Data a validator, loader, or schema reads must pass its acceptance rule, traced from source against the drafted bytes, and match a same-kind sibling's keys. Read [Declared text](declared-text.md) before declaring Exact, Frozen, or Proof run text.
 
-**Probe, don't prototype.** Planner and challenger probe only the current tree: neither applies declared text, writes planned code or tests, or checks a planned end state anywhere, scratch copies and memory included; Blueprint's `check` and seal are not that. Record a spike, the smallest current-tree probe for one question, as a fact. A claim only an end-state run could settle is a labelled prediction, carried when load-bearing by an authored Run, Proof run, or `Red:` with a decided branch for its foreseeable failure. Draft and trim Exact text to fit, measuring the draft, never by applying it; deleting existing rule meaning to fit a budget is a semantic change needing a stated reason.
+**Probe, don't prototype.** Planner and challenger probe only the current tree: neither applies declared text, writes planned code or tests, or checks a planned end state anywhere, scratch copies and memory included; Blueprint's `check` and seal are not that. Record a spike, the smallest current-tree probe for one question, as a fact. A claim only an end-state run could settle is a labelled prediction, carried when load-bearing by an authored Run, Proof run, or `Red:` with a decided branch for its foreseeable failure. An After implementation Run that settles one checks it on hard inputs and names it on a `Prediction:` line with its fallback, decided in full and touching no declared block, or `stop and return to Blueprint`; it must fail by exit within its Timeout, since a Construct timeout is unsafe. Draft and trim Exact text to fit, measuring the draft, never by applying it; deleting existing rule meaning to fit a budget is a semantic change needing a stated reason.
 
 ## Step proof
 
@@ -57,7 +44,7 @@ An existing green check that already exposes the wrong outcome is the step's pro
 
 ## Conditional branches
 
-Every acceptance condition needs a credible path from the planned state. If the change can foreseeably fail a later gate, establish headroom before seal or author a branch whose measurable trigger leads to already-decided actions, such as exact changes and a rerun; "investigate or replan" is not a branch, and naming a risk does not close it. Resealing during execution is a planning failure unless the repository changed or the contradiction was unknowable.
+Every acceptance condition needs a credible path from the planned state. If the change can foreseeably fail a later gate, establish headroom before seal or author a branch whose measurable trigger leads to already-decided actions, such as exact changes and a rerun; "investigate or replan" is not a branch, and naming a risk does not close it. Resealing during execution is a planning failure unless the repository changed or the contradiction was unknowable. A stop on a failed prediction is the loop working: its amendment plans against the built code with the observed fact in Facts. When a prediction's failure would reshape the design, the first plan builds only the risky slice.
 
 ## Verification and completion
 

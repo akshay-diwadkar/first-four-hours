@@ -240,6 +240,8 @@ def normalize_diagnostic(
         supporting_evidence=evidence,
         next_command=dict(value["next_command"])
         if isinstance(value.get("next_command"), Mapping)
+        else None
+        if value.get("next_command_final") is True
         else dict(next_command)
         if next_command is not None
         else None,

@@ -54,6 +54,7 @@ class ConstructError(ValueError):
         details: dict[str, Any] | None = None,
         valid_repairs: Sequence[str] | None = None,
         next_command: dict[str, Any] | None = None,
+        next_command_final: bool = False,
     ) -> None:
         super().__init__(message)
         self.code = code
@@ -65,6 +66,7 @@ class ConstructError(ValueError):
         self.details = details
         self.valid_repairs = tuple(valid_repairs) if valid_repairs else None
         self.next_command = next_command
+        self.next_command_final = next_command_final
         self.path = "blueprint.md"
 
     def _required_action(self) -> str:
@@ -89,6 +91,7 @@ class ConstructError(ValueError):
                 "valid_repairs": list(self.valid_repairs or (action,)),
                 "supporting_evidence": list(self.evidence),
                 "next_command": self.next_command,
+                **({"next_command_final": True} if self.next_command_final else {}),
                 "details": {"owner": self.owner, **(self.details or {})},
             },
             skill="construct",
@@ -1033,6 +1036,14 @@ def _run_guarded(
 
 
 _STALE_CODES = {"proof.locations.stale", "location.new.occupied", "proof.sources.stale", "location.target.missing"}
+_PREDICTION_REPAIRS = (
+    "The Run settles a declared prediction: when the output shows the prediction failed, carry out its "
+    "decided fallback and run details.reverify_command, or, when it says stop, stop as plan-contradiction "
+    "citing the prediction and this output as the observed fact: foreseen learning, not an executor error, "
+    "and never rerun unchanged.",
+    "A failure the prediction does not explain is repaired locally and reverified, or stops with "
+    "plan-contradiction evidence.",
+)
 
 
 def _regular_bytes(view: blueprint_runtime.RepositoryView, relative: str) -> bytes | None:
@@ -1170,6 +1181,9 @@ def run_verification(
                 incomplete = summary["step"].get("incomplete")
                 if incomplete is not None:
                     details["incomplete"] = incomplete
+                prediction = summary["step"].get("prediction")
+                if prediction is not None:
+                    details["prediction"] = prediction
                 error = ConstructError(
                     "verification.step_failed",
                     f"authored {authored_phase} Run failed: " + _canonical_json(summary["step"]),
@@ -1187,13 +1201,24 @@ def run_verification(
                 if incomplete is not None:
                     details["reverify_command"] = error.next_command
                     error.next_command = None
+                    error.next_command_final = True
                     error.valid_repairs = (
                         "If the output shows the declared incomplete outcome and no failure it does not explain, report "
                         "verification incomplete with this output as evidence: never passed, not a plan contradiction, and "
                         "never rerun unchanged.",
-                        "Otherwise the failure is real: repair the settled local bytes and run details.reverify_command, "
-                        "or stop with plan-contradiction evidence.",
+                    ) + (
+                        _PREDICTION_REPAIRS
+                        if prediction is not None
+                        else (
+                            "Otherwise the failure is real: repair the settled local bytes and run details.reverify_command, "
+                            "or stop with plan-contradiction evidence.",
+                        )
                     )
+                elif prediction is not None:
+                    details["reverify_command"] = error.next_command
+                    error.next_command = None
+                    error.next_command_final = True
+                    error.valid_repairs = _PREDICTION_REPAIRS
                 raise error
         workspace = _workspace_observation(root, bound)
     except ConstructError as exc:

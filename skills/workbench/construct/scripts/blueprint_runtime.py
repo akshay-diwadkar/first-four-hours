@@ -41,7 +41,7 @@ def write_utf8(text: str) -> None:
     sys.stdout.write(text)
 
 
-CONTRACT_VERSION = "2.2.0"
+CONTRACT_VERSION = "2.3.0"
 STEP_ATTEMPT_LIMIT = 3
 EXECUTABLE_SUFFIXES = frozenset({
     ".bash", ".bat", ".c", ".cc", ".cjs", ".cmd", ".cpp", ".cs", ".cxx", ".dart", ".ex", ".exs", ".fs", ".go",
@@ -188,8 +188,10 @@ REQUEST_ID_RE = re.compile(r"^\s*(?:[-*][ \t]+|\d+\.[ \t]+)?(?:\*\*)?(?P<id>R\d+
 PROOF_LABEL_RE = re.compile(r"^\s*(?:[-*][ \t]+)?\*\*Proof run\:\*\*", re.IGNORECASE)
 RED_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Red\:\s*", re.IGNORECASE)
 INCOMPLETE_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Incomplete\:\s*", re.IGNORECASE)
+PREDICTION_LIKE_RE = re.compile(r"^\s*(?:[-*][ \t]+)?Prediction\:\s*", re.IGNORECASE)
+PREDICTION_NEAR_RE = re.compile(r"^\s*(?:(?:[-*+]|\d+\.)[ \t]+)?[*_`]{0,3}\s*prediction\s*[*_`]{0,3}\s*:", re.IGNORECASE)
 NEAR_LABEL_RE = re.compile(
-    r"^\s*(?:(?:[-*+]|\d+\.)[ \t]+)?[*_`]{0,3}\s*(?:exact|frozen(?:\s+(?:edit|replace))?|edit|replace|with|proof(?:\s+run)?|red|incomplete)\s*[*_`]{0,3}\s*:",
+    r"^\s*(?:(?:[-*+]|\d+\.)[ \t]+)?[*_`]{0,3}\s*(?:exact|frozen(?:\s+(?:edit|replace))?|edit|replace|with|proof(?:\s+run)?|red|incomplete|prediction)\s*[*_`]{0,3}\s*:",
     re.IGNORECASE,
 )
 FENCE_OPEN_RE = re.compile(r"^(?P<fence>`{3,}|~{3,})")
@@ -345,6 +347,7 @@ class VerificationStep:
     phase: str
     line: int
     incomplete: str | None = None
+    prediction: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         value: dict[str, Any] = {
@@ -355,6 +358,8 @@ class VerificationStep:
         }
         if self.incomplete is not None:
             value["incomplete"] = self.incomplete
+        if self.prediction is not None:
+            value["prediction"] = self.prediction
         return value
 
 
@@ -1811,6 +1816,7 @@ def _parse_verification(
     end: int,
     fenced: set[int],
     diagnostics: list[Diagnostic],
+    allow_receipts: bool = False,
 ) -> tuple[VerificationStep, ...]:
     steps: list[VerificationStep] = []
     phase = ""
@@ -1896,7 +1902,7 @@ def _parse_verification(
                 continue
             parsed = _parse_verification_command(span, phase=phase, line=index + 1, diagnostics=diagnostics)
             if parsed is not None:
-                pending = {"argv": parsed[0], "line": index + 1, "timeout": None, "expect": False, "incomplete": False}
+                pending = {"argv": parsed[0], "line": index + 1, "timeout": None, "expect": False, "incomplete": False, "prediction": False}
             continue
         timeout_like = TIMEOUT_LIKE_RE.match(raw)
         if timeout_like:
@@ -2023,6 +2029,40 @@ def _parse_verification(
             else:
                 steps[-1] = dataclasses.replace(steps[-1], incomplete=declared)
                 pending["incomplete"] = True
+            continue
+        prediction_like = PREDICTION_LIKE_RE.match(raw)
+        if prediction_like:
+            declared = raw[prediction_like.end() :].strip()
+            problem: tuple[str, str, str] | None = None
+            if pending is None or not pending["expect"]:
+                problem = (
+                    "verification.prediction.orphan",
+                    "A Prediction line must follow its Run's Expect.",
+                    "Place Prediction after the Expect of the After implementation Run whose claim it settles.",
+                )
+            elif phase != "After implementation":
+                problem = (
+                    "verification.prediction.before",
+                    "A Prediction is accepted only on an After implementation Run.",
+                    "Remove it from the baseline Run, or move that check under '### After implementation'.",
+                )
+            elif pending["prediction"]:
+                problem = (
+                    "verification.prediction.duplicate",
+                    "A Run line has more than one Prediction.",
+                    "Keep one Prediction line per Run.",
+                )
+            elif not _substantive(declared):
+                problem = (
+                    "verification.prediction.placeholder",
+                    "Prediction must name the claim the Run settles and its decided fallback or stop.",
+                    "State the claim and either its decided fallback or 'stop and return to Blueprint'.",
+                )
+            if problem is None:
+                steps[-1] = dataclasses.replace(steps[-1], prediction=declared)
+                pending["prediction"] = True
+            elif not allow_receipts:
+                diagnostics.append(_error(*problem, line=index + 1))
             continue
     finish_pending(nested_line=end)
     return tuple(steps)
@@ -2904,7 +2944,9 @@ def _parse_draft(
         steps = _parse_steps(lines, headings=step_headings, end=end, fenced=fenced, diagnostics=diagnostics)
     if "Verification" in spans:
         start, end = spans["Verification"]
-        verification = _parse_verification(lines, start=start, end=end, fenced=fenced, diagnostics=diagnostics)
+        verification = _parse_verification(
+            lines, start=start, end=end, fenced=fenced, diagnostics=diagnostics, allow_receipts=allow_receipts
+        )
         after = [step for step in verification if step.phase == "After implementation"]
         if not after:
             diagnostics.append(
@@ -2930,7 +2972,7 @@ def _parse_draft(
             )
         )
     diagnostics.extend(
-        _scan_displaced_declarations(lines, spans, fenced, step_headings, implementation_end)
+        _scan_displaced_declarations(lines, spans, fenced, step_headings, implementation_end, allow_receipts=allow_receipts)
     )
     if diagnostics:
         return None, diagnostics
@@ -2951,6 +2993,7 @@ def _scan_displaced_declarations(
     fenced: set[int],
     step_headings: list[tuple[int, re.Match[str]]],
     implementation_end: int,
+    allow_receipts: bool = False,
 ) -> list[Diagnostic]:
     """Fail closed on declarations outside their owning surfaces.
 
@@ -3009,24 +3052,37 @@ def _scan_displaced_declarations(
                 )
             )
             continue
+        if PREDICTION_LIKE_RE.match(raw) and section_of(index) == "Implementation":
+            if not allow_receipts:
+                diagnostics.append(
+                    _error(
+                        "verification.prediction.displaced",
+                        "A Prediction line belongs only after an After implementation Run's Expect; Proof runs and Red carry no Prediction line.",
+                        "Move the Prediction line under its After implementation Run or remove it.",
+                        line=index + 1,
+                    )
+                )
+            continue
         if (
             NEAR_LABEL_RE.match(raw)
             and section_of(index) in ("Implementation", "Verification")
+            and not (allow_receipts and PREDICTION_NEAR_RE.match(raw))
             and not (
                 BLOCK_LABEL_RE.match(raw)
                 or WITH_LABEL_RE.match(raw)
                 or PROOF_LABEL_RE.match(raw)
                 or RED_LIKE_RE.match(raw)
                 or INCOMPLETE_LIKE_RE.match(raw)
+                or PREDICTION_LIKE_RE.match(raw)
             )
         ):
             diagnostics.append(
                 _error(
                     "declaration.malformed",
-                    "A line starting with Exact, Frozen, Edit, Replace, With, Proof, Red, or Incomplete followed by a colon is a "
+                    "A line starting with Exact, Frozen, Edit, Replace, With, Proof, Red, Incomplete, or Prediction followed by a colon is a "
                     "reserved declaration but is not spelled exactly, so it would be silently ignored.",
                     "Write **Exact:**, **Edit:**, or **Replace:** (or a Frozen form) and its path, **Proof run:** `command`, plain Red:, or plain "
-                    "Incomplete: exactly, "
+                    "Incomplete: or Prediction: exactly, "
                     "or rephrase the line (or put it inside a fence) if it is prose.",
                     line=index + 1,
                 )

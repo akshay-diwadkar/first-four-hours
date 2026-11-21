@@ -2,7 +2,7 @@
 
 On Monday you agreed the project would not handle delivery. On Wednesday a new session suggests adding delivery "while we're here". On Friday you are not sure what you agreed anymore, and neither is anyone else.
 
-A project that starts from a rough idea gets split into tickets and built before anyone has written down what it is for. Each session then rebuilds the purpose from whatever is in front of it, and settled questions reopen. `/charter` agrees the purpose, scope, and success with you once and records them in one resumable file. `/ticket` splits the agreed scope into session-sized tickets, and each session starts from the next ready ticket instead of from your memory.
+A project that starts from a rough idea gets split into tickets and built before anyone has written down what it is for. Each session then rebuilds the purpose from whatever is in front of it, and settled questions reopen. `/charter` agrees the purpose, scope, and success with you once and records them in one resumable file. `/ticket` splits the agreed scope into session-sized tickets, and each session starts from the next ready ticket instead of from your memory. This is not a spec per feature: `/charter` keeps one statement of the project, `/ticket` sizes each piece to one session, and each sealed `/blueprint` plan covers one change.
 
 ## Use this when
 

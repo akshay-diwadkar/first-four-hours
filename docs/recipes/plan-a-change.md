@@ -6,7 +6,7 @@ An agent that starts editing before the decisions are made settles them halfway 
 
 ## Use this when
 
-- Another agent, a later session, or a cheaper model will implement it.
+- Another agent or a later session will implement it.
 - A mistake would show up late or silently, or the decisions need to outlast this conversation.
 - You know the outcome you want.
 
@@ -18,6 +18,7 @@ Size and stakes alone do not decide it. [`/blueprint`](../skills/blueprint.md) e
 - The right structure is the open question: [Settle the structure before agents add parallel machinery](settle-structure.md).
 - The change is finished and needs review: [Trust a change before you merge it](review-before-merge.md).
 - The same agent will make the change while you watch, the path is obvious, and mistakes show up within minutes: your agent's plan mode is enough ([`/blueprint`](../skills/blueprint.md)).
+- You are choosing which model plans, builds, and reviews the change: [Hand the build to a cheaper model without inheriting its bugs](delegate-the-build.md).
 - The edit is small and clear: it needs no plan.
 
 ## Steps

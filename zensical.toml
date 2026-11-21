@@ -40,6 +40,7 @@ nav = [
   { "Solve a recurring problem" = [
     "recipes/README.md",
     { "Plan a change before your agent starts editing" = "recipes/plan-a-change.md" },
+    { "Hand the build to a cheaper model without inheriting its bugs" = "recipes/delegate-the-build.md" },
     { "Keep the agent inside the change you asked for" = "recipes/keep-changes-in-scope.md" },
     { "Fix the bug without patching the symptom" = "recipes/fix-a-bug.md" },
     { "Find out which tests actually catch anything" = "recipes/prove-tests-catch-faults.md" },

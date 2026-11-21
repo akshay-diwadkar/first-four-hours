@@ -317,7 +317,7 @@ def test_unexecutable_declarations_are_rejected_at_seal(tmp_path: Path, monkeypa
     assert bound is not None and bound.verification[0].to_dict()["prediction"] == prediction.strip()[len("Prediction: "):]
     plain = runtime._parse_draft(draft())[0]
     assert plain is not None and "prediction" not in plain.verification[0].to_dict()
-    for stray in (p_orphan, p_displaced):
+    for stray in (p_orphan, p_displaced, draft().replace(EXIT_ZERO_EXPECT, EXIT_ZERO_EXPECT + "**Prediction:** x\n", 1), draft().replace(STEP_ONE_STATE, STEP_ONE_STATE + "\n**Prediction:** x\n", 1)):
         assert {item.code for item in runtime.parse_blueprint(stray)[1]} == {item.code for item in runtime.parse_blueprint(draft())[1]}
     # Every Trace item names the steps that carry it and proof the plan authors, or is an owner gate.
     traced = "- R1 → 1, 2 · V1\n"

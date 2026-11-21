@@ -518,6 +518,11 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert "reverify" in diagnostic["details"]["reverify_command"]["argv"]
     assert diagnostic["required_action"].startswith("If the output shows the declared incomplete outcome")
     assert diagnostic["details"]["prediction"] == "the deadline check completes; on failure, stop and return to Blueprint."
+    repairs = diagnostic["valid_repairs"]
+    assert len(repairs) == 3
+    assert repairs[0].startswith("If the output shows the declared incomplete outcome")
+    assert repairs[1].startswith("The Run settles a declared prediction")
+    assert repairs[2].startswith("A failure the prediction does not explain")
     # A failed Run that declares neither Incomplete nor Prediction keeps its reverify command and sets no opt-in.
     undeclared_plan = (UNAVAILABLE_PLAN
                        .replace("Incomplete: the final record reports complete false because the deadline was exhausted.\n", "")

@@ -6,7 +6,7 @@ batch-ops is an optional MCP server that ships inside [`/provision`](../skills/p
 
 | Tool | Does in one call | Instead of |
 | :--- | :--- | :--- |
-| `batch_read` | Reads files, line ranges, outlines, blocks, greps, globs, and git history (`git:diff`, `git:changed`, `git:log`, `git:cochange`). `mode="survey"` maps the repository: its folders, recent commits, hot spots, files usually changed together, and the build and test commands its CI, Makefile, or `package.json` declare. | Separate read, search, glob, and git calls. |
+| `batch_read` | Reads files, line ranges, outlines, blocks, greps, globs, and git history (`git:diff`, `git:changed`, `git:log`, `git:cochange`). `mode="survey"` maps the repository: its folders, recent commits, hot spots, files usually changed together, and the build and test commands its CI, Makefile, or `package.json` declare. Specs passed with `mode="survey"` are read in the same report, and `focus` paths add their recent commits, the files usually committed with them, and their related tests. | Separate read, search, glob, and git calls. |
 | `batch_run` | Runs several commands concurrently, each with its own timeout, and reports failures first. Slices such as `fails`, `tail:30`, or `grep:RE` keep only the output lines you need. | One shell call per command. |
 | `batch_edit` | Applies edits, new files, deletes, and renames together, then optionally runs a `verify` command. If verification fails, it restores every file. `dry_run=true` shows the diffs without writing. | Separate edit and write calls, then a test run, then manual undo. |
 

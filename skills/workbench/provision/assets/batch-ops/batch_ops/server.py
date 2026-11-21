@@ -234,6 +234,75 @@ def _run_error(spec_index: int, exc: BaseException) -> RunResult:
 # ---------------------------------------------------------------------------
 # batch_read
 # ---------------------------------------------------------------------------
+async def _read_specs(
+    raw_specs: list[Spec],
+    *,
+    root: Path,
+    store: ArtifactStore,
+    budget_obj: Budget,
+    tracker: BudgetTracker,
+    max_output: int,
+    max_bytes: int,
+    cap_note: str | None,
+    time_s: float,
+    allow_outside: bool,
+    ctx: Context | None,
+) -> tuple[str, dict[str, Any], bool]:
+    """The files-mode report for *raw_specs*: its rendered text, envelope and ok flag."""
+    spec_list: list[ReadRequest] = []
+    for index, spec in enumerate(raw_specs, start=1):
+        try:
+            parsed = parse_read_spec(spec)
+            if parsed.kind in ("file", "handle") and parsed.path is None and parsed.handle is None:
+                raise ValueError("read spec has neither path nor handle")
+            if allow_outside:
+                for item in (parsed, *parsed.children):
+                    item.allow_outside = True
+            spec_list.append(parsed)
+        except Exception as exc:
+            spec_list.append(_read_error(index, exc))
+
+    if ctx:
+        await ctx.report_progress(10, 100)
+
+    results = await read_batch(
+        spec_list,
+        root=root,
+        tracker=tracker,
+        artifacts=store,
+        parallel=8,
+        max_output=max_output,
+    )
+
+    if ctx:
+        await ctx.report_progress(90, 100)
+
+    report = Report(
+        tool="batch_read",
+        mode="files",
+        cwd=str(root),
+        workspace=Workspace(root=str(root)),
+        budget_tokens=budget_obj.tokens,
+        budget_bytes=max_bytes,
+        reads=results,
+        coverage=collect_coverage(len(results), results),
+    )
+    report.used_bytes = sum(result.bytes_shown for result in results)
+    if cap_note:
+        report.coverage.notes.append(cap_note)
+    for result in results:
+        if result.artifact:
+            report.artifacts.append(result.artifact)
+        if result.status in ("missing", "error", "stale", "binary", "skipped"):
+            report.unknowns.append(f"{result.id}: {result.status}" + (f" ({result.path})" if result.path else ""))
+
+    text = render_read_report(report, max_bytes=max_bytes)
+    envelope = build_read_envelope(report, time_s=time_s)
+    if ctx:
+        await ctx.report_progress(100, 100)
+    return text, envelope, report.ok
+
+
 @mcp.tool(
     annotations=ToolAnnotations(
         title="Batch read evidence",
@@ -279,6 +348,34 @@ async def batch_read(
         )
         max_bytes = budget_obj.bytes
 
+        if mode == "survey" and isinstance(raw_specs, list) and raw_specs:
+            survey_report = survey(
+                root,
+                focus=focus,
+                artifacts=store,
+                max_bytes=max(1024, min(max_bytes, max_output) // 2 - 1024),
+            )
+            if cap_note:
+                survey_report.coverage.notes.append(cap_note)
+            survey_text = render_read_report(survey_report, max_bytes=max_bytes)
+            left_tokens = max(256, budget_obj.tokens - -(-len(survey_text.encode("utf-8")) // 4))
+            rest = Budget(
+                tokens=left_tokens,
+                item_tokens=min(budget_obj.item_tokens, left_tokens),
+                time_s=budget_obj.time_s,
+                max_items=budget_obj.max_items,
+            )
+            files_text, envelope, files_ok = await _read_specs(
+                raw_specs, root=root, store=store, budget_obj=rest, tracker=BudgetTracker(rest),
+                max_output=max_output, max_bytes=rest.bytes, cap_note=None,
+                time_s=actual_time_s, allow_outside=allow_outside, ctx=ctx,
+            )
+            return BatchToolResult(
+                content=[TextContent(type="text", text=survey_text + "\n" + files_text)],
+                structuredContent=envelope,
+                isError=not files_ok,
+            )
+
         if mode == "survey" or (mode == "auto" and not raw_specs):
             if ctx:
                 await ctx.report_progress(50, 100)
@@ -322,62 +419,15 @@ async def batch_read(
                 isError=True,
             )
 
-        spec_list: list[ReadRequest] = []
-        for index, spec in enumerate(raw_specs, start=1):
-            try:
-                parsed = parse_read_spec(spec)
-                if parsed.kind in ("file", "handle") and parsed.path is None and parsed.handle is None:
-                    raise ValueError("read spec has neither path nor handle")
-                if allow_outside:
-                    for item in (parsed, *parsed.children):
-                        item.allow_outside = True
-                spec_list.append(parsed)
-            except Exception as exc:
-                spec_list.append(_read_error(index, exc))
-
-        if ctx:
-            await ctx.report_progress(10, 100)
-
-        results = await read_batch(
-            spec_list,
-            root=root,
-            tracker=tracker,
-            artifacts=store,
-            parallel=8,
-            max_output=max_output,
+        text, envelope, ok = await _read_specs(
+            raw_specs, root=root, store=store, budget_obj=budget_obj, tracker=tracker,
+            max_output=max_output, max_bytes=max_bytes, cap_note=cap_note,
+            time_s=actual_time_s, allow_outside=allow_outside, ctx=ctx,
         )
-
-        if ctx:
-            await ctx.report_progress(90, 100)
-
-        report = Report(
-            tool="batch_read",
-            mode="files",
-            cwd=str(root),
-            workspace=Workspace(root=str(root)),
-            budget_tokens=budget_obj.tokens,
-            budget_bytes=max_bytes,
-            reads=results,
-            coverage=collect_coverage(len(results), results),
-        )
-        report.used_bytes = sum(result.bytes_shown for result in results)
-        if cap_note:
-            report.coverage.notes.append(cap_note)
-        for result in results:
-            if result.artifact:
-                report.artifacts.append(result.artifact)
-            if result.status in ("missing", "error", "stale", "binary", "skipped"):
-                report.unknowns.append(f"{result.id}: {result.status}" + (f" ({result.path})" if result.path else ""))
-
-        text = render_read_report(report, max_bytes=max_bytes)
-        envelope = build_read_envelope(report, time_s=actual_time_s)
-        if ctx:
-            await ctx.report_progress(100, 100)
-
         return BatchToolResult(
             content=[TextContent(type="text", text=text)],
             structuredContent=envelope,
-            isError=not report.ok,
+            isError=not ok,
         )
     except Exception as exc:
         err_text = _error_text(

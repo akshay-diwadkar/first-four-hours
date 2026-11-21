@@ -1941,16 +1941,24 @@ def survey(
     counts: dict[str, int] = {}
     hubs: set[str] = set()
     groups: list[tuple[int, list[str]]] = []
-    code, out, _ = _git(root_p, ["--no-pager", "log", "--format=%x00", "--name-only", "--relative", "-n", "200"])
+    commit_log: list[tuple[str, list[str]]] = []  # ("<hash> <date> <subject>", files), newest first
+    log_ran = False
+    code, out, _ = _git(root_p, ["--no-pager", "log", "--format=%x00%h %ad %s", "--date=short", "--name-only",
+                                 "--relative", "-n", "200"])
     if code == 0:
+        log_ran = True
         commits: list[list[str]] = []
         for chunk in out.split("\0"):
+            if not chunk.strip():
+                continue
+            head, _, listing = chunk.partition("\n")
             names = list(dict.fromkeys(
-                line.strip() for line in chunk.splitlines()
+                line.strip() for line in listing.splitlines()
                 if line.strip() and not line.strip().startswith("(")
             ))
             if names:
                 commits.append(names)
+                commit_log.append((head.strip(), names))
         pair_counts: dict[tuple[str, str], int] = {}
         for names in commits:
             for name in names:
@@ -2040,6 +2048,9 @@ def survey(
             parts.append(f"  {rel} (changed)" if rel in changed_paths else f"  {rel}")
         if len(focus_matches) > 25:
             parts.append(f"  ... {len(focus_matches) - 25} more")
+        if focus_matches and log_ran:
+            matched = {relative_display(root_p, p) for p in focus_matches}
+            parts.extend(_focus_history(matched, commit_log, hubs, [relative_display(root_p, p) for p in files]))
 
     text = "\n".join(parts)
     body, truncated, full_bytes = truncate_text(text, max_bytes, style="head")
@@ -2062,6 +2073,61 @@ def survey(
         "git_root": info.git_root,
     }
     return report
+
+
+_TEST_FOLDERS = {"test", "tests", "spec", "specs", "__tests__"}
+
+
+def _test_like(path: str) -> bool:
+    *folders, name = path.split("/")
+    if any(folder in _TEST_FOLDERS for folder in folders):
+        return True
+    stem = Path(name).stem
+    return name.startswith("test_") or stem.endswith(("_test", ".test", ".spec"))
+
+
+def _base_stem(path: str) -> str:
+    stem = Path(path.rsplit("/", 1)[-1]).stem
+    if stem.startswith("test_"):
+        stem = stem[len("test_"):]
+    for suffix in ("_test", ".test", ".spec"):
+        if stem.endswith(suffix):
+            stem = stem[:-len(suffix)]
+            break
+    return stem.lower()
+
+
+def _focus_history(
+    matched: set[str], commit_log: list[tuple[str, list[str]]], hubs: set[str], walked: list[str],
+) -> list[str]:
+    """Recent commits, co-changed files and related tests for the focus matches, from the survey's
+    own newest-200 log (the same window and ranking as ``git:cochange``)."""
+    touching = [(head, names) for head, names in commit_log if matched.intersection(names)]
+    if not touching:
+        return ["Focus history: no commit in the newest 200 touches a match"]
+    rows = ["Focus recent commits (newest 5 touching a match):"]
+    rows.extend(f"  {head}" for head, _ in touching[:5])
+    together: dict[str, int] = {}
+    for _, names in touching:
+        for name in names:
+            if name not in matched:
+                together[name] = together.get(name, 0) + 1
+    ranked = sorted(together.items(), key=lambda pair: (-pair[1], pair[0]))
+    if ranked:
+        rows.append("Focus co-change (files committed with a match; newest 200 commits):")
+        rows.extend(f"  {count}x {name}" + (" (hub)" if name in hubs else "") for name, count in ranked[:10])
+        if len(ranked) > 10:
+            rows.append(f"  +{len(ranked) - 10} more")
+    stems = {_base_stem(path) for path in matched if not _test_like(path)} - {""}
+    tests = {name for name, _ in ranked if _test_like(name)}
+    tests.update(path for path in walked if _test_like(path) and _base_stem(path) in stems)
+    tests = sorted(tests - matched)
+    if tests:
+        rows.append("Focus related tests:")
+        rows.extend(f"  {path}" for path in tests[:10])
+        if len(tests) > 10:
+            rows.append(f"  +{len(tests) - 10} more")
+    return rows
 
 
 HUB_SHARE = 0.25  # a file in this share of commits (or more) is a hub, not a co-change signal

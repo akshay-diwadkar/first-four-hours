@@ -5,16 +5,16 @@
 Scale these lenses to the exact authority and base/head delta; never a matrix or equal-depth checklist.
 
 - **Intent fidelity** — trace every material authoritative requirement through behavior, including qualifiers, scope, ordering, exceptions, and negative meaning; keywords and narration are not proof.
-- **Behavioral correctness** — material success, failure, and boundary states.
+- **Behavioral correctness** — material success, failure, and boundary states, and time and memory cost on the largest input the change can receive, especially for parsers, regexes, and loops over untrusted or tool output.
 - **Propagation** — every affected caller, consumer, contract, config, doc, and test found by the bounded sweep. A new or changed state, status, or mode also accounts for its whole lifecycle: what enters it, what ends it, which wins where it overlaps another, and every reader, including unchanged rules that assumed the old behavior.
-- **Preservation** — compare base and head truth; a requested clean break is not debt. Every removal gets a disposition: list removals from `git diff --word-diff=porcelain` for prose or long lines, since a line diff hides a cut clause inside a rewritten line. A removal is preserved only where you open its surviving statement and it reaches the branch that needs it; a claim that something else covers it is a candidate until then.
-- **Proof adequacy** — use trustworthy exact-head proof first; run only missing focused proof that can change the result. Proof must fail when the protection is removed, and mocks must not bypass the failure. Passing tests alone do not establish that the change fulfills its intent or leaves maintainable code.
+- **Preservation** — compare base and head truth; a requested clean break is not debt. Every removal gets a disposition: list removals from `git diff --word-diff=porcelain` for prose or long lines, since a line diff hides a cut clause inside a rewritten line. A removal is preserved only where you open its surviving statement and it reaches the branch that needs it.
+- **Proof adequacy** — use trustworthy exact-head proof first; run only missing focused proof that can change the result. Proof must fail when the protection is removed, and mocks must not bypass the failure. Passing tests alone do not establish that the change fulfills its intent or leaves maintainable code. A branch carrying a material requirement that only your own probe exercised is a proof finding, not a limitation: the probe shows it works today, not that the next change cannot break it; one P3 covers all such branches one test change would cover.
 - **Ownership and minimality** — the real owner is repaired with the smallest coherent propagation; no duplicate sources of truth, parallel machinery, or compatibility sediment.
 - **Integration readiness** — unavailable or contradictory required proof means `blocked`, never an implied pass.
 
 ## Depth and Diagnose
 
-Tiny local changes need requirement, delta, and focused proof; skip subagents, broad proof, and clear challenges when direct lookup closes the surface. Complexity, ambiguity, fan-out, irreversibility, data/migration, concurrency, or broad contract propagation earn depth. A change showing one of these, or reaching past one package or directory and its own tests (versions, docs/, changelog aside), gets one Behavior/Proof falsification slice per the [delegation protocol](delegation-protocol.md); if none can launch, cover it yourself and say so in `limitations`. Examine security where the change touches trust or permission boundaries, inputs, sensitive data, or risky operations; investigate earned concerns without inventing risks; no material security concern is a valid result.
+Tiny local changes need requirement, delta, and focused proof; skip subagents, broad proof, and clear challenges when direct lookup closes the surface. Complexity, ambiguity, fan-out, irreversibility, data/migration, concurrency, subprocesses, parsing untrusted or tool output, or broad contract propagation earn depth. A change showing one of these, or changing files in more than one directory (ignoring those under any `tests`, `test`, or `docs` folder and a root `CHANGELOG.md` or `VERSION`), gets one Behavior/Proof falsification slice per the [delegation protocol](delegation-protocol.md); snapshot its return as a `slice` source. If none can launch, cover it yourself and name the unrun Behavior/Proof slice in `limitations`; sealing refuses a multi-directory change with neither. Examine security where the change touches trust or permission boundaries, inputs, sensitive data, or risky operations; investigate earned concerns without inventing risks; no material security concern is a valid result.
 
 Every turn re-reads what enters context. Start from `git diff --stat <base>...<head>`, then diff one path at a time, never the whole diff, reading only the line ranges a question needs (a new file may need all of it). Keep a command's verdict, not its log; request only the PR fields you use; run each proof once per head, except a pass resting on processes, timing, or cleanup: repeat it several times, once with the host busy, since one green run hides an intermittent failure.
 
@@ -22,7 +22,7 @@ Diagnose is earned only when evidence-grounded unknown risk beyond the bounded c
 
 ## Reason checkpoints
 
-Scope, severity, findings, and the result are judgment: beyond SKILL.md's before-approach one, consult `reason` after a failure or direction change and before sealing. Only the before-sealing one narrows: a tiny local change, as Depth and Diagnose defines it, whose result is `clear` skips it, a user-accepted trade of lower cost for a small risk of missing a defect on surfaces direct lookup already closed. Final and stop reports trace `reason` checkpoints per its Checkpoint trace, marking a narrowed checkpoint as not required.
+Scope, severity, findings, and the result are judgment: consult `reason` after a failure or direction change and before sealing, asking there too whether an earned slice went unrun. Assess narrows two of Reason's checkpoints. It has no before-approach one, since the Depth triggers and sealing's directory check now settle depth. A tiny local change, as Depth and Diagnose defines it, whose result is `clear` skips the before-sealing one, a user-accepted trade of lower cost for a small risk of missing a defect on surfaces direct lookup already closed. Final and stop reports trace `reason` checkpoints per its Checkpoint trace, marking a narrowed checkpoint as not required; the trace belongs in the report, never in `limitations`.
 
 ## Finding gates
 
@@ -30,6 +30,7 @@ Before sealing, ask of each material requirement, surface, candidate, or delegat
 
 - A finding at any severity, including `P0`, changes the result, not the coverage stop: continue through every remaining material requirement and materially affected surface inside the bounded assessment, give each material requirement and materially affected surface an evidence or behavior disposition, and report every independently material defect discovered before concluding.
 - Merge observations only when one underlying defect and one concrete repair or truth to restore would resolve them all; shared severity, axis, file, generic consequence, or blocking status does not merge independent defects, nor does a shared reviewer or slice.
+- Only evidence clears a candidate: measure a cap, size limit, or timeout you rely on at its worst-case input instead of arguing it; review copied or moved code as new code; PR prose, comments, audits, and prior reviews never clear one.
 - Style preference, speculative risk or cleanup, optional enhancement, or architecture taste without current material consequence is not a finding and receives no severity. A `P3` finding still needs a concrete defect, scenario, locators, evidence, consequence, and required truth; low severity never admits a nit.
 
 ## Severity
@@ -48,7 +49,7 @@ Choose the level from the evidenced consequence, affected scope, reachable condi
 ## Bundle fields
 
 - `target`: the pull request's `url` from `gh pr view --json url` when the change has one, so its findings can be posted; otherwise a short description.
-- `assessed_sources` entry: `{"id":"id","role":"authority","locator":"URL","path":"/absolute/snapshot"}`; roles `target|authority|evidence|proof|diagnosis`.
+- `assessed_sources` entry: `{"id":"id","role":"authority","locator":"URL","path":"/absolute/snapshot"}`; roles `target|authority|evidence|proof|diagnosis|slice`.
 - Locators: `{"kind":"head-file","path":"a/b.py","start_line":1,"end_line":9}`, `{"kind":"head-path","path":"a/b.bin"}` for paths without text lines, `{"kind":"source","source_id":"id"}`; `base-` variants cite the base.
 - `examined`: locators you actually inspected; `clear` needs one. Sealing derives changed paths no locator cites and refuses until you inspect each one or name its complete repository path in `limitations`. One limitation may group several paths; a path counts only when it does not appear solely inside a longer path.
 - `limitations`: `[]` only when you claim none; include self-review for any part of a self-authored change that no fresh-context owner or delegate examined.

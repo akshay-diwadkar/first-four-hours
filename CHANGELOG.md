@@ -4,6 +4,8 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-21
+
 ### Added
 
 - Blueprint 2.4.0 and Construct 2.2.2: plans now settle a decision only the built result can show (layout, interaction, user-facing copy, API ergonomics, a performance tune, a prompt's effect) from a source the user supplies, an earlier slice's observed result, or a user question once there is something to look at; with none of these, the plan builds only that slice first, with provisional defaults and the user's acceptance recorded in the request. Judged acceptance lets a Run write the observable to an ignored path that is not plan-bound, and an `Owner gate:` names who judges it after Construct. A new reference holds these rules and the rendered-output states (viewport, overflow, keyboard and focus, loading and error states), and is loaded only on that branch; each state a script can assert becomes a Run that opens the built interface at every supported viewport, leaving only the rest to judged acceptance. Verification purity now allows writes to ignored paths that are not plan-bound, matching Construct's guard. Blueprint seals plans with contract version 2.4.0, and Construct ships the Blueprint 2.4.0 runtime copy, reports contract version 2.4.0, and still accepts every sealed 2.x plan. Blueprint's top-level budget rises by 18 tokens, from 1475 to 1493, and its references budget by 505 tokens, from 8099 to 8604, partly paid for by pruning duplicated guidance, because plans pinned observation-settled decisions as mechanism or left them to the executor.

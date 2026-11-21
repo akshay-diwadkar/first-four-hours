@@ -4,7 +4,7 @@ The tests are green. The description says complete. The reviewer has twenty minu
 
 Review churn comes from reviews that skim the diff, or from fixes made straight from review comments that quietly reopen decisions. `/assess` checks the exact change against what it was supposed to do and reports every material defect it finds. Fixes go through a new plan instead of a direct edit.
 
-"Done" is the agent's own account, so the check has to come from outside the context that wrote the code. A sealed `/blueprint` plan requires each test it adds to fail on today's code and pass after the change, `/construct` reports the checks it ran before the change and after it, and an incomplete check is never a pass. `/assess` reviews against the requirement and the base behavior, in a fresh context when the same agent wrote the change. "Show me the output", "run the tests yourself", and "review the diff, not the summary" are right, but they work only while someone remembers to say them.
+"Done" is the agent's own account, so the check has to come from outside the context that wrote the code. A test that a sealed `/blueprint` plan declares as a new regression must fail on today's code and pass after the change, `/construct` reports each check it ran and whether its output met the expected result, and an incomplete check is never a pass. `/assess` reviews against the requirement and the base behavior, in a fresh context when the same agent wrote the change. "Show me the output", "run the tests yourself", and "review the diff, not the summary" are right, but they work only while someone remembers to say them.
 
 ## Use this when
 
@@ -12,14 +12,13 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 - You want a re-review after rework.
 - You are about to trust the agent's summary of a change instead of the change.
 - A check is green but you have not seen what it ran: a run of zero tests can exit 0.
-- A pull request is too large to review because no stated intent exists to compare it with.
 
 ## Use something else when
 
 - You need the pull request description: [`/pr`](../skills/pr.md).
 - A broader risk has an unknown cause: [Fix the bug without patching the symptom](fix-a-bug.md).
 - The change is not written yet: [Plan a change before your agent starts editing](plan-a-change.md).
-- The change is too large to review against anything: split it ([Work through a large ticket without losing the thread](work-through-a-large-ticket.md)).
+- A pull request is too large to review because no stated intent exists to compare it with: split it into pieces that each state what they must do ([Work through a large ticket without losing the thread](work-through-a-large-ticket.md)).
 
 ## Steps
 

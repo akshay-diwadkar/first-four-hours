@@ -1,13 +1,14 @@
 """Regenerate the README banner: assets/banner.svg.
 
 The banner is a dusk forest scene. The sun's path across the sky is a six-hour clock: hours 1-4 are
-gold and sit over a grindstone with the axe on the wheel (sharpen), hours 5-6 are plain and sit over
-a stump with the axe in it and the felled log (chop).
+gold and sit over a grindstone with the axe laid across the turning wheel (sharpen), hours 5-6 are
+plain and sit over a stump at the moment the axe strikes it, beside the felled log (chop).
 
 The scene is lit from the sun at hour 5: a warm glow and faint stars in the sky, four rows of pines
 that grow hazier with distance and fade into ground mist, a thin rim of sunlight on the sun-facing
-edges, sparks where the bevel meets the wheel, and grass and ferns in the foreground. It uses
-gradients only, no SVG filters, so it paints cheaply.
+edges, and grass and ferns in the foreground. Motion is drawn, not animated: speed arcs on the stone,
+sparks that fall in arcs off the rim, the swing's trail behind the axe head and chips in flight. It
+uses gradients and one clip only, no SVG filters, so it paints cheaply.
 
 GitHub shows README images through <img>, which cannot load web fonts, so all text is converted to
 outline paths and the SVG depends on no fonts.
@@ -442,26 +443,38 @@ def arc(cx, cy, r, deg0, deg1) -> str:
             f"A {fmt(r)} {fmt(r)} 0 0 1 {fmt(cx + r * math.cos(a1))} {fmt(cy + r * math.sin(a1))}")
 
 
-def axe(edge_at, angle_deg, scale, mirror=False) -> str:
-    """Place the axe so its edge point lands on edge_at, rotated by angle_deg."""
+def axe_frame(edge_at, angle_deg, scale, mirror=False):
+    """The axe's SVG transform and a function mapping its local points to the banner."""
     m = -1 if mirror else 1
     a = math.radians(angle_deg)
     ex, ey = m * scale * AXE_EDGE[0], scale * AXE_EDGE[1]
     tx = edge_at[0] - (ex * math.cos(a) - ey * math.sin(a))
     ty = edge_at[1] - (ex * math.sin(a) + ey * math.cos(a))
+
+    def to_screen(lx, ly):
+        sx, sy = m * scale * lx, scale * ly
+        return tx + sx * math.cos(a) - sy * math.sin(a), ty + sx * math.sin(a) + sy * math.cos(a)
+
     transform = f"translate({fmt(tx)} {fmt(ty)}) rotate({fmt(angle_deg)}) scale({fmt(m * scale)} {fmt(scale)})"
+    return transform, to_screen
+
+
+def axe(edge_at, angle_deg, scale, mirror=False, clip=None) -> str:
+    """Place the axe so its edge point lands on edge_at, rotated by angle_deg; clip hides what is inside wood."""
+    transform, _ = axe_frame(edge_at, angle_deg, scale, mirror)
     gh, gs = gid("hdl"), gid("stl")
     defs = (lin(gh, [(0, T["wood_dark"]), (0.45, T["wood_hi"]), (1, T["wood"])], 0, 0, 1, 0)
             + lin(gs, [(0, T["steel_hi"]), (0.55, T["steel"]), (1, T["steel_lo"])]))
     ow = 2.0 / scale
-    return (f'<defs>{defs}</defs><g transform="{transform}">'
+    open_clip, close_clip = (f'<g clip-path="url(#{clip})">', "</g>") if clip else ("", "")
+    return (f'<defs>{defs}</defs>{open_clip}<g transform="{transform}">'
             f'<path fill="url(#{gh})"{outline(ow)} d="{AXE_HANDLE}"/>'
             f'<path fill="url(#{gs})"{outline(ow)} d="{AXE_HEAD}"/>'
             f'<path fill="{T["steel_lo"]}" opacity="0.5" d="{AXE_LOWER_CHEEK}"/>'
             f'<path fill="none" stroke="{T["steel_hi"]}" stroke-width="{fmt(3.2 / scale)}" stroke-linecap="round" '
             f'opacity="0.85" d="M -22 -344 L 30 -344 Q 88 -344 152 -392"/>'
             f'<path fill="none" stroke="{T["accent"]}" stroke-width="{fmt(6 / scale * scale ** 0.5)}" '
-            f'stroke-linecap="round" d="{AXE_BEVEL}"/></g>')
+            f'stroke-linecap="round" d="{AXE_BEVEL}"/></g>{close_clip}')
 
 
 def grindstone(cx, cy, r, ground_y) -> str:
@@ -498,15 +511,11 @@ def grindstone(cx, cy, r, ground_y) -> str:
                f'd="M {fmt(cx - r * 0.6)} {fmt(wy + 3)} L {fmt(cx + r * 0.6)} {fmt(wy + 3)}"/>')
     out.append(f'<circle cx="{fmt(cx)}" cy="{fmt(cy)}" r="{fmt(r * 0.15)}" fill="{T["wood_dark"]}"{outline(1.2)}/>')
     out.append(f'<circle cx="{fmt(cx + r * 0.04)}" cy="{fmt(cy - r * 0.04)}" r="{fmt(r * 0.05)}" fill="{T["wood_hi"]}"/>')
-    # rotation arrow on the stone's face
-    r2 = r * 0.64
-    a0, a1 = math.radians(200), math.radians(110)
-    p0 = (cx + r2 * math.cos(a0), cy - r2 * math.sin(a0))
-    p1 = (cx + r2 * math.cos(a1), cy - r2 * math.sin(a1))
-    out.append(f'<path fill="none" stroke="{T["accent"]}" stroke-width="3.5" stroke-linecap="round" '
-               f'd="M {fmt(p0[0])} {fmt(p0[1])} A {fmt(r2)} {fmt(r2)} 0 0 1 {fmt(p1[0])} {fmt(p1[1])}"/>')
-    out.append(f'<path fill="none" stroke="{T["accent"]}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" '
-               f'd="M {fmt(p1[0] - 10)} {fmt(p1[1] - 7)} L {fmt(p1[0])} {fmt(p1[1])} L {fmt(p1[0] - 9)} {fmt(p1[1] + 8)}"/>')
+    # speed arcs: the stone turns clockwise, so each arc brightens toward its leading (clockwise) end
+    for rr, a0, span in ((0.8, 195, 75), (0.71, 15, 65), (0.5, 110, 60), (0.4, 285, 55), (0.86, 60, 50)):
+        for j in range(4):
+            out.append(f'<path fill="none" stroke="{T["stone_hi"]}" stroke-width="2" stroke-linecap="round" '
+                       f'opacity="{fmt(0.08 + 0.17 * j)}" d="{arc(cx, cy, r * rr, a0 + span * j / 4, a0 + span * (j + 1) / 4)}"/>')
     # grit speckle across the face
     rng = random.Random(9)
     for _ in range(80):
@@ -514,7 +523,15 @@ def grindstone(cx, cy, r, ground_y) -> str:
         out.append(f'<circle cx="{fmt(cx + d * math.cos(a))}" cy="{fmt(cy + d * math.sin(a))}" '
                    f'r="{fmt(rng.uniform(0.5, 1.3))}" fill="{rng.choice((T["stone_lo"], T["stone_hi"]))}" '
                    f'opacity="{fmt(rng.uniform(0.25, 0.6))}"/>')
-    # crank on the axle: iron arm, wooden grip
+    # crank on the axle: iron arm, wooden grip, with fading copies where it just was
+    arm, arm_deg, grip_turn = r * math.hypot(0.3, 0.32), math.degrees(math.atan2(0.32, 0.3)), math.radians(-8.9)
+    for lag, op in ((56, 0.18), (28, 0.35)):
+        a = math.radians(arm_deg - lag)
+        gx_, gy_ = cx + arm * math.cos(a), cy + arm * math.sin(a)
+        hx, hy = gx_ + 11.4 * math.cos(a + grip_turn), gy_ + 11.4 * math.sin(a + grip_turn)
+        out.append(f'<g opacity="{op}" fill="none" stroke-linecap="round">'
+                   f'<path stroke="{T["steel_lo"]}" stroke-width="6" d="M {fmt(cx)} {fmt(cy)} L {fmt(gx_)} {fmt(gy_)}"/>'
+                   f'<path stroke="{T["wood_hi"]}" stroke-width="9" d="M {fmt(gx_)} {fmt(gy_)} L {fmt(hx)} {fmt(hy)}"/></g>')
     ex, ey = cx + r * 0.3, cy + r * 0.32
     out.append(f'<path fill="none" stroke="{T["steel_lo"]}" stroke-width="6" stroke-linecap="round" '
                f'd="M {fmt(cx)} {fmt(cy)} L {fmt(ex)} {fmt(ey)}"/>')
@@ -533,30 +550,148 @@ def grindstone(cx, cy, r, ground_y) -> str:
     return "".join(out)
 
 
-def sparks(px, py) -> str:
-    """Sparks thrown off where the bevel meets the wheel; the rim runs downward on this side."""
+def parabola(p0, v, g, t0, t1) -> str:
+    """The stretch of a thrown path p(t) = p0 + v t + g t^2 / 2 between t0 and t1, as one exact quadratic."""
+    def at(t):
+        return p0[0] + v[0] * t, p0[1] + v[1] * t + g * t * t / 2
+    (ax, ay), (bx, by) = at(t0), at(t1)
+    h = (t1 - t0) / 2
+    return f"M {fmt(ax)} {fmt(ay)} Q {fmt(ax + v[0] * h)} {fmt(ay + (v[1] + g * t0) * h)} {fmt(bx)} {fmt(by)}"
+
+
+def sparks(px, py, rim_deg) -> str:
+    """Sparks thrown off where the bevel meets the wheel.
+
+    Each leaves along the rim's direction of travel (the stone turns clockwise), falls under gravity,
+    and cools from white to orange along its path; a few burst at the end. A warm pool of light
+    around the contact falls on the axe head and the top of the stone.
+    """
     rng = random.Random(3)
-    g = gid("spk")
-    out = [f'<defs>{brad(g, [(0, T["glint"], 0.9), (0.3, T["sun"], 0.45), (1, T["sun"], 0)])}</defs>',
-           f'<circle cx="{fmt(px)}" cy="{fmt(py)}" r="20" fill="url(#{g})"/>']
-    streaks = []
-    for _ in range(14):
-        a = math.radians(rng.uniform(25, 85))
-        d0, d1 = rng.uniform(4, 10), rng.uniform(14, 40)
-        x0, y0 = px + d0 * math.cos(a), py + d0 * math.sin(a)
-        x1, y1 = px + d1 * math.cos(a), py + d1 * math.sin(a) + (d1 / 40) ** 2 * 6
-        col = rng.choice((T["glint"], "#ffd36b", "#f2b640"))
-        streaks.append(f'<path stroke="{col}" stroke-width="{fmt(rng.uniform(0.9, 1.8))}" '
-                       f'opacity="{fmt(rng.uniform(0.55, 1))}" d="M {fmt(x0)} {fmt(y0)} L {fmt(x1)} {fmt(y1)}"/>')
+    th = math.radians(rim_deg)
+    base = math.atan2(math.cos(th), -math.sin(th))
+    gl, gp = gid("spl"), gid("spk")
+    out = [f'<defs>{urad(gl, px, py, 70, [(0, T["sun"], 0.32), (0.45, T["sun"], 0.1), (1, T["sun"], 0)])}'
+           f'{brad(gp, [(0, T["glint"], 0.9), (0.3, T["sun"], 0.45), (1, T["sun"], 0)])}</defs>',
+           f'<circle cx="{fmt(px)}" cy="{fmt(py)}" r="70" fill="url(#{gl})"/>',
+           f'<circle cx="{fmt(px)}" cy="{fmt(py)}" r="20" fill="url(#{gp})"/>']
+    grav = 110
+    cooling = ((T["glint"], 1.8, 1), ("#ffd36b", 1.2, 0.8), ("#f2b640", 0.7, 0.45))
+    streaks, bursts = [], []
+    for i in range(20):
+        a = base + math.radians(rng.uniform(-26, 8))  # negative turns away from the stone
+        speed = rng.uniform(35, 80) * (1.7 if rng.random() < 0.2 else 1)
+        v = (speed * math.cos(a), speed * math.sin(a))
+        t_end = rng.uniform(0.4, 0.9)
+        t0 = 4 / speed
+        cuts = [t0, t0 + (t_end - t0) * 0.3, t0 + (t_end - t0) * 0.62, t_end]
+        for k, (col, w, op) in enumerate(cooling):
+            streaks.append(f'<path stroke="{col}" stroke-width="{fmt(w * rng.uniform(0.8, 1.1))}" opacity="{op}" '
+                           f'd="{parabola((px, py), v, grav, cuts[k], cuts[k + 1])}"/>')
+        if i % 7 == 3:
+            ex = px + v[0] * t_end
+            ey = py + v[1] * t_end + grav * t_end * t_end / 2
+            for _ in range(3):
+                b = rng.uniform(0, math.tau)
+                ln = rng.uniform(2.5, 4.5)
+                bursts.append(f"M {fmt(ex)} {fmt(ey)} L {fmt(ex + ln * math.cos(b))} {fmt(ey + ln * math.sin(b))}")
     out.append(f'<g fill="none" stroke-linecap="round">{"".join(streaks)}</g>')
+    out.append(f'<path fill="none" stroke="#ffd36b" stroke-width="0.8" stroke-linecap="round" d="{" ".join(bursts)}"/>')
+    for _ in range(7):
+        a = base + math.radians(rng.uniform(-30, 10))
+        speed, t = rng.uniform(40, 90), rng.uniform(0.5, 1.0)
+        dx = px + speed * math.cos(a) * t
+        dy = py + speed * math.sin(a) * t + grav * t * t / 2
+        out.append(f'<circle cx="{fmt(dx)}" cy="{fmt(dy)}" r="{fmt(rng.uniform(0.7, 1.2))}" fill="#f2b640" '
+                   f'opacity="{fmt(rng.uniform(0.5, 0.9))}"/>')
     out.append(f'<path fill="{T["glint"]}" d="M {fmt(px)} {fmt(py - 9)} L {fmt(px + 1.6)} {fmt(py - 1.6)} L {fmt(px + 9)} {fmt(py)} '
                f'L {fmt(px + 1.6)} {fmt(py + 1.6)} L {fmt(px)} {fmt(py + 9)} L {fmt(px - 1.6)} {fmt(py + 1.6)} '
                f'L {fmt(px - 9)} {fmt(py)} L {fmt(px - 1.6)} {fmt(py - 1.6)} Z"/>')
     return "".join(out)
 
 
+def rest_fork(x, ground_y, top_y) -> str:
+    """A forked stick pushed into the ground; its crotch holds the axe handle against the stone."""
+    cy = top_y + 7
+    out = [shadow(x - 4, ground_y + 1, 12, 2.5),
+           f'<path fill="none" stroke="{T["wood_dark"]}" stroke-width="5" stroke-linecap="round" '
+           f'd="M {fmt(x - 1)} {fmt(ground_y + 1)} Q {fmt(x + 2)} {fmt((ground_y + cy) / 2)} {fmt(x)} {fmt(cy)}"/>',
+           f'<path fill="none" stroke="{T["wood_dark"]}" stroke-width="3.5" stroke-linecap="round" '
+           f'd="M {fmt(x)} {fmt(cy)} L {fmt(x - 7)} {fmt(top_y - 3)} M {fmt(x)} {fmt(cy)} L {fmt(x + 8)} {fmt(top_y - 4)}"/>',
+           f'<path fill="none" stroke="{T["wood_hi"]}" stroke-width="1.2" stroke-linecap="round" opacity="0.6" '
+           f'd="M {fmt(x + 1.8)} {fmt(ground_y - 4)} Q {fmt(x + 3.6)} {fmt((ground_y + cy) / 2)} {fmt(x + 1.8)} {fmt(cy)} '
+           f'L {fmt(x + 9)} {fmt(top_y - 3)}"/>']
+    return "".join(out)
+
+
+def chip(x, y, size, rot, flat=1.0, op=1.0) -> str:
+    """A wood chip: a pale split face with a dark strip of bark along one side."""
+    s = size
+    face = poly((-0.5 * s, -0.1 * s), (0.1 * s, -0.32 * s), (0.5 * s, -0.08 * s), (0.05 * s, 0.24 * s))
+    bark = poly((0.1 * s, -0.32 * s), (0.5 * s, -0.08 * s), (0.36 * s, -0.02 * s), (0.04 * s, -0.2 * s))
+    return (f'<g transform="translate({fmt(x)} {fmt(y)}) rotate({fmt(rot)}) scale(1 {fmt(flat)})" opacity="{fmt(op)}">'
+            f'<path fill="{T["cut"]}" d="{face}"/><path fill="{T["wood_dark"]}" d="{bark}"/></g>')
+
+
+def strike(x, top, rng) -> str:
+    """The axe biting into the stump: a split kerf, the swing's trail, a puff of dust and chips in flight."""
+    edge, angle, scale = (x + 2, top + 14), -100, 0.36
+    _, to_screen = axe_frame(edge, angle, scale, mirror=True)
+    xa = min(to_screen(160, -404)[0], to_screen(160, -220)[0]) - 3
+    xb = max(to_screen(160, -404)[0], to_screen(160, -220)[0]) + 3
+    xm = (xa + xb) / 2
+    gd, clip = gid("dust"), gid("bite")
+    out = [f'<defs>{brad(gd, [(0, T["cut"], 0.4), (0.5, T["cut"], 0.14), (1, T["cut"], 0)])}'
+           f'<clipPath id="{clip}"><rect x="0" y="0" width="{W}" height="{fmt(top + 0.5)}"/></clipPath></defs>',
+           f'<ellipse cx="{fmt(xm)}" cy="{fmt(top - 4)}" rx="46" ry="16" fill="url(#{gd})"/>']
+    # the kerf: the wood split open where the blade went in, with checks running out from it
+    out.append(f'<path fill="#2a1d12" d="M {fmt(xa)} {fmt(top)} Q {fmt(xm)} {fmt(top + 4.5)} {fmt(xb)} {fmt(top)} '
+               f'Q {fmt(xm)} {fmt(top - 2)} {fmt(xa)} {fmt(top)} Z"/>')
+    out.append(f'<path fill="none" stroke="{T["wood_dark"]}" stroke-width="1.1" stroke-linecap="round" opacity="0.9" '
+               f'd="M {fmt(xm - 10)} {fmt(top + 3.5)} L {fmt(xm - 15)} {fmt(top + 8)} M {fmt(xm + 12)} {fmt(top + 3.4)} '
+               f'L {fmt(xm + 19)} {fmt(top + 7.5)}"/>')
+    # the swing's trail: tapered sweeps along the arcs the head just travelled around the hands at the
+    # end of the handle, starting from the back of the head (the edge leads, so the head came from there)
+    butt = to_screen(0, 0)
+    for ly, op in ((-392, 0.22), (-312, 0.32), (-232, 0.22)):
+        px, py = to_screen(-32, ly)
+        bx, by = to_screen(-90, ly)
+        r = math.hypot(px - butt[0], py - butt[1])
+        a0 = math.atan2(py - butt[1], px - butt[0])
+        sgn = 1 if math.hypot(butt[0] + r * math.cos(a0 + 0.05) - bx, butt[1] + r * math.sin(a0 + 0.05) - by) < \
+            math.hypot(butt[0] + r * math.cos(a0 - 0.05) - bx, butt[1] + r * math.sin(a0 - 0.05) - by) else -1
+        n, span, wmax = 24, math.radians(34), 4.5
+        outer, inner = [], []
+        for i in range(n + 1):
+            t = i / n
+            a = a0 + sgn * span * t
+            w = wmax * (1 - t) ** 1.2 / 2
+            outer.append((butt[0] + (r + w) * math.cos(a), butt[1] + (r + w) * math.sin(a)))
+            inner.append((butt[0] + (r - w) * math.cos(a), butt[1] + (r - w) * math.sin(a)))
+        g = gid("swing")
+        out.append(f'<defs>{ulin(g, outer[0][0], outer[0][1], outer[-1][0], outer[-1][1], [(0, T["glint"], 1), (1, T["glint"], 0)])}</defs>'
+                   f'<path fill="url(#{g})" opacity="{op}" d="{poly(*outer, *reversed(inner))}"/>')
+    out.append(axe(edge, angle, scale, mirror=True, clip=clip))
+    # the near lip of the split, catching the light in front of the blade
+    out.append(f'<path fill="none" stroke="{mix(T["cut"], T["glint"], 0.45)}" stroke-width="1.3" stroke-linecap="round" '
+               f'd="M {fmt(xa + 2)} {fmt(top + 0.8)} Q {fmt(xm)} {fmt(top + 5)} {fmt(xb - 2)} {fmt(top + 0.8)}"/>')
+    # chips thrown out to either side of the blade, each trailing a faint arc back toward the kerf
+    grav = 160
+    for i in range(7):
+        side = -1 if i % 2 == 0 else 1
+        a = math.radians(rng.uniform(-150, -118) if side < 0 else rng.uniform(-62, -28))
+        speed, t = rng.uniform(70, 120), rng.uniform(0.28, 0.5)
+        p0 = (xm + side * rng.uniform(4, 22), top + 1)
+        v = (speed * math.cos(a), speed * math.sin(a))
+        cx_ = p0[0] + v[0] * t
+        cy_ = p0[1] + v[1] * t + grav * t * t / 2
+        out.append(f'<path fill="none" stroke="{T["cut"]}" stroke-width="1" stroke-linecap="round" opacity="0.3" '
+                   f'd="{parabola(p0, v, grav, t * 0.55, t * 0.92)}"/>')
+        out.append(chip(cx_, cy_, rng.uniform(8, 13), rng.uniform(0, 360)))
+    return "".join(out)
+
+
 def felled(x, ground) -> str:
-    """The clean cut: a stump with the axe stuck in its top, the felled log beside it, a few chips."""
+    """The chopping block: a stump taking the axe's strike, the felled log beside it, chips on the ground."""
     rng = random.Random(7)
     sw, sh = STUMP_W, STUMP_H
     top = ground - sh
@@ -585,13 +720,12 @@ def felled(x, ground) -> str:
     for k, ry, w in ((0.3, 5, 1.4), (0.12, 2, 1.2)):
         out.append(f'<ellipse cx="{fmt(x)}" cy="{fmt(top)}" rx="{fmt(sw * k)}" ry="{ry}" fill="none" '
                    f'stroke="{T["wood"]}" stroke-width="{fmt(w)}"/>')
-    # axe stuck in the stump: edge down, handle out to the right
-    out.append(axe((x - 6, top + 5), -100, 0.36, mirror=True))
     for _ in range(9):
         cx = x + rng.uniform(-110, 60)
         cy = ground - rng.uniform(0, 4)
-        out.append(f'<rect x="{fmt(cx)}" y="{fmt(cy)}" width="{fmt(rng.uniform(5, 10))}" height="3" '
-                   f'transform="rotate({fmt(rng.uniform(-40, 40))} {fmt(cx)} {fmt(cy)})" fill="{T["cut"]}"/>')
+        out.append(chip(cx, cy, rng.uniform(6, 11), rng.uniform(-40, 40), flat=0.6))
+    # the strike: edge down in the stump top, handle out to the right
+    out.append(strike(x, top, rng))
     return "".join(out)
 
 
@@ -632,12 +766,17 @@ def scene() -> tuple[str, str]:
     bg.append(layer(forest(37, 1530, 1640, 452, 110, 170, 0.55, bough_pine, ground=False), T["g3"], 280, 452, rim=0.22, haze_amt=0.3))
     bg.append(ground())
 
-    # sharpening station under the gold hours: axe stood against the wheel, edge on the stone
+    # sharpening station under the gold hours: the axe laid over the stone, its edge on the rim and
+    # its handle in a forked rest, sparks running off with the turning wheel
     gx, gr = 1030, 58
     gy = GROUND - gr * 2.0
-    edge = (gx + gr - 1, gy - 6)
-    fg = [grindstone(gx, gy, gr, GROUND), axe(edge, -6, 0.37, mirror=True), sparks(*edge)]
-    # the clean cut under the plain hours
+    rim = -45
+    edge = (gx + (gr - 1) * math.cos(math.radians(rim)), gy + (gr - 1) * math.sin(math.radians(rim)))
+    _, to_screen = axe_frame(edge, rim, 0.37, mirror=True)
+    rest = to_screen(0, -55)
+    fg = [grindstone(gx, gy, gr, GROUND), rest_fork(rest[0], GROUND, rest[1] + 4),
+          axe(edge, rim, 0.37, mirror=True), sparks(*edge, rim)]
+    # the strike under the plain hours
     fg += [felled(1330, GROUND), stump_detail(1330, GROUND), grass(960, 1600, 2), ferns()]
     return "\n".join(bg), "\n".join(fg)
 

@@ -13,7 +13,9 @@ Otherwise it is **Standard** when a consumer outside the changed package, or a p
 
 ## Desk check
 
-**Design**, at the tier's depth, for behavior the change adds or alters that has real branches: trace each rule the plan states end to end against the current code it depends on, from the entry the outcome depends on, naming the root cause or missing capability at its owner. Confirm every premise about current behavior from source or a safe probe, and an external service's from its current official documentation; which of its modes to use is the user's choice, and one no source settles is an intent question, never an owner check after merge. When a failed premise changes what the user wants built, ask; otherwise plan from confirmed behavior, fixing only problems that occur and keeping every outcome. Done when each item below has a decided behavior:
+**Premises**, on every plan: confirm each premise about current behavior, and each claim a wording deliverable makes about the repository or its tools, from source or a safe probe, and an external service's from its current official documentation; which of its modes to use is the user's choice, and one no source settles is an intent question, never an owner check after merge. When a failed premise changes what the user wants built, ask; otherwise plan from confirmed behavior, fixing only problems that occur and keeping every outcome. Once drafted, check each wording deliverable against the section it lands in and any other text describing the same behavior, kept or added: a contradiction is a defect.
+
+**Design**, at the tier's depth, for behavior the change adds or alters that has real branches: trace each rule the plan states end to end against the current code it depends on, from the entry the outcome depends on, naming the root cause or missing capability at its owner. Done when each item below has a decided behavior:
 
 1. **Input states.** Each value class a branch-relevant input can hold (closed, deleted, archived; absent, empty, duplicate, malformed, stale) and its behavior; an unproducible state earns nothing, an excluded producible one a fail-closed stop.
 2. **Exit paths.** Each way it finishes (success, each block, each caught or escaping error) and what each emits, persists, and preserves; discarding validated evidence or reporting false validity is a defect.
@@ -41,7 +43,7 @@ One user request gets at most one fresh challenge, amendments included, counting
 
 ## Repair
 
-Re-verify each finding against the request and current source, weighing user authority, evidence, and consequence rather than confidence. Closure names the repaired instruction and the evidence or decided branch defeating the counterexample; unsupported closure blocks seal. A needed fact earns one bounded exploration; ask all user-owned choices at once, amend the request in place ([Earlier plans](earlier-plans.md#commands)), and repair only what the answers change. Reread each changed declared block as the file holds it, and drop work that stopped earning.
+Re-verify each finding against the request and current source, weighing user authority, evidence, and consequence rather than confidence. Closure names the repaired instruction and the evidence or decided branch defeating the counterexample; unsupported closure blocks seal. A needed fact earns one bounded exploration; ask all user-owned choices at once, amend the request in place ([Earlier plans](earlier-plans.md#commands)), and repair only what the answers change. Reread each changed declared block as the file holds it.
 
 ## Requirement trace
 

@@ -3,7 +3,7 @@
   "limits": {
     "architect": {"top_level": 616, "references": 6107},
     "assess": {"top_level": 957, "references": 6167},
-    "blueprint": {"top_level": 1485, "references": 8134},
+    "blueprint": {"top_level": 1475, "references": 8099},
     "charter": {"top_level": 875, "references": 2182},
     "construct": {"top_level": 810, "references": 5857},
     "diagnose": {"top_level": 754, "references": 5381},

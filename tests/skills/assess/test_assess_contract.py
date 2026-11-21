@@ -468,8 +468,15 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     assert diagnostic["code"] == "result.slice_undisclosed"
     assert diagnostic["supporting_evidence"] == [".", "gen"]
     assert not output.exists()
+    unrelated_limitation = {**covered, "limitations": ["Behavior and Proof of the generated files were not re-checked."]}
+    vague, _ = _seal(repo, tmp_path, unrelated_limitation, output)
+    assert vague.returncode != 0
+    diagnostic = json.loads(vague.stdout)["diagnostics"][0]
+    assert diagnostic["code"] == "result.slice_undisclosed"
+    assert diagnostic["supporting_evidence"] == [".", "gen"]
+    assert not output.exists()
     assert contract.slice_directories(
-        ["CHANGELOG.md", "VERSION", "Docs/a.md", "pkg/a.py", "pkg/tests/test_a.py", "lib/Test/b.py", "lib/VERSION"]
+        ["CHANGELOG.md", "changelog.md", "VERSION", "Version", "Docs/a.md", "tests/unit/a.py", "pkg/a.py", "pkg/tests/test_a.py", "lib/Test/b.py", "lib/VERSION"]
     ) == ["lib", "pkg"]
     limited = {**covered, "limitations": ["Behavior/Proof slice not run: no subagent could launch."]}
     named, _ = _seal(repo, tmp_path, limited, output)

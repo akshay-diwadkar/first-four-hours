@@ -4,7 +4,7 @@ Read this when a decision's correctness shows only in the built result, such as 
 
 1. A source the user supplies, such as a mockup, design system, or reference: cite a repository file as `**Source:**`, else record the source in the request, and decide that the build matches it.
 2. An earlier slice's observed result: the next plan, prepared afresh for the same request, records what was observed in Facts and the owner's verdict in the request.
-3. A user question, asked once the current tree or a built slice gives the user something to look at.
+3. A user question, asked once the current tree or a slice an earlier plan built gives the user something to look at.
 
 With none of these, plan only the slice that produces the observation, with judged acceptance, once the request records the user's acceptance that this plan builds only that slice. Decide the slice's own choices as labelled provisional defaults, which the owner's verdict replaces in the next plan.
 
@@ -14,4 +14,4 @@ Keep every check a Run can decide mechanical; judgment never replaces one. For t
 
 ## Rendered output
 
-For a user interface, the desk check's Design input states and exit paths include each supported viewport, empty and overflowing content, keyboard and focus order, and loading and error states.
+For a user interface, the desk check's Design input states and exit paths include each supported viewport, empty and overflowing content, keyboard and focus order, and loading and error states. Each one a script can assert becomes a Run that opens the built interface at every supported viewport and checks it, starting and stopping anything it serves within its Timeout; narrow a browser dependency to one the host has, or ask the user, per [Incomplete gates](incomplete-gates.md). Only what remains goes to judged acceptance.

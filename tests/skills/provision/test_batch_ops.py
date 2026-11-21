@@ -101,6 +101,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     fixture["src/package.json"] = "{bad\n"
     fixture["src/Makefile"] = "big:\n" + "#" * (1024 * 1024)
     fixture["src/GNUmakefile"] = "fallback:\n"
+    fixture["src/fail.py"] = "".join(f"v{n} = {n}\n" for n in range(1, 13))
+    fixture["src/other.txt"] = "o1\no2\no3\n"
     seed_git(repo, fixture)
     reader = importlib.import_module("batch_ops.reader")
     denied = {repo / ".github" / "workflows" / "ci.yml", repo / "package.json"}
@@ -381,6 +383,69 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 raw_ref = re.search(r'raw: "(artifact:[^"]+)"', raw_lines[0])
                 assert raw_ref and raw_ref.group(1) != hint.group(1)
                 assert run_text.count("output condensed") == 1
+
+                ref_script = (
+                    "print('ignored/hit.txt:1: x'); print('missing.py:3: x'); "
+                    f"print({str(outside)!r} + ':1: x'); print('src/a.txt:99: x'); "
+                    "print('  File \"src/fail.py\", line 5, in f'); print('src/fail.py:6: AssertionError'); "
+                    "print('src/other.txt(2,7): error X'); print('src/fail.py:12: late'); raise SystemExit(1)"
+                )
+                res = await call(session, "batch_run", {"commands": [
+                    {"argv": [sys.executable, "-c", ref_script], "label": "fails"},
+                    {"argv": [sys.executable, "-c", "print('src/fail.py:1: note')"], "label": "passref"},
+                ], "cwd": str(repo)})
+                ref_text = _text(res).replace("\r", "")
+                marker = "source now (> marks cited lines):"
+                assert ref_text.count(marker) == 1
+                shown = ref_text.split(marker)[1]
+                for want in ("src/fail.py:2-9", "> 5  v5 = 5", "> 6  v6 = 6", "  9  v9 = 9",
+                             "src/other.txt:1-3", "> 2  o2"):
+                    assert want in shown
+                for unwanted in ("ignored/hit.txt:", "missing.py:", "outside.txt:", "src/a.txt:",
+                                 "v12 = 12", "src/fail.py:1-"):
+                    assert unwanted not in shown.replace("\\", "/").split("stdout")[0]
+                snap_script = (
+                    "print('FAILED test_snapshot: received data:image/png;base64,' + 'QUJD' * 15000"
+                    " + ' at src/fail.py:5'); raise SystemExit(1)"
+                )
+                start = time.monotonic()
+                res = await call(session, "batch_run", {"commands": [
+                    {"argv": [sys.executable, "-c", snap_script], "label": "snapshot"},
+                ], "cwd": str(repo)})
+                assert time.monotonic() - start < 5
+                snap_text = _text(res).replace("\r", "")
+                for want in ("source now (> marks cited lines):", "src/fail.py:2-8", "> 5  v5 = 5"):
+                    assert want in snap_text
+
+                uni_name = chr(0x6570) + chr(0x636e) + ".py"
+                uni_src = repo / "src" / uni_name
+                uni_ign = repo / "ignored" / (chr(0x6570) + ".txt")
+                uni_src.write_text("".join(f"w{n} = {n}\n" for n in range(1, 10)), encoding="utf-8")
+                (repo / "ignored").mkdir(exist_ok=True)
+                uni_ign.write_text("secret_row\n", encoding="utf-8")
+                uni_script = (
+                    "import sys; sys.stdout.reconfigure(encoding='utf-8'); "
+                    "print('ignored/\\u6570.txt:1: x'); print('src/\\u6570\\u636e.py:5: boom'); raise SystemExit(1)"
+                )
+                try:
+                    res = await call(session, "batch_run", {"commands": [
+                        {"argv": [sys.executable, "-c", uni_script], "label": "short"},
+                    ], "cwd": str(repo)})
+                finally:
+                    uni_src.unlink()
+                    uni_ign.unlink()
+                uni_text = _text(res).replace("\r", "")
+                assert "source now (> marks cited lines):" in uni_text
+                assert "src/" + uni_name + ":2-8" in uni_text
+                assert "> 5  w5 = 5" in uni_text
+                assert "secret_row" not in uni_text and "source lines dropped" not in uni_text
+
+                (repo / "src" / "other.txt").write_bytes(b"o1\no2\no3\n")
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "src/other.txt", "search": "o3", "replace": "o4"}],
+                    "verify": {"argv": [sys.executable, "-c", "print('src/fail.py:5: boom'); raise SystemExit(1)"]},
+                    "cwd": str(repo)})
+                assert res.isError and "boom" in _text(res) and "source now" not in _text(res)
 
                 lf = repo / "lf.txt"
                 lf.write_bytes(b"one\n")

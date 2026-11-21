@@ -174,6 +174,9 @@ def _render_run_item(result: RunResult) -> list[str]:
     if result.stderr:
         lines.append("  stderr:")
         lines.append(_fence(result.stderr))
+    if result.source:
+        lines.append("  source now (> marks cited lines):")
+        lines.append(_fence(result.source))
     if not result.stdout and not result.stderr:
         lines.append("  (no output)")
     named = f"{result.message or ''}\n{result.stdout}\n{result.stderr}"

@@ -454,6 +454,150 @@ def _blen(text: str) -> int:
     return len(text.encode("utf-8", errors="replace"))
 
 
+_PY_REF = re.compile(r'File "([^"]+)", line (\d+)')
+_REF_PATH = r"""(?:[A-Za-z]:)?[^\s:"'()<>\[\]{}|,;=]+"""
+_REF = re.compile(r"""(?<![^\s:"'()<>\[\]{}|,;=])(""" + _REF_PATH + r")(?:\((\d+)(?:,\d+)?\)|:(\d+)(?!\d))")
+REF_SCAN_MAX = 200  # matches scanned per command
+SOURCE_REFS = 3  # references per command that get a window
+SOURCE_CONTEXT = 3  # lines above and below a cited line
+SOURCE_MAX_FILE = 1024 * 1024
+SOURCE_LINE_CLIP = 200
+
+
+def _find_refs(text: str) -> list[tuple[str, int]]:
+    """(path, line) references in output order; a Python traceback line uses only its File form."""
+    found: list[tuple[str, int]] = []
+    for line in text.split("\n"):
+        matches = [(m.group(1), int(m.group(2))) for m in _PY_REF.finditer(line)]
+        if not matches:
+            matches = [(m.group(1), int(m.group(2) or m.group(3))) for m in _REF.finditer(line)]
+        for path, number in matches:
+            if path.startswith(("//", "\\\\")) or "://" in path or number == 0:
+                continue
+            found.append((path, number))
+            if len(found) >= REF_SCAN_MAX:
+                return found
+    return found
+
+
+def _locate_file(root: Path, cwd: str, path: str) -> Path | None:
+    """The existing regular file a reference names inside the root, else None."""
+    if Path(path).is_absolute():
+        options = [path]
+    else:
+        options = [str(Path(cwd or ".") / path), path]
+    for option in options:
+        try:
+            candidate = resolve_path(root, option)
+            if candidate.is_file():
+                return candidate
+        except (SafetyError, OSError):
+            continue
+    return None
+
+
+def _read_source_lines(file: Path) -> list[str] | None:
+    try:
+        if file.stat().st_size > SOURCE_MAX_FILE:
+            return None
+        info = decode_bytes(file.read_bytes())
+    except OSError:
+        return None
+    if info.binary:
+        return None
+    rows = info.text.replace("\r\n", "\n").split("\n")
+    if rows and rows[-1] == "":
+        rows.pop()
+    return rows
+
+
+def _ignored_paths(root: Path, paths: list[str]) -> set[str]:
+    if not paths:
+        return set()
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "check-ignore", "-z", "--stdin"],
+            input="\0".join(paths).encode("utf-8", "surrogateescape"),
+            capture_output=True, timeout=10,
+        )
+        if proc.returncode not in (0, 1):
+            return set()
+        return {p for p in proc.stdout.decode("utf-8", "surrogateescape").split("\0") if p}
+    except Exception:  # noqa: BLE001 - locating must never lose a command's result
+        return set()
+
+
+def _render_windows(picked: list[tuple[str, int]], files: dict[str, list[str]]) -> str:
+    blocks: list[tuple[int, str, int, int, set[int]]] = []  # first ref index, path, start, end, cited
+    for rel in dict.fromkeys(path for path, _ in picked):
+        total = len(files[rel])
+        spans = sorted(
+            (max(1, n - SOURCE_CONTEXT), min(total, n + SOURCE_CONTEXT), n, i)
+            for i, (path, n) in enumerate(picked) if path == rel
+        )
+        merged: list[list] = []
+        for start, end, n, i in spans:
+            if merged and start <= merged[-1][1] + 1:
+                merged[-1][1] = max(merged[-1][1], end)
+                merged[-1][2].add(n)
+                merged[-1][3] = min(merged[-1][3], i)
+            else:
+                merged.append([start, end, {n}, i])
+        blocks.extend((m[3], rel, m[0], m[1], m[2]) for m in merged)
+    out: list[str] = []
+    for _, rel, start, end, cited in sorted(blocks, key=lambda b: b[0]):
+        out.append(f"{rel}:{start}-{end}")
+        width = len(str(end))
+        for n in range(start, end + 1):
+            text = files[rel][n - 1][:SOURCE_LINE_CLIP]
+            out.append(f"{'>' if n in cited else ' '} {n:>{width}}  {text}")
+    return "\n".join(out)
+
+
+def _attach_sources(executed: list[_Executed], root: Path) -> None:
+    """Set ``result.source`` on failed and timed-out commands: the lines around the first
+    references their shown output makes to non-ignored text files inside the root."""
+    cache: dict[Path, list[str] | None] = {}
+    per_command: dict[int, list[tuple[Path, str, int]]] = {}
+    for pos, done in enumerate(executed):
+        if done.result.status not in ("error", "timeout"):
+            continue
+        try:
+            cands: list[tuple[Path, str, int]] = []
+            for path, number in _find_refs(done.stdout + "\n" + done.stderr):
+                file = _locate_file(root, done.req.cwd or ".", path)
+                if file is None:
+                    continue
+                rel = file.relative_to(root).as_posix()
+                if ".git" in rel.split("/"):
+                    continue
+                if file not in cache:
+                    cache[file] = _read_source_lines(file)
+                rows = cache[file]
+                if rows is None or number > len(rows):
+                    continue
+                cands.append((file, rel, number))
+            per_command[pos] = cands
+        except Exception:
+            continue
+    ignored = _ignored_paths(root, sorted({rel for cands in per_command.values() for _, rel, _ in cands}))
+    for pos, cands in per_command.items():
+        try:
+            picked: list[tuple[str, int]] = []
+            files: dict[str, list[str]] = {}
+            for file, rel, number in cands:
+                if rel in ignored or (rel, number) in picked:
+                    continue
+                picked.append((rel, number))
+                files[rel] = cache[file] or []
+                if len(picked) >= SOURCE_REFS:
+                    break
+            if picked:
+                executed[pos].result.source = _render_windows(picked, files)
+        except Exception:
+            executed[pos].result.source = ""
+
+
 def _stream_cap(req: RunRequest, max_output: int) -> int:
     """A command's own inline cap per stream (its max_bytes, split when streams are separate)."""
     per_command = max(256, min(max_output, max(256, req.max_bytes)))
@@ -462,14 +606,22 @@ def _stream_cap(req: RunRequest, max_output: int) -> int:
 
 def _need(done: _Executed, max_output: int) -> int:
     cap = _stream_cap(done.req, max_output)
-    return min(_blen(done.stdout), cap) + min(_blen(done.stderr), cap)
+    return min(_blen(done.stdout), cap) + min(_blen(done.stderr), cap) + _blen(done.result.source)
 
 
 def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output: int) -> RunResult:
     """Cut each stream to the command's share of the batch budget and keep full streams as artifacts."""
     result = done.result
     cap = _stream_cap(done.req, max_output)
+    source_dropped = False
     need = [min(_blen(done.stdout), cap), min(_blen(done.stderr), cap)]
+    if result.source:
+        source_len = _blen(result.source)
+        if sum(need) + source_len > share and source_len > share // 3:
+            result.source = ""
+            source_dropped = True
+        else:
+            share -= source_len
     out_cap, err_cap = (cap, cap) if sum(need) <= share else water_fill(need, [0, 0], share, floor=128)
 
     def cut(text: str, limit: int) -> tuple[str, bool]:
@@ -492,7 +644,7 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
     result.stdout = stdout_text
     result.stderr = stderr_text
     result.truncated = stdout_cut or stderr_cut
-    result.bytes_shown = _blen(stdout_text) + _blen(stderr_text)
+    result.bytes_shown = _blen(stdout_text) + _blen(stderr_text) + _blen(result.source)
     if result.budget_cut and not result.message:
         ref = result.stdout_artifact or result.stderr_artifact
         result.message = f"output cut to fit; full stream: \"{ref}\"" if ref else "output cut to fit"
@@ -506,6 +658,9 @@ def _finalize(done: _Executed, share: int, artifacts: ArtifactStore, max_output:
         result.message = f"{result.message}; {note}" if result.message else note
     elif raw_part:
         result.message = f"{result.message}; {raw_part}" if result.message else raw_part
+    if source_dropped:
+        note = "source lines dropped to fit"
+        result.message = f"{result.message}; {note}" if result.message else note
     return result
 
 
@@ -519,6 +674,7 @@ async def run_commands(
     fail_fast: bool = False,
     dry_run: bool = False,
     max_output: int = 64 * 1024,
+    locate: bool = False,
 ) -> list[RunResult]:
     """Run all requests concurrently, bounded by *parallel* and the deadline.
 
@@ -599,6 +755,8 @@ async def run_commands(
             await asyncio.gather(*tasks, return_exceptions=True)
         executed = [finished.get(req.index) or _blank(req, "skipped", "not run") for req in requests]
 
+    if locate:
+        _attach_sources(executed, root_p)
     for item in executed:
         _name_trimmed_artifact(item, artifacts)
     shares = water_fill(

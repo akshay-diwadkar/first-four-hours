@@ -197,6 +197,7 @@ class RunResult:
     message: str | None = None
     slice_errors: list[str] = field(default_factory=list)
     budget_cut: bool = False  # output cut to fit the report budget (not the passing-output trim)
+    source: str = ""  # source-line windows around file references in a failure's output
 
 
 @dataclass

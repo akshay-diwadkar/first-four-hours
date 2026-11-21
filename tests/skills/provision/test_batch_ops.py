@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import time
@@ -103,6 +104,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     fixture["src/GNUmakefile"] = "fallback:\n"
     fixture["src/fail.py"] = "".join(f"v{n} = {n}\n" for n in range(1, 13))
     fixture["src/other.txt"] = "o1\no2\no3\n"
+    fixture["tests/test_misc.py"] = "x = 1\n"
     seed_git(repo, fixture)
     reader = importlib.import_module("batch_ops.reader")
     denied = {repo / ".github" / "workflows" / "ci.yml", repo / "package.json"}
@@ -119,6 +121,10 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert "  .github/workflows/ci.yml: steps not read (unreadable)" in rows
     assert "  package.json: scripts not read (unreadable)" in rows
     assert "  Makefile: make build, make test, make lint" in rows
+    (repo / "later.txt").write_text("later\n", encoding="utf-8")
+    for git_args in (["add", "later.txt"], ["commit", "-qm", "later only"]):
+        subprocess.run(["git", *git_args], cwd=repo, check=True, capture_output=True)
+    (repo / "tests" / "a_test.py").write_text("y = 1\n", encoding="utf-8")
     notes = repo / "notes.txt"
     notes.write_bytes(b"keep\r\nold line\r\n")
     (repo / "ignored").mkdir(exist_ok=True)
@@ -575,6 +581,30 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert "Makefile: targets not read (over 1 MB)" in _text(res) and "make fallback" not in _text(res)
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo / "hits")})
                 assert "notes.txt" not in _text(res) and "Commands (" not in _text(res)
+
+                res = await call(session, "batch_read", {
+                    "mode": "survey", "specs": ["later.txt", "grep:zz_absent_zz"], "cwd": str(repo)})
+                text = _text(res).replace("\\", "/")
+                assert re.match(r"# batch_read \(survey\) build [0-9a-f]{7}\n# Survey: ", text)
+                assert "\n# batch_read (files) build " in text.partition("# Survey: ")[2]
+                assert "[R1] ok later.txt" in text
+                assert [i["status"] for i in _items(res)] == ["ok", "no_match"]
+                res = await call(session, "batch_read", {
+                    "mode": "survey", "focus": ["src/a.txt"], "cwd": str(repo)})
+                text = _text(res).replace("\\", "/").replace("\r", "")
+                focus_text = text.partition("\nFocus ['src/a.txt']: 1 match(es)\n")[2]
+                assert re.search(
+                    r"Focus recent commits \(newest 5 touching a match\):\n  [0-9a-f]{7,} \d{4}-\d{2}-\d{2} fixture\n",
+                    focus_text)
+                assert "  1x .github/workflows/ci.yml\n" in focus_text
+                assert "Focus related tests:\n  tests/a_test.py\n  tests/test_misc.py\n" in focus_text
+                assert "later" not in focus_text
+                assert not re.search(r"(?m)^ +\d+x [0-9a-f]{7,} ", text)
+                res = await call(session, "batch_read", {
+                    "mode": "survey", "focus": ["tests/a_test.py"], "cwd": str(repo)})
+                text = _text(res)
+                assert "Focus history: no commit in the newest 200 touches a match" in text
+                assert "Focus related tests:" not in text
 
                 assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5300
 

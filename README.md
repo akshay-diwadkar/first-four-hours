@@ -44,6 +44,27 @@ For Cursor, see [Install as a Cursor plugin](docs/getting-started/installation.m
 
 </details>
 
+## Start from the problem
+
+| You are dealing with | Start with |
+| :--- | :--- |
+| Something is wrong and you do not know why | `/diagnose` |
+| A change whose mistakes would show up late, or that someone else will carry out | `/blueprint`, then `/construct` |
+| A finished change you need to trust before merging | `/assess` |
+| A decision that is stuck, or rests on an assumption you doubt | `/reason` |
+| A slow or costly test suite | `/temper` |
+| Not knowing which skill comes next | `/router` |
+
+Each skill works alone and hands work on through a file; you decide when the next one starts. [Choose a skill](docs/getting-started/choosing-a-skill.md) and the [recipes](docs/recipes/README.md) cover more situations.
+
+## Built with itself
+
+This repository is planned, built, and reviewed with its own skills, and its pull requests keep the record:
+
+- **[Epic #27](https://github.com/akshay-diwadkar/first-four-hours/issues/27): research to shipped features.** One `/ideate` run researched how real examinations and good tutors work; `/ticket` split it into four issues, closed by four pull requests.
+- **[#203](https://github.com/akshay-diwadkar/first-four-hours/pull/203) and [#205](https://github.com/akshay-diwadkar/first-four-hours/pull/205), then [#213](https://github.com/akshay-diwadkar/first-four-hours/pull/213) and [#214](https://github.com/akshay-diwadkar/first-four-hours/pull/214): the diagnosis that reshaped planning and its tools.** `/diagnose` read real session logs and found why `/blueprint`'s plans cost so much: it explored the code one read per turn, and every turn re-read the whole conversation. An experiment then showed that asking for fewer calls made plans worse, while asking for fewer turns without gathering less took 33 turns instead of 72 and wrote the best plan. The same experiment found that agents kept a batching MCP only when their other tools were taken away. So #213 ships it as batch-ops, an opt-in `/provision` step, and #214 lets you limit a chosen subagent to its tools. `/blueprint` planned each change, `/construct` built it, and `/assess` cleared all four pull requests.
+- **[#162](https://github.com/akshay-diwadkar/first-four-hours/pull/162): the skill that halved itself.** `/blueprint` planned the cut to its own guidance, from 12,854 tokens to 6,420, and a hard limit now stops it growing back. `/assess` then caught two rules the cut had removed by accident, and a second sealed plan dealt with them.
+
 ## Your first run
 
 Name a skill and say what is at stake. For example (illustrative; FreshCart is a made-up online grocery service):
@@ -65,27 +86,6 @@ Main risk: /search/suggest shares the search handler, so it is limited too.
 ```
 
 Below it, the plan cites the files its facts come from, gives ordered instructions, and names the check for each outcome. `/construct` then carries the plan out; if the plan turns out wrong against the real code, `/construct` stops and reports instead of deciding on its own. [Anatomy of a sealed blueprint](docs/concepts/anatomy-of-a-blueprint.md) walks through a whole plan.
-
-## Built with itself
-
-This repository is planned, built, and reviewed with its own skills, and its pull requests keep the record:
-
-- **[Epic #27](https://github.com/akshay-diwadkar/first-four-hours/issues/27): research to shipped features.** One `/ideate` run researched how real examinations and good tutors work; `/ticket` split it into four issues, closed by four pull requests.
-- **[#203](https://github.com/akshay-diwadkar/first-four-hours/pull/203) and [#205](https://github.com/akshay-diwadkar/first-four-hours/pull/205), then [#213](https://github.com/akshay-diwadkar/first-four-hours/pull/213) and [#214](https://github.com/akshay-diwadkar/first-four-hours/pull/214): the diagnosis that reshaped planning and its tools.** `/diagnose` read real session logs and found why `/blueprint`'s plans cost so much: it explored the code one read per turn, and every turn re-read the whole conversation. An experiment then showed that asking for fewer calls made plans worse, while asking for fewer turns without gathering less took 33 turns instead of 72 and wrote the best plan. The same experiment found that agents kept a batching MCP only when their other tools were taken away. So #213 ships it as batch-ops, an opt-in `/provision` step, and #214 lets you limit a chosen subagent to its tools. `/blueprint` planned each change, `/construct` built it, and `/assess` cleared all four pull requests.
-- **[#162](https://github.com/akshay-diwadkar/first-four-hours/pull/162): the skill that halved itself.** `/blueprint` planned the cut to its own guidance, from 12,854 tokens to 6,420, and a hard limit now stops it growing back. `/assess` then caught two rules the cut had removed by accident, and a second sealed plan dealt with them.
-
-## Start from the problem
-
-| You are dealing with | Start with |
-| :--- | :--- |
-| Something is wrong and you do not know why | `/diagnose` |
-| A change whose mistakes would show up late, or that someone else will carry out | `/blueprint`, then `/construct` |
-| A finished change you need to trust before merging | `/assess` |
-| A decision that is stuck, or rests on an assumption you doubt | `/reason` |
-| A slow or costly test suite | `/temper` |
-| Not knowing which skill comes next | `/router` |
-
-Each skill works alone and hands work on through a file; you decide when the next one starts. [Choose a skill](docs/getting-started/choosing-a-skill.md) and the [recipes](docs/recipes/README.md) cover more situations.
 
 ## When not to use it
 

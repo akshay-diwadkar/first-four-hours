@@ -55,6 +55,7 @@ nav = [
   { "Look something up" = [
     "reference/README.md",
     { "Subagents" = "reference/agents.md" },
+    { "batch-ops" = "reference/batch-ops.md" },
   ] },
   { "Fix a problem" = [
     "troubleshooting/README.md",

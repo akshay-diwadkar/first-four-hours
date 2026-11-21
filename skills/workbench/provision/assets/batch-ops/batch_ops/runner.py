@@ -456,7 +456,7 @@ def _blen(text: str) -> int:
 
 _PY_REF = re.compile(r'File "([^"]+)", line (\d+)')
 _REF_PATH = r"""(?:[A-Za-z]:)?[^\s:"'()<>\[\]{}|,;=]+"""
-_REF = re.compile(r"(" + _REF_PATH + r")(?:\((\d+)(?:,\d+)?\)|:(\d+)(?!\d))")
+_REF = re.compile(r"""(?<![^\s:"'()<>\[\]{}|,;=])(""" + _REF_PATH + r")(?:\((\d+)(?:,\d+)?\)|:(\d+)(?!\d))")
 REF_SCAN_MAX = 200  # matches scanned per command
 SOURCE_REFS = 3  # references per command that get a window
 SOURCE_CONTEXT = 3  # lines above and below a cited line

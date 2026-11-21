@@ -404,6 +404,18 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 for unwanted in ("ignored/hit.txt:", "missing.py:", "outside.txt:", "src/a.txt:",
                                  "v12 = 12", "src/fail.py:1-"):
                     assert unwanted not in shown.replace("\\", "/").split("stdout")[0]
+                snap_script = (
+                    "print('FAILED test_snapshot: received data:image/png;base64,' + 'QUJD' * 15000"
+                    " + ' at src/fail.py:5'); raise SystemExit(1)"
+                )
+                start = time.monotonic()
+                res = await call(session, "batch_run", {"commands": [
+                    {"argv": [sys.executable, "-c", snap_script], "label": "snapshot"},
+                ], "cwd": str(repo)})
+                assert time.monotonic() - start < 5
+                snap_text = _text(res).replace("\r", "")
+                for want in ("source now (> marks cited lines):", "src/fail.py:2-8", "> 5  v5 = 5"):
+                    assert want in snap_text
 
                 uni_name = chr(0x6570) + chr(0x636e) + ".py"
                 uni_src = repo / "src" / uni_name

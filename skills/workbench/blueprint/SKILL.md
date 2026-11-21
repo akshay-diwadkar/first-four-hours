@@ -2,7 +2,7 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "2.2.0"
+  version: "2.3.0"
 ---
 
 Plan in this session.
@@ -22,17 +22,17 @@ Pick a provisional tier at intake and re-derive it from your decisions; it can r
 1. **Intake.** Read the request and any handoff in one batched read; with supplied or referenced architecture, or an Assess or Temper handoff, read [Architecture intake](references/architecture-intake.md) first. Give each request clause an ID: `R1`… in a request you write, a handoff's own finding numbers, else clause order. Done when every clause has one.
 2. **Intent, first batch.** Ask every user-owned question already visible, at once: desired outcome, compatibility, product tradeoffs, change boundary, non-derivable priorities, and ambiguous acceptance. Ask only when different answers yield materially different correct solutions and no source or supplied answer settles the choice. Never ask the user to choose a repository-derived engineering detail.
 3. **Explore by question.** Read [Bounded exploration](references/delegation-protocol.md) and the [Planning contract](references/planning-contract.md), and [Earlier plans](references/earlier-plans.md) before reusing or amending a plan or request. First list the open questions: only facts that could change a decision, preservation, propagation, or verification. Close them in one or two batched rounds of reads and safe probes, including the repository's planning traps and a probe of each Run you will author. Done when each is answered, a labelled prediction, or a user question.
-4. **Decide in the ledger.** Settle every choice the hidden-choice test exposes, [attack the problem](references/planning-contract.md#attack-the-problem), and apply the [rent rule](references/planning-contract.md#the-rent-rule). Trace [command dispatch](references/executable-contracts.md) when it can change correctness. When viable solutions must first be found, invoke `ideate` per [Ideate in planning](references/ideate-in-planning.md). Done when two faithful executors would build the same thing.
+4. **Decide.** Settle every choice the hidden-choice test exposes, walk each through the [desk check](references/challenge-and-rehearsal.md#desk-check)'s Design list, and apply the [rent rule](references/planning-contract.md#the-rent-rule). Trace [command dispatch](references/executable-contracts.md) when it can change correctness. When viable solutions must first be found, invoke `ideate` per [Ideate in planning](references/ideate-in-planning.md). Done when two faithful executors would build the same thing.
 5. **Intent, final batch.** Ask only what exploration surfaced: a false premise that changes what the user wants, or a gap they must accept. Amend the request once. Do not seal while a material user-owned ambiguity remains.
-6. **Desk check and trace.** In the ledger, run the [desk check](references/challenge-and-rehearsal.md#desk-check)'s Exists, Launches, and Fits on each planned Proof run and Run, and trace each clause ID to a decision, step, and Run. A gap returns to step 3 or 5, never into the file.
-7. **Write once.** Prepare the workspace exactly as in [README](README.md), then write the whole `blueprint.md` in one write, with [Declared text](references/declared-text.md) and [Incomplete gates](references/incomplete-gates.md) as the planning contract routes, running `check` as the write's verification where your edit tool takes one. Then finish the desk check with Passes. Done when `check` reports no diagnostics.
+6. **Desk check and trace.** Run the [desk check](references/challenge-and-rehearsal.md#desk-check)'s Design on each rule the plan states, and its Exists, Launches, and Fits on each planned Proof run and Run, and trace each clause ID to a decision, step, and Run. A gap returns to step 3 or 5, never into the file.
+7. **Write once.** Prepare the workspace exactly as in [README](README.md), then write the whole `blueprint.md` in one write, with [Declared text](references/declared-text.md) and [Incomplete gates](references/incomplete-gates.md) as the planning contract routes, running `check` as the write's verification where your edit tool takes one. Then finish the desk check with Passes and Rejects. Done when `check` reports no diagnostics.
 8. **Challenge** by tier per [Challenge and rehearsal](references/challenge-and-rehearsal.md), with the [Challenger brief](references/challenger-brief.md).
-9. **Repair once.** Settle every finding against evidence or return it to the user, apply one consolidated edit checked by `check`, and rerun the desk check on each Proof run and Run whose text or input it changed. A second round is a planning failure: name its cause in the report.
+9. **Repair once.** Settle every finding against evidence you re-derive from source, including the premise of any closure a challenger proposes, or return it to the user, apply one consolidated edit checked by `check`, and rerun the desk check on each Proof run and Run whose text or input it changed. A second round is a planning failure: name its cause in the report.
 10. **Seal or stop.** Once the [Seal gate](references/challenge-and-rehearsal.md#seal-gate) holds, check and seal exactly as in [README](README.md); otherwise stop unsealed and report why, never weakening an outcome, check, or proof below what the Seal gate requires. Done when your report names the sealed path or stop and the tier, and distinguishes mechanical seal success, your evidence-backed readiness judgment, and unstarted implementation and verification.
 
 ## Decision ledger
 
-Steps 3-6 keep a short ledger as visible text in this conversation, one line per item: each decision with its reason and the check that would catch it wrong; each Run with its desk-check marks; the trace (`R1 → D1 · step 2 · Run 3`); and open items (user questions, labelled predictions). It is never a file: `blueprint.md` expands it.
+Keep open user questions and the clause trace (`R1 → 2 · V3`) visible in this conversation; the ledger is never a file, and `blueprint.md` carries the decisions and the Trace.
 
 ## Plan text
 

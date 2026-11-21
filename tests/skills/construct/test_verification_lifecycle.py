@@ -143,6 +143,7 @@ Expect: the final record reports an empty errors list.
 ### After implementation
 Run: `python -B tools/check.py`
 Expect: the final record reports an empty errors list.
+Prediction: the check reports no errors on the 400-record input; on failure, stop and return to Blueprint.
 
 ## Trace
 - R1 → 1, 2, 3 · V1
@@ -177,6 +178,7 @@ Expect: prints ok.
 Run: `python -B tools/deadline.py`
 Expect: the final record reports complete true.
 Incomplete: the final record reports complete false because the deadline was exhausted.
+Prediction: the deadline check completes; on failure, stop and return to Blueprint.
 
 ## Trace
 - R1 → 1 · V1
@@ -423,18 +425,25 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
         "stderr": ["[2001 earlier lines omitted]", "y" * 500 + " ... [500 characters omitted] ... " + "y" * 500, "checking"],
     }
     assert run_summary == [expected]
-    # An undeclared failure keeps the local-repair reverify route and carries the summary through the CLI stop.
+    # A failing Run with a declared prediction returns it with the reverify command held back and carries the summary through the CLI stop; the CLI wrapper restores a rerun next_command.
     _write(repo, "tools/check.py", "import sys\nprint('broken', file=sys.stderr)\nsys.exit(1)\n")
     completed = subprocess.run(after_command["argv"], cwd=after_command["cwd"], capture_output=True,
                                text=True, encoding="utf-8", check=False)
     assert completed.returncode == 3, completed.stdout + completed.stderr
     diagnostic = json.loads(completed.stdout)["diagnostics"][0]
     assert diagnostic["code"] == "verification.step_failed"
-    assert "reverify" in diagnostic["next_command"]["argv"] and "incomplete" not in diagnostic["details"]
+    assert diagnostic["details"]["prediction"] == "the check reports no errors on the 400-record input; on failure, stop and return to Blueprint."
+    assert "reverify" in diagnostic["details"]["reverify_command"]["argv"]
+    assert diagnostic["required_action"].startswith("The Run settles a declared prediction") and "incomplete" not in diagnostic["details"]
     assert diagnostic["details"]["run_summary"] == [{
         "line": passed["step"]["line"], "command": "python -B tools/check.py", "exit": 1,
         "status": "failed", "stdout": [], "stderr": ["broken"],
     }]
+    # The runner itself keeps no rerun route for a failing prediction Run.
+    code, payload = _run_phase(capsys, repo, blueprint, "after")
+    diagnostic = payload["diagnostics"][0]
+    assert (code, diagnostic["code"], diagnostic["next_command"]) == (3, "verification.step_failed", None)
+    assert diagnostic["details"]["prediction"] == "the check reports no errors on the 400-record input; on failure, stop and return to Blueprint."
     # Launch errors and timeouts report no exit code, never the synthetic 127 or -9.
     for argv, timeout, status in (
         (("missing-tool-505",), 5, "launch_error"),
@@ -491,6 +500,7 @@ def test_specified_step_plan_executes_with_bound_proof(tmp_path: Path, capsys: p
     assert diagnostic["details"]["incomplete"].startswith("the final record reports complete false")
     assert "reverify" in diagnostic["details"]["reverify_command"]["argv"]
     assert diagnostic["required_action"].startswith("If the output shows the declared incomplete outcome")
+    assert diagnostic["details"]["prediction"] == "the deadline check completes; on failure, stop and return to Blueprint."
 
     # Expose the diverged-step route rather than the specified-target drift guard.
     _write(repo, "tools/check.py", check)

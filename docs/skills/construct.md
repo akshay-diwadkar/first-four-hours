@@ -35,7 +35,7 @@ Your worktree with the change applied, and a report of the instructions, proof r
 | :--- | :--- | :--- |
 | Completion report | Every instruction is applied, verification passed, and the diff matches the plan. | Review the result, settle the owner gates, then commit and open a pull request. |
 | `verification-incomplete` | A check the plan declared environmental did not finish. | Run `/construct` again when the environment is healthy. An incomplete check is never a pass. |
-| `plan-contradiction` | The plan is stale, wrong, or incomplete against the actual code. | Run a new `/blueprint` with the original request and `/construct`'s evidence, then a fresh `/construct`. |
+| `plan-contradiction` | The plan is stale, wrong, or incomplete against the actual code, or a prediction it declared failed and the plan says to stop. | Run a new `/blueprint` with the original request and `/construct`'s evidence, then a fresh `/construct`. |
 | `protected-work-conflict` | Continuing would overwrite unrelated uncommitted work. | That work's owner resolves it, then run a fresh `/construct`. |
 | `safety-contradiction` | A safety check failed or the baseline moved, for example HEAD changed. | Restore a trusted state, then run a fresh `/construct`. If a verification command changed the worktree, restore a trusted state, then run a new `/blueprint` with the original request and `/construct`'s evidence before a fresh `/construct`. |
 | Stopped with evidence | A step failed its third attempt, or a resume cannot verify earlier progress. | Judge the diff, then run a fresh `/construct` from a trustworthy worktree, or take the evidence back to `/blueprint` when the plan is at fault. |

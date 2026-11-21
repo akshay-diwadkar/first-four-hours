@@ -58,4 +58,4 @@ Trace each clause not marked `Owner gate:` to a discriminating check naming how 
 
 ## Source and worktree binding
 
-Plan against the exact inspected state. Declare a dirty target you change as an `existing` Location, binding its dirty bytes, and leave unrelated dirty work untouched. The seal binds each `**Source:**` file's bytes and each `new` path's absence, and only that bound state decides freshness, not HEAD movement. Cite only repository files outside the `.first-four-hours/blueprints/` workspace as evidence.
+Plan against the exact inspected state. Declare a dirty target you change as an `existing` Location, binding its dirty bytes, and leave unrelated dirty work untouched. Cite decision-critical repository files no step edits as `**Source:**` lines under Facts; the seal binds their bytes and each `new` path's absence, and only that bound state decides freshness, not HEAD movement. Cite only repository files outside the `.first-four-hours/blueprints/` workspace as evidence.

@@ -17,7 +17,7 @@ from urllib.parse import quote
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.10.1"
+CONTRACT_VERSION = "1.11.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
@@ -37,7 +37,7 @@ TOP_LEVEL_FIELDS = {
     "limitations",
 }
 SOURCE_FIELDS = {"id", "role", "locator", "path"}
-SOURCE_ROLES = {"target", "authority", "evidence", "proof", "diagnosis"}
+SOURCE_ROLES = {"target", "authority", "evidence", "proof", "diagnosis", "slice"}
 SOURCE_ID_RE = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 FINDING_FIELDS = {
     "severity",
@@ -544,7 +544,7 @@ def _assessed_sources(value: Any) -> list[dict[str, str]]:
         role = _string(source["role"], f"{label}.role", single_line=True)
         if role not in SOURCE_ROLES:
             raise _fail(
-                "source.role_unsupported", f"{label}.role must be target, authority, evidence, proof, or diagnosis"
+                "source.role_unsupported", f"{label}.role must be target, authority, evidence, proof, diagnosis, or slice"
             )
         sources.append(
             {
@@ -955,6 +955,18 @@ def _changed_paths(binding: GitBinding) -> list[str]:
             evidence=tuple(item for item in (message, detail) if item),
         )
     return sorted({item for item in diff.stdout.decode("utf-8", errors="replace").split("\0") if item})
+
+
+def slice_directories(changed: list[str]) -> list[str]:
+    directories: set[str] = set()
+    for path in changed:
+        *folders, name = path.split("/")
+        if any(folder.lower() in {"test", "tests", "docs"} for folder in folders):
+            continue
+        if not folders and name.lower() in {"changelog.md", "version"}:
+            continue
+        directories.add("/".join(folders) if folders else ".")
+    return sorted(directories)
 
 
 def _unexamined_paths(bundle: dict[str, Any], changed: list[str]) -> list[str]:
@@ -1645,6 +1657,19 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
             "by their complete repository paths; unnamed: " + ", ".join(unnamed),
             category="contract_contradiction",
             evidence=tuple(unnamed),
+        )
+    directories = slice_directories(changed)
+    disclosed = any(source["role"] == "slice" for source in bundle["assessed_sources"]) or any(
+        "Behavior/Proof" in limitation for limitation in bundle["limitations"]
+    )
+    if len(directories) > 1 and not disclosed:
+        raise _fail(
+            "result.slice_undisclosed",
+            "the change spans more than one directory once test, docs, and root changelog or version files are "
+            "set aside (" + ", ".join(directories) + "); add the Behavior/Proof slice's return as an assessed "
+            "source with role slice, or name the unrun Behavior/Proof slice in limitations",
+            category="contract_contradiction",
+            evidence=tuple(directories),
         )
     content = render_result(bundle, binding, source_bindings, examined, findings)
     _publish(destination, content, Path(binding.repository_root), bundle, binding, source_bindings)

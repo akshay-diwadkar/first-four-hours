@@ -453,11 +453,39 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     assert diagnostic["code"] == "result.unexamined_undisclosed"
     assert diagnostic["supporting_evidence"] == ["extra.py"]
     assert not output.exists()
-    naming = ["Generated files not examined: gen/extra.py, old extra.py, extra.py.", "Backup extra.py~ was not examined."]
-    named_bundle = _bundle(tmp_path, limitations=naming)
-    named, _ = _seal(repo, tmp_path, named_bundle, output)
+    covered = _bundle(
+        tmp_path,
+        examined=[
+            {"kind": "head-file", "path": "service.py", "start_line": 1, "end_line": 1},
+            *({"kind": "head-path", "path": path} for path in ("extra.py", "extra.py~", "gen/extra.py", "old extra.py")),
+        ],
+        limitations=[],
+    )
+    authority_only = {**covered, "assessed_sources": [_assessed_source(_snapshot(tmp_path))]}
+    undisclosed, _ = _seal(repo, tmp_path, authority_only, output)
+    assert undisclosed.returncode != 0
+    diagnostic = json.loads(undisclosed.stdout)["diagnostics"][0]
+    assert diagnostic["code"] == "result.slice_undisclosed"
+    assert diagnostic["supporting_evidence"] == [".", "gen"]
+    assert not output.exists()
+    assert contract.slice_directories(
+        ["CHANGELOG.md", "VERSION", "Docs/a.md", "pkg/a.py", "pkg/tests/test_a.py", "lib/Test/b.py", "lib/VERSION"]
+    ) == ["lib", "pkg"]
+    limited = {**covered, "limitations": ["Behavior/Proof slice not run: no subagent could launch."]}
+    named, _ = _seal(repo, tmp_path, limited, output)
     assert named.returncode == 0, named.stdout + named.stderr
     assert output.is_file()
+    slice_output = prepare_assessment_workspace(repo, "case-slice").output_path
+    slice_source = {
+        "id": "slice-1",
+        "role": "slice",
+        "locator": "Behavior/Proof slice return",
+        "path": str(_snapshot(tmp_path, "slice.md", "No candidate findings.\n")),
+    }
+    sliced, _ = _seal(repo, tmp_path, {**covered, "assessed_sources": [slice_source]}, slice_output)
+    assert sliced.returncode == 0, sliced.stdout + sliced.stderr
+    sources = parse_result(slice_output.read_text(encoding="utf-8"))["assessed_sources"]
+    assert [(source["id"], source["role"]) for source in sources] == [("slice-1", "slice")]
 
 
 def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:

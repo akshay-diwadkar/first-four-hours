@@ -28,7 +28,7 @@ For removed or replaced behavior, decide each state it refused or produced: cove
 Then, for each Proof run, then each Run, in step order:
 
 - **Exists:** everything it reads, selects, or imports exists now or an earlier step creates it.
-- **Launches:** its argv works as Construct launches it: no shell, repository root, inherited environment, the interpreter that resolves there. Probe it, or an existing target in the same form.
+- **Launches:** its argv works as Construct launches it, with the interpreter that resolves there. Probe it, or an existing target in the same form.
 - **Passes:** each `Expect:` holds on the plan's own drafted bytes and a correct implementation of this plan alone, seen through every layer between its command and the output it checks (wrapper, normalizer, subprocess) by current-tree probe, and each check preview reads as intended at both edges.
 - **Rejects:** a Proof run names a plausible wrong implementation, and its drafted assertions fail on that implementation.
 - **Fits:** it stays within every suite-size cap, validator allowlist, budget, pinned version, and deadline the change touches, with measured value and headroom recorded.
@@ -39,7 +39,7 @@ Then, for each Proof run, then each Run, in step order:
 - **Standard:** run the [Challenger brief](challenger-brief.md) yourself, one compliant-but-bad implementation per decision, backing each with a fresh observation.
 - **Critical:** one fresh challenge, launched once the draft passes `check`; your own re-read does not replace it. Use `ffh-challenger` (or `ffh_challenger`) when it launches, else a model at least as capable as yours; if none launches, stop unsealed and report it. Launch exactly one, giving it only the request and answers, the draft, the [Challenger brief](challenger-brief.md), the repository's planning-trap list, and the three to five load-bearing premises you name with evidence pointers; withhold your reasoning. Wait for its review, then repair.
 
-One user request gets at most one fresh challenge, amendments included, counting other independent reviews and drafts carried to a fresh workspace; repair against the findings you have. One returning no review stops you. When later repairs would replace the basis or architecture, stop unsealed and report the failing premise. A Critical signal found later earns the challenge if none ran, else run the brief's Critical re-enumeration yourself.
+One user request gets at most one fresh challenge, amendments included, counting other independent reviews and drafts carried to a fresh workspace; repair against the findings you have. One returning no review stops you. When later repairs would replace the basis or architecture, stop unsealed and report the failing premise. A Critical signal found later, or a Critical plan after an observed slice, earns the challenge if none ran, else run the brief's Critical re-enumeration yourself as its challenge.
 
 ## Repair
 

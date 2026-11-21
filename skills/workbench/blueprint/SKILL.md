@@ -2,12 +2,12 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "2.3.1"
+  version: "2.4.0"
 ---
 
 Plan in this session.
 
-The plan records each decision an executor could get wrong, with the check that would catch it. Do the expensive work while context is small: probe, decide, and desk-check before writing, write once, and repair once.
+The plan records each decision an executor could get wrong, with the check that would catch it. Do the expensive work while context is small.
 
 ## Tier
 
@@ -22,7 +22,7 @@ Pick a provisional tier at intake and re-derive it from your decisions; it can r
 1. **Intake.** Read the request and any handoff in one batched read; with supplied or referenced architecture, or an Assess or Temper handoff, read [Architecture intake](references/architecture-intake.md) first. Give each request clause an ID: `R1`… in a request you write, a handoff's own finding numbers, else clause order. Done when every clause has one.
 2. **Intent, first batch.** Ask every user-owned question already visible, at once: desired outcome, compatibility, product tradeoffs, change boundary, non-derivable priorities, and ambiguous acceptance. Ask only when different answers yield materially different correct solutions and no source or supplied answer settles the choice. Never ask the user to choose a repository-derived engineering detail.
 3. **Explore by question.** Read [Bounded exploration](references/delegation-protocol.md) and the [Planning contract](references/planning-contract.md), and [Earlier plans](references/earlier-plans.md) before reusing or amending a plan or request. First list the open questions: only facts that could change a decision, preservation, propagation, or verification. Close them in one or two batched rounds of reads and safe probes, including the repository's planning traps and a probe of each Run you will author. Done when each is answered, a labelled prediction, or a user question.
-4. **Decide.** Settle every choice the hidden-choice test exposes, walk each through the [desk check](references/challenge-and-rehearsal.md#desk-check)'s Design list, and apply the [rent rule](references/planning-contract.md#the-rent-rule). Trace [command dispatch](references/executable-contracts.md) when it can change correctness. When viable solutions must first be found, invoke `ideate` per [Ideate in planning](references/ideate-in-planning.md). Done when two faithful executors would build the same thing.
+4. **Decide.** Settle every choice the hidden-choice test exposes, walk each through the [desk check](references/challenge-and-rehearsal.md#desk-check)'s Design list, and apply the [rent rule](references/planning-contract.md#the-rent-rule). Trace [command dispatch](references/executable-contracts.md) when it can change correctness. When viable solutions must first be found, invoke `ideate` per [Ideate in planning](references/ideate-in-planning.md). When a decision's correctness shows only in the built result, settle it per [Observed decisions](references/observed-decisions.md). Done when two faithful executors would build the same thing.
 5. **Intent, final batch.** Ask only what exploration surfaced: a false premise that changes what the user wants, or a gap they must accept. Amend the request once. Do not seal while a material user-owned ambiguity remains.
 6. **Desk check and trace.** Run the [desk check](references/challenge-and-rehearsal.md#desk-check)'s Premises on the whole plan, its Design on each rule the plan states, and its Exists, Launches, and Fits on each planned Proof run and Run, and trace each clause ID to a decision, step, and Run. A gap returns to step 3 or 5, never into the file.
 7. **Write once.** Prepare the workspace exactly as in [README](README.md), then write the whole `blueprint.md` in one write, with [Declared text](references/declared-text.md) and [Incomplete gates](references/incomplete-gates.md) as the planning contract routes, running `check` as the write's verification where your edit tool takes one. Then finish the desk check with Passes, Rejects, and Premises' drafted-text check. Done when `check` reports no diagnostics.
@@ -36,7 +36,7 @@ Keep open user questions and the clause trace (`R1 → 2 · V3`) visible in this
 
 ## Plan text
 
-State only what two faithful executors could do differently. Never restate the approach per step, narrate code the executor will open, list what stays the same unless a plausible executor would break it, or write variable-level pseudocode nothing downstream depends on. Name request clauses by ID instead of paraphrasing them, and cite each command once where the format allows.
+State only what two faithful executors could do differently. Never restate the approach per step, narrate code the executor will open, or list what stays the same unless a plausible executor would break it. Name request clauses by ID instead of paraphrasing them, and cite each command once where the format allows.
 
 The tiered challenge is Blueprint's adversarial review, so it has no `reason` checkpoints; consult `reason` only when judgment is stuck. Seal and stop reports end with one optional next step fitting the outcome, after a stop the unblocking one: a fenced, self-contained prompt naming the repository and every issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names; start Construct in a fresh session or, per [Construct handoff](references/construct-handoff.md), a subagent when possible: the sealed plan carries every decision.
 

@@ -188,7 +188,7 @@ def _nonneg_int(value: str, op: str) -> int:
 
 _JSON_INDEX = re.compile(r"\[(-?\d+|\*)\]")
 _JSON_SEGMENT = re.compile(r"([^\[\]]*)((?:\[(?:-?\d+|\*)\])*)")
-_NUMBER = re.compile(r"-?\d+(\.\d+)?")
+_NUMBER = re.compile(r"(?:(?<!\w)-)?\d+(\.\d+)?")  # a minus joined to a word character is a hyphen
 
 
 def _json_tokens(path: str) -> list[tuple[str, object]]:

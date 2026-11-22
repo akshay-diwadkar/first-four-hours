@@ -185,9 +185,12 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         return asyncio.run(run_commands(requests, root=alias_root, tracker=BudgetTracker(Budget()),
                                         artifacts=alias_store, bind_labels=True, **kwargs))
 
-    def read_labelled(spec):
-        return asyncio.run(read_batch([parse_read_spec(spec)], root=alias_root,
-                                      tracker=BudgetTracker(Budget()), artifacts=alias_store))
+    def read_many(specs, budget=None, root=alias_root):
+        return asyncio.run(read_batch([parse_read_spec(spec) for spec in specs], root=root,
+                                      tracker=BudgetTracker(budget or Budget()), artifacts=alias_store))
+
+    def read_labelled(spec, budget=None):
+        return read_many([spec], budget)
 
     def alias_text(name):
         record = alias_store.resolve(alias_root, name)
@@ -244,6 +247,69 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     (slow,) = run_labelled([py("import time; print('partial', flush=True); time.sleep(30)",
                                label="rb_slow", timeout=3)])
     assert slow.status == "timeout" and "partial" in alias_text("rb_slow")
+
+    # g. an abandoned read binds nothing, then or later.
+    read_labelled(rb_grep)
+    assert "needle_token here" in alias_text("rb_grep")
+    original_grep = reader._grep_request
+
+    def slow_grep(*args, **kwargs):
+        time.sleep(2)
+        return original_grep(*args, **kwargs)
+
+    with monkeypatch.context() as m:
+        m.setattr(reader, "_grep_request", slow_grep)
+        (late,) = read_labelled(rb_grep, Budget(time_s=1))
+    assert late.status == "error" and "timed out" in late.message
+    assert alias_store.resolve(alias_root, "rb_grep") is None
+
+    # h. an item-limit skip drops the alias; a deferred read keeps the one its full read made.
+    read_labelled(rb_grep)
+    assert "needle_token here" in alias_text("rb_grep")
+    first_read, skipped_read = read_many([{"glob": "src/*.txt"}, rb_grep], Budget(max_items=1))
+    assert skipped_read.status == "skipped"
+    assert alias_store.resolve(alias_root, "rb_grep") is None
+    defer_root = tmp_path / "defer_root"
+    defer_root.mkdir()
+    (defer_root / "big.txt").write_text("needle_token here\n" * 400, encoding="utf-8")
+    _, deferred_read = read_many(
+        [{"grep": "needle_token", "label": "rb_d1"}, {"grep": "needle_token", "label": "rb_d2"}],
+        Budget(tokens=500), root=defer_root.resolve(),
+    )
+    assert deferred_read.status == "deferred"
+    assert alias_store.resolve(defer_root.resolve(), "rb_d1") is not None
+    assert alias_store.resolve(defer_root.resolve(), "rb_d2") is not None
+
+    # i. a read or a command labelled with a reserved stderr name never replaces the stderr alias.
+    run_labelled([rb_cmd])
+    assert alias_text("rb_cmd.stderr") == "err1"
+    run_labelled([py("print('evil')", label="rb_cmd.stderr")])
+    (reserved_grep,) = read_labelled({"grep": "needle_token", "paths": ["src"], "label": "rb_cmd.stderr"})
+    assert reserved_grep.status == "ok"
+    (reserved_glob,) = read_labelled({"glob": "src/*.txt", "label": "rb_cmd.stderr"})
+    assert reserved_glob.status == "ok"
+    assert alias_text("rb_cmd.stderr") == "err1"
+
+    # j. artifact reads take slices after a range, in a string, in a list, or in an object.
+    run_labelled([py("print('a'); print('b'); print('c'); print('d')", label="rb_lines")])
+
+    def body_of(spec):
+        (result,) = read_labelled(spec)
+        return result.body.replace("\r\n", "\n").strip()
+
+    assert body_of("artifact:rb_lines:2-3 ||| sort:-") == "c\nb"
+    assert body_of({"artifact": "rb_lines", "slices": "sort:- ||| head:2"}) == "d\nc"
+    assert body_of({"artifact": "rb_lines", "slices": ["sort:-", "head:2"]}) == "d\nc"
+    with pytest.raises(specs_mod.SpecError, match="slices apply only to artifact reads"):
+        parse_read_spec({"path": "src/other.txt", "slices": ["head:1"]})
+    with pytest.raises(specs_mod.SpecError, match="use a grep: slice instead of pattern"):
+        parse_read_spec({"artifact": "rb_lines", "slices": ["head:1"], "pattern": "x"})
+
+    # k. in sort:n a minus sign joined to a word character is a hyphen, not a sign.
+    hyphens = "build-10\nbuild-2\nbuild-30\n"
+    assert apply_slices(hyphens, ["sort:n"]) == ("build-2\nbuild-10\nbuild-30", [])
+    assert apply_slices(hyphens, ["sort:-n"]) == ("build-30\nbuild-10\nbuild-2", [])
+    assert apply_slices("t 3\n-7\nt -5\nrun_-4\n", ["sort:n"]) == ("-7\nt -5\nt 3\nrun_-4", [])
 
     async def call(session, name, args):
         return await asyncio.wait_for(session.call_tool(name, args), 20)

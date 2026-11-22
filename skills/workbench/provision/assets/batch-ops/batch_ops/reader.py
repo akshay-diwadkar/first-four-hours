@@ -102,6 +102,7 @@ async def read_batch(
         return await run(req, min(item_cap, req.max_bytes) if req.max_bytes else item_cap)
 
     results = list(await asyncio.gather(*(first(i, req) for i, req in enumerate(requests))))
+    kept = [result.keep for result in results]  # what the last read of each request would save
 
     total = body_budget(tracker.budget.bytes, len(requests))
     remaining = total
@@ -113,6 +114,7 @@ async def read_batch(
             again = await run(requests[i], remaining)
             if again.status not in ("error", "skipped"):
                 results[i] = again  # a failed re-read keeps the pass-1 result
+                kept[i] = again.keep
             remaining -= min(remaining, results[i].bytes_shown)
         else:
             request = requests[i]
@@ -128,9 +130,13 @@ async def read_batch(
                 message="not shown: the report budget ran out; listed whole in next:",
                 meta=meta,
             )
-    for req, result in zip(requests, results):
-        if req.kind in ("grep", "glob") and artifacts.is_label(req.label) and result.status in ("error", "skipped"):
+    for req, result, keep in zip(requests, results, kept):
+        if req.kind not in ("grep", "glob") or not artifacts.is_label(req.label):
+            continue
+        if result.status in ("error", "skipped") or keep is None:
             artifacts.unbind(root_p, req.label)  # a label that kept nothing must not keep an old result
+        else:
+            _bind_read_label(req, root_p, artifacts, *keep)  # only here, so an abandoned read never saves
     tracker.used_bytes = sum(r.bytes_shown for r in results)
     for index, result in enumerate(results, start=1):
         result.id = f"R{index}"
@@ -1200,11 +1206,12 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
     rows_cut = not want_rows or any(q < n for q, (_, n) in zip(quotas, file_hits))
     census = "\n".join(census_rows) if rows_cut else ""
     full_rows = "\n".join(out)
-    _bind_read_label(
-        req, root, artifacts,
-        f"(no matches for {req.pattern})" if not file_hits else "\n".join(part for part in (census, full_rows) if part),
-        ".grep.txt",
-    )
+    keep = None
+    if artifacts.is_label(req.label):
+        keep = (
+            f"(no matches for {req.pattern})" if not file_hits else "\n".join(part for part in (census, full_rows) if part),
+            ".grep.txt",
+        )
     truncated, artifact, continuation = False, None, None
     if not file_hits:
         body = f"(no matches for {req.pattern})"
@@ -1262,6 +1269,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             if ignored_paths else "",
         ) if m) or None,
         artifact=artifact,
+        keep=keep,
         meta={
             "matches": match_count, "matches_shown": shown_matches, "files_with_hits": len(file_hits),
             "files_scanned": scanned,
@@ -1404,7 +1412,7 @@ def _glob_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
 
     body, truncated, full_bytes = truncate_text("\n".join(body_parts), cap, style="head")
     artifact = artifacts.put("\n".join(body_parts), ".glob.txt") if truncated else None
-    _bind_read_label(req, root, artifacts, "\n".join(body_parts), ".glob.txt")
+    keep = ("\n".join(body_parts), ".glob.txt") if artifacts.is_label(req.label) else None
     notes = []
     if more > 0:
         notes.append(f"{total_matches} match(es); listing capped at {limit}")
@@ -1418,6 +1426,7 @@ def _glob_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         lines_total=len(entries), lines_shown=len(entries), truncated=truncated,
         message="; ".join(notes) or None,
         artifact=artifact,
+        keep=keep,
         meta={"matches": total_matches, "listed": len(entries), "expanded": expanded,
               "handles": expanded_meta, "ignored_skipped": ignored},
     )

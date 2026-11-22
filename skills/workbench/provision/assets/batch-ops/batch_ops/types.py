@@ -175,6 +175,7 @@ class ReadResult:
     handle: str | None = None
     artifact: str | None = None
     meta: dict[str, Any] = field(default_factory=dict)
+    keep: tuple[str, str] | None = None  # labelled grep or glob: (text, suffix) read_batch saves under the label
 
 
 @dataclass

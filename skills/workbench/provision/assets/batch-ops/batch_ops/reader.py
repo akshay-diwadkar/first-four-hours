@@ -36,6 +36,7 @@ from .safety import (
     sha256_bytes,
     truncate_text,
 )
+from .slices import apply_slices
 from .types import Coverage, ReadRequest, ReadResult, Report, Workspace
 from .workspace import git_root_fast, path_is_within, workspace_info
 
@@ -101,6 +102,7 @@ async def read_batch(
         return await run(req, min(item_cap, req.max_bytes) if req.max_bytes else item_cap)
 
     results = list(await asyncio.gather(*(first(i, req) for i, req in enumerate(requests))))
+    kept = [result.keep for result in results]  # what the last read of each request would save
 
     total = body_budget(tracker.budget.bytes, len(requests))
     remaining = total
@@ -112,6 +114,7 @@ async def read_batch(
             again = await run(requests[i], remaining)
             if again.status not in ("error", "skipped"):
                 results[i] = again  # a failed re-read keeps the pass-1 result
+                kept[i] = again.keep
             remaining -= min(remaining, results[i].bytes_shown)
         else:
             request = requests[i]
@@ -127,6 +130,13 @@ async def read_batch(
                 message="not shown: the report budget ran out; listed whole in next:",
                 meta=meta,
             )
+    for req, result, keep in zip(requests, results, kept):
+        if req.kind not in ("grep", "glob") or not artifacts.is_label(req.label):
+            continue
+        if result.status in ("error", "skipped") or keep is None:
+            artifacts.unbind(root_p, req.label)  # a label that kept nothing must not keep an old result
+        else:
+            _bind_read_label(req, root_p, artifacts, *keep)  # only here, so an abandoned read never saves
     tracker.used_bytes = sum(r.bytes_shown for r in results)
     for index, result in enumerate(results, start=1):
         result.id = f"R{index}"
@@ -577,8 +587,21 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
     except ValueError as exc:
         raise SafetyError(str(exc)) from exc
     display = f"artifact:{name}"
+    target = name
+    alias_note: str | None = None
+    if artifacts.is_alias(name):
+        record = artifacts.resolve(root, name)
+        if record is None:
+            return ReadResult(
+                id="read", kind="artifact", label=req.label, path=display, status="missing",
+                message=f'no artifact or alias "{name}" for this cwd; a label (letters, digits, - or _) on a '
+                        "batch_run command or a grep or glob read keeps one for about an hour")
+        target = str(record["target"])
+        age = max(0, int(time.time() - float(record.get("created") or 0)))  # type: ignore[arg-type]
+        shown_age = f"{age}s" if age < 60 else (f"{age // 60}m" if age < 3600 else f"{age // 3600}h")
+        alias_note = f"alias of artifact:{target}, kept {shown_age} ago from: {record.get('source')}"
     try:
-        data = artifacts.get(name)
+        data = artifacts.get(target)
     except OSError:
         return ReadResult(id="read", kind="artifact", label=req.label, path=display, status="missing",
                           message="artifact expired or unknown (artifacts are kept about an hour)")
@@ -586,6 +609,21 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
     lines = text.splitlines()
     line_rows: list[tuple[int, str]] | None = None
     note: str | None = None
+    if req.slices:
+        selected = select_lines(lines, parse_range(req.range) if req.range else [])
+        body, slice_errors = apply_slices("\n".join(line for _, line in selected), req.slices)
+        note = "; ".join(slice_errors) or None
+        shown_lines = body.count("\n") + 1 if body else 0
+        body = body or "(no lines left after slices)"
+        meta = {}
+        body, truncated, _ = truncate_text(body, cap, style="head")
+        return ReadResult(
+            id="read", kind="artifact", label=req.label, path=display,
+            status="truncated" if truncated else ("ok" if shown_lines else "no_match"),
+            body=body, bytes_total=len(data), bytes_shown=len(body.encode("utf-8", errors="replace")),
+            lines_total=len(lines), lines_shown=shown_lines, truncated=truncated, meta=meta,
+            message="; ".join(m for m in (alias_note, note) if m) or None,
+        )
     if req.pattern:
         body, count, note = _grep_text(text, req.pattern, context=req.context,
                                        ignore_case=req.ignore_case, number=True)
@@ -599,7 +637,7 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
         shown_lines = len(selected)
         meta = {}
     body, truncated, continuation, kept = _fit_body(
-        body, line_rows, cap, len(lines), lambda a, b: f"{display}:{a}-{b}"
+        body, line_rows, cap, len(lines), lambda a, b: f"artifact:{target}:{a}-{b}"
     )
     if continuation:
         meta["continuation"] = continuation
@@ -609,8 +647,22 @@ def _artifact_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifac
         body=body, bytes_total=len(data), bytes_shown=len(body.encode("utf-8", errors="replace")),
         lines_total=len(lines), lines_shown=kept if kept is not None else shown_lines,
         truncated=truncated, meta=meta,
-        message=note,  # a continuation is named by the body's cut marker and the next: line
+        # a continuation is named by the body's cut marker and the next: line
+        message="; ".join(m for m in (alias_note, note) if m) or None,
     )
+
+
+def _bind_read_label(req: ReadRequest, root: Path, artifacts: ArtifactStore, text: str, suffix: str) -> None:
+    """Keep a labelled grep or glob result under its label; a failed bind never fails the read."""
+    if not artifacts.is_label(req.label):
+        return
+    source = req.source
+    if not isinstance(source, str):
+        source = json.dumps(source, separators=(",", ":")) if source is not None else (req.pattern or req.glob or "")
+    try:
+        artifacts.bind(root, req.label, text, suffix, source)
+    except Exception:
+        artifacts.unbind(root, req.label)  # a failed bind must not leave an older result under the label
 
 
 # ---------------------------------------------------------------------------
@@ -1154,6 +1206,12 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
     rows_cut = not want_rows or any(q < n for q, (_, n) in zip(quotas, file_hits))
     census = "\n".join(census_rows) if rows_cut else ""
     full_rows = "\n".join(out)
+    keep = None
+    if artifacts.is_label(req.label):
+        keep = (
+            f"(no matches for {req.pattern})" if not file_hits else "\n".join(part for part in (census, full_rows) if part),
+            ".grep.txt",
+        )
     truncated, artifact, continuation = False, None, None
     if not file_hits:
         body = f"(no matches for {req.pattern})"
@@ -1211,6 +1269,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
             if ignored_paths else "",
         ) if m) or None,
         artifact=artifact,
+        keep=keep,
         meta={
             "matches": match_count, "matches_shown": shown_matches, "files_with_hits": len(file_hits),
             "files_scanned": scanned,
@@ -1353,6 +1412,7 @@ def _glob_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
 
     body, truncated, full_bytes = truncate_text("\n".join(body_parts), cap, style="head")
     artifact = artifacts.put("\n".join(body_parts), ".glob.txt") if truncated else None
+    keep = ("\n".join(body_parts), ".glob.txt") if artifacts.is_label(req.label) else None
     notes = []
     if more > 0:
         notes.append(f"{total_matches} match(es); listing capped at {limit}")
@@ -1366,6 +1426,7 @@ def _glob_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         lines_total=len(entries), lines_shown=len(entries), truncated=truncated,
         message="; ".join(notes) or None,
         artifact=artifact,
+        keep=keep,
         meta={"matches": total_matches, "listed": len(entries), "expanded": expanded,
               "handles": expanded_meta, "ignored_skipped": ignored},
     )

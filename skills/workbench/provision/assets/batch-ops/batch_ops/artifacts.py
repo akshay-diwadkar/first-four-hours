@@ -7,6 +7,7 @@ detectable without server state.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import stat
@@ -94,6 +95,53 @@ class ArtifactStore:
 
     def get_text(self, ref: str) -> str:
         return self.get(ref).decode("utf-8", errors="replace")
+
+    # -- aliases ---------------------------------------------------------
+    # A label names a stored artifact for one call root.  Each alias is its own small record
+    # (written atomically) so several server processes sharing this folder never lose each
+    # other's writes or see another root's result.
+    @staticmethod
+    def is_alias(name: str) -> bool:
+        return re.fullmatch(r"[A-Za-z0-9_-]{1,64}(\.stderr)?", name) is not None
+
+    @classmethod
+    def is_label(cls, name: str) -> bool:
+        """A name a caller may label a result with (the `.stderr` form is bound only by the runner)."""
+        return cls.is_alias(name) and not name.endswith(".stderr")
+
+    def _alias_path(self, root: str | Path, name: str) -> Path:
+        digest = sha256_bytes(f"{root}\0{name}".encode("utf-8", errors="replace"))
+        return self.root / f"{digest[:24]}.alias.json"
+
+    def bind(self, root: str | Path, name: str, data: bytes | str, suffix: str, source: str) -> None:
+        if not self.is_alias(name):
+            raise ValueError(f"invalid alias name: {name}")
+        target = self.name(self.put(data, suffix))
+        try:
+            os.utime(self.root / target)  # the target lives as long as the alias
+        except OSError:
+            pass
+        record = {"name": name, "root": str(root), "target": target, "source": source, "created": time.time()}
+        atomic_write_bytes(self._alias_path(root, name), json.dumps(record).encode("utf-8"), mode=0o600)
+
+    def unbind(self, root: str | Path, name: str) -> None:
+        if not self.is_alias(name):
+            return
+        try:
+            self._alias_path(root, name).unlink()
+        except OSError:
+            pass
+
+    def resolve(self, root: str | Path, name: str) -> dict[str, object] | None:
+        if not self.is_alias(name):
+            return None
+        try:
+            record = json.loads(self._alias_path(root, name).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        if not isinstance(record, dict) or record.get("name") != name or record.get("root") != str(root):
+            return None
+        return record
 
     # -- cleanup ---------------------------------------------------------
     def cleanup(self, *, force: bool = False) -> None:

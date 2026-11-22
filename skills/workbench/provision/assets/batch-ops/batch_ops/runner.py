@@ -379,7 +379,7 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         stdout_text, errors = apply_slices(stdout_text, req.slices)
         result.slice_errors.extend(f"stdout {e}" for e in errors)
         if not req.merge_streams:
-            stderr_text, errors = apply_slices(stderr_text, req.slices)
+            stderr_text, errors = apply_slices(stderr_text, req.slices, skip_non_json=True)
             result.slice_errors.extend(f"stderr {e}" for e in errors)
         done.stdout_changed = done.stdout_changed or stdout_text != before_out
         done.stderr_changed = done.stderr_changed or stderr_text != before_err
@@ -675,6 +675,7 @@ async def run_commands(
     dry_run: bool = False,
     max_output: int = 64 * 1024,
     locate: bool = False,
+    bind_labels: bool = False,
 ) -> list[RunResult]:
     """Run all requests concurrently, bounded by *parallel* and the deadline.
 
@@ -766,7 +767,36 @@ async def run_commands(
     )
     results = [_finalize(done, share, artifacts, max_output) for done, share in zip(executed, shares)]
     tracker.used_bytes = sum(result.bytes_shown for result in results)
+    if bind_labels:
+        _bind_labels(executed, root_p, artifacts)
     return results
+
+
+def _bind_labels(executed: list[_Executed], root: Path, artifacts: ArtifactStore) -> None:
+    """Keep each labelled command's full stdout (and stderr) under its label, in request order.
+
+    A command that started rebinds the label, so an old result is never served for a new run; one
+    that never started removes it.  A failed bind never changes the report."""
+    for done in executed:
+        label = done.req.label
+        if not artifacts.is_label(label):
+            continue
+        stderr_label = f"{label}.stderr"
+        try:
+            result = done.result
+            if result.exit_code is None and not result.timed_out:
+                artifacts.unbind(root, label)
+                artifacts.unbind(root, stderr_label)
+                continue
+            source = done.req.cmd if done.req.cmd is not None else " ".join(done.req.argv or [])
+            artifacts.bind(root, label, done.stdout_raw, ".stdout.txt", source)
+            if done.stderr_raw and not done.req.merge_streams:
+                artifacts.bind(root, stderr_label, done.stderr_raw, ".stderr.txt", source)
+            else:
+                artifacts.unbind(root, stderr_label)
+        except Exception:
+            artifacts.unbind(root, label)
+            artifacts.unbind(root, stderr_label)
 
 
 def run_commands_sync(requests: list[RunRequest], **kwargs: object) -> list[RunResult]:

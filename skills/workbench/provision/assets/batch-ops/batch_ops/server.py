@@ -327,16 +327,15 @@ async def batch_read(
     "a.txt@outline:RE" (lines matching RE) | "a.txt@block:RE" or "a.txt@block:N" (the block or
     section opened there) | "a.txt@context:RE:3" | "a.txt@target:10-20" (edit search text) |
     "grep:RE [in PATH..]" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
-    "git:cochange:PATH" (files often changed with PATH; check before editing it) | "artifact:NAME:N-M".
+    "git:cochange:PATH" (files often changed with PATH; check before editing it) | "artifact:NAME[:N-M] ||| slices".
     Non-regex patterns, and @ patterns matching nothing, match literally.
     An unranged file read too big for the report returns its outline.
-    Objects: {"path": p, "since": SHA} omits the body of a file still at the sha a read printed;
+    Objects: {"path": p, "since": SHA} omits an unchanged file's body;
     {"grep": RE, "paths": [..], "exclude": [..], "ignored": true, "context": 2, "ignore_case": true,
     "mode": "files" (per-file counts), "blocks": true (each hit's enclosing block)}; {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};
-    {"compare": [spec, spec]}. mode="survey" maps the repository and its build/test commands. budget (only lowers the
-    ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. A cut
-    read outlines its unshown lines; pass the `next:` specs back as-is with the same cwd.
-    allow_outside=true reads absolute paths outside cwd.
+    {"compare": [spec, spec]}. A grep/glob "label": NAME keeps its result as artifact:NAME. mode="survey" maps the repository and its build/test commands. budget (only lowers the
+    ~10k-token report cap): tokens, or {"tokens", "item_tokens", "time_s", "max_output"}. Pass a
+    report's `next:` specs back as-is with the same cwd.
     """
     raw_specs = specs
     try:
@@ -476,15 +475,15 @@ async def batch_run(
     """Run commands concurrently; failures are reported first.
 
     cwd: absolute working directory. commands: "@label: <cmd> ||| fails ||| tail:30" (slices:
-    fails, head:N, tail:N, lines:N-M, grep:RE, grepv:RE, count, dedupe); {"cmd": "...",
+    fails, head:N, tail:N, lines:N-M, grep:RE, grepv:RE, count, dedupe, json:PATH, sort[:-|:n|:-n], uniq, countby:RE, cut:SEP:N); {"cmd": "...",
     "timeout": 60, "cwd": "sub", "shell": "auto|cmd|powershell|bash|sh", "slices": ["tail:30"],
     "ok_exit": [0, 1]} (exit codes that are not failures);
     or {"argv": [...], "slices": [...]} (no shell). An object's cmd may end in " ||| " slices
-    instead of "slices", not both. A timeout kills the process tree and keeps partial output.
+    instead of "slices", not both.
     parallel=1 runs in order; fail_fast=true skips the rest after a failure; dry_run=true
     validates only. budget (only lowers the ~10k-token report cap): tokens, or {"tokens",
-    "item_tokens", "time_s", "max_output"}. Passing output over 4KB keeps its last lines; cut
-    output is kept as "artifact:NAME"; read it as "artifact:NAME:N-M".
+    "item_tokens", "time_s", "max_output"}. Cut
+    output is kept as "artifact:NAME"; read it as "artifact:NAME:N-M". A label keeps full stdout as artifact:LABEL, stderr as artifact:LABEL.stderr.
     """
     raw_cmds = commands
     try:
@@ -532,6 +531,7 @@ async def batch_run(
             dry_run=dry_run,
             max_output=max_output,
             locate=True,
+            bind_labels=True,
         )
 
         valid_slots = [i for i, slot in enumerate(slots) if slot is None]
@@ -651,7 +651,7 @@ async def batch_edit(
     matching once unless "replace_all": true or "occurrence": N (counted after earlier edits).
     new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest:
     a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}, cmd may end in " ||| " slices;
-    failure restores every file, so one call writes and checks. diff: "stat" (default; failures
+    failure restores every file. diff: "stat" (default; failures
     show hunks), "hunks" or "full" (full_diff=true); dry_run=true shows full diffs. budget: tokens.
     """
     try:

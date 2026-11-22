@@ -12,6 +12,8 @@ batch-ops is an optional MCP server that ships inside [`/provision`](../skills/p
 
 The full argument syntax is in each tool's description, which your harness shows the agent; you do not need to learn it.
 
+A label on a command, or on a grep or glob read, keeps its full result (a grep's within its max_matches) for about an hour under that name, such as `artifact:tests`, so a later call can read it again without rerunning it, filtered with slices such as `json:`, `sort`, `uniq`, `countby:`, or `cut:`.
+
 ## Safeguards
 
 - **Scope.** Reads and edits stay inside the working directory (`cwd`) unless the call sets `allow_outside=true`.

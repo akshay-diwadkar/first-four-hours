@@ -24,6 +24,7 @@ class ReadRequest:
     kind: str  # file | glob | grep | git_diff | git_changed | compare | handle | artifact
     label: str = ""
     artifact: str | None = None  # artifact reference ("artifact:NAME" or NAME)
+    slices: list[str] = field(default_factory=list)  # artifact reads: slice operators applied to the lines
     priority: str = "should"
 
     # file / handle
@@ -174,6 +175,7 @@ class ReadResult:
     handle: str | None = None
     artifact: str | None = None
     meta: dict[str, Any] = field(default_factory=dict)
+    keep: tuple[str, str] | None = None  # labelled grep or glob: (text, suffix) read_batch saves under the label
 
 
 @dataclass

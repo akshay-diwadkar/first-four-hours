@@ -156,6 +156,161 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         command=sys.executable, args=[str(SERVER)], cwd=str(repo), env=server_env
     )
 
+    apply_slices = importlib.import_module("batch_ops.slices").apply_slices
+    document = '{"items": [{"n": 1, "v": "a"}, {"n": 2, "v": "b"}, {"n": 3}]}'
+    assert apply_slices(document, ["json:items[*].n"]) == ("1\n2\n3", [])
+    assert apply_slices(document, ["json:items[*].v"]) == ("a\nb", [])
+    actions = '{"Action":"pass"}\n{"Action":"fail"}\n{"Action":"pass"}\n'
+    assert apply_slices(actions, ["json:Action", "uniq"]) == ("2 pass\n1 fail", [])
+    assert apply_slices(actions, ['countby:"Action":"(\\w+)"']) == ("2 pass\n1 fail", [])
+    numbered = "x10\nnone\nx9\nx-1\n"
+    assert apply_slices(numbered, ["sort:n"]) == ("x-1\nx9\nx10\nnone", [])
+    assert apply_slices(numbered, ["sort:-n"]) == ("x10\nx9\nx-1\nnone", [])
+    assert apply_slices("a b  c\nd e f\n", ["cut::2"]) == ("b\ne", [])
+    assert apply_slices("a,b,c\nx,y\n", ["cut:,:3"]) == ("c", [])
+    assert apply_slices("a\tb\tc\nd\n", ["cut:\\t:2"]) == ("b", [])
+    assert apply_slices("not json\n", ["json:a"]) == ("not json", ["json: input is neither JSON nor JSON Lines"])
+
+    run_commands = importlib.import_module("batch_ops.runner").run_commands
+    read_batch = importlib.import_module("batch_ops.reader").read_batch
+    specs_mod = importlib.import_module("batch_ops.specs")
+    parse_run_spec, parse_read_spec = specs_mod.parse_run_spec, specs_mod.parse_read_spec
+    budget_mod = importlib.import_module("batch_ops.budget")
+    Budget, BudgetTracker = budget_mod.Budget, budget_mod.BudgetTracker
+    alias_store = ArtifactStore(tmp_path / "alias_store")
+    alias_root = repo.resolve()
+
+    def run_labelled(specs, **kwargs):
+        requests = [parse_run_spec(spec, index) for index, spec in enumerate(specs, start=1)]
+        return asyncio.run(run_commands(requests, root=alias_root, tracker=BudgetTracker(Budget()),
+                                        artifacts=alias_store, bind_labels=True, **kwargs))
+
+    def read_many(specs, budget=None, root=alias_root):
+        return asyncio.run(read_batch([parse_read_spec(spec) for spec in specs], root=root,
+                                      tracker=BudgetTracker(budget or Budget()), artifacts=alias_store))
+
+    def read_labelled(spec, budget=None):
+        return read_many([spec], budget)
+
+    def alias_text(name):
+        record = alias_store.resolve(alias_root, name)
+        if record is None:
+            return None
+        return alias_store.get_text(str(record["target"])).replace("\r\n", "\n")
+
+    def py(code, **extra):
+        return {"argv": [sys.executable, "-c", code], **extra}
+
+    def failing_bind(*args, **kwargs):
+        raise OSError("simulated save failure")
+
+    # a. json: on stderr is skipped when stderr is not JSON; stdout errors and JSON stderr stay.
+    json_a = py("import sys; print('{\"a\": 1}'); sys.stderr.write('warn')", slices=["json:a"])
+    json_b = py("import sys; print('not json'); sys.stderr.write('{\"a\": 2}')", slices=["json:a"])
+    res_a, res_b = run_labelled([json_a, json_b])
+    assert res_a.stdout.strip() == "1" and "warn" in res_a.stderr and res_a.slice_errors == []
+    assert res_b.slice_errors == ["stdout json: input is neither JSON nor JSON Lines"]
+    assert res_b.stderr.strip() == "2"
+
+    # b. a dry run leaves both aliases untouched.
+    rb_cmd = py("import sys; print('out1'); sys.stderr.write('err1')", label="rb_cmd")
+    run_labelled([rb_cmd])
+    run_labelled([py("print('dry')", label="rb_cmd")], dry_run=True)
+    assert alias_text("rb_cmd").strip() == "out1" and alias_text("rb_cmd.stderr") == "err1"
+
+    # c. merged streams rebind the label and drop the stale stderr alias.
+    run_labelled([{**rb_cmd, "merge_streams": True}])
+    merged = alias_text("rb_cmd")
+    assert "out1" in merged and "err1" in merged
+    assert alias_store.resolve(alias_root, "rb_cmd.stderr") is None
+
+    # d. a failed save on the command side removes both aliases.
+    run_labelled([rb_cmd])
+    assert alias_text("rb_cmd.stderr") == "err1"
+    with monkeypatch.context() as m:
+        m.setattr(alias_store, "bind", failing_bind)
+        run_labelled([rb_cmd])
+    assert alias_store.resolve(alias_root, "rb_cmd") is None
+    assert alias_store.resolve(alias_root, "rb_cmd.stderr") is None
+
+    # e. a failed save on the read side removes the alias while the read succeeds.
+    rb_grep = {"grep": "needle_token", "paths": ["src"], "label": "rb_grep"}
+    read_labelled(rb_grep)
+    assert "needle_token here" in alias_text("rb_grep")
+    with monkeypatch.context() as m:
+        m.setattr(alias_store, "bind", failing_bind)
+        (grep_result,) = read_labelled(rb_grep)
+    assert grep_result.status == "ok"
+    assert alias_store.resolve(alias_root, "rb_grep") is None
+
+    # f. a timed-out command keeps its partial output under its label.
+    (slow,) = run_labelled([py("import time; print('partial', flush=True); time.sleep(30)",
+                               label="rb_slow", timeout=3)])
+    assert slow.status == "timeout" and "partial" in alias_text("rb_slow")
+
+    # g. an abandoned read binds nothing, then or later.
+    read_labelled(rb_grep)
+    assert "needle_token here" in alias_text("rb_grep")
+    original_grep = reader._grep_request
+
+    def slow_grep(*args, **kwargs):
+        time.sleep(2)
+        return original_grep(*args, **kwargs)
+
+    with monkeypatch.context() as m:
+        m.setattr(reader, "_grep_request", slow_grep)
+        (late,) = read_labelled(rb_grep, Budget(time_s=1))
+    assert late.status == "error" and "timed out" in late.message
+    assert alias_store.resolve(alias_root, "rb_grep") is None
+
+    # h. an item-limit skip drops the alias; a deferred read keeps the one its full read made.
+    read_labelled(rb_grep)
+    assert "needle_token here" in alias_text("rb_grep")
+    first_read, skipped_read = read_many([{"glob": "src/*.txt"}, rb_grep], Budget(max_items=1))
+    assert skipped_read.status == "skipped"
+    assert alias_store.resolve(alias_root, "rb_grep") is None
+    defer_root = tmp_path / "defer_root"
+    defer_root.mkdir()
+    (defer_root / "big.txt").write_text("needle_token here\n" * 400, encoding="utf-8")
+    _, deferred_read = read_many(
+        [{"grep": "needle_token", "label": "rb_d1"}, {"grep": "needle_token", "label": "rb_d2"}],
+        Budget(tokens=500), root=defer_root.resolve(),
+    )
+    assert deferred_read.status == "deferred"
+    assert alias_store.resolve(defer_root.resolve(), "rb_d1") is not None
+    assert alias_store.resolve(defer_root.resolve(), "rb_d2") is not None
+
+    # i. a read or a command labelled with a reserved stderr name never replaces the stderr alias.
+    run_labelled([rb_cmd])
+    assert alias_text("rb_cmd.stderr") == "err1"
+    run_labelled([py("print('evil')", label="rb_cmd.stderr")])
+    (reserved_grep,) = read_labelled({"grep": "needle_token", "paths": ["src"], "label": "rb_cmd.stderr"})
+    assert reserved_grep.status == "ok"
+    (reserved_glob,) = read_labelled({"glob": "src/*.txt", "label": "rb_cmd.stderr"})
+    assert reserved_glob.status == "ok"
+    assert alias_text("rb_cmd.stderr") == "err1"
+
+    # j. artifact reads take slices after a range, in a string, in a list, or in an object.
+    run_labelled([py("print('a'); print('b'); print('c'); print('d')", label="rb_lines")])
+
+    def body_of(spec):
+        (result,) = read_labelled(spec)
+        return result.body.replace("\r\n", "\n").strip()
+
+    assert body_of("artifact:rb_lines:2-3 ||| sort:-") == "c\nb"
+    assert body_of({"artifact": "rb_lines", "slices": "sort:- ||| head:2"}) == "d\nc"
+    assert body_of({"artifact": "rb_lines", "slices": ["sort:-", "head:2"]}) == "d\nc"
+    with pytest.raises(specs_mod.SpecError, match="slices apply only to artifact reads"):
+        parse_read_spec({"path": "src/other.txt", "slices": ["head:1"]})
+    with pytest.raises(specs_mod.SpecError, match="use a grep: slice instead of pattern"):
+        parse_read_spec({"artifact": "rb_lines", "slices": ["head:1"], "pattern": "x"})
+
+    # k. in sort:n a minus sign joined to a word character is a hyphen, not a sign.
+    hyphens = "build-10\nbuild-2\nbuild-30\n"
+    assert apply_slices(hyphens, ["sort:n"]) == ("build-2\nbuild-10\nbuild-30", [])
+    assert apply_slices(hyphens, ["sort:-n"]) == ("build-30\nbuild-10\nbuild-2", [])
+    assert apply_slices("t 3\n-7\nt -5\nrun_-4\n", ["sort:n"]) == ("-7\nt -5\nt 3\nrun_-4", [])
+
     async def call(session, name, args):
         return await asyncio.wait_for(session.call_tool(name, args), 20)
 
@@ -606,6 +761,69 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert "Focus history: no commit in the newest 200 touches a match" in text
                 assert "Focus related tests:" not in text
 
+                kept_code = (
+                    "import os, sys; [print('{\"n\": \"%s\"}' % n) for n in os.environ['KEPT_N'].split(',')]; "
+                    "sys.stderr.write(os.environ.get('KEPT_ERR', ''))  # kept-cmd"
+                )
+
+                def kept(values, err=""):
+                    return {"argv": [sys.executable, "-c", kept_code], "label": "kept",
+                            "env": {"KEPT_N": values, "KEPT_ERR": err}}
+
+                passing = {"argv": [sys.executable, "-c", "print(1)"], "label": "gone"}
+                res = await call(session, "batch_run", {"commands": [kept("beta-v1,alpha-v1", "warn1"), passing],
+                                                         "cwd": str(repo)})
+                assert not res.isError
+                res = await call(session, "batch_read", {
+                    "specs": ["artifact:kept ||| json:n ||| sort", "artifact:kept.stderr", "artifact:gone"],
+                    "cwd": str(repo)})
+                text = _text(res).replace("\r", "")
+                assert [i["status"] for i in _items(res)] == ["ok", "ok", "ok"]
+                assert "alpha-v1\nbeta-v1" in text and "warn1" in text
+                assert "ago from: " in text and "kept-cmd" in text
+
+                res = await call(session, "batch_read", {
+                    "specs": [{"grep": "needle_token", "paths": ["src"], "label": "gr_tok"},
+                              {"glob": "src/*.txt", "label": "gl_txt"},
+                              {"grep": "needle_token", "paths": [str(tmp_path)], "label": "kept.stderr"},
+                              {"grep": "needle_census", "paths": ["hits"], "max_matches": 5, "label": "gr_cut"}],
+                    "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)] == ["ok", "ok", "error", "ok"]
+                res = await call(session, "batch_read", {
+                    "specs": ["artifact:gr_tok", "artifact:gl_txt", "artifact:kept.stderr",
+                              "artifact:gr_cut ||| grep:\\(10\\)$ ||| count",
+                              "artifact:gr_cut ||| grep:needle_census ||| count"],
+                    "cwd": str(repo)})
+                text = _text(res).replace("\\", "/")
+                assert "needle_token here" in text and "a.txt" in text
+                assert "warn1" in text  # an invalid label never unbinds the runner's .stderr alias
+                assert re.search(r"(?m)^30$", text)  # a cut grep keeps every file's count
+                assert re.search(r"(?m)^5$", text)  # and only the rows within max_matches
+                res = await call(session, "batch_read", {
+                    "specs": [{"grep": "needle_token", "paths": [str(tmp_path)], "label": "gr_tok"}],
+                    "cwd": str(repo)})
+                assert _items(res)[0]["status"] == "error"
+                res = await call(session, "batch_read", {"specs": ["artifact:gr_tok"], "cwd": str(repo)})
+                assert _items(res)[0]["status"] == "missing"  # a labelled read that kept nothing drops its old result
+
+                res = await call(session, "batch_run", {
+                    "commands": [kept("gamma-v2"), {**passing, "cwd": "no_such_dir"}], "cwd": str(repo)})
+                assert res.isError  # the setup error
+                res = await call(session, "batch_read", {
+                    "specs": ["artifact:kept ||| json:n", "artifact:kept.stderr", "artifact:gone"],
+                    "cwd": str(repo)})
+                text = _text(res)
+                assert [i["status"] for i in _items(res)] == ["ok", "missing", "missing"]
+                assert "gamma-v2" in text and "alpha-v1" not in text and "warn1" not in text
+                res = await call(session, "batch_read", {"specs": ["artifact:kept"], "cwd": str(repo / "src")})
+                assert _items(res)[0]["status"] == "missing"
+
                 assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5300
+
+        async with stdio_client(params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await asyncio.wait_for(session.initialize(), 20)
+                res = await call(session, "batch_read", {"specs": ["artifact:kept ||| json:n"], "cwd": str(repo)})
+                assert "gamma-v2" in _text(res) and "alpha-v1" not in _text(res)
 
     asyncio.run(asyncio.wait_for(session_run(), 40))

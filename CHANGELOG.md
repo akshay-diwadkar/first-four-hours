@@ -4,6 +4,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- Provision 3.6.0: batch-ops reuses results without running them again. A labelled `batch_run` command, or a labelled grep or glob read, keeps its full result (a grep's within its max_matches) for about an hour as `artifact:<label>` (stderr as `artifact:<label>.stderr`), scoped to the working directory and kept across server restarts; reading it shows its age and the command or spec that produced it. Artifact reads take slices, as in `artifact:tests ||| fails`, and new slices filter structured output: `json:PATH` (JSON or JSON Lines), `sort` (`sort:-`, `sort:n`, `sort:-n`), `uniq` with counts, `countby:RE`, and `cut:SEP:N`. Rerun `/provision` to update the installed server.
+
 ## [3.0.0] - 2026-11-21
 
 ### Added

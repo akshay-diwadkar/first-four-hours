@@ -24,6 +24,7 @@ class ReadRequest:
     kind: str  # file | glob | grep | git_diff | git_changed | compare | handle | artifact
     label: str = ""
     artifact: str | None = None  # artifact reference ("artifact:NAME" or NAME)
+    slices: list[str] = field(default_factory=list)  # artifact reads: slice operators applied to the lines
     priority: str = "should"
 
     # file / handle

@@ -108,13 +108,15 @@ def _parse_read_string(value: str) -> ReadRequest:
             raise SpecError("grep spec requires a pattern")
         return ReadRequest(kind="grep", pattern=grep_pattern, max_files=5000, context=0)
     if s.startswith("artifact:"):
-        ref = s[len("artifact:") :]
+        parts = s.split(" ||| ")
+        ref = parts[0][len("artifact:") :].strip()
+        art_slices = [p.strip() for p in parts[1:] if p.strip()]
         m = re.match(r"^(.+?):(\d+(?:-\d+)?)$", ref)
         if m:
-            return ReadRequest(kind="artifact", artifact=m.group(1), range=m.group(2))
+            return ReadRequest(kind="artifact", artifact=m.group(1), range=m.group(2), slices=art_slices)
         if not ref:
             raise SpecError("artifact spec requires a name")
-        return ReadRequest(kind="artifact", artifact=ref)
+        return ReadRequest(kind="artifact", artifact=ref, slices=art_slices)
     if s.startswith("glob:"):
         glob_pattern = s[len("glob:") :]
         if not glob_pattern:
@@ -216,15 +218,30 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
         )
     kind_key = kinds[0]
 
+    slices_raw = data.get("slices")
+    if slices_raw is None:
+        read_slices: list[str] = []
+    elif isinstance(slices_raw, str):
+        read_slices = [p.strip() for p in slices_raw.split("|||") if p.strip()]
+    elif isinstance(slices_raw, list):
+        read_slices = [str(p).strip() for p in slices_raw if str(p).strip()]
+    else:
+        raise SpecError("slices must be a list or string")
+    if read_slices and kind_key != "artifact":
+        raise SpecError("slices apply only to artifact reads")
+
     if kind_key == "artifact":
         ref = str(data["artifact"]).strip()
         if not ref:
             raise SpecError("artifact must not be empty")
         range_value = data.get("range", data.get("lines"))
         pattern = data.get("pattern", data.get("grep"))
+        if read_slices and pattern:
+            raise SpecError("use a grep: slice instead of pattern")
         return ReadRequest(
             kind="artifact",
             artifact=ref,
+            slices=read_slices,
             range=str(range_value) if range_value is not None else None,
             pattern=str(pattern) if pattern else None,
             context=int(data.get("context", 0)),

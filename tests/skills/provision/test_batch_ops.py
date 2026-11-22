@@ -156,6 +156,21 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         command=sys.executable, args=[str(SERVER)], cwd=str(repo), env=server_env
     )
 
+    apply_slices = importlib.import_module("batch_ops.slices").apply_slices
+    document = '{"items": [{"n": 1, "v": "a"}, {"n": 2, "v": "b"}, {"n": 3}]}'
+    assert apply_slices(document, ["json:items[*].n"]) == ("1\n2\n3", [])
+    assert apply_slices(document, ["json:items[*].v"]) == ("a\nb", [])
+    actions = '{"Action":"pass"}\n{"Action":"fail"}\n{"Action":"pass"}\n'
+    assert apply_slices(actions, ["json:Action", "uniq"]) == ("2 pass\n1 fail", [])
+    assert apply_slices(actions, ['countby:"Action":"(\\w+)"']) == ("2 pass\n1 fail", [])
+    numbered = "x10\nnone\nx9\nx-1\n"
+    assert apply_slices(numbered, ["sort:n"]) == ("x-1\nx9\nx10\nnone", [])
+    assert apply_slices(numbered, ["sort:-n"]) == ("x10\nx9\nx-1\nnone", [])
+    assert apply_slices("a b  c\nd e f\n", ["cut::2"]) == ("b\ne", [])
+    assert apply_slices("a,b,c\nx,y\n", ["cut:,:3"]) == ("c", [])
+    assert apply_slices("a\tb\tc\nd\n", ["cut:\\t:2"]) == ("b", [])
+    assert apply_slices("not json\n", ["json:a"]) == ("not json", ["json: input is neither JSON nor JSON Lines"])
+
     async def call(session, name, args):
         return await asyncio.wait_for(session.call_tool(name, args), 20)
 
@@ -606,6 +621,69 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert "Focus history: no commit in the newest 200 touches a match" in text
                 assert "Focus related tests:" not in text
 
+                kept_code = (
+                    "import os, sys; [print('{\"n\": \"%s\"}' % n) for n in os.environ['KEPT_N'].split(',')]; "
+                    "sys.stderr.write(os.environ.get('KEPT_ERR', ''))  # kept-cmd"
+                )
+
+                def kept(values, err=""):
+                    return {"argv": [sys.executable, "-c", kept_code], "label": "kept",
+                            "env": {"KEPT_N": values, "KEPT_ERR": err}}
+
+                passing = {"argv": [sys.executable, "-c", "print(1)"], "label": "gone"}
+                res = await call(session, "batch_run", {"commands": [kept("beta-v1,alpha-v1", "warn1"), passing],
+                                                         "cwd": str(repo)})
+                assert not res.isError
+                res = await call(session, "batch_read", {
+                    "specs": ["artifact:kept ||| json:n ||| sort", "artifact:kept.stderr", "artifact:gone"],
+                    "cwd": str(repo)})
+                text = _text(res).replace("\r", "")
+                assert [i["status"] for i in _items(res)] == ["ok", "ok", "ok"]
+                assert "alpha-v1\nbeta-v1" in text and "warn1" in text
+                assert "ago from: " in text and "kept-cmd" in text
+
+                res = await call(session, "batch_read", {
+                    "specs": [{"grep": "needle_token", "paths": ["src"], "label": "gr_tok"},
+                              {"glob": "src/*.txt", "label": "gl_txt"},
+                              {"grep": "needle_token", "paths": [str(tmp_path)], "label": "kept.stderr"},
+                              {"grep": "needle_census", "paths": ["hits"], "max_matches": 5, "label": "gr_cut"}],
+                    "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)] == ["ok", "ok", "error", "ok"]
+                res = await call(session, "batch_read", {
+                    "specs": ["artifact:gr_tok", "artifact:gl_txt", "artifact:kept.stderr",
+                              "artifact:gr_cut ||| grep:\\(10\\)$ ||| count",
+                              "artifact:gr_cut ||| grep:needle_census ||| count"],
+                    "cwd": str(repo)})
+                text = _text(res).replace("\\", "/")
+                assert "needle_token here" in text and "a.txt" in text
+                assert "warn1" in text  # an invalid label never unbinds the runner's .stderr alias
+                assert re.search(r"(?m)^30$", text)  # a cut grep keeps every file's count
+                assert re.search(r"(?m)^5$", text)  # and only the rows within max_matches
+                res = await call(session, "batch_read", {
+                    "specs": [{"grep": "needle_token", "paths": [str(tmp_path)], "label": "gr_tok"}],
+                    "cwd": str(repo)})
+                assert _items(res)[0]["status"] == "error"
+                res = await call(session, "batch_read", {"specs": ["artifact:gr_tok"], "cwd": str(repo)})
+                assert _items(res)[0]["status"] == "missing"  # a labelled read that kept nothing drops its old result
+
+                res = await call(session, "batch_run", {
+                    "commands": [kept("gamma-v2"), {**passing, "cwd": "no_such_dir"}], "cwd": str(repo)})
+                assert res.isError  # the setup error
+                res = await call(session, "batch_read", {
+                    "specs": ["artifact:kept ||| json:n", "artifact:kept.stderr", "artifact:gone"],
+                    "cwd": str(repo)})
+                text = _text(res)
+                assert [i["status"] for i in _items(res)] == ["ok", "missing", "missing"]
+                assert "gamma-v2" in text and "alpha-v1" not in text and "warn1" not in text
+                res = await call(session, "batch_read", {"specs": ["artifact:kept"], "cwd": str(repo / "src")})
+                assert _items(res)[0]["status"] == "missing"
+
                 assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5300
+
+        async with stdio_client(params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await asyncio.wait_for(session.initialize(), 20)
+                res = await call(session, "batch_read", {"specs": ["artifact:kept ||| json:n"], "cwd": str(repo)})
+                assert "gamma-v2" in _text(res) and "alpha-v1" not in _text(res)
 
     asyncio.run(asyncio.wait_for(session_run(), 40))

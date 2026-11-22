@@ -51,7 +51,7 @@ Five skills produce work that `/blueprint` can plan from, and you decide whether
 `/blueprint` brings in other help within its own run, not as separate stages:
 
 - It asks [`/ideate`](../skills/ideate.md) for options only when no viable solution is apparent or the evidence cannot rank the directions. You make the final selection unless you already chose or delegated it.
-- `/blueprint` attacks its own draft before sealing, at a depth set by the plan's risk. A Critical plan gets one separate fresh-context challenger instead, and without one `/blueprint` does not seal that plan.
+- `/blueprint` attacks its own draft before sealing, at a depth set by the plan's risk. A Standard plan gets one separate fresh-context challenger instead when one can launch, and its own attack otherwise; a Critical plan gets one too, and without one `/blueprint` does not seal that plan.
 
 ## Reason checkpoints
 

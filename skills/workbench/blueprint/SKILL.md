@@ -2,7 +2,7 @@
 name: blueprint
 description: "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
 metadata:
-  version: "2.4.0"
+  version: "2.5.0"
 ---
 
 Plan in this session.
@@ -14,7 +14,7 @@ The plan records each decision an executor could get wrong, with the check that 
 Pick a provisional tier at intake and re-derive it from your decisions; it can rise, never fall. [Challenge and rehearsal](references/challenge-and-rehearsal.md#tier) lists the signals.
 
 - **Quick**, the default: brief exploration, a self-check, a plan of about 6KB.
-- **Standard**, when a consumer outside the changed package or a propagation to another file matters: full exploration, the Challenger brief run by you, about 12KB.
+- **Standard**, when a consumer outside the changed package or a propagation to another file matters: full exploration, one fresh challenger, else the Challenger brief run by you, about 12KB.
 - **Critical**: every invariant's violation paths, one fresh challenger, about 20KB.
 
 ## Workflow

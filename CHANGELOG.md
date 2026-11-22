@@ -8,6 +8,10 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 
 - Provision 3.6.0: batch-ops reuses results without running them again. A labelled `batch_run` command, or a labelled grep or glob read, keeps its full result (a grep's within its max_matches) for about an hour as `artifact:<label>` (stderr as `artifact:<label>.stderr`), scoped to the working directory and kept across server restarts; reading it shows its age and the command or spec that produced it. Artifact reads take slices, as in `artifact:tests ||| fails`, and new slices filter structured output: `json:PATH` (JSON or JSON Lines), `sort` (`sort:-`, `sort:n`, `sort:-n`), `uniq` with counts, `countby:RE`, and `cut:SEP:N`. Rerun `/provision` to update the installed server.
 
+### Changed
+
+- Blueprint 2.5.0 and Construct 2.2.3: a Standard plan now gets the same single fresh-context challenge as a Critical plan when a challenger can launch; when none launches or it returns no review, Blueprint runs the Challenger brief itself, while a Critical plan still stops unsealed. The desk check treats each every, all, full, never, or only in a plan as a premise to confirm at the code that produces, filters, or limits its value, with a proof input past that limit, and states each invariant about the state it protects, covering every operation that changes that state. Construct ships the Blueprint 2.5.0 runtime copy, reports contract version 2.5.0, and still accepts every sealed 2.x plan. Pruning duplicated guidance pays for these rules, so Blueprint's context budgets are unchanged.
+
 ## [3.0.0] - 2026-11-21
 
 ### Added

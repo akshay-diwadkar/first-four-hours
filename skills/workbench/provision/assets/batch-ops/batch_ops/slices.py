@@ -24,12 +24,19 @@ class SliceError(ValueError):
     pass
 
 
+class NotJsonError(SliceError):
+    """A json: operator's input is neither JSON nor JSON Lines."""
+
+
 # Plain failure words only: no test-runner, compiler or language output formats.
 _FAIL_PATTERN = re.compile(r"\b(fail(s|ed|ure|ures|ing)?|errors?|exceptions?|panic(ked)?|fatal)\b", re.IGNORECASE)
 
 
-def apply_slices(text: str, ops: list[str]) -> tuple[str, list[str]]:
-    """Apply slice operators in order and return (text, errors)."""
+def apply_slices(text: str, ops: list[str], *, skip_non_json: bool = False) -> tuple[str, list[str]]:
+    """Apply slice operators in order and return (text, errors).
+
+    With *skip_non_json*, a json: operator whose input is neither JSON nor JSON Lines leaves
+    the lines unchanged and reports no error."""
     normalized = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = normalized.split("\n")
     if not normalized or normalized.endswith("\n"):
@@ -158,6 +165,9 @@ def apply_slices(text: str, ops: list[str]) -> tuple[str, list[str]]:
             else:
                 raise SliceError(f"unknown slice operator: {op}")
 
+        except NotJsonError as exc:
+            if not skip_non_json:
+                errors.append(str(exc))
         except SliceError as exc:
             errors.append(str(exc))
         except Exception as exc:  # defensive: one bad operator never kills the batch
@@ -227,7 +237,7 @@ def _json_lines(lines: list[str], path: str) -> list[str]:
         try:
             docs = [json.loads(line) for line in lines if line.strip()]
         except ValueError as exc:
-            raise SliceError("json: input is neither JSON nor JSON Lines") from exc
+            raise NotJsonError("json: input is neither JSON nor JSON Lines") from exc
     out: list[str] = []
     for doc in docs:
         for value in _json_walk(doc, tokens):

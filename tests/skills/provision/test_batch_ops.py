@@ -171,6 +171,80 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert apply_slices("a\tb\tc\nd\n", ["cut:\\t:2"]) == ("b", [])
     assert apply_slices("not json\n", ["json:a"]) == ("not json", ["json: input is neither JSON nor JSON Lines"])
 
+    run_commands = importlib.import_module("batch_ops.runner").run_commands
+    read_batch = importlib.import_module("batch_ops.reader").read_batch
+    specs_mod = importlib.import_module("batch_ops.specs")
+    parse_run_spec, parse_read_spec = specs_mod.parse_run_spec, specs_mod.parse_read_spec
+    budget_mod = importlib.import_module("batch_ops.budget")
+    Budget, BudgetTracker = budget_mod.Budget, budget_mod.BudgetTracker
+    alias_store = ArtifactStore(tmp_path / "alias_store")
+    alias_root = repo.resolve()
+
+    def run_labelled(specs, **kwargs):
+        requests = [parse_run_spec(spec, index) for index, spec in enumerate(specs, start=1)]
+        return asyncio.run(run_commands(requests, root=alias_root, tracker=BudgetTracker(Budget()),
+                                        artifacts=alias_store, bind_labels=True, **kwargs))
+
+    def read_labelled(spec):
+        return asyncio.run(read_batch([parse_read_spec(spec)], root=alias_root,
+                                      tracker=BudgetTracker(Budget()), artifacts=alias_store))
+
+    def alias_text(name):
+        record = alias_store.resolve(alias_root, name)
+        if record is None:
+            return None
+        return alias_store.get_text(str(record["target"])).replace("\r\n", "\n")
+
+    def py(code, **extra):
+        return {"argv": [sys.executable, "-c", code], **extra}
+
+    def failing_bind(*args, **kwargs):
+        raise OSError("simulated save failure")
+
+    # a. json: on stderr is skipped when stderr is not JSON; stdout errors and JSON stderr stay.
+    json_a = py("import sys; print('{\"a\": 1}'); sys.stderr.write('warn')", slices=["json:a"])
+    json_b = py("import sys; print('not json'); sys.stderr.write('{\"a\": 2}')", slices=["json:a"])
+    res_a, res_b = run_labelled([json_a, json_b])
+    assert res_a.stdout.strip() == "1" and "warn" in res_a.stderr and res_a.slice_errors == []
+    assert res_b.slice_errors == ["stdout json: input is neither JSON nor JSON Lines"]
+    assert res_b.stderr.strip() == "2"
+
+    # b. a dry run leaves both aliases untouched.
+    rb_cmd = py("import sys; print('out1'); sys.stderr.write('err1')", label="rb_cmd")
+    run_labelled([rb_cmd])
+    run_labelled([py("print('dry')", label="rb_cmd")], dry_run=True)
+    assert alias_text("rb_cmd").strip() == "out1" and alias_text("rb_cmd.stderr") == "err1"
+
+    # c. merged streams rebind the label and drop the stale stderr alias.
+    run_labelled([{**rb_cmd, "merge_streams": True}])
+    merged = alias_text("rb_cmd")
+    assert "out1" in merged and "err1" in merged
+    assert alias_store.resolve(alias_root, "rb_cmd.stderr") is None
+
+    # d. a failed save on the command side removes both aliases.
+    run_labelled([rb_cmd])
+    assert alias_text("rb_cmd.stderr") == "err1"
+    with monkeypatch.context() as m:
+        m.setattr(alias_store, "bind", failing_bind)
+        run_labelled([rb_cmd])
+    assert alias_store.resolve(alias_root, "rb_cmd") is None
+    assert alias_store.resolve(alias_root, "rb_cmd.stderr") is None
+
+    # e. a failed save on the read side removes the alias while the read succeeds.
+    rb_grep = {"grep": "needle_token", "paths": ["src"], "label": "rb_grep"}
+    read_labelled(rb_grep)
+    assert "needle_token here" in alias_text("rb_grep")
+    with monkeypatch.context() as m:
+        m.setattr(alias_store, "bind", failing_bind)
+        (grep_result,) = read_labelled(rb_grep)
+    assert grep_result.status == "ok"
+    assert alias_store.resolve(alias_root, "rb_grep") is None
+
+    # f. a timed-out command keeps its partial output under its label.
+    (slow,) = run_labelled([py("import time; print('partial', flush=True); time.sleep(30)",
+                               label="rb_slow", timeout=3)])
+    assert slow.status == "timeout" and "partial" in alias_text("rb_slow")
+
     async def call(session, name, args):
         return await asyncio.wait_for(session.call_tool(name, args), 20)
 

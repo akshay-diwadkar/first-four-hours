@@ -379,7 +379,7 @@ async def _run_one(req: RunRequest, *, root: Path, deadline: float) -> _Executed
         stdout_text, errors = apply_slices(stdout_text, req.slices)
         result.slice_errors.extend(f"stdout {e}" for e in errors)
         if not req.merge_streams:
-            stderr_text, errors = apply_slices(stderr_text, req.slices)
+            stderr_text, errors = apply_slices(stderr_text, req.slices, skip_non_json=True)
             result.slice_errors.extend(f"stderr {e}" for e in errors)
         done.stdout_changed = done.stdout_changed or stdout_text != before_out
         done.stderr_changed = done.stderr_changed or stderr_text != before_err

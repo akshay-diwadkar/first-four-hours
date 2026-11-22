@@ -494,6 +494,52 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     sources = parse_result(slice_output.read_text(encoding="utf-8"))["assessed_sources"]
     assert [(source["id"], source["role"]) for source in sources] == [("slice-1", "slice")]
 
+    def seal_in_process(payload: dict[str, object], slug: str) -> Path:
+        bundle_path = tmp_path / f"{slug}-bundle.json"
+        bundle_path.write_text(json.dumps(payload), encoding="utf-8")
+        destination = prepare_assessment_workspace(repo, slug).output_path
+        contract.seal_result(repo, bundle_path, destination)
+        return destination
+
+    issue_source = _assessed_source(_snapshot(tmp_path))
+    run_source = {
+        "id": "run-1",
+        "role": "proof",
+        "locator": "Run 1 output",
+        "path": str(_snapshot(tmp_path, "run.txt", "passed\n")),
+    }
+    prior_output = seal_in_process({**limited, "assessed_sources": [issue_source, run_source]}, "case-prior")
+    prior_copy = tmp_path / "prior-assessment.md"
+    shutil.copyfile(prior_output, prior_copy)
+    repair = {
+        "id": "repair",
+        "role": "authority",
+        "locator": "Repair plan",
+        "path": str(_snapshot(tmp_path, "repair.md", "# Repair plan\n")),
+    }
+    prior = {"id": "prior", "role": "evidence", "locator": "Earlier assessment", "path": str(prior_copy)}
+    changed_issue = _assessed_source(_snapshot(tmp_path, "issue-382-changed.md", "# Issue 382\nChanged acceptance.\n"))
+    evidence_issue = _assessed_source(_snapshot(tmp_path), role="evidence")
+    delta_output = prepare_assessment_workspace(repo, "case-delta").output_path
+    for dropped in (
+        [repair, {**prior, "id": "request-3", "role": "authority"}],
+        [prior, changed_issue, repair],
+        [prior, evidence_issue, repair],
+    ):
+        with pytest.raises(AssessError) as refused_delta:
+            seal_in_process({**limited, "assessed_sources": dropped}, "case-delta")
+        assert refused_delta.value.code == "source.prior_authority_dropped"
+        assert refused_delta.value.evidence == (issue_source["locator"],)
+        assert not delta_output.exists()
+    rebound = seal_in_process({**limited, "assessed_sources": [prior, issue_source, repair]}, "case-delta")
+    assert rebound == delta_output
+    delta_sources = parse_result(rebound.read_text(encoding="utf-8"))["assessed_sources"]
+    assert [(source["id"], source["role"]) for source in delta_sources] == [
+        ("prior", "evidence"),
+        ("issue-382", "authority"),
+        ("repair", "authority"),
+    ]
+
 
 def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:
     repo, base, head = _repository(tmp_path, assessment_seed)

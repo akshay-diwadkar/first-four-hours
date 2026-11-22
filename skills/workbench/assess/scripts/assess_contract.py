@@ -17,7 +17,7 @@ from urllib.parse import quote
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.11.0"
+CONTRACT_VERSION = "1.12.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
@@ -1638,6 +1638,29 @@ def _publish(
             temporary.unlink(missing_ok=True)
 
 
+def _require_prior_authority(sources: tuple[SourceBinding, ...]) -> None:
+    current = {source.sha256 for source in sources if source.role == "authority"}
+    missing: list[str] = []
+    for source in sources:
+        try:
+            prior = parse_result(Path(source.path).read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, AssessError):
+            continue
+        for earlier in prior["assessed_sources"]:
+            if earlier["role"] == "authority" and earlier["sha256"] not in current:
+                if earlier["locator"] not in missing:
+                    missing.append(earlier["locator"])
+    if missing:
+        raise _fail(
+            "source.prior_authority_dropped",
+            "an assessment that binds an earlier assessment, in any role, binds again as authority every authority "
+            "snapshot that assessment bound; changed requirements take a whole-change assessment that binds no "
+            "earlier one; not bound again: " + ", ".join(missing),
+            category="contract_contradiction",
+            evidence=tuple(missing),
+        )
+
+
 def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, Any]:
     root = repo_root.resolve()
     bundle = read_bundle(bundle_path, root)
@@ -1646,6 +1669,7 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
     if os.path.lexists(destination):
         raise _output_exists(destination)
     source_bindings = bind_sources(bundle, Path(binding.repository_root), destination)
+    _require_prior_authority(source_bindings)
     findings, examined = bind_all_locators(bundle, binding, source_bindings)
     changed = _changed_paths(binding)
     unexamined = _unexamined_paths(bundle, changed)

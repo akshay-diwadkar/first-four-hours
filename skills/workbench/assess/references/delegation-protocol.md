@@ -23,7 +23,7 @@ Two delegated subagents per Assess invocation is a ceiling, not a default. Every
   - No return, or a path that fails `check` or does not match: stop and report that, with a fresh-session `/assess` prompt as the next step; never seal or repair in its place from this context.
   - No subagent can launch: assess in this context and record the whole change as a self-review limitation.
 - **Bounded falsification:** beyond that slice, a read-only slice is earned when it improves cost, context, coverage, independent judgment, or parallelism more than briefing and verifying it costs.
-- **Clear challenge:** when completed consequential coverage would be `clear` and false-negative cost is meaningful, at most one fresh bounded challenge asks for the strongest missed material defect in that exact scope.
+- **Clear challenge:** when completed consequential coverage would be `clear` and false-negative cost is meaningful, at most one fresh bounded challenge asks for the strongest missed material defect in that exact scope, or on a delta re-review in the whole change.
 
 The slices are **Behavior/Proof** (behavioral correctness, preservation, proof adequacy, integration readiness) and, when a second earns its cost, **Contract/Surface** (intent fidelity, propagation, ownership and minimality). Attach security, concurrency, recovery, or another earned risk lens to one of these slices or keep it owner-local; a lens never becomes an extra delegate, artifact field, or matrix.
 
@@ -36,17 +36,17 @@ Axes are lenses, not work units: never one subagent per axis, panels, voting, re
 Each subagent receives only a curated packet:
 - the exact target, base, and head, or the bounded source;
 - snapshots of, or pointers to, the original request, the authoritative requirements, and any available Blueprint, which is authority evidence, never proof, so the delegate checks the diff against the original request as well as the plan;
-- the base-to-head diff, or on a delta re-review the earlier-head-to-head diff, each earlier finding's `required_truth`, that assessment's open gaps as [delta review](delta-review.md) defines them, and its `Base revision`;
+- the base-to-head diff, or on a delta re-review the diff and authority [delta review](delta-review.md) scopes for that subagent, with that assessment's `Base revision`;
 - its slice or falsification question, with its exclusions; and
 - the objective stop and the compact return contract.
 
-Never give a subagent the owner's transcript or exploration notes, the implementer's narrative or self-assessment, PR prose, or prior findings beyond those delta items. It reviews adversarially inside that slice, continues after the strongest defect until independently material defects in scope are exhausted, returns material ambiguity or contradiction instead of broadening authority, and does not delegate.
+Never give a subagent the owner's transcript or exploration notes, the implementer's narrative or self-assessment, PR prose, or any earlier assessment's findings, limitations, or examined locators. It reviews adversarially inside that slice, continues after the strongest defect until independently material defects in scope are exhausted, returns material ambiguity or contradiction instead of broadening authority, and does not delegate.
 
 It always returns its examined scope and any material ambiguity, plus either candidate findings or a compact bounded-clear statement, and nothing else. A candidate finding contains concrete defect, the short steps from trigger to wrong outcome, material consequence, exact authority locator, and exact implementation/proof locator, plus whether it was observed by execution or reasoned; no essays, transcripts, plans, matrices, scores, or confidence.
 
 ## Owner verification
 
-Assess accepts or rejects each candidate by the cheapest sufficient authoritative lookup: open the cited locators, try to falsify the candidate, and inspect narrowly only when ambiguity, contradiction, or a new material surface earns it. The owner never repeats a whole delegated slice absent a concrete coverage gap, and covers every material scope no delegate examined. Conflicts resolve against current authority and evidence, never vote, confidence, count, or arrival order. After accepting a defect, follow its propagation only far enough to find independent merge-relevant consequences.
+Assess accepts or rejects each candidate by the cheapest sufficient authoritative lookup: open the cited locators, try to falsify the candidate, and inspect narrowly only when ambiguity, contradiction, or a new material surface earns it. The owner never repeats a whole delegated slice absent a concrete coverage gap, and covers every material scope no delegate examined. Conflicts resolve against current authority and evidence, never vote, confidence, count, or arrival order. Name each candidate you reject in limitations, with its reason. After accepting a defect, follow its propagation only far enough to find independent merge-relevant consequences.
 
 <!-- delegation-projection:begin -->
 ### Delegation: preserve authority, bound labor

@@ -45,7 +45,7 @@ These results are correct answers, not failures:
 | Result | Skill | Next step |
 | :--- | :--- | :--- |
 | `blocked` | `/assess` | Supply the authority or evidence it names as missing or contradictory, then run `/assess` again. |
-| `clear` | `/assess` | No material defect was found. When `/assess` reviews only the rework since an earlier assessment, this covers that rework on top of the assessment, and the report names the head it reviewed. It is not approval; the merge decision stays yours. |
+| `clear` | `/assess` | No material defect was found in the whole change, including when `/assess` re-reviews a change after rework. It is not approval; the merge decision stays yours. |
 | `needs-info`, `blocked`, `close-candidate`, or `needs-decomposition` | `/ticket` `select` | Make the missing decision, clear the blocker, close the ticket, or split it. You decide whether to persist replacement tickets. |
 | `Outcome: run an experiment first` or `Outcome: research limit reached` | `/ideate` | Run the named experiment, or accept the research limit and change the goal or the evidence. |
 | A `None:` route, or a route that stops early | `/router` | The current state already meets the target, or the next step depends on a result that does not exist yet. Ask for a fresh route once it does. |

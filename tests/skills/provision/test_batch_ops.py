@@ -365,10 +365,34 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert from_git[1].message == "3 file(s) listed by ch; 1 read; 2 not a file now or outside cwd"
     assert slash(from_git[2].path) == "edit.txt" and "e2" in from_git[2].body
     assert from_git[3].meta["commits"] == 2 and "2x more.txt" in from_git[3].body
-    assert from_git[4].meta["expanded"] == 24 and from_git[4].meta["skipped"] == 1
-    assert from_git[4].message == "25 file(s) listed by co; 24 read; 1 not a file now or outside cwd"
+    assert from_git[4].meta["expanded"] == 24 and from_git[4].meta["skipped"] == 0
+    assert from_git[4].meta["over_limit"] == 1
+    assert from_git[4].message == "25 file(s) listed by co; 24 read; 1 past limit 24"
     assert [slash(r.path) for r in from_git[5:]] == (
         ["more.txt", " lead.txt"] + [f"c{i:02d}.txt" for i in range(1, 21)] + ["caf\u00e9.txt", "edit.txt"])
+
+    # the batch deadline stops the walk: paths after it are counted, not checked, and the real deadline is passed.
+    ticks = iter([0.0])
+    with monkeypatch.context() as m:
+        m.setattr(reader, "time", type("Clock", (), {"monotonic": staticmethod(lambda: next(ticks, 9.0))})())
+        timed_item, timed_reads, _ = reader._each_item(
+            parse_read_spec({"each": "ch"}), [parse_read_spec({"git": "changed", "label": "ch"})],
+            [from_git[0]], git_repo.resolve(), 32, 5.0)
+    assert timed_item.status == "ok"
+    assert timed_item.message == "3 file(s) listed by ch; 1 read; 2 not checked by the batch deadline"
+    assert timed_item.meta["unchecked"] == 2 and timed_item.meta["skipped"] == 0
+    assert [slash(r.path) for r in timed_reads] == ["edit.txt"]
+    seen_args: list = []
+    original_each = reader._each_item
+
+    def spy_each(*args):
+        seen_args.append(args[-1])
+        return original_each(*args)
+
+    with monkeypatch.context() as m:
+        m.setattr(reader, "_each_item", spy_each)
+        read_many([{"git": "changed", "label": "ch"}, {"each": "ch"}], root=git_repo.resolve())
+    assert len(seen_args) == 1 and 0 < seen_args[0] - time.monotonic() <= Budget().time_s
 
     # names git escapes are listed verbatim, and a commit that lists no files still counts.
     quoted_repo = tmp_path / "quoted_repo"

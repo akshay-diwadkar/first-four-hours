@@ -123,7 +123,7 @@ async def read_batch(
         if req.kind == "each" and not req.error and i < tracker.budget.max_items:
             try:
                 results[i], reads, cap_left = await asyncio.to_thread(
-                    _each_item, req, requests[:i], results[:i], root_p, cap_left)
+                    _each_item, req, requests[:i], results[:i], root_p, cap_left, deadline)
             except Exception as exc:  # one failing each never fails the batch
                 reads = []
                 results[i] = ReadResult(id="read", kind="each", label=req.label or f"each:{req.each}",
@@ -254,6 +254,7 @@ def _respec(req: ReadRequest, path: str) -> str:
 
 def _each_item(
     req: ReadRequest, earlier: list[ReadRequest], earlier_results: list[ReadResult], root: Path, cap_left: int,
+    deadline: float,
 ) -> tuple[ReadResult, list[ReadRequest], int]:
     """The item for an ``each`` request, the file reads it expands to, and the call cap left after them."""
     name = req.each or ""
@@ -276,14 +277,23 @@ def _each_item(
 
     paths = list(source_result.found or [])
     readable: list[str] = []
-    for path in paths:
+    skipped = over_limit = unchecked = 0
+    for index, path in enumerate(paths):
+        if len(readable) == req.limit:
+            over_limit = len(paths) - index
+            break
+        if time.monotonic() >= deadline:
+            unchecked = len(paths) - index
+            break
         target = Path(path)
         target = (target if target.is_absolute() else root / target).resolve()
         if target.is_file() and (req.allow_outside or path_is_within(root, target)):
             readable.append(path)
-    take = min(req.limit, len(readable))
+        else:
+            skipped += 1
+    take = len(readable)
     count = min(take, cap_left)
-    skipped, over_limit, over_cap = len(paths) - len(readable), len(readable) - take, take - count
+    over_cap = take - count
     template = req.template or ReadRequest(kind="file")
     reads = [
         dataclasses.replace(
@@ -299,6 +309,7 @@ def _each_item(
             (skipped, "not a file now or outside cwd"),
             (over_limit, f"past limit {req.limit}"),
             (over_cap, f"past the {EACH_CALL_CAP}-file call cap"),
+            (unchecked, "not checked by the batch deadline"),
         ) if number
     ]
     message = "; ".join(parts) or f"{name} listed no files"
@@ -306,7 +317,7 @@ def _each_item(
         id="read", kind="each", label=label, status="ok" if count else "no_match", message=message,
         bytes_shown=len(message.encode("utf-8")),
         meta={"source": name, "listed": len(paths), "expanded": count, "skipped": skipped,
-              "over_limit": over_limit, "over_cap": over_cap},
+              "over_limit": over_limit, "over_cap": over_cap, "unchecked": unchecked},
     )
     return item, reads, cap_left - count
 

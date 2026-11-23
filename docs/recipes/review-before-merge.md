@@ -25,7 +25,7 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 1. Start `/assess` on the branch, naming the authority (issue, specification, or sealed `/blueprint` plan) and the base.
 2. Read the result: `clear`, `findings`, or `blocked`. None of them is approval to merge.
 3. For `findings`, plan the fixes with a new `/blueprint` from `assessment.md`, and carry them out with a fresh `/construct`.
-4. Run `/assess` again on the reworked branch. When it reviews the rework and the earlier findings, its report names the head the earlier assessment reviewed; ask for a full review to cover the whole change again.
+4. Run `/assess` again on the reworked branch. When the re-review finds defects, it covers only the rework, and its report names the head the earlier assessment reviewed; before it returns clear, a fresh reviewer checks the whole change again.
 5. Open the pull request with `/pr`. It shows you the exact text and opens the pull request only after your yes. Merging stays yours.
 
 ## A worked scenario
@@ -80,7 +80,7 @@ It is Friday afternoon. Checkout engineer Mateo Rojas's branch adds shareable sh
 /blueprint : Plan fixes for the findings in .first-four-hours/assessments/shared-lists/assessment.md.
 ```
 
-A new `/blueprint` and a fresh `/construct` fix both findings, and a second `/assess` returns `clear` for the rework on top of the first assessment: no material defect found after a sufficient look. Its report names the head the first assessment reviewed. That is still not permission to merge.
+A new `/blueprint` and a fresh `/construct` fix both findings, and a second `/assess` returns `clear` for the whole change: before returning it, a fresh reviewer that never saw the first assessment checked the whole change again and found no material defect after a sufficient look. That is still not permission to merge.
 
 ```text
 /pr : Open a pull request for this branch against main; it implements issue #40.
@@ -107,7 +107,7 @@ Customers can share a shopping list by link. Only the owner and people holding t
 
 ## You are done when
 
-`/assess` returns `clear` for the final revision of the branch, which means no material defect was found after sufficient examination (when it reviews only the rework, in that rework on top of the earlier assessment), and you have decided to merge.
+`/assess` returns `clear` for the final revision of the branch, which means no material defect was found after sufficient examination across the whole change, and you have decided to merge.
 
 ## If it goes wrong
 

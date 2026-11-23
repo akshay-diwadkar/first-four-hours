@@ -644,6 +644,47 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     ]
     other_pr = {**limited, "target": "https://github.com/example/repo/pull/2", "base_ref": rework}
     assert seal_in_process({**other_pr, "assessed_sources": [prior, repair]}, "case-other-pr").is_file()
+    later_output = seal_in_process({**limited, "assessed_sources": [issue_source]}, "case-later")
+    later_copy = tmp_path / "later-assessment.md"
+    shutil.copyfile(later_output, later_copy)
+    later = {"id": "later", "role": "evidence", "locator": "Later assessment", "path": str(later_copy)}
+    (repo / "extra.py").write_text("a = 0\nb = 0\nextra = 1\n", encoding="utf-8")
+    _git(repo, "commit", "-qam", "insert above")
+    two_earlier = [prior, issue_source, later]
+
+    def head_lines(path: str, start: int, end: int) -> dict[str, object]:
+        return {"kind": "head-file", "path": path, "start_line": start, "end_line": end}
+
+    follow_ups = [
+        {**follow_up_for("extra.py", "unchanged code"), "locators": [head_lines("extra.py", 1, 2)]},
+        {
+            **follow_up_for("service.py", "unchanged code"),
+            "locators": [{"kind": "base-file", "path": "service.py", "start_line": 1, "end_line": 1}],
+        },
+        {
+            **follow_up_for("extra.py", "unchanged code"),
+            "locators": [head_lines("extra.py", 3, 3), head_lines("extra.py", 1, 2)],
+        },
+        {
+            **follow_up_for("extra.py", "unchanged code"),
+            "locators": [{"kind": "head-path", "path": "extra.py"}],
+        },
+    ]
+    with pytest.raises(AssessError) as changed_later:
+        seal_in_process({**limited, "assessed_sources": two_earlier, "follow_ups": follow_ups}, "case-inserted")
+    assert changed_later.value.code == "follow_up.changed_since_earlier"
+    assert any("follow_ups[0]" in item for item in changed_later.value.evidence)
+    assert any("follow_ups[1]" in item for item in changed_later.value.evidence)
+    assert any("follow_ups[2]" in item for item in changed_later.value.evidence)
+    assert any("follow_ups[3]" in item for item in changed_later.value.evidence)
+    assert not prepare_assessment_workspace(repo, "case-inserted").output_path.exists()
+    unchanged = [
+        {**follow_up_for("service.py", "unchanged code"), "locators": [head_lines("service.py", 1, 1)]},
+        {**follow_up_for("extra.py", "unchanged code"), "locators": [head_lines("extra.py", 3, 3)]},
+    ]
+    assert seal_in_process(
+        {**limited, "assessed_sources": two_earlier, "follow_ups": unchanged}, "case-unchanged"
+    ).is_file()
 
 
 def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:

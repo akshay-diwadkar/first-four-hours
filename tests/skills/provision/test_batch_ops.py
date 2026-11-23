@@ -488,6 +488,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         assert not apply_parts(**refused_args).ok
         assert (parts / "mv.py").read_bytes() == mv_bytes and outside.read_bytes() == b"keep\n"
         assert not (parts / "cp.txt").exists() and not (parts / "mv3.py").exists()
+    binary = apply_parts(new_files=copy_new("bin.dat", bin_sha))
+    assert not binary.ok and any("binary source" in error for error in binary.errors)
 
     moved = apply_parts(
         edits=[
@@ -515,6 +517,14 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
             specs_mod.parse_edit_spec(bad_parts)
     with pytest.raises(specs_mod.SpecError):
         specs_mod.parse_new_files({"x.txt": ["a"]})
+
+    cli_src = b"c1\nc2\n"
+    (parts / "cli_src.txt").write_bytes(cli_src)
+    cli_payload = {"new_files": [{"path": "cli_copy.txt", "content": [
+        file_part("cli_src.txt", "2-2", hashlib.sha256(cli_src).hexdigest()[:12])]}]}
+    cli_mod = importlib.import_module("batch_ops.cli")
+    assert cli_mod.main(["edit", "--root", str(parts), "--payload", json.dumps(cli_payload)]) == 0
+    assert (parts / "cli_copy.txt").read_bytes() == b"c2\n"
 
     async def call(session, name, args):
         return await asyncio.wait_for(session.call_tool(name, args), 20)
@@ -845,6 +855,15 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                     "verify": {"cmd": "git --version ||| count"}, "cwd": str(repo)})
                 assert not res.isError
                 assert lf.read_bytes().replace(b"\r\n", b"\n") == b"five\n"
+
+                mcp_src = b"m1\nm2\n"
+                (parts / "mcp_src.txt").write_bytes(mcp_src)
+                res = await call(session, "batch_edit", {
+                    "new_files": [{"path": "mcp_copy.txt", "content": [
+                        file_part("mcp_src.txt", "2-2", hashlib.sha256(mcp_src).hexdigest()[:12])]}],
+                    "cwd": str(parts)})
+                assert not res.isError
+                assert (parts / "mcp_copy.txt").read_bytes() == b"m2\n"
 
                 sub = str(repo / "src")
                 res = await call(session, "batch_edit", {

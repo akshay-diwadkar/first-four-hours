@@ -283,6 +283,12 @@ def _with_notes(message: str | None, notes: list[str]) -> str | None:
     return "; ".join(part for part in (message, *notes) if part) or None
 
 
+def _resolved_text(value: str | list[TextPart]) -> str:
+    if isinstance(value, list):
+        raise TypeError("text parts reached planning unresolved")
+    return value
+
+
 # ---------------------------------------------------------------------------
 # Planning
 # ---------------------------------------------------------------------------
@@ -389,8 +395,9 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 mode = new.mode
                 action = "create"
                 message = None
-            after = encode_text(new.content, new.encoding)
-            diff = _unified_diff(before_text, new.content, rel, "create")
+            content = _resolved_text(new.content)
+            after = encode_text(content, new.encoding)
+            diff = _unified_diff(before_text, content, rel, "create")
             full_diff = diff
             diff_ref = None  # fit_diffs cuts the diff to the report budget and keeps the full text
             change = FileChange(
@@ -530,7 +537,7 @@ def _apply_ranges(text: str, before: bytes, edits: list[EditRequest], eol: str |
     for edit in reversed(ordered):
         start, end = edit.range or (0, 0)
         line_eol = eol or "\n"
-        new = to_eol(edit.replace, line_eol)
+        new = to_eol(_resolved_text(edit.replace), line_eol)
         if new and not _ends_in_break(new) and _ends_in_break(lines[end - 1]):
             new += line_eol
         lines[start - 1:end] = [new] if new else []
@@ -562,7 +569,7 @@ def _apply_one(text: str, edit: EditRequest, eol: str | None) -> tuple[str, int]
 
     updated = text
     for match in reversed(selected):
-        replacement = apply_replacement(updated, match, edit.replace, eol)
+        replacement = apply_replacement(updated, match, _resolved_text(edit.replace), eol)
         updated = updated[: match.start] + replacement + updated[match.end:]
     return updated, len(selected)
 

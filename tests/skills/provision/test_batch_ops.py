@@ -478,6 +478,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     for refused_args in (
         {"new_files": copy_new("mv.py"), "deletes": ["mv.py"]},
         {"new_files": copy_new("mv.py"), "renames": [{"from": "mv.py", "to": "mv3.py"}]},
+        {"new_files": [{"path": "mv.py", "content": "x\n", "overwrite": True}, *copy_new("mv.py")]},
         {"new_files": copy_new("../outside.txt", outside_sha)},
         {"new_files": copy_new("bin.dat", bin_sha)},
         {"new_files": copy_new("lat.txt", latin_sha)},

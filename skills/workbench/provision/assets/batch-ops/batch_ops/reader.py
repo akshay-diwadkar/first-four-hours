@@ -1645,19 +1645,32 @@ def _git_log_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifact
 def _git_cochange_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
     spec = _git_history_spec(req, root)
     label = req.label or f"git:cochange:{spec}"
-    args = ["--literal-pathspecs", "--no-pager", "log", "--full-diff", "--format=%x00%h", "--name-only",
+    args = ["--literal-pathspecs", "--no-pager", "log", "-z", "--full-diff", "--format=%x00%h", "--name-only",
             "--relative", "-n", "200", "--", spec]
     code, out, err = _git(root, args)
     if code != 0:
         return ReadResult(id="read", kind="git_cochange", label=label, status="error",
                           message=err.strip() or f"git log failed ({code})")
-    chunks = [chunk for chunk in out.split("\0") if chunk.strip()]
+    # With -z each commit is `\0<hash>\0\n<name>\0<name>\0`; an empty field ends a commit, and a commit
+    # that lists no files is only `\0<hash>\0`. Names are verbatim, edge spaces included.
+    chunks: list[list[str]] = []
+    in_commit = False
+    for field in out.split("\0"):
+        if not in_commit:
+            if field:
+                chunks.append([])
+                in_commit = True
+        elif not field:
+            in_commit = False
+        else:
+            if not chunks[-1] and field.startswith("\n"):
+                field = field[1:]
+            chunks[-1].append(field)
     if not chunks:
         return ReadResult(id="read", kind="git_cochange", label=label, status="ok",
                           body=f"(no commits touch {spec})", found=[], meta={"commits": 0, "files": 0})
     counts: dict[str, int] = {}
-    for chunk in chunks:
-        names = [line.strip() for line in chunk.splitlines()[1:] if line.strip()]
+    for names in chunks:
         for name in dict.fromkeys(names):
             if name != spec:
                 counts[name] = counts.get(name, 0) + 1

@@ -333,16 +333,23 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert all(all(f"needle_census {n}" in r.body for n in range(1, 11)) for r in bounded[34:])
 
     # m. an expansion the report has no room for is deferred, listed whole in next: as a literal spec.
-    crowded = read_many([{"glob": "hits/*.txt", "label": "hb"}, {"each": "hb"}], Budget(tokens=600))
-    deferred = [r for r in crowded if r.status == "deferred"]
-    assert deferred and all(r.kind == "file" and r.meta["continuation"] == r.path for r in deferred)
+    for suffix in (":2-9", "@outline"):
+        crowded = read_many(
+            [{"glob": "hits/*.txt", "label": "hb"}, {"each": "hb", "read": suffix}], Budget(tokens=600))
+        deferred = [r for r in crowded if r.status == "deferred"]
+        assert deferred and all(
+            r.kind == "file" and r.meta["continuation"] == f"{r.path}{suffix}" for r in deferred)
 
     # n. git sources expand over files that exist now, and over every co-changed file, not the 20 shown.
     git_repo = tmp_path / "git_repo"
     seed_git(git_repo, {
         "keep.txt": "k\n", "edit.txt": "e1\n", "gone.txt": "g\n", "more.txt": "m\n",
+        " lead.txt": "l\n", "caf\u00e9.txt": "a\n",
         **{f"c{i:02d}.txt": f"c{i}\n" for i in range(1, 21)},
     })
+    (git_repo / "keep.txt").write_text("k2\n", encoding="utf-8")
+    (git_repo / "more.txt").write_text("m2\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(git_repo), "commit", "-qam", "second"], check=True, capture_output=True)
     (git_repo / "edit.txt").write_text("e2\n", encoding="utf-8")
     (git_repo / "gone.txt").unlink()
     (git_repo / "new").mkdir()
@@ -351,14 +358,46 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         {"git": "changed", "label": "ch"},
         {"each": "ch", "read": ":1-1"},
         {"git": "cochange", "paths": ["keep.txt"], "label": "co"},
-        {"each": "co", "read": ":1-1", "limit": 22},
+        {"each": "co", "read": ":1-1", "limit": 24},
     ], root=git_repo.resolve())
-    assert len(from_git) == 27
+    assert len(from_git) == 29
     assert from_git[1].meta["expanded"] == 1 and from_git[1].meta["skipped"] == 2 and "2" in from_git[1].message
     assert slash(from_git[2].path) == "edit.txt" and "e2" in from_git[2].body
-    assert from_git[4].meta["expanded"] == 22 and from_git[4].meta["skipped"] == 1
-    assert "22" in from_git[4].message and "1" in from_git[4].message
-    assert [slash(r.path) for r in from_git[5:]] == [f"c{i:02d}.txt" for i in range(1, 21)] + ["edit.txt", "more.txt"]
+    assert from_git[3].meta["commits"] == 2 and "2x more.txt" in from_git[3].body
+    assert from_git[4].meta["expanded"] == 24 and from_git[4].meta["skipped"] == 1
+    assert "24" in from_git[4].message and "1" in from_git[4].message
+    assert [slash(r.path) for r in from_git[5:]] == (
+        ["more.txt", " lead.txt"] + [f"c{i:02d}.txt" for i in range(1, 21)] + ["caf\u00e9.txt", "edit.txt"])
+
+    # names git escapes are listed verbatim, and a commit that lists no files still counts.
+    quoted_repo = tmp_path / "quoted_repo"
+    seed_git(quoted_repo, {"s.txt": "s\n"})
+    (quoted_repo / "s.txt").write_text("s2\n", encoding="utf-8")
+
+    def git_in(repo_dir, *args, stdin=None):
+        return subprocess.run(["git", "-C", str(repo_dir), *args], input=stdin, check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    git_in(quoted_repo, "add", "s.txt")
+    blob = git_in(quoted_repo, "hash-object", "-w", "--stdin", stdin="x\n")
+    escaped = ["b\\ack.txt", "n\nl.txt", "q\"uote.txt", "t\tab.txt"]
+    for name in escaped:
+        git_in(quoted_repo, "-c", "core.protectNTFS=false", "update-index", "--add",
+               "--cacheinfo", f"100644,{blob},{name}")
+    git_in(quoted_repo, "commit", "-qm", "names")
+    [verbatim] = read_many([{"git": "cochange", "paths": ["s.txt"]}], root=quoted_repo.resolve())
+    assert verbatim.found == escaped and verbatim.meta["commits"] == 2
+    real_git = reader._git
+
+    def fileless_git(root, args, *rest, **kw):
+        if "log" in args:
+            return 0, "\x00aaaaaaa\x00\x00bbbbbbb\x00\nkeep.txt\x00x.txt\x00", ""
+        return real_git(root, args, *rest, **kw)
+
+    with monkeypatch.context() as m:
+        m.setattr(reader, "_git", fileless_git)
+        [fileless] = read_many([{"git": "cochange", "paths": ["keep.txt"]}], root=git_repo.resolve())
+    assert fileless.meta["commits"] == 2 and fileless.found == ["x.txt"]
 
     # o. an unknown, later, non-source, ambiguous or failed source is an error item; bad templates are refused.
     refused = read_many([

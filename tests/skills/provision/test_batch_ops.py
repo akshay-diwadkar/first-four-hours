@@ -323,12 +323,12 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     ])
     assert len(bounded) == 36
     assert [r.kind for r in (bounded[0], bounded[1], bounded[32], bounded[33])] == ["grep", "each", "glob", "each"]
-    assert bounded[1].meta["expanded"] == 30 and "30" in bounded[1].message
+    assert bounded[1].meta["expanded"] == 30 and bounded[1].message == "30 file(s) listed by hs; 30 read"
     assert [slash(r.path) for r in bounded[2:32]] == [f"hits/f{i:02d}.txt" for i in range(1, 31)]
     assert all(r.status == "ok" and "needle_census 10" in r.body and "needle_census 9" not in r.body
                for r in bounded[2:32])
     assert bounded[33].meta["expanded"] == 2 and bounded[33].meta["over_cap"] == 6
-    assert "2" in bounded[33].message and "6" in bounded[33].message
+    assert bounded[33].message == "30 file(s) listed by hg; 2 read; 22 past limit 8; 6 past the 32-file call cap"
     assert [slash(r.path) for r in bounded[34:]] == ["hits/f01.txt", "hits/f02.txt"]
     assert all(all(f"needle_census {n}" in r.body for n in range(1, 11)) for r in bounded[34:])
 
@@ -361,11 +361,12 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         {"each": "co", "read": ":1-1", "limit": 24},
     ], root=git_repo.resolve())
     assert len(from_git) == 29
-    assert from_git[1].meta["expanded"] == 1 and from_git[1].meta["skipped"] == 2 and "2" in from_git[1].message
+    assert from_git[1].meta["expanded"] == 1 and from_git[1].meta["skipped"] == 2
+    assert from_git[1].message == "3 file(s) listed by ch; 1 read; 2 not a file now or outside cwd"
     assert slash(from_git[2].path) == "edit.txt" and "e2" in from_git[2].body
     assert from_git[3].meta["commits"] == 2 and "2x more.txt" in from_git[3].body
     assert from_git[4].meta["expanded"] == 24 and from_git[4].meta["skipped"] == 1
-    assert "24" in from_git[4].message and "1" in from_git[4].message
+    assert from_git[4].message == "25 file(s) listed by co; 24 read; 1 not a file now or outside cwd"
     assert [slash(r.path) for r in from_git[5:]] == (
         ["more.txt", " lead.txt"] + [f"c{i:02d}.txt" for i in range(1, 21)] + ["caf\u00e9.txt", "edit.txt"])
 
@@ -461,7 +462,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert not res.isError and len(each_items) == 5
                 assert all(i["status"] == "ok" for i in each_items)
                 assert [slash(i["path"]) for i in each_items[2:]] == ["hits/f01.txt", "hits/f02.txt", "hits/f03.txt"]
-                assert "27" in _text(res)
+                assert "30 file(s) listed by hs2; 3 read; 27 past limit 3" in _text(res)
                 res = await call(session, "batch_read", {
                     "specs": [{"grep": "needle_token", "paths": ["ignored"], "ignored": True}],
                     "cwd": str(repo)})

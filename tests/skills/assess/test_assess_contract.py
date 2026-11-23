@@ -143,6 +143,14 @@ def test_findings_result_binds_file_and_assessed_source_locators(
         "basis": "reasoned",
     }
     sources = [_assessed_source(snapshot)]
+    follow_up_defect = "The rounding rule in service.py works but no test would catch its silent breakage."
+    follow_up: dict[str, object] = {
+        "reason": "unrequested proof",
+        "defect": follow_up_defect,
+        "locators": [{"kind": "head-file", "path": "service.py", "start_line": 1, "end_line": 1}],
+        "consequence": "A later edit could change the rounding without any test failing.",
+        "required_truth": "One test pins the rounding rule.",
+    }
     missing = {key: value for key, value in finding.items() if key != "severity"}
     unsupported = [{**finding, "severity": value} for value in ("high", "merge blocking", "p1", "P1 ", "P4", None)]
     for candidate in [*unsupported, missing]:
@@ -214,7 +222,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     sealed, _ = _seal(
         repo,
         tmp_path,
-        _bundle(tmp_path, assessed_sources=sources, result="findings", findings=[finding]),
+        _bundle(tmp_path, assessed_sources=sources, result="findings", findings=[finding], follow_ups=[follow_up]),
         output,
     )
     assert sealed.returncode == 0, sealed.stdout + sealed.stderr
@@ -224,11 +232,13 @@ def test_findings_result_binds_file_and_assessed_source_locators(
         "## Result",
         "## Findings",
         "### Finding 1",
+        "## Follow-ups",
         "## Limitations",
         "## Target",
         "## Assessed snapshots",
         "## Examined",
     ]
+    assert follow_up_defect in artifact
     assert artifact.startswith("# Assessment\n")
     receipt = artifact.splitlines()[-1]
     assert receipt.startswith(f"<!-- assessment-result: {contract.CONTRACT_VERSION}; sha256: ")
@@ -258,7 +268,14 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     resealed, _ = _seal(
         repo,
         tmp_path,
-        _bundle(tmp_path, target=target, assessed_sources=sources, result="findings", findings=[finding]),
+        _bundle(
+            tmp_path,
+            target=target,
+            assessed_sources=sources,
+            result="findings",
+            findings=[finding],
+            follow_ups=[follow_up],
+        ),
         output,
     )
     assert resealed.returncode == 0, resealed.stdout + resealed.stderr
@@ -297,6 +314,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     ):
         assert expected in comment
     assert str(tmp_path) not in comment and "Limitations" not in comment
+    assert follow_up_defect not in comment
     sealed_text = sealed_bytes.decode("utf-8")
     parsed = contract._parse_findings(sealed_text.removesuffix("\n").rpartition("\n")[0] + "\n")[0]
     local_evidence = [
@@ -356,6 +374,9 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     earlier_text = f"{earlier}<!-- assessment-result: {contract.CONTRACT_VERSION}; sha256: {earlier_digest} -->\n"
     parse_result(earlier_text)
     assert contract._parse_findings(earlier)[0]["scenario"][0] == "A caller reads service.py:1."
+    legacy_body = body[: body.index("## Follow-ups\n")] + body[body.index("## Limitations\n") :]
+    legacy_digest = hashlib.sha256(legacy_body.encode("utf-8")).hexdigest()
+    parse_result(f"{legacy_body}<!-- assessment-result: 1.12.0; sha256: {legacy_digest} -->\n")
     title, *sections = body.split("\n## ")
     by_heading = {section.split("\n", 1)[0]: section for section in sections}
     old_order = ["Target", "Assessed snapshots", "Result", "Examined", "Findings", "Limitations"]
@@ -380,7 +401,7 @@ def test_findings_result_binds_file_and_assessed_source_locators(
     assert retired["category"] == "stale_evidence"
     assert output.read_text(encoding="utf-8") == legacy
     # An assessment sealed before findings carried a scenario also carries the retired Changed paths not examined section, and still checks.
-    lines = body.splitlines(keepends=True)
+    lines = legacy_body.splitlines(keepends=True)
     start = lines.index("- Scenario:\n")
     unscripted = "".join(lines[:start] + lines[start + 3 :]).replace(
         "\n## Target\n", "\n## Changed paths not examined\n\nNone.\n\n## Target\n", 1
@@ -557,6 +578,54 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
         ("issue-382", "authority"),
         ("repair", "authority"),
     ]
+
+    def follow_up_for(path: str, reason: str) -> dict[str, object]:
+        return {
+            "reason": reason,
+            "defect": f"The helper in {path} is hard to follow.",
+            "locators": [{"kind": "head-file", "path": path, "start_line": 1, "end_line": 1}],
+            "consequence": "A reader may misjudge the helper.",
+            "required_truth": "The helper is clear.",
+        }
+
+    deferred = follow_up_for("extra.py", "unchanged code")
+    moved = follow_up_for("service.py", "unchanged code")
+    delta_bound = [prior, issue_source, repair]
+    kept_path = seal_in_process({**limited, "assessed_sources": delta_bound, "follow_ups": [deferred]}, "case-deferred")
+    kept_text = kept_path.read_text(encoding="utf-8")
+    assert any(line.startswith("- ") and '"reason":"unchanged code"' in line for line in kept_text.splitlines())
+    assert parse_result(kept_text)["result"] == "clear"
+    assert contract.check_result(repo, kept_path)["current"] is True
+    with pytest.raises(AssessError) as changed_since:
+        seal_in_process({**limited, "assessed_sources": delta_bound, "follow_ups": [deferred, moved]}, "case-moved-up")
+    assert changed_since.value.code == "follow_up.changed_since_earlier"
+    assert any("follow_ups[1]" in item for item in changed_since.value.evidence)
+    assert not any("follow_ups[0]" in item for item in changed_since.value.evidence)
+    assert not prepare_assessment_workspace(repo, "case-moved-up").output_path.exists()
+    with pytest.raises(AssessError) as unbound:
+        seal_in_process({**limited, "assessed_sources": [issue_source], "follow_ups": [deferred]}, "case-unbound")
+    assert unbound.value.code == "follow_up.earlier_unbound"
+    assert not prepare_assessment_workspace(repo, "case-unbound").output_path.exists()
+    blocked_output = seal_in_process({**limited, "result": "blocked", "assessed_sources": [issue_source]}, "case-blocked")
+    blocked_copy = tmp_path / "blocked-assessment.md"
+    shutil.copyfile(blocked_output, blocked_copy)
+    blocked_prior = {"id": "blocked", "role": "evidence", "locator": "Blocked assessment", "path": str(blocked_copy)}
+    with pytest.raises(AssessError) as blocked_only:
+        seal_in_process(
+            {**limited, "assessed_sources": [blocked_prior, issue_source], "follow_ups": [moved]}, "case-blocked-prior"
+        )
+    assert blocked_only.value.code == "follow_up.earlier_unbound"
+    assert not prepare_assessment_workspace(repo, "case-blocked-prior").output_path.exists()
+    unguarded = {**moved, "reason": "unrequested proof"}
+    assert seal_in_process({**limited, "assessed_sources": [issue_source], "follow_ups": [unguarded]}, "case-proof").is_file()
+    range_diff = "@@ -1,0 +1,3 @@\n+a\n+b\n+c\n@@ -2 +5 @@\n-x\n+y\n"
+    assert contract._range_changed(range_diff, 5, 8)
+    assert contract._range_changed("@@ -7,2 +6,0 @@\n-a\n-b\n", 5, 8)
+    assert not contract._range_changed("@@ -10 +8,0 @@\n-a\n", 5, 8)
+    assert not contract._range_changed("@@ -5 +4,0 @@\n-a\n", 5, 8)
+    assert contract._range_changed("@@ -0,0 +1,10 @@\n+a\n", 5, 8)
+    assert contract._range_changed("diff --git a/f b/f\nold mode 100644\nnew mode 100755\n", 5, 8)
+    assert not contract._range_changed("", 5, 8)
     (repo / "service.py").write_text("value = 4\n", encoding="utf-8")
     _git(repo, "commit", "-qam", "next change")
     moved_output = prepare_assessment_workspace(repo, "case-moved").output_path
@@ -564,10 +633,10 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
         {**limited, "target": pr, "base_ref": rework, "assessed_sources": [prior, repair]}, "case-moved", moved_output
     )
     other = {"id": "other", "role": "evidence", "locator": "Other assessment", "path": str(other_copy)}
-    unrelated = seal_in_process(
+    unrelated_delta = seal_in_process(
         {**limited, "base_ref": rework, "assessed_sources": [prior, other, repair]}, "case-unrelated"
     )
-    unrelated_sources = parse_result(unrelated.read_text(encoding="utf-8"))["assessed_sources"]
+    unrelated_sources = parse_result(unrelated_delta.read_text(encoding="utf-8"))["assessed_sources"]
     assert [(source["id"], source["role"]) for source in unrelated_sources] == [
         ("prior", "evidence"),
         ("other", "evidence"),
@@ -575,6 +644,47 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     ]
     other_pr = {**limited, "target": "https://github.com/example/repo/pull/2", "base_ref": rework}
     assert seal_in_process({**other_pr, "assessed_sources": [prior, repair]}, "case-other-pr").is_file()
+    later_output = seal_in_process({**limited, "assessed_sources": [issue_source]}, "case-later")
+    later_copy = tmp_path / "later-assessment.md"
+    shutil.copyfile(later_output, later_copy)
+    later = {"id": "later", "role": "evidence", "locator": "Later assessment", "path": str(later_copy)}
+    (repo / "extra.py").write_text("a = 0\nb = 0\nextra = 1\n", encoding="utf-8")
+    _git(repo, "commit", "-qam", "insert above")
+    two_earlier = [prior, issue_source, later]
+
+    def head_lines(path: str, start: int, end: int) -> dict[str, object]:
+        return {"kind": "head-file", "path": path, "start_line": start, "end_line": end}
+
+    follow_ups = [
+        {**follow_up_for("extra.py", "unchanged code"), "locators": [head_lines("extra.py", 1, 2)]},
+        {
+            **follow_up_for("service.py", "unchanged code"),
+            "locators": [{"kind": "base-file", "path": "service.py", "start_line": 1, "end_line": 1}],
+        },
+        {
+            **follow_up_for("extra.py", "unchanged code"),
+            "locators": [head_lines("extra.py", 3, 3), head_lines("extra.py", 1, 2)],
+        },
+        {
+            **follow_up_for("extra.py", "unchanged code"),
+            "locators": [{"kind": "head-path", "path": "extra.py"}],
+        },
+    ]
+    with pytest.raises(AssessError) as changed_later:
+        seal_in_process({**limited, "assessed_sources": two_earlier, "follow_ups": follow_ups}, "case-inserted")
+    assert changed_later.value.code == "follow_up.changed_since_earlier"
+    assert any("follow_ups[0]" in item for item in changed_later.value.evidence)
+    assert any("follow_ups[1]" in item for item in changed_later.value.evidence)
+    assert any("follow_ups[2]" in item for item in changed_later.value.evidence)
+    assert any("follow_ups[3]" in item for item in changed_later.value.evidence)
+    assert not prepare_assessment_workspace(repo, "case-inserted").output_path.exists()
+    unchanged = [
+        {**follow_up_for("service.py", "unchanged code"), "locators": [head_lines("service.py", 1, 1)]},
+        {**follow_up_for("extra.py", "unchanged code"), "locators": [head_lines("extra.py", 3, 3)]},
+    ]
+    assert seal_in_process(
+        {**limited, "assessed_sources": two_earlier, "follow_ups": unchanged}, "case-unchanged"
+    ).is_file()
 
 
 def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:

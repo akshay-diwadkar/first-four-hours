@@ -17,7 +17,7 @@ from urllib.parse import quote
 from _diagnostic_contract import normalize_diagnostic
 from _skill_protocol_runtime import compatible_version, compatible_version_pattern
 
-CONTRACT_VERSION = "1.12.0"
+CONTRACT_VERSION = "1.13.0"
 RESULT_FILENAME = "assessment.md"
 ASSESSMENT_ARTIFACT_ROOT = ".first-four-hours"
 ASSESSMENT_WORKSPACE_PARTS = (ASSESSMENT_ARTIFACT_ROOT, "assessments")
@@ -36,6 +36,7 @@ TOP_LEVEL_FIELDS = {
     "findings",
     "limitations",
 }
+OPTIONAL_TOP_LEVEL_FIELDS = {"follow_ups"}
 SOURCE_FIELDS = {"id", "role", "locator", "path"}
 SOURCE_ROLES = {"target", "authority", "evidence", "proof", "diagnosis", "slice"}
 SOURCE_ID_RE = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
@@ -53,11 +54,14 @@ SOURCE_LOCATOR_FIELDS = {"kind", "source_id"}
 FILE_LOCATOR_KINDS = {"base-file", "head-file"}
 PATH_LOCATOR_FIELDS = {"kind", "path"}
 PATH_LOCATOR_KINDS = {"base-path", "head-path"}
+FOLLOW_UP_FIELDS = {"reason", "defect", "locators", "consequence", "required_truth"}
+FOLLOW_UP_REASONS = ("unrequested proof", "unchanged code")
 BASES = {"observed", "reasoned"}
 FINDING_SEVERITIES = ("P0", "P1", "P2", "P3")
 NO_LIMITATIONS = "Assessor declared no material limitations."
 LEADING_HEADINGS = ["# Assessment", "## Result", "## Findings"]
-TRAILING_HEADINGS = ["## Limitations", "## Target", "## Assessed snapshots", "## Examined"]
+TRAILING_HEADINGS = ["## Follow-ups", "## Limitations", "## Target", "## Assessed snapshots", "## Examined"]
+V1_12_TRAILING_HEADINGS = ["## Limitations", "## Target", "## Assessed snapshots", "## Examined"]
 LEGACY_TRAILING_HEADINGS = [
     "## Limitations",
     "## Changed paths not examined",
@@ -613,7 +617,7 @@ def validate_bundle(raw: Any) -> dict[str, Any]:
             "a bundle authored under another schema requires a fresh full assessment",
             category="stale_evidence",
         )
-    _fields(bundle, TOP_LEVEL_FIELDS, "bundle")
+    _fields(bundle, TOP_LEVEL_FIELDS | (OPTIONAL_TOP_LEVEL_FIELDS & set(bundle)), "bundle")
     target = _string(bundle["target"], "target")
     base_ref = _string(bundle["base_ref"], "base_ref", single_line=True)
     head_ref = _string(bundle["head_ref"], "head_ref", single_line=True)
@@ -677,6 +681,32 @@ def validate_bundle(raw: Any) -> dict[str, Any]:
                 "required_truth": _string(finding["required_truth"], f"{label}.required_truth"),
             }
         )
+    raw_follow_ups = bundle.get("follow_ups", [])
+    if not isinstance(raw_follow_ups, list):
+        raise _fail("bundle.array_invalid", "follow_ups must be an array")
+    follow_ups: list[dict[str, Any]] = []
+    for follow_up_index, raw_follow_up in enumerate(raw_follow_ups):
+        label = f"follow_ups[{follow_up_index}]"
+        follow_up = _object(raw_follow_up, label)
+        reason = follow_up.get("reason")
+        if not isinstance(reason, str) or reason not in FOLLOW_UP_REASONS:
+            raise _fail(
+                "follow_up.reason_invalid",
+                f"{label}.reason must be exactly one of {', '.join(FOLLOW_UP_REASONS)}",
+            )
+        _fields(follow_up, FOLLOW_UP_FIELDS, label)
+        raw_locators = follow_up["locators"]
+        if not isinstance(raw_locators, list) or not raw_locators:
+            raise _fail("follow_up.locators_missing", f"{label}.locators must be a non-empty array")
+        follow_ups.append(
+            {
+                "reason": reason,
+                "defect": _string(follow_up["defect"], f"{label}.defect"),
+                "locators": _locators(raw_locators, f"{label}.locators", source_ids),
+                "consequence": _string(follow_up["consequence"], f"{label}.consequence"),
+                "required_truth": _string(follow_up["required_truth"], f"{label}.required_truth"),
+            }
+        )
     if result == "clear" and findings:
         raise _fail("result.contradiction", "clear cannot contain accepted findings", category="contract_contradiction")
     if result == "clear" and not examined:
@@ -704,6 +734,7 @@ def validate_bundle(raw: Any) -> dict[str, Any]:
         "result": result,
         "examined": examined,
         "findings": findings,
+        "follow_ups": follow_ups,
         "limitations": limitations,
     }
 
@@ -899,7 +930,7 @@ def _bind_locator(
 
 def bind_all_locators(
     bundle: dict[str, Any], binding: GitBinding, sources: tuple[SourceBinding, ...]
-) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, str]]]:
     source_by_id = _source_map(sources)
     errors: list[AssessError] = []
 
@@ -922,6 +953,16 @@ def bind_all_locators(
         }
         for finding_index, finding in enumerate(bundle["findings"])
     ]
+    follow_ups = [
+        {
+            **follow_up,
+            "locators": [
+                bind(locator, f"follow_ups[{follow_up_index}].locators[{locator_index}]")
+                for locator_index, locator in enumerate(follow_up["locators"])
+            ],
+        }
+        for follow_up_index, follow_up in enumerate(bundle["follow_ups"])
+    ]
     examined = [bind(locator, f"examined[{index}]") for index, locator in enumerate(bundle["examined"])]
     if len(errors) == 1:
         raise errors[0]
@@ -935,7 +976,7 @@ def bind_all_locators(
             path=first.path,
             evidence=messages,
         )
-    return findings, examined
+    return findings, follow_ups, examined
 
 
 def _changed_paths(binding: GitBinding) -> list[str]:
@@ -972,7 +1013,11 @@ def slice_directories(changed: list[str]) -> list[str]:
 def _unexamined_paths(bundle: dict[str, Any], changed: list[str]) -> list[str]:
     cited = {
         locator["path"]
-        for locator in [*bundle["examined"], *(item for finding in bundle["findings"] for item in finding["locators"])]
+        for locator in [
+            *bundle["examined"],
+            *(item for finding in bundle["findings"] for item in finding["locators"]),
+            *(item for follow_up in bundle["follow_ups"] for item in follow_up["locators"]),
+        ]
         if locator["kind"] in FILE_LOCATOR_KINDS | PATH_LOCATOR_KINDS
     }
     return [path for path in changed if path not in cited]
@@ -1025,6 +1070,7 @@ def render_result(
     sources: tuple[SourceBinding, ...],
     examined: list[dict[str, str]],
     findings: list[dict[str, Any]],
+    follow_ups: list[dict[str, Any]],
 ) -> str:
     lines = ["# Assessment", "", "## Result", "", f"`{bundle['result']}`", "", "## Findings", ""]
     if not findings:
@@ -1047,6 +1093,10 @@ def render_result(
                 f"- Required truth: {_scalar(finding['required_truth'])}",
             ]
         )
+    lines.extend(["", "## Follow-ups", ""])
+    if not follow_ups:
+        lines.append("No follow-ups.")
+    lines.extend(f"- {_scalar(follow_up)}" for follow_up in follow_ups)
     lines.extend(["", "## Limitations", ""])
     if not bundle["limitations"]:
         lines.append(NO_LIMITATIONS)
@@ -1181,7 +1231,7 @@ def parse_result(text: str) -> dict[str, Any]:
     trailing = next(
         (
             candidate
-            for candidate in (TRAILING_HEADINGS, LEGACY_TRAILING_HEADINGS)
+            for candidate in (TRAILING_HEADINGS, V1_12_TRAILING_HEADINGS, LEGACY_TRAILING_HEADINGS)
             if len(headings) >= len(LEADING_HEADINGS) + len(candidate) and headings[-len(candidate) :] == candidate
         ),
         None,
@@ -1235,7 +1285,7 @@ FINDING_HEADING_RE = re.compile(r"^### Finding [1-9][0-9]*$")
 
 
 def _parse_findings(body: str) -> list[dict[str, Any]]:
-    section = body.split("\n## Findings\n\n", 1)[1].split("\n## Limitations\n", 1)[0]
+    section = body.split("\n## Findings\n\n", 1)[1].split("\n## ", 1)[0]
     blocks: list[list[str]] = []
     for line in section.splitlines():
         if FINDING_HEADING_RE.fullmatch(line):
@@ -1651,16 +1701,25 @@ def _earlier_of_this_change(prior: dict[str, Any], binding: GitBinding, target: 
     )
 
 
-def _require_prior_authority(sources: tuple[SourceBinding, ...], binding: GitBinding, target: str) -> None:
-    current = {source.sha256 for source in sources if source.role == "authority"}
-    missing: list[str] = []
+def _earlier_assessments(
+    sources: tuple[SourceBinding, ...], binding: GitBinding, target: str
+) -> list[dict[str, Any]]:
+    """Return the parsed bound sources that are earlier assessments of this change."""
+    priors: list[dict[str, Any]] = []
     for source in sources:
         try:
             prior = parse_result(Path(source.path).read_text(encoding="utf-8"))
         except (UnicodeDecodeError, AssessError):
             continue
-        if not _earlier_of_this_change(prior, binding, target):
-            continue
+        if _earlier_of_this_change(prior, binding, target):
+            priors.append(prior)
+    return priors
+
+
+def _require_prior_authority(sources: tuple[SourceBinding, ...], binding: GitBinding, target: str) -> None:
+    current = {source.sha256 for source in sources if source.role == "authority"}
+    missing: list[str] = []
+    for prior in _earlier_assessments(sources, binding, target):
         for earlier in prior["assessed_sources"]:
             if earlier["role"] == "authority" and earlier["sha256"] not in current:
                 if earlier["locator"] not in missing:
@@ -1677,6 +1736,115 @@ def _require_prior_authority(sources: tuple[SourceBinding, ...], binding: GitBin
         )
 
 
+HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", re.MULTILINE)
+
+
+def _range_changed(diff_text: str, start: int, end: int) -> bool:
+    """Say whether a zero-context diff touches new-side lines start through end."""
+    if not diff_text:
+        return False
+    hunks = HUNK_RE.findall(diff_text)
+    if not hunks:
+        return True
+    for raw_first, raw_count in hunks:
+        first = int(raw_first)
+        count = int(raw_count) if raw_count else 1
+        if count == 0:
+            if start <= first < end:
+                return True
+        elif first <= end and first + count - 1 >= start:
+            return True
+    return False
+
+
+def _unchanged_code_reference(
+    sources: tuple[SourceBinding, ...], binding: GitBinding, target: str
+) -> str | None:
+    """Return the latest non-blocked earlier head that this head contains, or None when none or incomparable."""
+    repo = Path(binding.repository_root)
+    heads = sorted(
+        {
+            prior["head_revision"]
+            for prior in _earlier_assessments(sources, binding, target)
+            if prior["result"] != "blocked" and _is_ancestor(repo, prior["head_revision"], binding.head_revision)
+        }
+    )
+    for candidate in heads:
+        if all(_is_ancestor(repo, other, candidate) for other in heads):
+            return candidate
+    return None
+
+
+def _require_unchanged_code(bundle: dict[str, Any], binding: GitBinding, sources: tuple[SourceBinding, ...]) -> None:
+    indexes = [index for index, item in enumerate(bundle["follow_ups"]) if item["reason"] == "unchanged code"]
+    if not indexes:
+        return
+    reference = _unchanged_code_reference(sources, binding, bundle["target"])
+    if reference is None:
+        raise _fail(
+            "follow_up.earlier_unbound",
+            "an unchanged code follow-up needs a bound, non-blocked earlier assessment of this change whose head "
+            "this head contains; bind one, or else report the candidate as a finding",
+            category="contract_contradiction",
+        )
+    repo = Path(binding.repository_root)
+    diffs: dict[str, str] = {}
+
+    def diff_of(path: str) -> str:
+        if path not in diffs:
+            diff = _git(
+                repo,
+                "diff",
+                "--no-ext-diff",
+                "--no-textconv",
+                "--no-color",
+                "--no-renames",
+                "--unified=0",
+                reference,
+                binding.head_revision,
+                "--",
+                f":(literal){path}",
+            )
+            if diff.returncode:
+                message = f"the diff of {path} since the earlier assessed head {reference} cannot be read"
+                detail = diff.stderr.decode("utf-8", errors="replace").strip()
+                raise _fail(
+                    "target.delta_unavailable",
+                    message,
+                    category="missing_evidence",
+                    path=repo,
+                    evidence=tuple(item for item in (message, detail) if item),
+                )
+            diffs[path] = diff.stdout.decode("utf-8", errors="replace")
+        return diffs[path]
+
+    violations: list[str] = []
+    for index in indexes:
+        label = f"follow_ups[{index}]"
+        cited = [item for item in bundle["follow_ups"][index]["locators"] if item["kind"] in {"head-file", "head-path"}]
+        if not cited:
+            violations.append(f"{label} cites no head-file or head-path locator")
+        for locator in cited:
+            text = diff_of(locator["path"])
+            if locator["kind"] == "head-file":
+                where = f"{locator['path']} lines {locator['start_line']}-{locator['end_line']}"
+                changed = _range_changed(text, locator["start_line"], locator["end_line"])
+            else:
+                where = locator["path"]
+                changed = bool(text)
+            if changed:
+                violations.append(f"{label} cites {where}, changed since earlier assessed head {reference}")
+    if violations:
+        raise _fail(
+            "follow_up.changed_since_earlier",
+            "an unchanged code follow-up must cite only head lines unchanged since the latest earlier assessed head, "
+            "and must cite at least one; a candidate in lines this delta changed is a finding at any severity: "
+            + "; ".join(violations),
+            category="contract_contradiction",
+            evidence=tuple(violations),
+        )
+
+
 def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, Any]:
     root = repo_root.resolve()
     bundle = read_bundle(bundle_path, root)
@@ -1686,7 +1854,8 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
         raise _output_exists(destination)
     source_bindings = bind_sources(bundle, Path(binding.repository_root), destination)
     _require_prior_authority(source_bindings, binding, bundle["target"])
-    findings, examined = bind_all_locators(bundle, binding, source_bindings)
+    findings, follow_ups, examined = bind_all_locators(bundle, binding, source_bindings)
+    _require_unchanged_code(bundle, binding, source_bindings)
     changed = _changed_paths(binding)
     unexamined = _unexamined_paths(bundle, changed)
     unnamed = _unnamed_paths(unexamined, changed, bundle["limitations"])
@@ -1707,11 +1876,11 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
             "result.slice_undisclosed",
             "the change spans more than one directory once test, docs, and root changelog or version files are "
             "set aside (" + ", ".join(directories) + "); add the Behavior/Proof slice's return as an assessed "
-            "source with role slice, or name the unrun Behavior/Proof slice in limitations",
+            "source with role slice; only when no subagent can launch, name the unrun Behavior/Proof slice and that launch failure in limitations",
             category="contract_contradiction",
             evidence=tuple(directories),
         )
-    content = render_result(bundle, binding, source_bindings, examined, findings)
+    content = render_result(bundle, binding, source_bindings, examined, findings, follow_ups)
     _publish(destination, content, Path(binding.repository_root), bundle, binding, source_bindings)
     return {
         "path": str(destination),

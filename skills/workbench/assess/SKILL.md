@@ -2,7 +2,7 @@
 name: assess
 description: Assess a PR or code change against its issue/spec, acceptance criteria, repository rules, tests, and base behavior for correctness, code quality, maintainability, and proportionate security. Use for PR review, re-review, acceptance-criteria checks, or merge readiness.
 metadata:
-  version: "1.12.0"
+  version: "1.13.0"
 ---
 
 # Assess
@@ -31,7 +31,7 @@ python /absolute/skill-root/scripts/cli.py --repo-root /absolute/repo \
   --input output=<prepared output_path> --format json run
 ```
 
-Result precedence: `blocked` when unavailable or contradictory authority/evidence/proof prevents a trustworthy result; else `findings`, reporting every independently material defect discovered in the bounded assessment; else `clear`. `assessment.md` holds only the compact result.
+Result precedence: `blocked` when unavailable or contradictory authority/evidence/proof prevents a trustworthy result; else `findings`, reporting every independently material defect discovered in the bounded assessment that is not a follow-up; else `clear`. Follow-ups never change the result. `assessment.md` holds only the compact result.
 
 ## Complete
 
@@ -40,4 +40,4 @@ python /absolute/skill-root/scripts/cli.py --repo-root /absolute/repo \
   --input output=<prepared output_path> --format json check
 ```
 
-Open the report body with ``**Result:** `<result>` ``, for `findings` followed by each severity's count, most severe first, as in ``**Result:** `findings` (1 × P1, 2 × P3)``. Then report the path and each finding's severity, defect, and scenario as sealed, with no approval or readiness claim beyond it. When the result is `findings` and `target` is a pull request's URL, read [publishing](references/publishing.md) and offer to post them. Stop after one current `assessment.md` is sealed and checked and any offer is settled. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.
+Open the report body with ``**Result:** `<result>` ``, for `findings` followed by each severity's count, most severe first, then any follow-up count, as in ``**Result:** `findings` (1 × P1, 2 × P3; 1 follow-up)`` or ``**Result:** `clear` (2 follow-ups)``. Then report the path, each finding's severity, defect, and scenario, and each follow-up's defect and consequence, as sealed, with no approval or readiness claim beyond it. When the result is `findings` and `target` is a pull request's URL, read [publishing](references/publishing.md) and offer to post them. Stop after one current `assessment.md` is sealed and checked and any offer is settled. End with one optional next step fitting this outcome: a fenced, self-contained prompt naming any repository, issue, PR, or artifact it needs, or say none is needed. When every finding is `P3`, or only follow-ups remain, that step files them with `ticket` rather than a repair and re-assessment; merging stays the user's call. Only a "yes" starts it, via any skill it names, but the user runs a `charter`, `diagnose`, or `ticket` step as its `/<skill>` command.

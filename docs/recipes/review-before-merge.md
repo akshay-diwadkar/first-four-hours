@@ -23,9 +23,9 @@ Review churn comes from reviews that skim the diff, or from fixes made straight 
 ## Steps
 
 1. Start `/assess` on the branch, naming the authority (issue, specification, or sealed `/blueprint` plan) and the base.
-2. Read the result: `clear`, `findings`, or `blocked`. None of them is approval to merge.
-3. For `findings`, plan the fixes with a new `/blueprint` from `assessment.md`, and carry them out with a fresh `/construct`.
-4. Run `/assess` again on the reworked branch. When the re-review finds defects, it covers only the rework, and its report names the head the earlier assessment reviewed; before it returns clear, a fresh reviewer checks the whole change again.
+2. Read the result: `clear`, `findings`, or `blocked`, and any follow-ups. None of them is approval to merge.
+3. For `findings`, plan the fixes with a new `/blueprint` from `assessment.md`, and carry them out with a fresh `/construct`. When every finding is P3, you may file them, with any follow-ups, using `/ticket` instead.
+4. Run `/assess` again on the reworked branch. When the re-review finds defects, it covers only the rework, and its report names the head the earlier assessment reviewed; before it returns clear, a fresh reviewer checks the whole change again. A re-review raises new problems in code the rework did not touch only at P2 or worse, and lists smaller ones as follow-ups.
 5. Open the pull request with `/pr`. It shows you the exact text and opens the pull request only after your yes. Merging stays yours.
 
 ## A worked scenario
@@ -107,7 +107,7 @@ Customers can share a shopping list by link. Only the owner and people holding t
 
 ## You are done when
 
-`/assess` returns `clear` for the final revision of the branch, which means no material defect was found after sufficient examination across the whole change, and you have decided to merge.
+`/assess` returns `clear` for the final revision of the branch, which means no material defect beyond any follow-ups was found after sufficient examination across the whole change, and you have decided to merge.
 
 ## If it goes wrong
 

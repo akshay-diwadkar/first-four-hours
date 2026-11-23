@@ -8,11 +8,12 @@ A blind review covers the current code. The Behavior/Proof slice reviews, agains
 
 You reconcile the past, deciding each item on evidence at head:
 
-- whether each earlier finding's `required_truth` now holds;
+- whether each earlier finding's `required_truth` now holds, rerunning any proof it cites; one that fails stays a finding at its severity;
+- each earlier follow-up: carried forward while every line it cites is unchanged, else re-decided as a fresh candidate;
 - each limitation of that assessment, and each path or surface it left unexamined: closed, or carried forward by name;
 - each candidate that assessment did not report, whether a limitation records it as not a defect or it appears only in one of its `slice` sources: re-decided as a fresh candidate, never dismissed for conforming to a Blueprint.
 
-A result other than `clear` may carry forward a path the earlier assessment examined that the delta leaves unchanged: in `limitations`, name the assessment's head and each such path, recording that it was not re-inspected because an earlier assessment examined it. A `clear` carries nothing forward: `examined` cites each changed path you or the clear challenge covered, and you verify each you take from its returned scope. A defect you notice in unchanged code is still a finding.
+A result other than `clear` may carry forward a path the earlier assessment examined that the delta leaves unchanged: in `limitations`, name the assessment's head and each such path, recording that it was not re-inspected because an earlier assessment examined it. A `clear` carries no path forward: `examined` cites each changed path you or the clear challenge covered, and you verify each you take from its returned scope. A new candidate lying wholly in lines unchanged since that assessment's head is a finding only at `P2` or above; below that it is an `unchanged code` follow-up citing those head lines, which sealing refuses if any changed. A candidate in changed lines is a finding at any severity.
 
 Assess the whole change instead, binding no earlier assessment, when no earlier assessment qualifies, as when the requirements changed or a rebase or amend left no such ancestor; when the delta rewrites most of the change or gives concrete reason to doubt the earlier coverage; or when the user asks.
 

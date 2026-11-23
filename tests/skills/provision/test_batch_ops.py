@@ -515,14 +515,15 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     ):
         with pytest.raises(specs_mod.SpecError):
             specs_mod.parse_edit_spec(bad_parts)
-    with pytest.raises(specs_mod.SpecError):
-        specs_mod.parse_new_files({"x.txt": ["a"]})
 
     cli_src = b"c1\nc2\n"
     (parts / "cli_src.txt").write_bytes(cli_src)
-    cli_payload = {"new_files": [{"path": "cli_copy.txt", "content": [
-        file_part("cli_src.txt", "2-2", hashlib.sha256(cli_src).hexdigest()[:12])]}]}
+    cli_part = file_part("cli_src.txt", "2-2", hashlib.sha256(cli_src).hexdigest()[:12])
     cli_mod = importlib.import_module("batch_ops.cli")
+    dict_payload = {"new_files": {"cli_dict.txt": [cli_part]}}
+    assert cli_mod.main(["edit", "--root", str(parts), "--payload", json.dumps(dict_payload)]) == 1
+    assert not (parts / "cli_dict.txt").exists()
+    cli_payload = {"new_files": [{"path": "cli_copy.txt", "content": [cli_part]}]}
     assert cli_mod.main(["edit", "--root", str(parts), "--payload", json.dumps(cli_payload)]) == 0
     assert (parts / "cli_copy.txt").read_bytes() == b"c2\n"
 

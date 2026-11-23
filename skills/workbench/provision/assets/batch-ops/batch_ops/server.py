@@ -327,9 +327,9 @@ async def batch_read(
     "a.txt@outline:RE" (lines matching RE) | "a.txt@block:RE" or "a.txt@block:N" (the block or
     section opened there) | "a.txt@context:RE:3" | "a.txt@target:10-20" (edit search text) |
     "grep:RE [in PATH..]" | "glob:src/**/*.txt" | "git:diff" | "git:changed" | "git:log:PATH[:N-M]" |
-    "git:cochange:PATH" (files often changed with PATH; check before editing it) | "artifact:NAME[:N-M] ||| slices".
+    "git:cochange:PATH" (files often changed with PATH) | "artifact:NAME[:N-M] ||| slices".
     Non-regex patterns, and @ patterns matching nothing, match literally.
-    An unranged file read too big for the report returns its outline.
+    {"each": NAME, "read": "@outline", "limit": 8} reads each file an earlier glob, grep, git changed or cochange spec labelled NAME lists.
     Objects: {"path": p, "since": SHA} omits an unchanged file's body;
     {"grep": RE, "paths": [..], "exclude": [..], "ignored": true, "context": 2, "ignore_case": true,
     "mode": "files" (per-file counts), "blocks": true (each hit's enclosing block)}; {"git": "diff", "base": REF, "paths": [..], "context": 3, "stat": true};

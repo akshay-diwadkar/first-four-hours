@@ -9,6 +9,7 @@ and truncation is always reported.
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import difflib
 import fnmatch
 import glob as globlib
@@ -43,6 +44,8 @@ from .workspace import git_root_fast, path_is_within, workspace_info
 MAX_FILE_BYTES = 32 * 1024 * 1024
 DEFAULT_PARALLEL = 8
 VCS_DIRS = {".git", ".hg", ".svn"}
+EACH_SOURCES = ("glob", "grep", "git_changed", "git_cochange")  # reads whose `found` an each read expands
+EACH_CALL_CAP = 32
 
 
 def _skipped_dir(name: str) -> bool:
@@ -68,6 +71,10 @@ async def read_batch(
     (priority tier, request order): one that fits is kept whole, one larger than the whole body
     budget is cut while at least half of it remains, and any other is deferred whole, its
     original spec carried in ``next:``.  The first item in order is always shown or cut.
+
+    An ``each`` request reads the files an earlier labelled glob, grep, git changed or cochange request
+    found: its expansions are ordinary items read after pass 1, listed right after it, and never counted
+    against ``max_items``.
     """
     root_p = Path(root).resolve()
     deadline = time.monotonic() + max(1.0, tracker.budget.time_s)
@@ -93,22 +100,56 @@ async def read_batch(
             except Exception as exc:  # one item never kills the batch
                 return early(req, "error", f"{type(exc).__name__}: {exc}")
 
+    def cap_of(req: ReadRequest) -> int:
+        return min(item_cap, req.max_bytes) if req.max_bytes else item_cap
+
     async def first(index: int, req: ReadRequest) -> ReadResult:
         if req.error:
             return early(req, "error", req.error)
         if index >= tracker.budget.max_items:
             tracker.skip("item limit")
             return early(req, "skipped", f"skipped by item limit ({tracker.budget.max_items})")
-        return await run(req, min(item_cap, req.max_bytes) if req.max_bytes else item_cap)
+        if req.kind == "each":
+            return early(req, "ok", "")  # replaced below, once the reads it expands over are done
+        return await run(req, cap_of(req))
 
     results = list(await asyncio.gather(*(first(i, req) for i, req in enumerate(requests))))
+
+    # Each `each` request expands over its source's first-pass data, in order, under one call-wide cap.
+    planned: list[list[ReadRequest]] = []
+    cap_left = EACH_CALL_CAP
+    for i, req in enumerate(requests):
+        reads: list[ReadRequest] = []
+        if req.kind == "each" and not req.error and i < tracker.budget.max_items:
+            try:
+                results[i], reads, cap_left = await asyncio.to_thread(
+                    _each_item, req, requests[:i], results[:i], root_p, cap_left)
+            except Exception as exc:  # one failing each never fails the batch
+                reads = []
+                results[i] = ReadResult(id="read", kind="each", label=req.label or f"each:{req.each}",
+                                        status="error", message=f"each {req.each!r}: {type(exc).__name__}: {exc}")
+        planned.append(reads)
+    expanded = iter(await asyncio.gather(*(run(read, cap_of(read)) for reads in planned for read in reads)))
+
+    # Every request in order, each `each` item followed by what it expanded.
+    ordered_requests: list[ReadRequest] = []
+    ordered_results: list[ReadResult] = []
+    for req, result, reads in zip(requests, results, planned):
+        ordered_requests.append(req)
+        ordered_results.append(result)
+        for read in reads:
+            ordered_requests.append(read)
+            ordered_results.append(next(expanded))
+    requests, results = ordered_requests, ordered_results
     kept = [result.keep for result in results]  # what the last read of each request would save
 
     total = body_budget(tracker.budget.bytes, len(requests))
     remaining = total
     for i in sorted(range(len(requests)), key=lambda k: (tier(requests[k].priority), k)):
         size = results[i].bytes_shown
-        if size <= remaining:
+        if requests[i].kind == "each":
+            remaining -= min(remaining, size)  # never deferred, though its bytes count
+        elif size <= remaining:
             remaining -= size
         elif size > total and remaining * 2 >= total:
             again = await run(requests[i], remaining)
@@ -209,6 +250,65 @@ def _respec(req: ReadRequest, path: str) -> str:
     if req.mode == "context" and req.pattern:
         return f"{path}@context:{req.pattern}:{req.context}"
     return path
+
+
+def _each_item(
+    req: ReadRequest, earlier: list[ReadRequest], earlier_results: list[ReadResult], root: Path, cap_left: int,
+) -> tuple[ReadResult, list[ReadRequest], int]:
+    """The item for an ``each`` request, the file reads it expands to, and the call cap left after them."""
+    name = req.each or ""
+    label = req.label or f"each:{name}"
+
+    def refused(reason: str) -> tuple[ReadResult, list[ReadRequest], int]:
+        item = ReadResult(id="read", kind="each", label=label, status="error", message=f"each {name!r}: {reason}")
+        return item, [], cap_left
+
+    matches = [j for j, other in enumerate(earlier) if other.label == name]
+    if not matches:
+        return refused("no earlier spec has that label")
+    if len(matches) > 1:
+        return refused(f"{len(matches)} earlier specs have that label")
+    source, source_result = earlier[matches[0]], earlier_results[matches[0]]
+    if source.kind not in EACH_SOURCES:
+        return refused(f"its source is a {source.kind} read, not a glob, grep, git changed or git cochange read")
+    if source_result.status in ("error", "skipped", "missing"):
+        return refused(f"its source ended {source_result.status}")
+
+    paths = list(source_result.found or [])
+    readable: list[str] = []
+    for path in paths:
+        target = Path(path)
+        target = (target if target.is_absolute() else root / target).resolve()
+        if target.is_file() and (req.allow_outside or path_is_within(root, target)):
+            readable.append(path)
+    take = min(req.limit, len(readable))
+    count = min(take, cap_left)
+    skipped, over_limit, over_cap = len(paths) - len(readable), len(readable) - take, take - count
+    template = req.template or ReadRequest(kind="file")
+    reads = [
+        dataclasses.replace(
+            template, path=path, label="", priority=req.priority, allow_outside=req.allow_outside,
+            source=_respec(template, path),
+        )
+        for path in readable[:count]
+    ]
+    parts = [
+        f"{number} {reason}" for number, reason in (
+            (len(paths), f"file(s) listed by {name}"),
+            (count, "read"),
+            (skipped, "not a file now or outside cwd"),
+            (over_limit, f"past limit {req.limit}"),
+            (over_cap, f"past the {EACH_CALL_CAP}-file call cap"),
+        ) if number
+    ]
+    message = "; ".join(parts) or f"{name} listed no files"
+    item = ReadResult(
+        id="read", kind="each", label=label, status="ok" if count else "no_match", message=message,
+        bytes_shown=len(message.encode("utf-8")),
+        meta={"source": name, "listed": len(paths), "expanded": count, "skipped": skipped,
+              "over_limit": over_limit, "over_cap": over_cap},
+    )
+    return item, reads, cap_left - count
 
 
 def _missing_result(req: ReadRequest, root: Path) -> ReadResult:
@@ -1270,6 +1370,7 @@ def _grep_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         ) if m) or None,
         artifact=artifact,
         keep=keep,
+        found=[rel for rel, _ in file_hits],
         meta={
             "matches": match_count, "matches_shown": shown_matches, "files_with_hits": len(file_hits),
             "files_scanned": scanned,
@@ -1427,6 +1528,7 @@ def _glob_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactSto
         message="; ".join(notes) or None,
         artifact=artifact,
         keep=keep,
+        found=[relative_display(root, p) for p in entries],
         meta={"matches": total_matches, "listed": len(entries), "expanded": expanded,
               "handles": expanded_meta, "ignored_skipped": ignored},
     )
@@ -1552,7 +1654,7 @@ def _git_cochange_request(req: ReadRequest, root: Path, cap: int, artifacts: Art
     chunks = [chunk for chunk in out.split("\0") if chunk.strip()]
     if not chunks:
         return ReadResult(id="read", kind="git_cochange", label=label, status="ok",
-                          body=f"(no commits touch {spec})", meta={"commits": 0, "files": 0})
+                          body=f"(no commits touch {spec})", found=[], meta={"commits": 0, "files": 0})
     counts: dict[str, int] = {}
     for chunk in chunks:
         names = [line.strip() for line in chunk.splitlines()[1:] if line.strip()]
@@ -1564,10 +1666,12 @@ def _git_cochange_request(req: ReadRequest, root: Path, cap: int, artifacts: Art
     rows.extend(f"  {count}x {name}" for name, count in ranked[:20])
     if len(ranked) > 20:
         rows.append(f"  ... {len(ranked) - 20} more file(s)")
-    return _git_history_result(
+    result = _git_history_result(
         req, "git_cochange", label, "\n".join(rows), cap, artifacts, ".cochange.txt",
         meta={"commits": len(chunks), "files": len(counts)}, note="cochange",
     )
+    result.found = [name for name, _ in ranked]
+    return result
 
 
 def _git_diff_request(req: ReadRequest, root: Path, cap: int, artifacts: ArtifactStore) -> ReadResult:
@@ -1615,6 +1719,7 @@ def _git_changed_request(req: ReadRequest, root: Path, cap: int, artifacts: Arti
         status="unchanged" if not rows else ("truncated" if truncated else "ok"),
         body=body, bytes_total=full_bytes, bytes_shown=len(body.encode("utf-8", errors="replace")),
         lines_total=len(rows), lines_shown=len(rows), truncated=truncated, artifact=artifact,
+        found=[row[3:] for row in rows],
         meta={"changed": len(rows)},
     )
 

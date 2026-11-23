@@ -12,7 +12,7 @@ batch-ops is an optional MCP server that ships inside [`/provision`](../skills/p
 
 The full argument syntax is in each tool's description, which your harness shows the agent; you do not need to learn it.
 
-A label on a command, or on a grep or glob read, keeps its full result (a grep's within its max_matches) for about an hour under that name, such as `artifact:tests`, so a later call can read it again without rerunning it, filtered with slices such as `json:`, `sort`, `uniq`, `countby:`, or `cut:`.
+A label on a command, or on a grep or glob read, keeps its full result (a grep's within its max_matches) for about an hour under that name, such as `artifact:tests`, so a later call can read it again without rerunning it, filtered with slices such as `json:`, `sort`, `uniq`, `countby:`, or `cut:`. An `each` read, such as `{"each": "hits", "read": "@outline"}`, reads every file an earlier labelled glob, grep, `git:changed`, or `git:cochange` read in the same call found, with a file read's suffix forms. Its default limit is 8, and a call reads at most 32 such files; the report counts the files it skips, and lists in `next:` those it has no room for.
 
 ## Safeguards
 

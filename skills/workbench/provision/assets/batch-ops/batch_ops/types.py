@@ -21,7 +21,7 @@ PRIORITIES = ("must", "should", "nice")
 class ReadRequest:
     """One normalized read spec."""
 
-    kind: str  # file | glob | grep | git_diff | git_changed | compare | handle | artifact
+    kind: str  # file | glob | grep | git_diff | git_changed | compare | handle | artifact | each
     label: str = ""
     artifact: str | None = None  # artifact reference ("artifact:NAME" or NAME)
     slices: list[str] = field(default_factory=list)  # artifact reads: slice operators applied to the lines
@@ -59,6 +59,11 @@ class ReadRequest:
 
     # compare
     children: list["ReadRequest"] = field(default_factory=list)
+
+    # each: read every file the earlier spec labelled `each` found, using `template` per file
+    each: str | None = None
+    template: "ReadRequest | None" = None
+    limit: int = 8
 
     # common
     allow_outside: bool = False  # read paths outside cwd (reads only)
@@ -176,6 +181,7 @@ class ReadResult:
     artifact: str | None = None
     meta: dict[str, Any] = field(default_factory=dict)
     keep: tuple[str, str] | None = None  # labelled grep or glob: (text, suffix) read_batch saves under the label
+    found: list[str] | None = None  # glob, grep, git changed and cochange: cwd-relative paths an each read expands
 
 
 @dataclass

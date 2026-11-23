@@ -208,13 +208,13 @@ def _parse_context(rest: str) -> tuple[str, int]:
 
 
 def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
-    kinds = [k for k in ("path", "glob", "handle", "git", "compare", "artifact") if data.get(k) is not None]
+    kinds = [k for k in ("path", "glob", "handle", "git", "compare", "artifact", "each") if data.get(k) is not None]
     grep_value = data.get("grep")
     if grep_value is not None and not kinds:
         kinds.append("grep")
     if len(kinds) != 1:
         raise SpecError(
-            "read spec must have exactly one of: path, glob, handle, grep, git, compare, artifact"
+            "read spec must have exactly one of: path, glob, handle, grep, git, compare, artifact, each"
         )
     kind_key = kinds[0]
 
@@ -229,6 +229,9 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
         raise SpecError("slices must be a list or string")
     if read_slices and kind_key != "artifact":
         raise SpecError("slices apply only to artifact reads")
+
+    if kind_key == "each":
+        return _parse_each(data)
 
     if kind_key == "artifact":
         ref = str(data["artifact"]).strip()
@@ -378,6 +381,35 @@ def _parse_read_dict(data: dict[str, Any]) -> ReadRequest:
     if any(child.kind not in ("file", "handle") for child in children):
         raise SpecError("compare children must be file or handle specs")
     return ReadRequest(kind="compare", children=children, **common)
+
+
+_EACH_PLACEHOLDER = "each-path"  # no '@' or ':', so the suffix alone decides how the template parses
+
+
+def _parse_each(data: dict[str, Any]) -> ReadRequest:
+    name = data["each"]
+    if not isinstance(name, str) or not name.strip():
+        raise SpecError("each must be the non-empty label of an earlier spec")
+    read = data.get("read")
+    if read is None:
+        read = ""
+    if not isinstance(read, str):
+        raise SpecError("each read must be a string")
+    limit = data.get("limit", 8)
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 32:
+        raise SpecError("each limit must be an integer from 1 to 32")
+    priority = str(data.get("priority") or "should")
+    if priority not in PRIORITIES:
+        raise SpecError(f"unknown priority: {priority}")
+    if read and read[0] not in "@:":
+        raise SpecError("each read must be empty or start with @ or :, as a file spec suffix does")
+    template = _parse_read_string(_EACH_PLACEHOLDER + read)
+    if template.kind != "file" or template.path != _EACH_PLACEHOLDER:
+        raise SpecError(f"each read must be a file read suffix of the form :N-M or @outline, not {read!r}")
+    return ReadRequest(
+        kind="each", each=name, template=template, limit=limit,
+        priority=priority, label=str(data.get("label") or ""),
+    )
 
 
 # ---------------------------------------------------------------------------

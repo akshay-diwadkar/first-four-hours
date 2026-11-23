@@ -573,6 +573,8 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
         ("other", "evidence"),
         ("repair", "authority"),
     ]
+    other_pr = {**limited, "target": "https://github.com/example/repo/pull/2", "base_ref": rework}
+    assert seal_in_process({**other_pr, "assessed_sources": [prior, repair]}, "case-other-pr").is_file()
 
 
 def test_prepared_assessment_lifecycle_rejects_wrong_name_and_tampering(tmp_path: Path, assessment_seed: tuple[Path, str, str]) -> None:

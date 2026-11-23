@@ -101,10 +101,24 @@ class RunRequest:
 
 
 @dataclass
+class TextPart:
+    """One piece of edit text: literal text, lines of a file as it was read, or lines of a kept result.
+
+    Exactly one of `text`, `path` (a file part) or `artifact` (an artifact part) is set.
+    """
+
+    text: str | None = None
+    path: str | None = None  # file part: repository file whose lines are copied
+    artifact: str | None = None  # artifact part: alias or stored name
+    range: tuple[int, int] | None = None  # lines N-M; optional only for an artifact part
+    since: str | None = None  # file part: sha prefix or read handle the file was read at
+
+
+@dataclass
 class EditRequest:
     path: str
     search: str
-    replace: str
+    replace: str | list[TextPart]
     replace_all: bool = False
     occurrence: int | None = None
     encoding: str | None = None
@@ -116,7 +130,7 @@ class EditRequest:
 @dataclass
 class NewFileRequest:
     path: str
-    content: str
+    content: str | list[TextPart]
     overwrite: bool = False
     mode: int | None = None
     encoding: str = "utf-8"

@@ -648,7 +648,7 @@ async def batch_edit(
     cwd: absolute working directory. edits: [{"path": p, "range": "N-M", "since": SHA, "replace":
     "new"}] replaces lines N-M unless the file changed since a read printed that sha; or
     {"path": p, "search": "exact old text", "replace": "new"} (text from read "path@target:N-M"),
-    matching once unless "replace_all": true or "occurrence": N (counted after earlier edits).
+    matching once unless "replace_all": true or "occurrence": N (counted after earlier edits). A replace, or a list-form new file's content, may be a list of parts joined in order: "text", {"path": p, "range": "N-M", "since": SHA} (copied as the batch began; refused if p changed) or {"artifact": "NAME:N-M"}.
     new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest:
     a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}, cmd may end in " ||| " slices;
     failure restores every file. diff: "stat" (default; failures
@@ -687,7 +687,7 @@ async def batch_edit(
         else:
             for index, spec in enumerate(new_files or [], start=1):
                 try:
-                    new_reqs.append(parse_new_file(spec))
+                    new_reqs.append(parse_new_file(spec, allow_parts=True))
                 except Exception as exc:
                     spec_errors.append(f"new file {index}: {type(exc).__name__}: {exc}")
 

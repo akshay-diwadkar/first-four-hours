@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import errno
+import hashlib
 import importlib
 import json
 import os
@@ -439,6 +440,71 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     ):
         with pytest.raises(specs_mod.SpecError):
             parse_read_spec(bad_each)
+
+    # p. edit text may be a list of parts copied from files as read and from kept results, all resolved first.
+    types_mod = importlib.import_module("batch_ops.types")
+    editor_mod = importlib.import_module("batch_ops.editor")
+    render_mod = importlib.import_module("batch_ops.render")
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    mv_bytes = b"import os\r\ndef keep():\r\n    return 1\r\ndef moved():\r\n    return 2\r\n"
+    (parts / "mv.py").write_bytes(mv_bytes)
+    (parts / "other.txt").write_bytes(b"o1\no2\no3\n")
+    sha = hashlib.sha256(mv_bytes).hexdigest()[:12]
+    alias_store.bind(parts.resolve(), "gen", b"g1\ng2\n", ".txt", "parts test")
+
+    def apply_parts(edits=(), new_files=(), deletes=(), renames=()):
+        bundle = types_mod.EditRequestBundle(
+            edits=[specs_mod.parse_edit_spec(e) for e in edits],
+            new_files=specs_mod.parse_new_files(list(new_files)),
+            deletes=list(deletes), renames=[specs_mod.parse_rename(r) for r in renames], cwd=str(parts),
+        )
+        return asyncio.run(editor_mod.apply_edits(bundle, root=parts, artifacts=alias_store))
+
+    def file_part(path, span, since=None):
+        return {"path": path, "range": span, "since": since or sha}
+
+    stale = apply_parts(edits=[{"path": "other.txt", "search": "o2\n", "replace": [file_part("mv.py", "4-5", "0" * 12)]}])
+    assert not stale.ok and any("changed since it was read" in error for error in stale.errors)
+    assert (parts / "other.txt").read_bytes() == b"o1\no2\no3\n"
+
+    outside_sha = hashlib.sha256(outside.read_bytes()).hexdigest()[:12]
+    copy_new = lambda source, since=None: [{"path": "cp.txt", "content": [file_part(source, "1", since)]}]
+    for refused_args in (
+        {"new_files": copy_new("mv.py"), "deletes": ["mv.py"]},
+        {"new_files": copy_new("mv.py"), "renames": [{"from": "mv.py", "to": "mv3.py"}]},
+        {"new_files": copy_new("../outside.txt", outside_sha)},
+    ):
+        assert not apply_parts(**refused_args).ok
+        assert (parts / "mv.py").read_bytes() == mv_bytes and outside.read_bytes() == b"keep\n"
+        assert not (parts / "cp.txt").exists() and not (parts / "mv3.py").exists()
+
+    moved = apply_parts(
+        edits=[
+            {"path": "mv.py", "range": "4-5", "since": sha, "replace": ""},
+            {"path": "mv.py", "range": "1", "since": sha,
+             "replace": [file_part("mv.py", "1-1"), "from mv2 import moved\n"]},
+            {"path": "other.txt", "search": "o2\n", "replace": [file_part("mv.py", "3-3")]},
+        ],
+        new_files=[{"path": "mv2.py", "content": ["# moved\n", file_part("mv.py", "4-5"), {"artifact": "gen:2-2"}]}],
+    )
+    assert moved.ok, moved.errors
+    assert (parts / "mv.py").read_bytes() == b"import os\r\nfrom mv2 import moved\r\ndef keep():\r\n    return 1\r\n"
+    assert (parts / "mv2.py").read_bytes() == b"# moved\r\ndef moved():\r\n    return 2\r\ng2\r\n"
+    assert (parts / "other.txt").read_bytes() == b"o1\n    return 1\no3\n"
+    moved_text = render_mod.render_edit_report(moved)
+    assert "copied 2 line(s) from mv.py:4-5" in moved_text
+    assert "copied 1 line(s) from artifact:gen:2-2" in moved_text
+    assert not any("return 2" in (change.message or "") for change in moved.changes)
+
+    for bad_parts in (
+        {"path": "mv.py", "search": "x", "replace": []},
+        {"path": "mv.py", "search": "x", "replace": [{**file_part("mv.py", "1"), "lines": "1"}]},
+    ):
+        with pytest.raises(specs_mod.SpecError):
+            specs_mod.parse_edit_spec(bad_parts)
+    with pytest.raises(specs_mod.SpecError):
+        specs_mod.parse_new_files({"x.txt": ["a"]})
 
     async def call(session, name, args):
         return await asyncio.wait_for(session.call_tool(name, args), 20)
@@ -956,7 +1022,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_read", {"specs": ["artifact:kept"], "cwd": str(repo / "src")})
                 assert _items(res)[0]["status"] == "missing"
 
-                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5300
+                assert sum(len(json.dumps(t.inputSchema)) + len(t.description or "") for t in tools.tools) <= 5600
 
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:

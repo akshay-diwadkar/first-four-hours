@@ -201,7 +201,7 @@ async def _cmd_edit(args: argparse.Namespace, root: Path) -> tuple[str, dict[str
     else:
         for index, spec in enumerate(new_files or [], start=1):
             try:
-                new_reqs.append(parse_new_file(spec))
+                new_reqs.append(parse_new_file(spec, allow_parts=True))
             except Exception as exc:
                 spec_errors.append(f"new file {index}: {type(exc).__name__}: {exc}")
     delete_reqs = []

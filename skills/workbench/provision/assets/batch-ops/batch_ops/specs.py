@@ -11,12 +11,14 @@ import json
 import re
 from typing import Any
 
+from .artifacts import since_sha
 from .types import (
     EditRequest,
     NewFileRequest,
     ReadRequest,
     RenameRequest,
     RunRequest,
+    TextPart,
     VerifyRequest,
 )
 
@@ -550,8 +552,7 @@ def parse_edit_spec(spec: Any) -> EditRequest:
         return _parse_range_edit(data, path, search, replace)
     if not isinstance(search, str):
         raise SpecError(f"edit for {path}: search must be a string")
-    if not isinstance(replace, str):
-        raise SpecError(f"edit for {path}: replace must be a string")
+    replace = _text_or_parts(replace, f"edit for {path}", "replace", allow_parts=True)
     if not search or not search.strip():
         raise SpecError(f"edit for {path}: search must not be empty or whitespace-only")
 
@@ -581,8 +582,7 @@ def parse_edit_spec(spec: Any) -> EditRequest:
 def _parse_range_edit(data: dict[str, Any], path: str, search: Any, replace: Any) -> EditRequest:
     if search is not None:
         raise SpecError(f"edit for {path}: use either search or range, not both")
-    if not isinstance(replace, str):
-        raise SpecError(f"edit for {path}: replace must be a string")
+    replace = _text_or_parts(replace, f"edit for {path}", "replace", allow_parts=True)
     found = re.fullmatch(r"\s*(\d+)\s*(?:-\s*(\d+)\s*)?", str(data["range"]))
     if not found:
         raise SpecError(f"edit for {path}: range must be N or N-M")
@@ -600,14 +600,70 @@ def _parse_range_edit(data: dict[str, Any], path: str, search: Any, replace: Any
     )
 
 
-def parse_new_file(spec: Any) -> NewFileRequest:
+_PART_RANGE = re.compile(r"\s*(\d+)\s*(?:-\s*(\d+)\s*)?")
+_ARTIFACT_PART = re.compile(r"([^:/\\]+)(?::(\d+)(?:-(\d+))?)?")
+
+
+def _text_or_parts(value: Any, owner: str, what: str, *, allow_parts: bool) -> str | list[TextPart]:
+    """A string, or when parts are allowed a non-empty list of text parts; `owner` names the edit or new file."""
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, list):
+        raise SpecError(f"{owner}: {what} must be a string" + (" or a list of parts" if allow_parts else ""))
+    if not value:
+        raise SpecError(f"{owner}: {what} has no parts (part 1 is missing)")
+    return [_parse_part(item, owner, index) for index, item in enumerate(value, start=1)]
+
+
+def _parse_part(item: Any, owner: str, index: int) -> TextPart:
+    if isinstance(item, str):
+        return TextPart(text=item)
+    where = f"{owner}: part {index}"
+    if not isinstance(item, dict):
+        raise SpecError(f"{where} must be a string or an object")
+    keys = set(item)
+    if keys == {"path", "range", "since"}:
+        part_path = item["path"]
+        if not isinstance(part_path, str) or not part_path.strip():
+            raise SpecError(f"{where}: path must be a non-empty string")
+        raw_range = item["range"]
+        found = None if isinstance(raw_range, bool) else _PART_RANGE.fullmatch(str(raw_range))
+        if not found:
+            raise SpecError(f"{where}: range must be N or N-M")
+        start = int(found.group(1))
+        since = item["since"]
+        if not isinstance(since, str) or since_sha(since) is None:
+            raise SpecError(f"{where}: since must be the sha (8+ hex characters) or read handle a read printed")
+        return TextPart(path=part_path, range=(start, int(found.group(2) or start)), since=since.strip())
+    if keys == {"artifact"}:
+        ref = item["artifact"]
+        if not isinstance(ref, str):
+            raise SpecError(f"{where}: artifact must be NAME, NAME:N or NAME:N-M")
+        ref = ref.strip()
+        if ref.startswith("artifact:"):
+            ref = ref[len("artifact:"):]
+        found = _ARTIFACT_PART.fullmatch(ref)
+        if not found:
+            raise SpecError(f"{where}: artifact must be NAME, NAME:N or NAME:N-M")
+        span = None
+        if found.group(2):
+            start = int(found.group(2))
+            span = (start, int(found.group(3) or start))
+        return TextPart(artifact=found.group(1), range=span)
+    raise SpecError(
+        f"{where}: an object part has exactly the keys path, range and since, or exactly the key artifact"
+    )
+
+
+def parse_new_file(spec: Any, *, allow_parts: bool = False) -> NewFileRequest:
     data = _as_dict(spec, "new file spec")
     path = str(data.get("path") or "")
     content = data.get("content")
     if not path:
         raise SpecError("new file spec requires path")
-    if not isinstance(content, str):
-        raise SpecError(f"new file {path}: content must be a string")
+    if not allow_parts and not isinstance(content, str):
+        raise SpecError(f"new file {path}: the {{path: content}} form takes a string; use the list form for parts")
+    content = _text_or_parts(content, f"new file {path}", "content", allow_parts=allow_parts)
     mode_value = data.get("mode")
     if mode_value is None:
         mode = None
@@ -633,7 +689,7 @@ def parse_new_files(value: Any) -> list[NewFileRequest]:
     if isinstance(value, dict):
         return [parse_new_file({"path": path, "content": content}) for path, content in value.items()]
     if isinstance(value, list):
-        return [parse_new_file(item) for item in value]
+        return [parse_new_file(item, allow_parts=True) for item in value]
     raise SpecError("new_files must be an object of path -> content or a list")
 
 

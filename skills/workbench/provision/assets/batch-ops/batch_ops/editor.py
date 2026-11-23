@@ -12,7 +12,7 @@ import difflib
 import os
 import stat
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as _with
 from pathlib import Path
 
 from .artifacts import ArtifactStore, since_sha
@@ -39,6 +39,7 @@ from .types import (
     FileChange,
     NewFileRequest,
     RunResult,
+    TextPart,
     VerifyRequest,
 )
 
@@ -155,11 +156,146 @@ async def apply_edits(
 
 
 # ---------------------------------------------------------------------------
+# Text parts
+# ---------------------------------------------------------------------------
+def _resolve_text_parts(
+    bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore, plan: _Plan,
+) -> tuple[list[tuple[EditRequest, list[str]]], list[tuple[NewFileRequest, list[str]]]]:
+    """Turn every edit's and new file's list of parts into one string, from the files and kept results on disk.
+
+    Each source is read once, before any target is planned, so line numbers name the text as it was read.
+    A part that fails adds its own error and drops its edit or new file; the others carry on to be checked.
+    """
+    sources: dict[str, tuple[str, bytes]] = {}
+    shut: set[str] | None = None  # sources this batch creates, deletes or renames
+
+    def key_of(path: Path) -> str:
+        return os.path.normcase(str(path))
+
+    def shut_keys() -> set[str]:
+        keys: set[str] = set()
+        wanted = [new.path for new in bundle.new_files] + list(bundle.deletes)
+        wanted += [name for rename in bundle.renames for name in (rename.source, rename.destination)]
+        for name in wanted:
+            try:
+                keys.add(key_of(resolve_path(root, name, allow_outside=bundle.allow_outside)))
+            except Exception:
+                pass
+        return keys
+
+    def file_source(part: TextPart) -> tuple[str, bytes]:
+        nonlocal shut
+        try:
+            path = resolve_path(root, part.path or "", allow_outside=bundle.allow_outside, must_exist=True)
+        except FileNotFoundError:
+            raise SafetyError(f"source {part.path} not found") from None
+        if not path.is_file():
+            raise SafetyError(f"source {part.path} is not a regular file")
+        rel = relative_display(root, path)
+        if shut is None:
+            shut = shut_keys()
+        if key_of(path) in shut:
+            raise SafetyError(f"source {rel} is created, deleted or renamed by this batch")
+        if key_of(path) not in sources:
+            sources[key_of(path)] = (rel, path.read_bytes())
+        rel, data = sources[key_of(path)]
+        expected = since_sha(part.since or "")
+        if expected is None:
+            raise SafetyError("since must be the sha (8+ hex characters) or read handle a read printed")
+        sha = sha256_bytes(data)
+        if not sha.startswith(expected):
+            raise SafetyError(f"file changed since it was read (sha now {sha[:12]}); re-read it")
+        return rel, data
+
+    def artifact_source(part: TextPart) -> tuple[str, bytes]:
+        name = part.artifact or ""
+        target = name
+        if artifacts.is_alias(name):
+            record = artifacts.resolve(root, name)
+            if record is None:
+                raise SafetyError(f"no artifact or alias {name} for this cwd")
+            target = str(record["target"])
+        try:
+            return f"artifact:{name}", artifacts.get(target)
+        except (OSError, ValueError):
+            raise SafetyError("artifact expired or unknown") from None
+
+    def copy_part(part: TextPart) -> tuple[str, str, str | None]:
+        display, data = file_source(part) if part.path is not None else artifact_source(part)
+        info = decode_bytes(data)
+        if info.binary:
+            raise SafetyError("binary source; refusing to copy")
+        if info.lossy:
+            raise SafetyError("source is not valid UTF-8; refusing to copy")
+        lines = info.text.splitlines(keepends=True)
+        if part.range is None:
+            chosen, label = lines, display
+        else:
+            start, end = part.range
+            if start < 1 or end < start or end > len(lines):
+                raise SafetyError(f"range {start}-{end} is outside {display} ({len(lines)} lines)")
+            chosen, label = lines[start - 1:end], f"{display}:{start}-{end}"
+        return "".join(chosen), f"copied {len(chosen)} line(s) from {label}", info.eol
+
+    def resolve_text(value: str | list[TextPart]) -> tuple[str, list[str], str | None, bool]:
+        if isinstance(value, str):
+            return value, [], None, False
+        pieces: list[str] = []
+        notes: list[str] = []
+        eol: str | None = None
+        has_file = False
+        for number, part in enumerate(value, start=1):
+            if part.text is not None:
+                pieces.append(part.text)
+                continue
+            try:
+                text, note, part_eol = copy_part(part)
+            except Exception as exc:
+                raise SafetyError(f"part {number}: {exc}") from None
+            pieces.append(text)
+            notes.append(note)
+            if part.path is not None and not has_file:
+                has_file, eol = True, part_eol
+        return "".join(pieces), notes, eol, has_file
+
+    edits: list[tuple[EditRequest, list[str]]] = []
+    for edit in bundle.edits:
+        try:
+            text, notes, _, _ = resolve_text(edit.replace)
+        except Exception as exc:
+            plan.errors.append((edit.path, str(exc)))
+            continue
+        edits.append((_with(edit, replace=text) if isinstance(edit.replace, list) else edit, notes))
+    new_files: list[tuple[NewFileRequest, list[str]]] = []
+    for new in bundle.new_files:
+        try:
+            text, notes, eol, has_file = resolve_text(new.content)
+        except Exception as exc:
+            plan.errors.append((new.path, str(exc)))
+            continue
+        if has_file:  # a new file has no ending of its own, and must not mix endings
+            text = to_eol(text, eol)
+        new_files.append((_with(new, content=text) if isinstance(new.content, list) else new, notes))
+    return edits, new_files
+
+
+def _with_notes(message: str | None, notes: list[str]) -> str | None:
+    return "; ".join(part for part in (message, *notes) if part) or None
+
+
+def _resolved_text(value: str | list[TextPart]) -> str:
+    if isinstance(value, list):
+        raise TypeError("text parts reached planning unresolved")
+    return value
+
+
+# ---------------------------------------------------------------------------
 # Planning
 # ---------------------------------------------------------------------------
 def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore) -> _Plan:
     plan = _Plan()
     claimed: dict[str, str] = {}
+    resolved_edits, resolved_new = _resolve_text_parts(bundle, root, artifacts, plan)
 
     def claim(path: Path, what: str) -> str | None:
         key = os.path.normcase(str(path))
@@ -169,8 +305,9 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
         return None
 
     grouped: dict[str, list[EditRequest]] = {}
+    group_notes: dict[str, list[str]] = {}
     order: list[str] = []
-    for edit in bundle.edits:
+    for edit, edit_notes in resolved_edits:
         try:
             path = resolve_path(root, edit.path, allow_outside=bundle.allow_outside, must_exist=True)
             if not path.is_file():
@@ -178,8 +315,10 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
             key = str(path)
             if key not in grouped:
                 grouped[key] = []
+                group_notes[key] = []
                 order.append(str(path))
             grouped[key].append(edit)
+            group_notes[key].extend(edit_notes)
         except FileNotFoundError:
             plan.errors.append((edit.path, "file not found"))
         except Exception as exc:
@@ -222,6 +361,7 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 path=rel, action="modify", replacements=total,
                 before_hash=sha256_bytes(before), after_hash=sha256_bytes(after),
                 diff=diff, diff_artifact=diff_ref, diff_truncated=diff_ref is not None,
+                message=_with_notes(None, group_notes[path_key]),
             )
             plan.items.append(_Planned(
                 change=change, path=path, action="modify", before=before, after=after,
@@ -231,7 +371,7 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
         except Exception as exc:
             plan.errors.append((rel, f"{type(exc).__name__}: {exc}"))
 
-    for new in bundle.new_files:
+    for new, new_notes in resolved_new:
         try:
             path = resolve_path(root, new.path, allow_outside=bundle.allow_outside, must_exist=False)
             rel = relative_display(root, path)
@@ -255,14 +395,16 @@ def _plan_edits(bundle: EditRequestBundle, root: Path, artifacts: ArtifactStore)
                 mode = new.mode
                 action = "create"
                 message = None
-            after = encode_text(new.content, new.encoding)
-            diff = _unified_diff(before_text, new.content, rel, "create")
+            content = _resolved_text(new.content)
+            after = encode_text(content, new.encoding)
+            diff = _unified_diff(before_text, content, rel, "create")
             full_diff = diff
             diff_ref = None  # fit_diffs cuts the diff to the report budget and keeps the full text
             change = FileChange(
                 path=rel, action=action, status="ok",
                 before_hash=sha256_bytes(prior) if prior is not None else None,
-                after_hash=sha256_bytes(after), diff=diff, diff_artifact=diff_ref, diff_truncated=diff_ref is not None, message=message,
+                after_hash=sha256_bytes(after), diff=diff, diff_artifact=diff_ref, diff_truncated=diff_ref is not None,
+                message=_with_notes(message, new_notes),
             )
             plan.items.append(_Planned(
                 change=change, path=path, action="create", before=prior, after=after,
@@ -395,7 +537,7 @@ def _apply_ranges(text: str, before: bytes, edits: list[EditRequest], eol: str |
     for edit in reversed(ordered):
         start, end = edit.range or (0, 0)
         line_eol = eol or "\n"
-        new = to_eol(edit.replace, line_eol)
+        new = to_eol(_resolved_text(edit.replace), line_eol)
         if new and not _ends_in_break(new) and _ends_in_break(lines[end - 1]):
             new += line_eol
         lines[start - 1:end] = [new] if new else []
@@ -427,7 +569,7 @@ def _apply_one(text: str, edit: EditRequest, eol: str | None) -> tuple[str, int]
 
     updated = text
     for match in reversed(selected):
-        replacement = apply_replacement(updated, match, edit.replace, eol)
+        replacement = apply_replacement(updated, match, _resolved_text(edit.replace), eol)
         updated = updated[: match.start] + replacement + updated[match.end:]
     return updated, len(selected)
 

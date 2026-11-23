@@ -469,11 +469,20 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert (parts / "other.txt").read_bytes() == b"o1\no2\no3\n"
 
     outside_sha = hashlib.sha256(outside.read_bytes()).hexdigest()[:12]
-    copy_new = lambda source, since=None: [{"path": "cp.txt", "content": [file_part(source, "1", since)]}]
+    bin_bytes, latin_bytes = b"a\x00b\n", b"caf\xe9\n"
+    (parts / "bin.dat").write_bytes(bin_bytes)
+    (parts / "lat.txt").write_bytes(latin_bytes)
+    bin_sha = hashlib.sha256(bin_bytes).hexdigest()[:12]
+    latin_sha = hashlib.sha256(latin_bytes).hexdigest()[:12]
+    copy_new = lambda source, since=None, span="1": [{"path": "cp.txt", "content": [file_part(source, span, since)]}]
     for refused_args in (
         {"new_files": copy_new("mv.py"), "deletes": ["mv.py"]},
         {"new_files": copy_new("mv.py"), "renames": [{"from": "mv.py", "to": "mv3.py"}]},
         {"new_files": copy_new("../outside.txt", outside_sha)},
+        {"new_files": copy_new("bin.dat", bin_sha)},
+        {"new_files": copy_new("lat.txt", latin_sha)},
+        {"new_files": copy_new("gone.txt", sha)},
+        {"new_files": copy_new("mv.py", sha, "4-9")},
     ):
         assert not apply_parts(**refused_args).ok
         assert (parts / "mv.py").read_bytes() == mv_bytes and outside.read_bytes() == b"keep\n"

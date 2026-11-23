@@ -508,7 +508,10 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
         "locator": "Run 1 output",
         "path": str(_snapshot(tmp_path, "run.txt", "passed\n")),
     }
-    prior_output = seal_in_process({**limited, "assessed_sources": [issue_source, run_source]}, "case-prior")
+    pr = "https://github.com/example/repo/pull/1"
+    prior_output = seal_in_process(
+        {**limited, "target": pr, "assessed_sources": [issue_source, run_source]}, "case-prior"
+    )
     prior_copy = tmp_path / "prior-assessment.md"
     shutil.copyfile(prior_output, prior_copy)
     repair = {
@@ -521,22 +524,53 @@ def test_unsupported_coverage_claims_are_rejected(tmp_path: Path, assessment_see
     changed_issue = _assessed_source(_snapshot(tmp_path, "issue-382-changed.md", "# Issue 382\nChanged acceptance.\n"))
     evidence_issue = _assessed_source(_snapshot(tmp_path), role="evidence")
     delta_output = prepare_assessment_workspace(repo, "case-delta").output_path
-    for dropped in (
-        [repair, {**prior, "id": "request-3", "role": "authority"}],
-        [prior, changed_issue, repair],
-        [prior, evidence_issue, repair],
-    ):
+
+    def assert_dropped(payload: dict[str, object], slug: str, output_path: Path) -> None:
         with pytest.raises(AssessError) as refused_delta:
-            seal_in_process({**limited, "assessed_sources": dropped}, "case-delta")
+            seal_in_process(payload, slug)
         assert refused_delta.value.code == "source.prior_authority_dropped"
         assert refused_delta.value.evidence == (issue_source["locator"],)
-        assert not delta_output.exists()
+        assert not output_path.exists()
+
+    assert_dropped(
+        {**limited, "target": pr, "assessed_sources": [repair, {**prior, "id": "request-3", "role": "authority"}]},
+        "case-delta",
+        delta_output,
+    )
+    _git(repo, "checkout", "-qb", "other")
+    (repo / "service.py").write_text("value = 5\n", encoding="utf-8")
+    _git(repo, "commit", "-qam", "other change")
+    other_output = seal_in_process({**limited, "assessed_sources": [issue_source]}, "case-other")
+    other_copy = tmp_path / "other-assessment.md"
+    shutil.copyfile(other_output, other_copy)
+    _git(repo, "checkout", "-q", "-")
+    (repo / "service.py").write_text("value = 3\n", encoding="utf-8")
+    _git(repo, "commit", "-qam", "rework")
+    rework = _git(repo, "rev-parse", "HEAD")
+    for dropped in ([prior, changed_issue, repair], [prior, evidence_issue, repair]):
+        assert_dropped({**limited, "assessed_sources": dropped}, "case-delta", delta_output)
     rebound = seal_in_process({**limited, "assessed_sources": [prior, issue_source, repair]}, "case-delta")
     assert rebound == delta_output
     delta_sources = parse_result(rebound.read_text(encoding="utf-8"))["assessed_sources"]
     assert [(source["id"], source["role"]) for source in delta_sources] == [
         ("prior", "evidence"),
         ("issue-382", "authority"),
+        ("repair", "authority"),
+    ]
+    (repo / "service.py").write_text("value = 4\n", encoding="utf-8")
+    _git(repo, "commit", "-qam", "next change")
+    moved_output = prepare_assessment_workspace(repo, "case-moved").output_path
+    assert_dropped(
+        {**limited, "target": pr, "base_ref": rework, "assessed_sources": [prior, repair]}, "case-moved", moved_output
+    )
+    other = {"id": "other", "role": "evidence", "locator": "Other assessment", "path": str(other_copy)}
+    unrelated = seal_in_process(
+        {**limited, "base_ref": rework, "assessed_sources": [prior, other, repair]}, "case-unrelated"
+    )
+    unrelated_sources = parse_result(unrelated.read_text(encoding="utf-8"))["assessed_sources"]
+    assert [(source["id"], source["role"]) for source in unrelated_sources] == [
+        ("prior", "evidence"),
+        ("other", "evidence"),
         ("repair", "authority"),
     ]
 

@@ -1638,13 +1638,28 @@ def _publish(
             temporary.unlink(missing_ok=True)
 
 
-def _require_prior_authority(sources: tuple[SourceBinding, ...]) -> None:
+def _is_ancestor(repo: Path, commit: str, revision: str) -> bool:
+    return _git(repo, "merge-base", "--is-ancestor", commit, revision).returncode == 0
+
+
+def _earlier_of_this_change(prior: dict[str, Any], binding: GitBinding, target: str) -> bool:
+    if PULL_REQUEST_URL_RE.fullmatch(target) and prior["target"] == target:
+        return True
+    repo = Path(binding.repository_root)
+    return _is_ancestor(repo, prior["head_revision"], binding.head_revision) and not _is_ancestor(
+        repo, prior["head_revision"], binding.base_revision
+    )
+
+
+def _require_prior_authority(sources: tuple[SourceBinding, ...], binding: GitBinding, target: str) -> None:
     current = {source.sha256 for source in sources if source.role == "authority"}
     missing: list[str] = []
     for source in sources:
         try:
             prior = parse_result(Path(source.path).read_text(encoding="utf-8"))
         except (UnicodeDecodeError, AssessError):
+            continue
+        if not _earlier_of_this_change(prior, binding, target):
             continue
         for earlier in prior["assessed_sources"]:
             if earlier["role"] == "authority" and earlier["sha256"] not in current:
@@ -1653,9 +1668,10 @@ def _require_prior_authority(sources: tuple[SourceBinding, ...]) -> None:
     if missing:
         raise _fail(
             "source.prior_authority_dropped",
-            "an assessment that binds an earlier assessment, in any role, binds again as authority every authority "
-            "snapshot that assessment bound; changed requirements take a whole-change assessment that binds no "
-            "earlier one; not bound again: " + ", ".join(missing),
+            "an assessment that binds an earlier assessment of this change, in any role, binds again as authority "
+            "every authority snapshot that assessment bound; an earlier assessment of this change is one for the same "
+            "pull request or whose head this head contains and the base does not; changed requirements take a "
+            "whole-change assessment that binds no earlier one; not bound again: " + ", ".join(missing),
             category="contract_contradiction",
             evidence=tuple(missing),
         )
@@ -1669,7 +1685,7 @@ def seal_result(repo_root: Path, bundle_path: Path, output: Path) -> dict[str, A
     if os.path.lexists(destination):
         raise _output_exists(destination)
     source_bindings = bind_sources(bundle, Path(binding.repository_root), destination)
-    _require_prior_authority(source_bindings)
+    _require_prior_authority(source_bindings, binding, bundle["target"])
     findings, examined = bind_all_locators(bundle, binding, source_bindings)
     changed = _changed_paths(binding)
     unexamined = _unexamined_paths(bundle, changed)

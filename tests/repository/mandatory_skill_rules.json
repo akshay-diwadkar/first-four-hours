@@ -567,6 +567,13 @@
     "text": "After a yes, install it as the reference says"
   },
   {
+    "id": "provision.batch-ops-guard-after-connect",
+    "skill": "provision",
+    "source": "references/batch-ops.md",
+    "surface": "doctor",
+    "text": "Where the reference names a guard, offer it once batch-ops is done as below, unless Provision's is present with this skill's paths; until then, report it not offered"
+  },
+  {
     "id": "blueprint.construct-caller-confirms",
     "skill": "blueprint",
     "source": "references/construct-handoff.md",

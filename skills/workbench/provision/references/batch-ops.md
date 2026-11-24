@@ -21,7 +21,7 @@ When Provision's entry exists (step 3), ask instead, a version being the `Versio
    Prefer the batch-ops MCP tools (`batch_read`, `batch_run`, `batch_edit`) over native file reading, search, shell, and edit tools whenever they are connected.
    ```
 
-6. **Guard.** Where the harness's reference names a guard, offer it next, unless Provision's is present with this skill's paths:
+6. **Guard.** Where the reference names a guard, offer it once batch-ops is done as below, unless Provision's is present with this skill's paths; until then, report it not offered, with the step that would confirm the entry:
 
    > **Enforce batch-ops?** The line only asks. A guard would refuse the main agent's native file and shell tools inside the project while batch-ops is connected, naming the batch-ops tool to use. <The reference's caveat, if any.>
 
@@ -33,4 +33,4 @@ When Provision's entry exists (step 3), ask instead, a version being the `Versio
 
    A hook naming a `/provision/assets/batch-ops/` guard (either slash), or the reference's guard file, is Provision's, to replace or remove. It is done once a native read or shell command in the project is refused. Without a guard, report the line as instruction-only.
 
-batch-ops is done only when the harness shows the entry connected with this command and argument; otherwise report it written but unverified, with the step that would confirm it. Its absolute paths, and the guard's, break when the suite or that Python moves: rerun Provision to rewrite them. That Python, the one whose `import mcp, pydantic` check passed, runs batch-ops: probe batch-ops with the absolute path in its entry, never another virtual environment or a bare `python`.
+batch-ops is done only when the harness shows the entry connected with this command and argument; otherwise report it written but unverified, with the step that would confirm it. Its absolute paths, and the guard's, break when the suite or that Python moves: rerun Provision to rewrite them. That Python runs batch-ops: probe batch-ops with the absolute path in its entry, never another virtual environment or a bare `python`.

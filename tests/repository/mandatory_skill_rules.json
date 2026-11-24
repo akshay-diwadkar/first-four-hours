@@ -560,6 +560,13 @@
     "text": "show it and replace it only after a yes"
   },
   {
+    "id": "provision.batch-ops-guard-consent",
+    "skill": "provision",
+    "source": "references/batch-ops.md",
+    "surface": "doctor",
+    "text": "After a yes, install it as the reference says"
+  },
+  {
     "id": "blueprint.construct-caller-confirms",
     "skill": "blueprint",
     "source": "references/construct-handoff.md",

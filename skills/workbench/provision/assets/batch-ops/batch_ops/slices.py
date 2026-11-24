@@ -171,7 +171,7 @@ def apply_slices(text: str, ops: list[str], *, skip_non_json: bool = False) -> t
         except SliceError as exc:
             errors.append(_with_shell_hint(str(exc), op))
         except Exception as exc:  # defensive: one bad operator never kills the batch
-            errors.append(f"{op}: {exc}")
+            errors.append(_with_shell_hint(f"{op}: {exc}", op))
 
     return "\n".join(lines), errors
 
@@ -181,12 +181,36 @@ _SHELL_JOIN = re.compile(r";|&&|\|\||\s\|\s")
 
 
 def _with_shell_hint(message: str, op: str) -> str:
-    found = _SHELL_JOIN.search(op)
-    if not found:
-        return message
-    shell = op[found.start() :].strip()
-    return (f"{message}; slices follow ' ||| ', so `{shell}` was read as a slice and never ran: "
-            "put shell commands before the first ' ||| '")
+    # A cut's SEP may hold separator characters; its separators count as shell text only once
+    # the text before them is already a complete cut (_cut's rule: a ':' then a positive integer).
+    is_cut = op.startswith("cut:")
+    sep_end = (op.rfind(":", 4) if ":" in op[4:] else len(op)) if is_cut else -1
+    colon = -1  # last ':' after 'cut:' before the current match
+    scanned = 4
+    prev_end = 0
+    for found in _SHELL_JOIN.finditer(op):
+        start = found.start()
+        if is_cut and start < sep_end:
+            at = op.rfind(":", scanned, start)
+            if at != -1:
+                colon = at
+            scanned = start
+            complete = colon >= prev_end and colon >= 4 and _positive_int(op[colon + 1 : start])
+            prev_end = found.end()
+            if not complete:
+                continue
+        shell = op[start:].strip()
+        return (f"{message}; slices follow ' ||| ', so `{shell}` was read as a slice and never ran: "
+                "put shell commands before the first ' ||| '")
+    return message
+
+
+def _positive_int(text: str) -> bool:
+    text = text.strip()
+    try:
+        return text.isdigit() and int(text) >= 1
+    except ValueError:
+        return False
 
 
 def _nonneg_int(value: str, op: str) -> int:

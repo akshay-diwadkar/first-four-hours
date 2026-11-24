@@ -20,6 +20,7 @@ All notable changes to First Four Hours are recorded in this file. The format fo
 ### Fixed
 
 - Provision 3.9.1: Provision offers the batch-ops guard only once its batch-ops entry connects, the condition it already used for the instructions line, and otherwise reports the guard not offered with the step that connects the entry, so a rerun then offers it. Before, it could install the Codex guard, which refuses every shell command and project patch while installed, before you had confirmed batch_ops in `/mcp`, so a server that failed to start left Codex unable to read or edit until you removed the hook.
+- Provision 3.9.2: a batch-ops slice that fails to parse because it holds shell text, as in `tail:8; git diff --stat` after ` ||| `, now says that text was read as a slice and never ran, and to put shell commands before the first ` ||| `. Before, the error said only `tail:8; git diff --stat: expected an integer`, so an agent could miss that `git diff` never ran. Rerun `/provision` to update batch-ops.
 
 ## [3.0.0] - 2026-11-21
 

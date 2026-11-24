@@ -172,6 +172,36 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert apply_slices("a,b,c\nx,y\n", ["cut:,:3"]) == ("c", [])
     assert apply_slices("a\tb\tc\nd\n", ["cut:\\t:2"]) == ("b", [])
     assert apply_slices("not json\n", ["json:a"]) == ("not json", ["json: input is neither JSON nor JSON Lines"])
+    # Shell text written after ' ||| ' is parsed as a slice; the error must say it never ran.
+    _, shell_errors = apply_slices("a\nb\n", ["tail:8; git diff --stat"])
+    assert len(shell_errors) == 1 and "`; git diff --stat` was read as a slice and never ran" in shell_errors[0]
+    for shell_op, shell_text in [
+        ("tail:8 && make", "&& make"),
+        ("head:3 || true", "|| true"),
+        ("tail:5 | wc -l", "| wc -l"),
+        ("lines:1-20; git diff --stat", "; git diff --stat"),
+        ("raw:x; ls", "; ls"),
+        ("target:x && ls", "&& ls"),
+        ("lines:5-2,1; ls", "; ls"),
+        ("num:x; ls", "; ls"),
+        ("cut:;:2; ls", "; ls"),
+        ("cut:,:2; echo a:b", "; echo a:b"),
+        ("cut:&&:2 ; echo a:b", "; echo a:b"),
+        ("cut: | :1 | grep a:b", "| grep a:b"),
+        ("json:items[0]; ls", "; ls"),
+        ("json:items; ls .", "; ls ."),
+        ("json:a;b[x]", ";b[x]"),
+    ]:
+        _, hinted = apply_slices("a\nb\n", [shell_op])
+        assert len(hinted) == 1 and f"`{shell_text}` was read as a slice and never ran" in hinted[0], shell_op
+    for plain_op, plain_errors in [
+        ("tail:x", ["tail:x: expected an integer"]),
+        ("num:1|2", ["num:1|2: invalid literal for int() with base 10: '1|2'"]),
+        ("cut:;:x", ["cut:;:x: N must be a positive integer"]),
+        ("cut:;", ["cut:;: expected cut:SEP:N"]),
+        ("cut:||:x", ["cut:||:x: N must be a positive integer"]),
+    ]:
+        assert apply_slices("a\nb\n", [plain_op])[1] == plain_errors, plain_op
 
     run_commands = importlib.import_module("batch_ops.runner").run_commands
     read_batch = importlib.import_module("batch_ops.reader").read_batch

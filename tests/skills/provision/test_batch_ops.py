@@ -749,6 +749,19 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert not (proc / "child_alive").exists()
 
                 res = await call(session, "batch_run", {"commands": [
+                    "echo ran > split_str.txt && echo a ||| b",
+                    {"cmd": "echo ran > split_obj.txt && echo a ||| b"},
+                    {"cmd": "echo 'a ||| b' | tr '|' x", "slices": [], "label": "literal"},
+                    "echo ok ||| count ||| tail:3",
+                ], "cwd": str(repo)})
+                split_items = _items(res)
+                assert split_items[0]["status"] == "error" and split_items[1]["status"] == "error"
+                assert "nothing ran" in _text(res)
+                assert not (repo / "split_str.txt").exists() and not (repo / "split_obj.txt").exists()
+                assert split_items[2]["status"] == "ok" and "a xxx b" in _text(res)
+                assert split_items[3]["status"] == "ok"
+
+                res = await call(session, "batch_run", {"commands": [
                     {"argv": [sys.executable, "-c", "raise SystemExit(1)"], "ok_exit": [0, 1], "label": "okexit"},
                     {"argv": [sys.executable, "-c",
                               "import sys; sys.stdout.write('same\\n' * 300 + "
@@ -860,6 +873,19 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                     "verify": {"cmd": "git --version ||| count"}, "cwd": str(repo)})
                 assert not res.isError
                 assert lf.read_bytes().replace(b"\r\n", b"\n") == b"five\n"
+                for name, verify in (("split_verify.txt", "echo ran > split_verify.txt ||| b"),
+                                     ("split_vobj.txt", {"cmd": "echo ran > split_vobj.txt ||| b"})):
+                    res = await call(session, "batch_edit", {
+                        "edits": [{"path": "lf.txt", "search": "five", "replace": "six"}],
+                        "verify": verify, "cwd": str(repo)})
+                    assert res.isError and "nothing ran" in _text(res)
+                    assert lf.read_bytes().replace(b"\r\n", b"\n") == b"five\n"
+                    assert not (repo / name).exists()
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "lf.txt", "search": "five", "replace": "six"}],
+                    "verify": {"cmd": "echo 'v ||| w' | tr '|' x", "slices": []}, "cwd": str(repo)})
+                assert not res.isError
+                assert lf.read_bytes().replace(b"\r\n", b"\n") == b"six\n"
 
                 mcp_src = b"m1\nm2\n"
                 (parts / "mcp_src.txt").write_bytes(mcp_src)

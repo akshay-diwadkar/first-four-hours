@@ -1065,22 +1065,45 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
 
     # The guard Provision installs beside the server refuses native tools only while batch-ops is
     # connected, and never strands a subagent, a path outside the project, or a disconnected session.
-    project = tmp_path / "guarded"
+    # The checks run the hooks as the references document them, in a non-ASCII project whose own
+    # json.py must never load.
+    project = tmp_path / "guardé"
     project.mkdir()
+    (project / "json.py").write_text('raise SystemExit("project json.py imported")\n', encoding="utf-8")
+    references = ROOT / "skills" / "workbench" / "provision" / "references"
+    lines = (references / "batch-ops.md").read_text(encoding="utf-8").splitlines()
+    after = next(i for i, line in enumerate(lines) if line.startswith("6. **Guard.**"))
+    fence = next(i for i in range(after, len(lines)) if lines[i].strip() == "```text")
+    launcher = lines[fence + 1].strip()
+
+    def hook(name):
+        text = (references / name).read_text(encoding="utf-8")
+        line = next(line for line in text.splitlines() if line.startswith("- **Guard:**"))
+        return json.loads(re.search(r'`(\{"matcher"[^`]*)`', line).group(1))["hooks"][0]
+
+    claude_hook, codex_hook = hook("claude-code.md"), hook("codex.md")
     transcript = tmp_path / "session.jsonl"
 
     def delta(change):
         attachment = {"type": "mcp_instructions_delta", change: ["batch-ops"]}
         return json.dumps({"type": "attachment", "attachment": attachment}) + "\n"
 
-    def guard(tool_input, tool="Read", codex=False, **extra):
+    def guard(tool_input, tool="Read", codex=False, guard_path=GUARD, **extra):
         event = {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input,
                  "cwd": str(project), "transcript_path": str(transcript), "permission_mode": "default", **extra}
-        argv = [sys.executable, str(GUARD), *(["codex"] if codex else [])]
-        done = subprocess.run(argv, input=json.dumps(event), capture_output=True, text=True,
-                              env={**os.environ, "CLAUDE_PROJECT_DIR": str(project)}, timeout=30)
-        assert done.returncode == 0 and not done.stderr
-        return json.loads(done.stdout)["hookSpecificOutput"] if done.stdout else None
+
+        def fill(text):
+            return text.replace("<python>", sys.executable).replace("<launcher>", launcher).replace("<guard>", str(guard_path))
+
+        run = {"input": json.dumps(event, ensure_ascii=False).encode("utf-8"), "capture_output": True,
+               "cwd": project, "env": {**os.environ, "CLAUDE_PROJECT_DIR": str(project)}, "timeout": 30}
+        if codex:
+            done = subprocess.run(fill(codex_hook["command"]), shell=True, **run)
+        else:
+            done = subprocess.run([fill(claude_hook["command"]), *map(fill, claude_hook["args"])], **run)
+        stdout, stderr = done.stdout.decode("utf-8"), done.stderr.decode("utf-8")
+        assert done.returncode == 0 and not stderr
+        return json.loads(stdout)["hookSpecificOutput"] if stdout else None
 
     inside = {"file_path": str(project / "a.txt")}
     assert guard(inside) is None  # no transcript yet: what it cannot read allows the call
@@ -1091,6 +1114,11 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert guard({"command": "git status"}, tool="Bash")["permissionDecision"] == "deny"
     assert guard(inside, agent_id="sub") is None  # subagents keep native tools
     assert guard({"file_path": str(tmp_path / "outside.txt")}) is None
+    assert guard({"file_path": str(project / "shot.PNG")}) is None  # media keeps the native reader
+    assert guard({"command": "git status", "run_in_background": True}, tool="Bash") is None
+    moved = tmp_path / "moved" / "batch_ops_guard.py"  # a removed guard must not refuse every tool
+    assert guard(inside, guard_path=moved) is None
+    assert guard({"command": "git status"}, tool="Bash", codex=True, guard_path=moved) is None
     with transcript.open("a", encoding="utf-8") as stream:
         stream.write(delta("removedNames"))
     assert guard(inside) is None  # a disconnect lifts the guard

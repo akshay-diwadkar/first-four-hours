@@ -127,7 +127,7 @@ def refusal(event: dict[str, Any], codex: bool = False) -> str | None:
 
 def main() -> int:
     try:
-        reason = refusal(json.load(sys.stdin), codex="codex" in sys.argv[1:])
+        reason = refusal(json.loads(sys.stdin.buffer.read()), codex="codex" in sys.argv[1:])
     except Exception:  # anything unreadable allows the call
         return 0
     if reason:

@@ -186,6 +186,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         ("num:x; ls", "; ls"),
         ("cut:;:2; ls", "; ls"),
         ("cut:,:2; echo a:b", "; echo a:b"),
+        ("cut:&&:2 ; echo a:b", "; echo a:b"),
+        ("cut: | :1 | grep a:b", "| grep a:b"),
         ("json:items[0]; ls", "; ls"),
         ("json:items; ls .", "; ls ."),
         ("json:a;b[x]", ";b[x]"),
@@ -197,6 +199,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         ("num:1|2", ["num:1|2: invalid literal for int() with base 10: '1|2'"]),
         ("cut:;:x", ["cut:;:x: N must be a positive integer"]),
         ("cut:;", ["cut:;: expected cut:SEP:N"]),
+        ("cut:||:x", ["cut:||:x: N must be a positive integer"]),
     ]:
         assert apply_slices("a\nb\n", [plain_op])[1] == plain_errors, plain_op
 

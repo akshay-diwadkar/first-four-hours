@@ -23,6 +23,7 @@ from tools.validation.git_test_support import seed_git
 
 ROOT = Path(__file__).resolve().parents[3]
 SERVER = ROOT / "skills" / "workbench" / "provision" / "assets" / "batch-ops" / "batch_ops_server.py"
+GUARD = SERVER.parent / "batch_ops_guard.py"
 ENVELOPE = "batch_ops/envelope"
 
 
@@ -1061,3 +1062,39 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert "gamma-v2" in _text(res) and "alpha-v1" not in _text(res)
 
     asyncio.run(asyncio.wait_for(session_run(), 40))
+
+    # The guard Provision installs beside the server refuses native tools only while batch-ops is
+    # connected, and never strands a subagent, a path outside the project, or a disconnected session.
+    project = tmp_path / "guarded"
+    project.mkdir()
+    transcript = tmp_path / "session.jsonl"
+
+    def delta(change):
+        attachment = {"type": "mcp_instructions_delta", change: ["batch-ops"]}
+        return json.dumps({"type": "attachment", "attachment": attachment}) + "\n"
+
+    def guard(tool_input, tool="Read", codex=False, **extra):
+        event = {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input,
+                 "cwd": str(project), "transcript_path": str(transcript), "permission_mode": "default", **extra}
+        argv = [sys.executable, str(GUARD), *(["codex"] if codex else [])]
+        done = subprocess.run(argv, input=json.dumps(event), capture_output=True, text=True,
+                              env={**os.environ, "CLAUDE_PROJECT_DIR": str(project)}, timeout=30)
+        assert done.returncode == 0 and not done.stderr
+        return json.loads(done.stdout)["hookSpecificOutput"] if done.stdout else None
+
+    inside = {"file_path": str(project / "a.txt")}
+    assert guard(inside) is None  # no transcript yet: what it cannot read allows the call
+    transcript.write_text(delta("addedNames"), encoding="utf-8")
+    refused = guard(inside)
+    assert refused["permissionDecision"] == "deny"
+    assert "mcp__batch-ops__batch_read" in refused["permissionDecisionReason"]
+    assert guard({"command": "git status"}, tool="Bash")["permissionDecision"] == "deny"
+    assert guard(inside, agent_id="sub") is None  # subagents keep native tools
+    assert guard({"file_path": str(tmp_path / "outside.txt")}) is None
+    with transcript.open("a", encoding="utf-8") as stream:
+        stream.write(delta("removedNames"))
+    assert guard(inside) is None  # a disconnect lifts the guard
+    # Codex hooks see no connections, so its guard refuses the shell regardless, but not patches elsewhere.
+    assert guard({"command": "git status"}, tool="Bash", codex=True)["permissionDecision"] == "deny"
+    elsewhere = f"*** Begin Patch\n*** Add File: {tmp_path / 'x.txt'}\n+x\n*** End Patch"
+    assert guard({"command": elsewhere}, tool="apply_patch", codex=True) is None

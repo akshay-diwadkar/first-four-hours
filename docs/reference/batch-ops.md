@@ -39,6 +39,8 @@ Prefer the batch-ops MCP tools (`batch_read`, `batch_run`, `batch_edit`) over na
 
 Without that line, the agent may still call the tools, but nothing tells it to prefer them.
 
+The line only asks. On Claude Code, `/provision` then offers a guard: a `PreToolUse` hook that, while batch-ops is connected, refuses the main agent's native reads, searches, shell commands, and edits inside the project and names the batch-ops tool to use. Subagents, files outside the project, images, PDFs, and notebooks, background commands, and shell commands in plan mode keep native tools. Claude Code tells hooks nothing about MCP connections, so the guard reads them from the session transcript, and when it cannot tell, it allows the call. On OpenCode the guard is a plugin that asks OpenCode whether batch-ops is connected. On Codex it is a hook that sees neither connections nor subagents, so it refuses every agent's shell commands, and patches inside the project, for as long as it is installed: trust it in `/hooks`, and remove it if batch-ops stops working. Removing batch-ops through `/provision` removes the guard too.
+
 [Provision](../skills/provision.md) describes the full flow, including update, keep, and remove on a rerun.
 
 ## Harness differences

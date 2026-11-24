@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 from .artifacts import since_sha
+from .slices import apply_slices
 from .types import (
     EditRequest,
     NewFileRequest,
@@ -436,9 +437,7 @@ def _parse_run_string(value: str, index: int, default_timeout: float) -> RunRequ
     if not s:
         raise SpecError("command spec must not be empty")
 
-    parts = s.split(" ||| ")
-    command_part = parts[0].strip()
-    slices = [p.strip() for p in parts[1:] if p.strip()]
+    command_part, slices = _split_shell_text(s)
 
     label = ""
     if command_part.startswith("@") and ": " in command_part:
@@ -465,10 +464,8 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
     if cmd is not None and not cmd.strip():
         raise SpecError("cmd must not be empty")
     cmd_slices: list[str] = []
-    if cmd is not None and " ||| " in cmd:
-        cmd_parts = cmd.split(" ||| ")
-        cmd = cmd_parts[0].strip()
-        cmd_slices = [p.strip() for p in cmd_parts[1:] if p.strip()]
+    if cmd is not None and " ||| " in cmd and data.get("slices") is None:
+        cmd, cmd_slices = _split_shell_text(cmd)
         if not cmd:
             raise SpecError("cmd must not be empty")
     argv = data.get("argv")
@@ -493,17 +490,7 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
         raise SpecError("env must be an object")
     env = {str(k): str(v) for k, v in env_raw.items()}
 
-    slices_raw = data.get("slices") or []
-    if isinstance(slices_raw, str):
-        slices = [p.strip() for p in slices_raw.split("|||") if p.strip()]
-    elif isinstance(slices_raw, list):
-        slices = [str(p).strip() for p in slices_raw if str(p).strip()]
-    else:
-        raise SpecError("slices must be a list or string")
-    if cmd_slices:
-        if slices:
-            raise SpecError("put slices after ' ||| ' in cmd or in slices, not both")
-        slices = cmd_slices
+    slices = cmd_slices or _slice_list(data.get("slices"))
 
     max_bytes = _positive_int(data.get("max_bytes", 16384), "max_bytes")
     ok_raw = data.get("ok_exit", [0])
@@ -531,6 +518,34 @@ def _parse_run_dict(data: dict[str, Any], index: int, default_timeout: float) ->
         display=display,
         ok_exit=[int(c) for c in ok_list],
     )
+
+
+def _slice_list(raw: Any) -> list[str]:
+    if not raw:
+        return []
+    if isinstance(raw, str):
+        return [p.strip() for p in raw.split("|||") if p.strip()]
+    if isinstance(raw, list):
+        return [str(p).strip() for p in raw if str(p).strip()]
+    raise SpecError("slices must be a list or string")
+
+
+def _split_shell_text(text: str) -> tuple[str, list[str]]:
+    """Split shell command text at ' ||| ' into (command, slices), refusing a split whose pieces are not slices.
+
+    The text after a split is never shell: a piece that is not a slice means the
+    command would run truncated, so nothing runs.
+    """
+    parts = text.split(" ||| ")
+    slices = [p.strip() for p in parts[1:] if p.strip()]
+    for piece in slices:
+        _, errors = apply_slices("", [piece])
+        if errors:
+            raise SpecError(
+                f"text after ' ||| ' is not a slice ({errors[0]}), so nothing ran; "
+                'to pass \' ||| \' as text, give an object with cmd and a "slices" key'
+            )
+    return parts[0].strip(), slices
 
 
 def _display(label: str, command: str) -> str:
@@ -709,11 +724,10 @@ def parse_verify(spec: Any) -> VerifyRequest | None:
         text = spec.strip()
         if not text:
             raise SpecError("verify command must not be empty")
-        parts = text.split(" ||| ")
-        command = parts[0].strip()
+        command, text_slices = _split_shell_text(text)
         if not command:
             raise SpecError("verify command must not be empty")
-        return VerifyRequest(cmd=command, slices=[p.strip() for p in parts[1:] if p.strip()])
+        return VerifyRequest(cmd=command, slices=text_slices)
     data = _as_dict(spec, "verify spec")
     if bool(data.get("cmd")) == bool(data.get("argv")):
         raise SpecError("verify must have exactly one of cmd or argv")
@@ -727,12 +741,12 @@ def parse_verify(spec: Any) -> VerifyRequest | None:
         raise SpecError("verify env must be an object")
     cmd = str(data["cmd"]) if data.get("cmd") is not None else None
     slices: list[str] = []
-    if cmd is not None and " ||| " in cmd:
-        parts = cmd.split(" ||| ")
-        cmd = parts[0].strip()
-        slices = [p.strip() for p in parts[1:] if p.strip()]
+    if cmd is not None and " ||| " in cmd and data.get("slices") is None:
+        cmd, slices = _split_shell_text(cmd)
         if not cmd:
             raise SpecError("verify command must not be empty")
+    else:
+        slices = _slice_list(data.get("slices"))
     return VerifyRequest(
         cmd=cmd,
         slices=slices,

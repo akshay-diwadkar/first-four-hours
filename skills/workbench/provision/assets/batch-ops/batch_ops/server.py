@@ -479,7 +479,7 @@ async def batch_run(
     "timeout": 60, "cwd": "sub", "shell": "auto|cmd|powershell|bash|sh", "slices": ["tail:30"],
     "ok_exit": [0, 1]} (exit codes that are not failures);
     or {"argv": [...], "slices": [...]} (no shell). An object's cmd may end in " ||| " slices
-    instead of "slices", not both.
+    unless it has a "slices" key (even []), which keeps cmd literal: the way to pass ' ||| '.
     parallel=1 runs in order; fail_fast=true skips the rest after a failure; dry_run=true
     validates only. budget (only lowers the ~10k-token report cap): tokens, or {"tokens",
     "item_tokens", "time_s", "max_output"}. Cut
@@ -650,7 +650,7 @@ async def batch_edit(
     {"path": p, "search": "exact old text", "replace": "new"} (text from read "path@target:N-M"),
     matching once unless "replace_all": true or "occurrence": N (counted after earlier edits). A replace, or a list-form new file's content, may be a list of parts joined in order: "text", {"path": p, "range": "N-M", "since": SHA} (copied as the batch began; refused if p changed) or {"artifact": "NAME:N-M"}.
     new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest:
-    a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}, cmd may end in " ||| " slices;
+    a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}, cmd and "slices" as in batch_run;
     failure restores every file. diff: "stat" (default; failures
     show hunks), "hunks" or "full" (full_diff=true); dry_run=true shows full diffs. budget: tokens.
     """

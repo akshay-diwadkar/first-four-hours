@@ -169,11 +169,24 @@ def apply_slices(text: str, ops: list[str], *, skip_non_json: bool = False) -> t
             if not skip_non_json:
                 errors.append(str(exc))
         except SliceError as exc:
-            errors.append(str(exc))
+            errors.append(_with_shell_hint(str(exc), op))
         except Exception as exc:  # defensive: one bad operator never kills the batch
             errors.append(f"{op}: {exc}")
 
     return "\n".join(lines), errors
+
+
+# A shell separator in an operator that failed to parse: shell text written after ' ||| '.
+_SHELL_JOIN = re.compile(r";|&&|\|\||\s\|\s")
+
+
+def _with_shell_hint(message: str, op: str) -> str:
+    found = _SHELL_JOIN.search(op)
+    if not found:
+        return message
+    shell = op[found.start() :].strip()
+    return (f"{message}; slices follow ' ||| ', so `{shell}` was read as a slice and never ran: "
+            "put shell commands before the first ' ||| '")
 
 
 def _nonneg_int(value: str, op: str) -> int:

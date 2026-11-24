@@ -172,6 +172,9 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert apply_slices("a,b,c\nx,y\n", ["cut:,:3"]) == ("c", [])
     assert apply_slices("a\tb\tc\nd\n", ["cut:\\t:2"]) == ("b", [])
     assert apply_slices("not json\n", ["json:a"]) == ("not json", ["json: input is neither JSON nor JSON Lines"])
+    # Shell text written after ' ||| ' is parsed as a slice; the error must say it never ran.
+    _, shell_errors = apply_slices("a\nb\n", ["tail:8; git diff --stat"])
+    assert len(shell_errors) == 1 and "`; git diff --stat` was read as a slice and never ran" in shell_errors[0]
 
     run_commands = importlib.import_module("batch_ops.runner").run_commands
     read_batch = importlib.import_module("batch_ops.reader").read_batch

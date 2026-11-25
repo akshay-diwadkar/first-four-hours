@@ -102,12 +102,12 @@ def _render_read_item(result: ReadResult) -> list[str]:
 
 
 def _next_line(report: Report) -> str | None:
-    """Every cut or misspelled item's continuation, as the specs to pass back to the read tool."""
+    """Every cut or misspelled item's continuation, as the specs to pass back to batch_read."""
     specs = [r.meta["continuation"] if isinstance(r.meta["continuation"], dict) else str(r.meta["continuation"])
              for r in report.reads if r.meta and r.meta.get("continuation")]
     if not specs:
         return None
-    line = f"next (read tool): specs={json.dumps(specs)}"
+    line = f"next: call batch_read with specs={json.dumps(specs)}"
     if any(r.meta and r.meta.get("outside") and r.meta.get("continuation") for r in report.reads):
         line += " allow_outside=true"
     return line
@@ -252,7 +252,7 @@ def render_edit_report(report: EditReport, *, max_bytes: int = 32 * 1024) -> str
             if change.message:
                 lines.append(f"      {change.message}")
             if change.diff_artifact:
-                lines.append(f"      full diff (read tool): \"{change.diff_artifact}\"")
+                lines.append(f"      full diff (batch_read): \"{change.diff_artifact}\"")
             if change.diff:
                 lines.append(_fence(change.diff))
     else:

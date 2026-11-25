@@ -677,7 +677,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert [i["status"] for i in _items(res)] == ["ok", "deferred", "deferred", "ok", "deferred"]
                 text = _text(res)
                 assert "300:     body 15-5 filler" in text
-                next_line = [ln for ln in text.split("\n") if ln.startswith("next (read tool): specs=")]
+                next_line = [ln for ln in text.split("\n") if ln.startswith("next: call batch_read with specs=")]
                 assert next_line and '"big.txt:301-630"' in next_line[0] and '"range": "301-630"' in next_line[0] and '"big.txt:1-630"' in next_line[0]
 
                 res = await call(session, "batch_read", {"specs": ["doc.md@block:## Setup (local"], "cwd": str(repo)})
@@ -693,7 +693,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_read", {
                     "specs": ["many.md"], "budget": {"tokens": 500}, "cwd": str(repo)})
                 text = _text(res).replace("\r", "")
-                next_line = [ln for ln in text.split("\n") if ln.startswith("next (read tool): specs=")]
+                next_line = [ln for ln in text.split("\n") if ln.startswith("next: call batch_read with specs=")]
                 found = re.findall(r'"(artifact:[^:"]+:(\d+)-400)"', next_line[0]) if next_line else []
                 assert len(found) == 1
                 spec, first = found[0][0], int(found[0][1])
@@ -711,7 +711,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 lines = text.replace("\r", "").split("\n")
                 assert re.search(r"(?m)^\d+: block 15:$", text)
                 assert "    body 15-5 filler" not in text
-                next_lines = [ln for ln in lines if ln.startswith("next (read tool): specs=")]
+                next_lines = [ln for ln in lines if ln.startswith("next: call batch_read with specs=")]
                 assert next_lines and "big.txt:" in next_lines[0] and "cwd=" not in next_lines[0]
                 assert not [ln for ln in lines if ln.startswith(("cwd:", "workspace:"))]
                 assert [ln for ln in lines if ln.startswith("budget:")]
@@ -956,6 +956,19 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                     "cwd": str(parts)})
                 assert not res.isError
                 assert (parts / "mcp_copy.txt").read_bytes() == b"m2\n"
+
+                # A path wrapped in quotes names the unquoted file; a failed write names its path and cause.
+                res = await call(session, "batch_edit", {"new_files": {'"q/quoted.txt"': "q\n"}, "cwd": str(parts)})
+                assert not res.isError, _text(res)
+                assert (parts / "q" / "quoted.txt").read_bytes() == b"q\n"
+                (parts / "wf.txt").write_bytes(b"w\n")
+                res = await call(session, "batch_edit", {
+                    "edits": [{"path": "wf.txt", "search": "w", "replace": "x"}],
+                    "new_files": {"wf.txt/child.txt": "c\n"}, "cwd": str(parts)})
+                assert res.isError
+                assert "write failed for wf.txt/child.txt: " in _text(res)
+                assert "all changes were rolled back" in _text(res)
+                assert (parts / "wf.txt").read_bytes() == b"w\n"
 
                 sub = str(repo / "src")
                 res = await call(session, "batch_edit", {

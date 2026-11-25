@@ -40,6 +40,7 @@ from .specs import (
     parse_rename,
     parse_run_spec,
     parse_verify,
+    unquote_path,
 )
 from .types import (
     Coverage,
@@ -696,7 +697,7 @@ async def batch_edit(
             if not isinstance(path, str) or not path.strip():
                 spec_errors.append(f"delete {index}: path must be a non-empty string")
             else:
-                delete_reqs.append(path)
+                delete_reqs.append(unquote_path(path))
 
         rename_reqs = []
         for index, spec in enumerate(renames or [], start=1):

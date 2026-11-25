@@ -1,6 +1,6 @@
 # batch-ops
 
-batch-ops is an optional MCP server that ships inside [`/provision`](../skills/provision.md). It gives your agent three tools, `batch_read`, `batch_run`, and `batch_edit`, that each do in one call what would otherwise take the agent several tool calls: read many files, run several commands, or apply several edits with rollback. Fewer calls can save an agent turns. No First Four Hours skill needs it.
+batch-ops is an optional MCP server that ships inside [`/provision`](../skills/provision.md). It gives your agent three tools, `batch_read`, `batch_run`, and `batch_edit`, that each do in one call what would otherwise take the agent several tool calls: read many files, run several commands, or apply several edits with optional rollback. Fewer calls can save an agent turns. No First Four Hours skill needs it.
 
 ## What each tool does
 
@@ -8,7 +8,7 @@ batch-ops is an optional MCP server that ships inside [`/provision`](../skills/p
 | :--- | :--- | :--- |
 | `batch_read` | Reads files, line ranges, outlines, blocks, greps, globs, and git history (`git:diff`, `git:changed`, `git:log`, `git:cochange`). `mode="survey"` maps the repository: its folders, recent commits, hot spots, files usually changed together, and the build and test commands its CI, Makefile, or `package.json` declare. Specs passed with `mode="survey"` are read in the same report, and `focus` paths add their recent commits, the files usually committed with them, and their related tests. | Separate read, search, glob, and git calls. |
 | `batch_run` | Runs several commands concurrently, each with its own timeout, and reports failures first. Slices such as `fails`, `tail:30`, or `grep:RE` keep only the output lines you need. | One shell call per command. |
-| `batch_edit` | Applies edits, new files, deletes, and renames together, then optionally runs a `verify` command. If verification fails, it restores every file. `dry_run=true` shows the diffs without writing. | Separate edit and write calls, then a test run, then manual undo. |
+| `batch_edit` | Applies edits, new files, deletes, and renames together, then optionally runs a `verify` command. If verification fails, it keeps the changes and reports the failure; `rollback_on_failure=true` restores every file instead. `dry_run=true` shows the diffs without writing. | Separate edit and write calls, then a test run, then manual undo. |
 
 The full argument syntax is in each tool's description, which your harness shows the agent; you do not need to learn it.
 
@@ -20,8 +20,8 @@ In an edit, the `replace` text, and the `content` of a new file given in the lis
 
 - **Scope.** Reads and edits stay inside the working directory (`cwd`) unless the call sets `allow_outside=true`.
 - **Stale edits.** A read prints each file's `sha`. An edit that passes that `sha` as `since` is refused if the file changed after the read.
-- **Rollback.** A `batch_edit` whose `verify` command fails restores every file it touched, unless the call sets `rollback_on_failure=false`.
-- **Report size.** Each report is capped at about 10,000 tokens. Cut command output is kept as an artifact the agent can read back in ranges with `batch_read`.
+- **Rollback.** Opt-in: a `batch_edit` whose `verify` command fails keeps its changes and reports the failure, and restores every file it touched only when the call sets `rollback_on_failure=true`.
+- **Report size.** Each report is capped at about 10,000 tokens. A whole-file read over 8 KB of a file with an outline returns the outline first, with the blocks to read next. Cut command output is kept as an artifact the agent can read back in ranges with `batch_read`.
 - **Timeouts.** A `batch_run` timeout kills the command's process tree and keeps its partial output.
 
 ## Set it up

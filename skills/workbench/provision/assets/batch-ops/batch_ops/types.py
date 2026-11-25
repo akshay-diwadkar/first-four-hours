@@ -165,7 +165,7 @@ class EditRequestBundle:
     cwd: str = "."
     dry_run: bool = False
     verify: VerifyRequest | None = None
-    rollback_on_failure: bool = True
+    rollback_on_failure: bool = False
     overwrite: bool = False
     allow_outside: bool = False
     max_files: int = 100

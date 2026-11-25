@@ -804,7 +804,7 @@ def parse_manifest(text: str, work_dir: str = ".") -> tuple[str, list[EditReques
     new_files: list[NewFileRequest] = []
     for i, match in enumerate(matches):
         block_type = match.group(1)
-        path = match.group(2).strip()
+        path = unquote_path(match.group(2).strip())
         start = match.end()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(normalized)
         body = normalized[start:end]

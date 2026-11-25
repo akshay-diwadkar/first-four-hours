@@ -365,7 +365,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert all(all(f"needle_census {n}" in r.body for n in range(1, 11)) for r in bounded[34:])
 
     # m. an expansion the report has no room for is deferred, listed whole in next: as a literal spec.
-    for suffix in (":2-9", "@outline"):
+    for suffix in (":2-9", "@context:census:2"):
         crowded = read_many(
             [{"glob": "hits/*.txt", "label": "hb"}, {"each": "hb", "read": suffix}], Budget(tokens=600))
         deferred = [r for r in crowded if r.status == "deferred"]
@@ -689,6 +689,12 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert "bullet" not in text
                 res = await call(session, "batch_read", {"specs": ["cut.md@block:# Top"], "cwd": str(repo)})
                 assert 'read "cut.md:399-409" to continue' in _text(res)
+
+                # Items are sized as they render, so ten small files that fit a 4.4KB budget all show.
+                res = await call(session, "batch_read", {
+                    "specs": [f"hits/f{i:02d}.txt" for i in range(1, 11)], "budget": {"tokens": 1100}, "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)] == ["ok"] * 10
+                assert len(_text(res).encode("utf-8")) <= 4400
 
                 res = await call(session, "batch_read", {
                     "specs": ["many.md"], "budget": {"tokens": 500}, "cwd": str(repo)})

@@ -101,6 +101,18 @@ def _render_read_item(result: ReadResult) -> list[str]:
     return lines
 
 
+def read_item_bytes(result: ReadResult) -> int:
+    """Bytes `result` adds to a rendered batch_read report: its block and the blank line after it,
+    its spec in next:, and its problems and unknowns entries, so items fit the budget as rendered."""
+    size = len("\n".join(_render_read_item(result)).encode("utf-8", errors="replace")) + 2
+    continuation = (result.meta or {}).get("continuation")
+    if continuation:
+        size += len(json.dumps(continuation if isinstance(continuation, dict) else str(continuation))) + 2
+    if result.status not in ("ok", "truncated", "lossy", "unchanged", "deferred"):
+        size += 2 * (len(result.id) + len(result.status) + len(result.path or "")) + 16
+    return size
+
+
 def _next_line(report: Report) -> str | None:
     """Every cut or misspelled item's continuation, as the specs to pass back to batch_read."""
     specs = [r.meta["continuation"] if isinstance(r.meta["continuation"], dict) else str(r.meta["continuation"])

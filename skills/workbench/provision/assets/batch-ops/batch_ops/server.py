@@ -124,11 +124,13 @@ class _SlimFastMCP(FastMCP):
 mcp = _SlimFastMCP(
     "batch-ops",
     instructions=(
-        "Batch evidence tools for coding agents. batch_read gathers files, greps, git history "
-        "or a repository map (mode='survey') in one turn; batch_run runs several commands with "
-        "per-command timeouts, failures first; batch_edit applies several edits atomically with "
-        "dry-run and optional rollback on verification failure. Your client may list these tools under "
-        "prefixed names: call them by the names it lists. Reads and edits stay inside cwd unless "
+        "Batch tools that turn several reads, commands or edits into one call. To save turns: put every "
+        "read you already know you need into one batch_read; when a report ends with next:, call "
+        "batch_read again with those specs (several batch_read calls in one turn also work). To read "
+        "what a search finds, use a grep object with \"blocks\": true, or an {\"each\": LABEL} read, in "
+        "the same call instead of a grep and then a read. Give batch_edit the test command as verify, "
+        "so the edit and its test run in one call. Your client may list these tools under prefixed "
+        "names: call them by the names it lists. Reads and edits stay inside cwd unless "
         "allow_outside=true. If your client loads tool schemas on demand, load all three in one request."
     ),
 )

@@ -645,7 +645,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
 
                 res = await call(session, "batch_read", {"specs": ["big.txt"], "cwd": str(repo)})
                 text = _text(res)
-                assert "outline only" in text and "body 1-1 filler" not in text
+                assert "outline only" in text and "body 1-1 filler" not in text and '"big.txt:1-630" for all of it' in text
                 res = await call(session, "batch_read", {"specs": ["big.txt:1-630"], "cwd": str(repo)})
                 text = _text(res)
                 assert "body 1-1 filler" in text and _items(res)[0]["status"] == "ok"
@@ -668,7 +668,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_read", {
                     "specs": ["big.txt"], "budget": {"tokens": 4000}, "cwd": str(repo)})
                 text = _text(res)
-                assert "outline only" in text and '"big.txt:1-630"' in text
+                assert "outline only" in text and '"big.txt:1-630" in parts' in text
                 res = await call(session, "batch_read", {
                     "specs": ["big.txt:1-300", "big.txt:301-630", {"path": "big.txt", "range": "301-630"},
                               "big.txt:331-360", "big.txt:1-630"],
@@ -919,6 +919,12 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 kept = _text(res).replace("\r", "").split("\n")
                 assert res.isError and "-two" in kept and "+three" in kept
                 assert lf.read_bytes().replace(b"\r\n", b"\n") == b"three\n"
+                (repo / "mkeep.txt").write_bytes(b"m1\n")
+                res = await call(session, "batch_edit", {
+                    "manifest": "diff --git a/mkeep.txt b/mkeep.txt\n--- a/mkeep.txt\n+++ b/mkeep.txt\n@@ -1 +1 @@\n-m1\n+m2\n",
+                    "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]}, "cwd": str(repo)})
+                assert res.isError
+                assert (repo / "mkeep.txt").read_bytes().replace(b"\r\n", b"\n") == b"m2\n"
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "lf.txt", "search": "three", "replace": "four"}],
                     "verify": "git --version ||| count", "cwd": str(repo)})

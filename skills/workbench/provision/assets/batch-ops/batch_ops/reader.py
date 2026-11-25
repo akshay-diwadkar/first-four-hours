@@ -554,8 +554,10 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     if info.lossy:
         message = f"decoded as {info.encoding} with replacement characters"
     if summary is not None:
+        # The whole range reads in one item only when the numbered body fits this read's cap.
+        whole = "for all of it" if full_size <= effective_cap else "in parts"
         message = (f"outline only: {lines_total} lines, {format_bytes(info.bytes_total)}; read blocks or "
-                   f"ranges from it, or \"{display}:1-{lines_total}\" for all of it")
+                   f"ranges from it, or \"{display}:1-{lines_total}\" {whole}")
     elif truncated:
         # The continuation is named by the body's cut marker and the report's next: line.
         message = f"body truncated to {format_bytes(effective_cap)}; full file is {format_bytes(info.bytes_total)}"

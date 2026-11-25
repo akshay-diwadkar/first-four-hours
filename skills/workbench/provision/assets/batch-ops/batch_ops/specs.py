@@ -559,14 +559,16 @@ def _display(label: str, command: str) -> str:
 
 
 def unquote_path(path: str) -> str:
-    """Drop one pair of quotes wrapping a whole edit path, as agents sometimes send "\"src/a.ts\"".
+    """Drop one pair of double quotes wrapping a whole edit path, as agents sometimes send "\"src/a.ts\"".
 
-    No real target is named that way: Windows refuses the character, and elsewhere the write
-    would create a directory whose name starts with a quote.
+    Windows refuses the double quote in names, so no target there is named that way. Single quotes
+    stay: a name wrapped in them is legal everywhere and may be the real file.
     """
-    if len(path) >= 2 and path[0] == path[-1] and path[0] in "\"'":
+    if len(path) >= 2 and path[0] == path[-1] == '"':
         return path[1:-1]
     return path
+
+
 def parse_edit_spec(spec: Any) -> EditRequest:
     data = _as_dict(spec, "edit spec")
     path = unquote_path(str(data.get("path") or ""))

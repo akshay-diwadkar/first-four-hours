@@ -961,6 +961,9 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_edit", {"new_files": {'"q/quoted.txt"': "q\n"}, "cwd": str(parts)})
                 assert not res.isError, _text(res)
                 assert (parts / "q" / "quoted.txt").read_bytes() == b"q\n"
+                res = await call(session, "batch_edit", {"new_files": {"'sq.txt'": "s\n"}, "cwd": str(parts)})
+                assert not res.isError, _text(res)
+                assert (parts / "'sq.txt'").read_bytes() == b"s\n"
                 (parts / "wf.txt").write_bytes(b"w\n")
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "wf.txt", "search": "w", "replace": "x"}],

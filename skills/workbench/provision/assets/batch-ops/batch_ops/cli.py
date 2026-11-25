@@ -178,6 +178,8 @@ async def _cmd_edit(args: argparse.Namespace, root: Path) -> tuple[str, dict[str
         payload["verify"] = args.verify
     if args.no_rollback:
         payload["rollback_on_failure"] = False
+    if args.rollback:
+        payload["rollback_on_failure"] = True
     if args.overwrite:
         payload["overwrite"] = True
     if args.allow_outside:
@@ -246,7 +248,7 @@ async def _cmd_edit(args: argparse.Namespace, root: Path) -> tuple[str, dict[str
     bundle = EditRequestBundle(
         edits=edit_reqs, new_files=new_reqs, deletes=delete_reqs, renames=rename_reqs,
         manifest=manifest, cwd=str(root), dry_run=bool(payload.get("dry_run", False)),
-        verify=verify_req, rollback_on_failure=bool(payload.get("rollback_on_failure", True)),
+        verify=verify_req, rollback_on_failure=bool(payload.get("rollback_on_failure", False)),
         overwrite=bool(payload.get("overwrite", False)),
         normalize_eol=bool(payload.get("normalize_eol", getattr(args, "normalize_eol", False))),
         allow_outside=bool(payload.get("allow_outside", False)),
@@ -306,6 +308,7 @@ def build_parser() -> argparse.ArgumentParser:
     edit.add_argument("--dry-run", action="store_true")
     edit.add_argument("--verify", help="verification command")
     edit.add_argument("--no-rollback", action="store_true")
+    edit.add_argument("--rollback", action="store_true", help="restore every file when verify fails")
     edit.add_argument("--overwrite", action="store_true")
     edit.add_argument("--normalize-eol", action="store_true", help="normalize mixed line endings")
     edit.add_argument("--allow-outside", action="store_true")

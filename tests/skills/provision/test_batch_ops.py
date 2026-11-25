@@ -557,6 +557,15 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     cli_payload = {"new_files": [{"path": "cli_copy.txt", "content": [cli_part]}]}
     assert cli_mod.main(["edit", "--root", str(parts), "--payload", json.dumps(cli_payload)]) == 0
     assert (parts / "cli_copy.txt").read_bytes() == b"c2\n"
+    (parts / "cli_rb.txt").write_bytes(b"a\n")
+    cli_fail = ["--verify", "exit 1"]
+    rb_payload = {"edits": [{"path": "cli_rb.txt", "search": "a", "replace": "b"}]}
+    assert cli_mod.main(["edit", "--root", str(parts), "--payload", json.dumps(rb_payload), *cli_fail]) != 0
+    assert (parts / "cli_rb.txt").read_bytes() == b"b\n"
+    rb_payload = {"edits": [{"path": "cli_rb.txt", "search": "b", "replace": "c"}]}
+    assert cli_mod.main(["edit", "--root", str(parts), "--payload", json.dumps(rb_payload), *cli_fail,
+                         "--rollback"]) != 0
+    assert (parts / "cli_rb.txt").read_bytes() == b"b\n"
 
     async def call(session, name, args):
         return await asyncio.wait_for(session.call_tool(name, args), 20)
@@ -636,7 +645,26 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
 
                 res = await call(session, "batch_read", {"specs": ["big.txt"], "cwd": str(repo)})
                 text = _text(res)
+                assert "outline only" in text and "body 1-1 filler" not in text
+                res = await call(session, "batch_read", {"specs": ["big.txt:1-630"], "cwd": str(repo)})
+                text = _text(res)
                 assert "body 1-1 filler" in text and _items(res)[0]["status"] == "ok"
+                (repo / "plain.csv").write_text("".join(f"{i},{2 * i},{3 * i}\n" for i in range(1, 1501)),
+                                                encoding="utf-8")
+                res = await call(session, "batch_read", {"specs": ["plain.csv"], "cwd": str(repo)})
+                assert _items(res)[0]["status"] == "ok" and "1499,2998,4497" in _text(res)
+
+                def block_groups(count):
+                    return "".join(
+                        f"block {k}:\n" + "".join(f"    body {k}-{j} filler text to take up room\n" for j in range(1, 21))
+                        for k in range(1, count + 1))
+
+                (repo / "mid.txt").write_text(block_groups(10), encoding="utf-8")
+                res = await call(session, "batch_read", {"specs": ["mid.txt"], "cwd": str(repo)})
+                assert "outline only" in _text(res)
+                (repo / "small.txt").write_text(block_groups(6), encoding="utf-8")
+                res = await call(session, "batch_read", {"specs": ["small.txt"], "cwd": str(repo)})
+                assert _items(res)[0]["status"] == "ok" and "body 6-20 filler" in _text(res)
                 res = await call(session, "batch_read", {
                     "specs": ["big.txt"], "budget": {"tokens": 4000}, "cwd": str(repo)})
                 text = _text(res)
@@ -887,7 +915,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "lf.txt", "search": "two", "replace": "three"}],
                     "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]},
-                    "rollback_on_failure": False, "cwd": str(repo)})
+                    "cwd": str(repo)})
                 kept = _text(res).replace("\r", "").split("\n")
                 assert res.isError and "-two" in kept and "+three" in kept
                 assert lf.read_bytes().replace(b"\r\n", b"\n") == b"three\n"
@@ -940,7 +968,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
 
                 res = await call(session, "batch_edit", {
                     "manifest": "diff --git a/notes.txt b/copied.txt\nsimilarity index 100%\ncopy from notes.txt\ncopy to copied.txt\n",
-                    "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]}, "cwd": str(repo)})
+                    "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]},
+                    "rollback_on_failure": True, "cwd": str(repo)})
                 assert res.isError
                 assert [(i["kind"], i["path"]) for i in _items(res) if i["kind"] != "verify"] == [("create", "copied.txt")]
                 assert not (repo / "copied.txt").exists()
@@ -948,7 +977,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 edit = {"path": "notes.txt", "search": "old line", "replace": "new line"}
                 res = await call(session, "batch_edit", {
                     "edits": [edit], "new_files": {"deep/er/made.txt": "x\n"},
-                    "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]}, "cwd": str(repo)})
+                    "verify": {"argv": [sys.executable, "-c", "raise SystemExit(1)"]},
+                    "rollback_on_failure": True, "cwd": str(repo)})
                 assert res.isError
                 assert "-old line" in _text(res).replace("\r", "").split("\n")
                 assert notes.read_bytes() == b"keep\r\nold line\r\n"
@@ -957,7 +987,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_edit", {
                     "new_files": {"deep2/made.txt": "x\n"},
                     "verify": {"argv": [sys.executable, "-c", "import pathlib; pathlib.Path('deep2/keep.txt').write_text('k'); raise SystemExit(1)"]},
-                    "cwd": str(repo)})
+                    "rollback_on_failure": True, "cwd": str(repo)})
                 assert res.isError
                 assert (repo / "deep2" / "keep.txt").exists()
                 assert not (repo / "deep2" / "made.txt").exists()

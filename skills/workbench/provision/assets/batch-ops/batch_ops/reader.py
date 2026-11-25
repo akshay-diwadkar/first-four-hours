@@ -516,7 +516,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     summary = None
     kept_count: int | None
     continuation: str | None
-    if mode == "auto" and not req.range and line_rows and full_size > effective_cap:
+    if mode == "auto" and not req.range and line_rows and full_size > min(effective_cap, WHOLE_FILE_OUTLINE_BYTES):
         summary = _outline_summary(lines, effective_cap)
     if summary is not None:
         # A large file read whole is mostly skimmed: show its map and let blocks be read from it.
@@ -554,8 +554,8 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
     if info.lossy:
         message = f"decoded as {info.encoding} with replacement characters"
     if summary is not None:
-        message = (f"outline only: {lines_total} lines, {format_bytes(info.bytes_total)}, too big for this "
-                   f"report; read blocks or ranges from it, or \"{display}:1-{lines_total}\" in parts")
+        message = (f"outline only: {lines_total} lines, {format_bytes(info.bytes_total)}; read blocks or "
+                   f"ranges from it, or \"{display}:1-{lines_total}\" for all of it")
     elif truncated:
         # The continuation is named by the body's cut marker and the report's next: line.
         message = f"body truncated to {format_bytes(effective_cap)}; full file is {format_bytes(info.bytes_total)}"
@@ -584,6 +584,7 @@ def _read_file_request(req: ReadRequest, root: Path, cap: int, artifacts: Artifa
 
 
 OUTLINE_SUMMARY_BYTES = 6 * 1024  # an outline-first read shows depth 2 only when it fits this
+WHOLE_FILE_OUTLINE_BYTES = 8 * 1024  # a whole-file read over this, of a file with an outline, shows the outline first
 OUTLINE_ROW_CHARS = 160
 
 

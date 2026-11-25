@@ -3,7 +3,7 @@
 Exposes:
   - batch_read: read many files, slices, greps, git diffs, handles, or a whole-repo survey.
   - batch_run: execute commands concurrently with process-tree kills, slices, and failure-first output.
-  - batch_edit: transactional multi-file edits with dry-run, atomic writes, verify, and rollback.
+  - batch_edit: transactional multi-file edits with dry-run, atomic writes, verify, and optional rollback.
 
 All tools return a BatchToolResult providing an agent-readable text report and a
 machine-readable summary envelope in _meta["batch_ops/envelope"] (see BatchToolResult).
@@ -126,7 +126,7 @@ mcp = _SlimFastMCP(
         "Batch evidence tools for coding agents. batch_read gathers files, greps, git history "
         "or a repository map (mode='survey') in one turn; batch_run runs several commands with "
         "per-command timeouts, failures first; batch_edit applies several edits atomically with "
-        "dry-run and rollback on verification failure. Your client may list these tools under "
+        "dry-run and optional rollback on verification failure. Your client may list these tools under "
         "prefixed names: call them by the names it lists. Reads and edits stay inside cwd unless "
         "allow_outside=true. If your client loads tool schemas on demand, load all three in one request."
     ),
@@ -636,7 +636,7 @@ async def batch_edit(
     full_diff: bool = False,
     diff: Literal["stat", "hunks", "full"] | None = None,
     verify: str | dict[str, Any] | None = None,
-    rollback_on_failure: bool = True,
+    rollback_on_failure: bool = False,
     overwrite: bool = False,
     normalize_eol: bool = False,
     allow_outside: bool = False,
@@ -651,7 +651,7 @@ async def batch_edit(
     matching once unless "replace_all": true or "occurrence": N (counted after earlier edits). A replace, or a list-form new file's content, may be a list of parts joined in order: "text", {"path": p, "range": "N-M", "since": SHA} (copied as the batch began; refused if p changed) or {"artifact": "NAME:N-M"}.
     new_files: {"path": "content"}; deletes: ["path"]; renames: [{"from": a, "to": b}]; manifest:
     a unified diff with repository-root paths. verify: "<cmd>" or {"cmd": "...", "timeout": 120}, cmd and "slices" as in batch_run;
-    failure restores every file. diff: "stat" (default; failures
+    failure keeps edits unless rollback_on_failure=true. diff: "stat" (default; failures
     show hunks), "hunks" or "full" (full_diff=true); dry_run=true shows full diffs. budget: tokens.
     """
     try:

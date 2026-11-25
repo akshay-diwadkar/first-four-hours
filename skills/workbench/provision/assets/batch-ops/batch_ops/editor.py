@@ -142,7 +142,7 @@ async def apply_edits(
                     else f"verification failed; rollback was {status}"
                 )
             else:
-                report.message = "verification failed; changes kept (rollback_on_failure=false)"
+                report.message = "verification failed; changes kept (rollback_on_failure=true restores files)"
     elif bundle.verify is None:
         report.message = report.message or "changes applied"
 

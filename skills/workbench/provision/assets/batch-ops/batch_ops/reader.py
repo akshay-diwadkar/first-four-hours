@@ -2201,7 +2201,7 @@ def survey(
                 parts.append(f"    +{len(kids) - 6} more folder(s)")
         if len(top_folders) > 20:
             parts.append(f"  +{len(top_folders) - 20} more folder(s)")
-        parts.append('Zoom (read tool): mode="survey" with cwd one of '
+        parts.append('Zoom (batch_read): mode="survey" with cwd one of '
                      + json.dumps([str(root_p / label) for label in shown_top[:3]]))
     if top_files:
         parts.append("Top-level files: " + ", ".join(top_files))

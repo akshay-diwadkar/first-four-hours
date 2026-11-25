@@ -556,9 +556,22 @@ def _display(label: str, command: str) -> str:
 # ---------------------------------------------------------------------------
 # Edits
 # ---------------------------------------------------------------------------
+
+
+def unquote_path(path: str) -> str:
+    """Drop one pair of double quotes wrapping a whole edit path, as agents sometimes send "\"src/a.ts\"".
+
+    Windows refuses the double quote in names, so no target there is named that way. Single quotes
+    stay: a name wrapped in them is legal everywhere and may be the real file.
+    """
+    if len(path) >= 2 and path[0] == path[-1] == '"':
+        return path[1:-1]
+    return path
+
+
 def parse_edit_spec(spec: Any) -> EditRequest:
     data = _as_dict(spec, "edit spec")
-    path = str(data.get("path") or "")
+    path = unquote_path(str(data.get("path") or ""))
     search = data.get("search")
     replace = data.get("replace")
     if not path:
@@ -672,7 +685,7 @@ def _parse_part(item: Any, owner: str, index: int) -> TextPart:
 
 def parse_new_file(spec: Any, *, allow_parts: bool = False) -> NewFileRequest:
     data = _as_dict(spec, "new file spec")
-    path = str(data.get("path") or "")
+    path = unquote_path(str(data.get("path") or ""))
     content = data.get("content")
     if not path:
         raise SpecError("new file spec requires path")
@@ -710,8 +723,8 @@ def parse_new_files(value: Any) -> list[NewFileRequest]:
 
 def parse_rename(spec: Any) -> RenameRequest:
     data = _as_dict(spec, "rename spec")
-    source = str(data.get("from", data.get("source", "")) or "")
-    destination = str(data.get("to", data.get("destination", "")) or "")
+    source = unquote_path(str(data.get("from", data.get("source", "")) or ""))
+    destination = unquote_path(str(data.get("to", data.get("destination", "")) or ""))
     if not source or not destination:
         raise SpecError("rename spec requires from and to")
     return RenameRequest(source=source, destination=destination, overwrite=bool(data.get("overwrite", False)))
@@ -791,7 +804,7 @@ def parse_manifest(text: str, work_dir: str = ".") -> tuple[str, list[EditReques
     new_files: list[NewFileRequest] = []
     for i, match in enumerate(matches):
         block_type = match.group(1)
-        path = match.group(2).strip()
+        path = unquote_path(match.group(2).strip())
         start = match.end()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(normalized)
         body = normalized[start:end]

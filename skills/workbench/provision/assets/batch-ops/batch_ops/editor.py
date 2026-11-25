@@ -111,13 +111,14 @@ async def apply_edits(
         report.message = "dry run: no files were written"
         return report
 
-    failed, rollback_errors = _apply_plan(plan)
+    failure, rollback_errors = _apply_plan(plan)
     report.artifacts.extend(rollback_errors)
-    if failed:
+    if failure:
         report.ok = False
         report.rolled_back = True
         report.rollback_status = "complete" if not rollback_errors else "partial"
-        report.message = "write failed; all changes were rolled back"
+        report.message = f"write failed for {failure}; " + (
+            "all changes were rolled back" if not rollback_errors else "rollback was partial")
         return report
 
     if bundle.verify is not None:
@@ -734,9 +735,9 @@ def _condense(diff: str) -> str:
 # ---------------------------------------------------------------------------
 # Apply and rollback
 # ---------------------------------------------------------------------------
-def _apply_plan(plan: _Plan) -> tuple[bool, list[str]]:
-    failed = False
-    artifacts: list[str] = []
+def _apply_plan(plan: _Plan) -> tuple[str | None, list[str]]:
+    """Write every planned item; after a failed write, roll back and return "path: error" for it."""
+    written = 0
     try:
         for item in plan.items:
             if item.action in ("modify", "create"):
@@ -754,18 +755,22 @@ def _apply_plan(plan: _Plan) -> tuple[bool, list[str]]:
                 item.destination.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(item.path, item.destination)
             item.change.status = "ok"
+            written += 1
     except Exception as exc:
-        failed = True
-        status, errors = _rollback(plan)
-        for item in plan.items:
-            if item.change.status == "ok":
-                item.change.status = "rolled_back" if status in ("complete", "partial") else "error"
+        cause = f"{type(exc).__name__}: {exc}"
+        _, errors = _rollback(plan)
+        for index, item in enumerate(plan.items):  # planned items start as ok, so mark each by position
+            if index < written:
+                item.change.status = "rolled_back"
                 item.change.message = "rolled back after a write failure"
-            elif item.change.status != "error":
+            elif index == written:
                 item.change.status = "error"
-                item.change.message = f"{type(exc).__name__}: {exc}"
-        artifacts.extend(errors)
-    return failed, artifacts
+                item.change.message = cause
+            else:
+                item.change.status = "skipped"
+                item.change.message = "not written: an earlier write failed"
+        return f"{plan.items[written].change.path}: {cause}", errors
+    return None, []
 
 
 def _rollback(plan: _Plan) -> tuple[str, list[str]]:
@@ -774,7 +779,8 @@ def _rollback(plan: _Plan) -> tuple[str, list[str]]:
         try:
             path.unlink(missing_ok=True)
         except OSError as exc:
-            errors.append(f"rollback could not remove {path}: {exc}")
+            if os.path.lexists(path):  # a path the system cannot hold was never written
+                errors.append(f"rollback could not remove {path}: {exc}")
     for source, destination in plan.renames:
         try:
             if destination.exists():

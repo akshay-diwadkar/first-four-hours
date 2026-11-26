@@ -677,6 +677,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert [i["status"] for i in _items(res)] == ["ok", "deferred", "deferred", "ok", "deferred"]
                 text = _text(res)
                 assert "300:     body 15-5 filler" in text
+                assert "\nheld back: 3 of 5 item(s), to fit the report limit; nothing failed. Read them with batch_read" in text
                 next_line = [ln for ln in text.split("\n") if ln.startswith("next: call batch_read with specs=")]
                 assert next_line and '"big.txt:301-630"' in next_line[0] and '"range": "301-630"' in next_line[0] and '"big.txt:1-630"' in next_line[0]
 

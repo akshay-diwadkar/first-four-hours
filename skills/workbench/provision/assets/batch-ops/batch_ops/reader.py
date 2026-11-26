@@ -44,7 +44,7 @@ from .workspace import git_root_fast, path_is_within, workspace_info
 
 MAX_FILE_BYTES = 32 * 1024 * 1024
 DEFAULT_PARALLEL = 8
-REPORT_LINES_BYTES = 1024  # a report's title, budget, coverage and note lines
+REPORT_LINES_BYTES = 512  # a report's title, budget, held-back, coverage and note lines (about 350 measured)
 CUT_NOTE_BYTES = 192  # what cutting an item adds to its block: its truncation message and next: spec
 VCS_DIRS = {".git", ".hg", ".svn"}
 EACH_SOURCES = ("glob", "grep", "git_changed", "git_cochange")  # reads whose `found` an each read expands
@@ -62,7 +62,7 @@ def _held_back(request: ReadRequest) -> ReadResult:
     return ReadResult(
         id="read", kind=request.kind, label=request.label or str(source), path=request.path,
         status="deferred",
-        message="not shown: the report budget ran out; listed whole in next:",
+        message="held back to fit the report; listed whole in next:",
         meta=meta,
     )
 

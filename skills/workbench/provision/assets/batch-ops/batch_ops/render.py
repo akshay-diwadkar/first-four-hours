@@ -133,6 +133,11 @@ def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
     problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged", "deferred")]
     if problems:
         lines.append("problems: " + ", ".join(f"{r.id} {r.status}" for r in problems))
+    held = sum(r.status == "deferred" for r in report.reads)
+    if held:
+        # An agent read a mostly held-back report as a failure and retried with its own read tool.
+        lines.append(f"held back: {held} of {len(report.reads)} item(s), to fit the report limit; nothing failed. "
+                     "Read them with batch_read and the specs below, not another read tool.")
     next_line = _next_line(report)
     if next_line:
         lines.append(next_line)

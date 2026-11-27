@@ -102,6 +102,12 @@ def _render_read_item(result: ReadResult) -> list[str]:
 
 
 DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")  # edits to these alone get no verify hint
+READ_STATUSES = ("ok", "truncated", "lossy", "unchanged", "deferred")  # any other is a problem
+
+
+def is_problem(result: ReadResult) -> bool:
+    """Whether `result` failed, so the report lists it under problems."""
+    return result.status not in READ_STATUSES
 
 
 def read_item_bytes(result: ReadResult) -> int:
@@ -111,8 +117,8 @@ def read_item_bytes(result: ReadResult) -> int:
     continuation = (result.meta or {}).get("continuation")
     if continuation:
         size += len(json.dumps(continuation if isinstance(continuation, dict) else str(continuation))) + 2
-    if result.status not in ("ok", "truncated", "lossy", "unchanged", "deferred"):
-        size += 2 * (len(result.id) + len(result.status) + len(result.path or "")) + 16
+    if is_problem(result):  # its problems entry, and its unknowns entry, which names the path once
+        size += 2 * (len(result.id) + len(result.status)) + len(result.path or "") + 16
     return size
 
 
@@ -133,13 +139,13 @@ def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
     if any((r.truncated and not (r.meta or {}).get("outline_first")) or r.status == "deferred"
            for r in report.reads):
         lines.append(_budget_line(report))
-    problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged", "deferred")]
+    problems = [r for r in report.reads if is_problem(r)]
     if problems:
         lines.append("problems: " + ", ".join(f"{r.id} {r.status}" for r in problems))
     held = sum(r.status == "deferred" for r in report.reads)
     if held:
         # An agent read a mostly held-back report as a failure and retried with its own read tool.
-        lines.append(f"held back: {held} of {len(report.reads)} item(s), to fit the report limit; nothing failed. "
+        lines.append(f"held back: {held} of {len(report.reads)} item(s), to fit the report limit; none of them failed. "
                      "Read them with batch_read and the specs below, not another read tool.")
     next_line = _next_line(report)
     if next_line:

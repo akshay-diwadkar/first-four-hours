@@ -677,7 +677,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert [i["status"] for i in _items(res)] == ["ok", "deferred", "deferred", "ok", "deferred"]
                 text = _text(res)
                 assert "300:     body 15-5 filler" in text
-                assert "\nheld back: 3 of 5 item(s), to fit the report limit; nothing failed. Read them with batch_read" in text
+                assert "\nheld back: 3 of 5 item(s), to fit the report limit; none of them failed. Read them with batch_read" in text
                 next_line = [ln for ln in text.split("\n") if ln.startswith("next: call batch_read with specs=")]
                 assert next_line and '"big.txt:301-630"' in next_line[0] and '"range": "301-630"' in next_line[0] and '"big.txt:1-630"' in next_line[0]
 
@@ -696,6 +696,12 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                     "specs": [f"hits/f{i:02d}.txt" for i in range(1, 11)], "budget": {"tokens": 1100}, "cwd": str(repo)})
                 assert [i["status"] for i in _items(res)] == ["ok"] * 10
                 assert len(_text(res).encode("utf-8")) <= 4400
+
+                # A failed read is never held back, so the agent sees its error now, not after passing next: back.
+                res = await call(session, "batch_read", {
+                    "specs": [f"hits/f{i:02d}.txt" for i in range(1, 4)] + [f"nofile_{i:02d}.txt" for i in range(10)],
+                    "budget": {"tokens": 600}, "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)][3:] == ["missing"] * 10
 
                 # No floor on the room: held-back notices and report lines fit the budget, uncut by the final cap.
                 small = [f"hits/f{i:02d}.txt" for i in range(1, 31)]

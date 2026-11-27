@@ -24,7 +24,7 @@ from pathlib import Path
 
 from .artifacts import ArtifactStore, make_read_handle, parse_read_handle, since_sha as _since_sha
 from .budget import BudgetTracker, tier
-from .render import read_item_bytes
+from .render import is_problem, read_item_bytes
 from .safety import (
     SafetyError,
     decode_bytes,
@@ -90,7 +90,7 @@ async def read_batch(
     Pass 1 reads each item under its own per-item cap.  Items are then admitted greedily in
     (priority tier, request order), sized as they will render: every item first reserves what it
     shows when deferred, and one that fits the room left after every held-back notice and the report
-    lines is kept whole.  One larger than that whole room is cut while at least half of it remains, and a cut that
+    lines is kept whole.  A failed item is never held back, so its error shows at once.  One larger than that whole room is cut while at least half of it remains, and a cut that
     still does not fit is held back, as is any other, its original spec carried in ``next:``.  The first
     item in order, unless it is an ``each`` item, is never held back and gets at least 512 bytes, so
     only it can make a report exceed its budget.
@@ -184,8 +184,8 @@ async def read_batch(
 
     for i in order:
         cost = max(0, read_item_bytes(results[i]) - held_bytes[i])
-        if requests[i].kind == "each":
-            remaining -= min(remaining, cost)  # never deferred, though its bytes count
+        if requests[i].kind == "each" or is_problem(results[i]):
+            remaining -= min(remaining, cost)  # never deferred, though its bytes count: a failure shows now
         elif i == progress:
             room = max(remaining, FIRST_ITEM_MIN_BYTES)
             if cost > room:

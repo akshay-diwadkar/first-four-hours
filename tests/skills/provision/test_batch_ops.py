@@ -697,6 +697,27 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert [i["status"] for i in _items(res)] == ["ok"] * 10
                 assert len(_text(res).encode("utf-8")) <= 4400
 
+                # No floor on the room: held-back notices and report lines fit the budget, uncut by the final cap.
+                small = [f"hits/f{i:02d}.txt" for i in range(1, 31)]
+                res = await call(session, "batch_read", {
+                    "specs": small[:12], "budget": {"tokens": 600}, "cwd": str(repo)})
+                text = _text(res)
+                statuses = [i["status"] for i in _items(res)]
+                assert len(text.encode("utf-8")) <= 2400 and "report truncated" not in text
+                assert statuses[0] == "ok" and "deferred" in statuses
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt:1-630", *small[:11]], "budget": {"tokens": 600}, "cwd": str(repo)})
+                text = _text(res)
+                statuses = [i["status"] for i in _items(res)]
+                assert len(text.encode("utf-8")) <= 2400 and "report truncated" not in text
+                assert statuses[0] == "truncated" and "deferred" in statuses[1:]
+                # The final cap cuts this report, which the first item's 512-byte minimum accepts, so its size is not asserted.
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt:1-630", *small[:20]], "budget": {"tokens": 600}, "cwd": str(repo)})
+                crowded_items = _items(res)
+                assert crowded_items[0]["status"] == "truncated" and crowded_items[0]["bytes_shown"] <= 512
+                assert {i["status"] for i in crowded_items[1:]} == {"deferred"}
+
                 res = await call(session, "batch_read", {
                     "specs": ["many.md"], "budget": {"tokens": 500}, "cwd": str(repo)})
                 text = _text(res).replace("\r", "")

@@ -935,7 +935,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "lf.txt", "search": "three", "replace": "four"}],
                     "verify": "git --version ||| count", "cwd": str(repo)})
-                assert not res.isError
+                assert not res.isError and "hint: no verify ran" not in _text(res)
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "lf.txt", "search": "four", "replace": "five"}],
                     "verify": {"cmd": "git --version ||| count"}, "cwd": str(repo)})
@@ -1037,6 +1037,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 edit_lines = _text(res).replace("\r", "").split("\n")
                 assert "+new line" not in edit_lines and "@@" not in _text(res)
                 assert "1 replacement(s)" in _text(res) and "hash " in _text(res)
+                assert "hint: no verify ran" not in _text(res)  # a doc edit alone gets no verify hint
 
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "notes.txt", "search": "new line", "replace": "old line"}],
@@ -1074,6 +1075,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert not res.isError and sql.read_bytes() == b"select 1;\nselect 2;\n"
                 sql_lines = _text(res).replace("\r", "").split("\n")
                 assert "--- old note" in sql_lines and "--- a/q.sql" not in sql_lines
+                # A code edit without verify says to pass its tests as verify next time.
+                assert "hint: no verify ran; pass the tests covering these files as verify" in _text(res)
 
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo)})
                 assert not res.isError

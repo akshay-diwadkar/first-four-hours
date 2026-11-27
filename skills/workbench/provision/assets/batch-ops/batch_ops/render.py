@@ -101,6 +101,9 @@ def _render_read_item(result: ReadResult) -> list[str]:
     return lines
 
 
+DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")  # edits to these alone get no verify hint
+
+
 def read_item_bytes(result: ReadResult) -> int:
     """Bytes `result` adds to a rendered batch_read report: its block and the blank line after it,
     its spec in next:, and its problems and unknowns entries, so items fit the budget as rendered."""
@@ -274,6 +277,12 @@ def render_edit_report(report: EditReport, *, max_bytes: int = 32 * 1024) -> str
                 lines.append(_fence(change.diff))
     else:
         lines.append("no changes")
+    if (report.ok and not report.dry_run and not report.verify
+            and any(c.status == "ok" and not (c.destination or c.path).lower().endswith(DOC_SUFFIXES)
+                    for c in report.changes)):
+        # Agents edit, then test in a separate call: say where verify would have saved that turn.
+        lines.append("hint: no verify ran; pass the tests covering these files as verify, so an edit and "
+                     "its test run in one call.")
     if report.verify:
         lines.append("verification:")
         for result in report.verify:

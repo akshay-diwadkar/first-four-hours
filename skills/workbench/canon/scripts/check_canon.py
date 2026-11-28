@@ -94,7 +94,10 @@ def check_content(path: str, kind: str, lines: list[str], canon_dir: Path) -> li
         return [f"{path}: has no entries"]
     problems: list[str] = []
     for number, text in enumerate(items, start=1):
-        if kind == "rule":
+        if kind == "text":
+            if not text.strip():
+                problems.append(f"{path}: entry {number} has no text")
+        elif kind == "rule":
             rule, marker, reason = text.partition("Reason:")
             if not marker or not rule.strip() or not reason.strip():
                 problems.append(RULE_MESSAGE.format(path=path, n=number))

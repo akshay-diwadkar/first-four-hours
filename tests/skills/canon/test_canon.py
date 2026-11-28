@@ -28,7 +28,7 @@ LEAF_BODIES = {
 }
 RULE_MESSAGE = '{path}: entry 1 must state a rule and then "Reason: why"'
 SAMPLES = "Samples: entry {n} must be one relative link to a file inside the canon folder"
-GOVERNS = "Governs: entry 1 must be one relative path or glob in backticks"
+GOVERNS = "Governs: entry {n} must be one relative path or glob in backticks"
 CHANGES = 'Change log: entry {n} must read "YYYY-MM-DD: what changed Reason: why"'
 
 
@@ -78,8 +78,11 @@ def _files(root: Path) -> dict[str, bytes]:
     return {path.relative_to(root).as_posix(): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
 
 
-def _check(root: Path, canon: Path, text: str) -> tuple[int, dict[str, Any]]:
-    canon.write_text(text, encoding="utf-8")
+def _check(root: Path, canon: Path, content: str | bytes) -> tuple[int, dict[str, Any]]:
+    if isinstance(content, bytes):
+        canon.write_bytes(content)
+    else:
+        canon.write_text(content, encoding="utf-8")
     before = _files(root)
     argv = [sys.executable, str(CLI), "--repo-root", str(root), "--input", f"canon={canon}", "--format", "json", "check"]
     done = run_python(argv, capture_output=True, text=True, check=False)
@@ -119,7 +122,7 @@ def test_check_accepts_a_complete_canon_and_names_each_missing_or_malformed_part
 
     rules = [path for path in _paths() if path not in ("Character > Thesis", "Character > Personality", *LEAF_BODIES)]
     assert len(rules) == 20
-    bare = [RULE_MESSAGE.format(path=path) for path in rules] + [SAMPLES.format(n=1), GOVERNS, CHANGES.format(n=1)]
+    bare = [RULE_MESSAGE.format(path=path) for path in rules] + [SAMPLES.format(n=1), GOVERNS.format(n=1), CHANGES.format(n=1)]
     _assert_blocked(_check(tmp_path, canon, _canon("bare")), bare)
 
     malformed = complete
@@ -130,23 +133,41 @@ def test_check_accepts_a_complete_canon_and_names_each_missing_or_malformed_part
         ("### Motion\n", "### Motion\n\n### Motion\n"),
         ("\n### Charts\n\n- Charts rule. Reason: Charts reason.\n", ""),
         ("- ![home](samples/home.png)\n", "- [up](../outside.png)\n- [gone](samples/missing.png)\n"),
-        ("- `site/**`\n", "- `/site/**`\n"),
-        (LEAF_BODIES["Change log"], "- added colour Reason: approved\n- 20261128: compact date Reason: approved\n"),
+        ("- `site/**`\n", "- `/site/**`\n- `site\\**`\n- `c:site/**`\n- `site/../x`\n- ` `\n- `site/**` and `docs/**`\n"),
+        (
+            LEAF_BODIES["Change log"],
+            "- added colour Reason: approved\n"
+            "- 20261128: compact date Reason: approved\n"
+            "- 2026-02-30: impossible date Reason: approved\n"
+            "- 2026-11-28:  Reason: approved\n"
+            "- 2026-11-28: blank reason Reason:\n",
+        ),
+        ("- calm\n", "- \n"),
+        ("- Type rule. Reason: Type reason.\n", "- Type rule. Reason:\n"),
+        ("- Colour rule. Reason: Colour reason.\n", "- Reason: Colour reason.\n"),
     ):
         assert malformed.count(old) == 1, old
         malformed = malformed.replace(old, new)
+    malformed += "\n## Banned\n\n- no reason here\n"
     _assert_blocked(
         _check(tmp_path, canon, malformed),
         [
             "Character > Thesis: has no text",
+            "Character > Personality: entry 1 has no text",
             RULE_MESSAGE.format(path="Character > Voice"),
+            RULE_MESSAGE.format(path="System > Type"),
+            RULE_MESSAGE.format(path="System > Colour"),
             "Media > App: has no entries",
             "duplicate section: System > Motion",
             "missing section: States > Charts",
             SAMPLES.format(n=1),
             SAMPLES.format(n=2),
-            GOVERNS,
-            CHANGES.format(n=1),
-            CHANGES.format(n=2),
+            *[GOVERNS.format(n=n) for n in range(1, 7)],
+            *[CHANGES.format(n=n) for n in range(1, 6)],
+            "duplicate section: Banned",
         ],
+    )
+    _assert_blocked(
+        _check(tmp_path, canon, b"\xff\xfe# Shop canon\n"),
+        [f"canon must be a UTF-8 text file: {canon.resolve()}"],
     )

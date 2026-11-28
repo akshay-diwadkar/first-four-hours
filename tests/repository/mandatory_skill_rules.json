@@ -586,5 +586,12 @@
     "source": "SKILL.md",
     "surface": "doctor",
     "text": "Temper is read-only: it never edits, adds, or deletes tests or code in the target repository."
+  },
+  {
+    "id": "canon.user-approval",
+    "skill": "canon",
+    "source": "SKILL.md",
+    "surface": "doctor",
+    "text": "Nothing becomes canon without the user's explicit approval."
   }
 ]

@@ -23,6 +23,7 @@ nav = [
     { "Architect" = "skills/architect.md" },
     { "Assess" = "skills/assess.md" },
     { "Blueprint" = "skills/blueprint.md" },
+    { "Canon" = "skills/canon.md" },
     { "Charter" = "skills/charter.md" },
     { "Construct" = "skills/construct.md" },
     { "Diagnose" = "skills/diagnose.md" },

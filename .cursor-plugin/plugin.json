@@ -5,6 +5,7 @@
     "./skills/workbench/architect",
     "./skills/workbench/assess",
     "./skills/workbench/blueprint",
+    "./skills/workbench/canon",
     "./skills/workbench/charter",
     "./skills/workbench/construct",
     "./skills/workbench/diagnose",

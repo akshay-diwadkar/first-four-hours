@@ -17,6 +17,11 @@
       "description": "Plan a repository change before anyone implements it, sealing an implementation-complete `blueprint.md` that leaves the executor no design decision; skip implementation."
     },
     {
+      "name": "canon",
+      "invocation": "both",
+      "description": "Define and check a product's canon: the one design direction the user approved, kept in a committed `.canon/` folder with its sample renders and the paths it governs. Use when writing, reading, or checking a canon file."
+    },
+    {
       "name": "charter",
       "invocation": "user-invoked",
       "description": "Turn a rough ambition for an app, project, or large idea into one agreed, resumable charter.md that later work is judged against, optionally published as one GitHub umbrella issue. Use when a whole project needs its purpose, scope, success, and open questions settled before tickets or plans."

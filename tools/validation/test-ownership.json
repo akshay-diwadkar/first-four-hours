@@ -143,6 +143,11 @@
         "tests/skills/temper/test_temper.py"
       ]
     },
+    "canon-runtime-contract": {
+      "test_targets": [
+        "tests/skills/canon/test_canon.py"
+      ]
+    },
     "provision-runtime-contract": {
       "test_targets": [
         "tests/repository/test_routine_validation.py::test_live_repository_metadata",
@@ -941,6 +946,7 @@
     "architect": "architect-runtime-contract",
     "assess": "assess-runtime-contract",
     "blueprint": "blueprint-runtime-contract",
+    "canon": "canon-runtime-contract",
     "charter": "charter-runtime-contract",
     "construct": "construct-runtime-contract",
     "diagnose": "diagnose-runtime-contract",
@@ -959,6 +965,6 @@
     "tests/repository/test_routine_validation.py::test_live_repository_metadata"
   ],
   "limits": {
-    "max_gated_items": 48
+    "max_gated_items": 51
   }
 }

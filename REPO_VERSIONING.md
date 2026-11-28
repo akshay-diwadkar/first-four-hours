@@ -112,11 +112,11 @@ Planners read this list while grounding a change in this repository:
 
 ## Suite size cap
 
-The permanent testing ceilings are **three collected cases per skill**, **12 shared cases**, and **48 cases in the complete suite**. Parametrized rows and skill-specific integration scenarios count. These are execution counts, not function counts. Normal test changes may not raise any ceiling, hide independent inputs in loops/helpers, or relabel skill-specific cases as shared.
+The permanent testing ceilings are **three collected cases per skill**, **12 shared cases**, and **51 cases in the complete suite**. Parametrized rows and skill-specific integration scenarios count. These are execution counts, not function counts. Normal test changes may not raise any ceiling, hide independent inputs in loops/helpers, or relabel skill-specific cases as shared.
 
 All skill-specific tests, including integrations, must live under `tests/skills/<registered-skill>/`. Shared checks belong only under `tests/repository/` or `tests/skill_protocol/`. Live pytest modules under `tests/integration/`, `tests/shared/`, directly under `tests/`, or under unknown skill names are refused. The same classifier enforces these locations during ownership inventory validation and pytest collection; there is no default shared bucket. Historical deleted/renamed paths remain selectable against the base and do not become prohibited live modules merely because they existed there.
 
-`tools/validation/test-ownership.json` declares `limits.max_gated_items`, which must be a positive integer no greater than 48. The collection hook independently enforces three per skill and 12 shared, before any test body executes. Missing or invalid limits fail closed. Every retained module must be covered by a whole-module owner target so new cases cannot remain outside the full gate.
+`tools/validation/test-ownership.json` declares `limits.max_gated_items`, which must be a positive integer no greater than 51. The collection hook independently enforces three per skill and 12 shared, before any test body executes. Missing or invalid limits fail closed. Every retained module must be covered by a whole-module owner target so new cases cannot remain outside the full gate.
 
 Repository pytest must use the supervised ownership runner. The root test hook rejects ordinary direct pytest invocation before execution, preventing accidental bypass of the deadline and collection rules. Do not set the supervisor's private environment markers yourself or disable its hooks.
 

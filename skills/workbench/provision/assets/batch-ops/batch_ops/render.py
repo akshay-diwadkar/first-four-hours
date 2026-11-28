@@ -101,6 +101,38 @@ def _render_read_item(result: ReadResult) -> list[str]:
     return lines
 
 
+DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")  # edits to these alone get no verify hint
+READ_STATUSES = ("ok", "truncated", "lossy", "unchanged", "deferred")  # any other is a problem
+UNKNOWN_STATUSES = ("error", "missing", "stale", "binary", "skipped")  # also listed under unknowns
+
+
+def is_problem(result: ReadResult) -> bool:
+    """Whether `result` failed, so the report lists it under problems."""
+    return result.status not in READ_STATUSES
+
+
+def read_unknown(result: ReadResult) -> str | None:
+    """`result`'s entry under a batch_read report's unknowns, naming its path, or None when it has none."""
+    if result.status not in UNKNOWN_STATUSES:
+        return None
+    return f"{result.id}: {result.status}" + (f" ({result.path})" if result.path else "")
+
+
+def read_item_bytes(result: ReadResult) -> int:
+    """Bytes `result` adds to a rendered batch_read report: its block and the blank line after it,
+    its spec in next:, and its problems and unknowns entries, so items fit the budget as rendered."""
+    size = len("\n".join(_render_read_item(result)).encode("utf-8", errors="replace")) + 2
+    continuation = (result.meta or {}).get("continuation")
+    if continuation:
+        size += len(json.dumps(continuation if isinstance(continuation, dict) else str(continuation))) + 2
+    if is_problem(result):
+        size += len(f"{result.id} {result.status}, ".encode("utf-8", errors="replace"))
+    unknown = read_unknown(result)
+    if unknown:
+        size += len(f"  - {unknown}\n".encode("utf-8", errors="replace"))
+    return size
+
+
 def _next_line(report: Report) -> str | None:
     """Every cut or misspelled item's continuation, as the specs to pass back to batch_read."""
     specs = [r.meta["continuation"] if isinstance(r.meta["continuation"], dict) else str(r.meta["continuation"])
@@ -118,9 +150,14 @@ def render_read_report(report: Report, *, max_bytes: int = 32 * 1024) -> str:
     if any((r.truncated and not (r.meta or {}).get("outline_first")) or r.status == "deferred"
            for r in report.reads):
         lines.append(_budget_line(report))
-    problems = [r for r in report.reads if r.status not in ("ok", "truncated", "lossy", "unchanged", "deferred")]
+    problems = [r for r in report.reads if is_problem(r)]
     if problems:
         lines.append("problems: " + ", ".join(f"{r.id} {r.status}" for r in problems))
+    held = sum(r.status == "deferred" for r in report.reads)
+    if held:
+        # An agent read a mostly held-back report as a failure and retried with its own read tool.
+        lines.append(f"held back: {held} of {len(report.reads)} item(s), to fit the report limit; none of them failed. "
+                     "Read them with batch_read and the specs below, not another read tool.")
     next_line = _next_line(report)
     if next_line:
         lines.append(next_line)
@@ -257,6 +294,12 @@ def render_edit_report(report: EditReport, *, max_bytes: int = 32 * 1024) -> str
                 lines.append(_fence(change.diff))
     else:
         lines.append("no changes")
+    if (report.ok and not report.dry_run and not report.verify
+            and any(c.status == "ok" and not (c.destination or c.path).lower().endswith(DOC_SUFFIXES)
+                    for c in report.changes)):
+        # Agents edit, then test in a separate call: say where verify would have saved that turn.
+        lines.append("hint: no verify ran; pass the tests covering these files as verify, so an edit and "
+                     "its test run in one call.")
     if report.verify:
         lines.append("verification:")
         for result in report.verify:

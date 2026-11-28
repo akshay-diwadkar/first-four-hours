@@ -23,7 +23,8 @@ import time
 from pathlib import Path
 
 from .artifacts import ArtifactStore, make_read_handle, parse_read_handle, since_sha as _since_sha
-from .budget import BudgetTracker, body_budget, tier
+from .budget import BudgetTracker, tier
+from .render import is_problem, read_item_bytes
 from .safety import (
     SafetyError,
     decode_bytes,
@@ -43,9 +44,28 @@ from .workspace import git_root_fast, path_is_within, workspace_info
 
 MAX_FILE_BYTES = 32 * 1024 * 1024
 DEFAULT_PARALLEL = 8
+REPORT_LINES_BYTES = 512  # a report's title, budget, held-back, coverage and note lines (about 350 measured)
+CUT_NOTE_BYTES = 192  # what cutting an item adds to its block: its truncation message and next: spec
+FIRST_ITEM_MIN_BYTES = 512  # the room the first item in order gets at least, so a crowded report still shows it
 VCS_DIRS = {".git", ".hg", ".svn"}
 EACH_SOURCES = ("glob", "grep", "git_changed", "git_cochange")  # reads whose `found` an each read expands
 EACH_CALL_CAP = 32
+
+
+def _held_back(request: ReadRequest) -> ReadResult:
+    """The result an item shows when the report budget defers it: its spec, listed whole in next:."""
+    source = request.source
+    if source is None:
+        source = request.path or request.glob or request.pattern or request.label
+    meta: dict[str, object] = {"continuation": source}
+    if request.allow_outside:
+        meta["outside"] = True
+    return ReadResult(
+        id="read", kind=request.kind, label=request.label or str(source), path=request.path,
+        status="deferred",
+        message="held back to fit the report; listed whole in next:",
+        meta=meta,
+    )
 
 
 def _skipped_dir(name: str) -> bool:
@@ -68,9 +88,14 @@ async def read_batch(
     """Read every request concurrently, then fit the batch budget item by item.
 
     Pass 1 reads each item under its own per-item cap.  Items are then admitted greedily in
-    (priority tier, request order): one that fits is kept whole, one larger than the whole body
-    budget is cut while at least half of it remains, and any other is deferred whole, its
-    original spec carried in ``next:``.  The first item in order is always shown or cut.
+    (priority tier, request order), sized as they will render: every item first reserves what it
+    shows when deferred, and one that fits the room left after every held-back notice and the report
+    lines is kept whole.  A failed item is never held back, so its error shows at once.  One larger than that whole room is cut while at least half of it remains, and a cut that
+    still does not fit is held back, as is any other, its original spec carried in ``next:``.  The first
+    item in order, unless it is an ``each`` item, is never held back and gets at least 512 bytes.  A
+    failed or ``each`` item is never held back and has its whole size set aside first, so a report
+    exceeds its budget only through the first item's 512-byte minimum or when its never-held items,
+    held-back notices and report lines alone exceed the budget.
 
     An ``each`` request reads the files an earlier labelled glob, grep, git changed or cochange request
     found: its expansions are ordinary items read after pass 1, listed right after it, and never counted
@@ -143,34 +168,49 @@ async def read_batch(
     requests, results = ordered_requests, ordered_results
     kept = [result.keep for result in results]  # what the last read of each request would save
 
-    total = body_budget(tracker.budget.bytes, len(requests))
+    # Each item reserves what it shows when deferred, so a shown item pays only its extra bytes and a
+    # deferred one is never charged a full header: batching more items no longer shrinks the room.
+    held = [_held_back(request) for request in requests]
+    held_bytes = [read_item_bytes(result) for result in held]
+    # A failed or `each` item is never held back, so its whole size is set aside before any other item
+    # can spend the room: admission order is (tier, request order), and a charge taken in the loop could
+    # come after the room is gone.
+    never_held = [req.kind == "each" or is_problem(result) for req, result in zip(requests, results)]
+    reserved = sum(read_item_bytes(result) if keep_whole else size
+                   for result, keep_whole, size in zip(results, never_held, held_bytes))
+    total = max(0, tracker.budget.bytes - REPORT_LINES_BYTES - reserved)
     remaining = total
-    for i in sorted(range(len(requests)), key=lambda k: (tier(requests[k].priority), k)):
-        size = results[i].bytes_shown
-        if requests[i].kind == "each":
-            remaining -= min(remaining, size)  # never deferred, though its bytes count
-        elif size <= remaining:
-            remaining -= size
-        elif size > total and remaining * 2 >= total:
-            again = await run(requests[i], remaining)
-            if again.status not in ("error", "skipped"):
-                results[i] = again  # a failed re-read keeps the pass-1 result
-                kept[i] = again.keep
-            remaining -= min(remaining, results[i].bytes_shown)
+    order = sorted(range(len(requests)), key=lambda k: (tier(requests[k].priority), k))
+    progress = order[0] if order and requests[order[0]].kind != "each" else None  # never held back
+
+    async def cut(i: int, room: int) -> None:
+        header = read_item_bytes(results[i]) - len((results[i].body or "").encode("utf-8", errors="replace"))
+        again = await run(requests[i], max(1, room + held_bytes[i] - header - CUT_NOTE_BYTES))
+        if again.status not in ("error", "skipped"):
+            results[i] = again  # a failed re-read keeps the pass-1 result
+            kept[i] = again.keep
+
+    for i in order:
+        cost = max(0, read_item_bytes(results[i]) - held_bytes[i])
+        if never_held[i]:
+            continue  # shown as it is: its whole size was set aside in `total`
+        elif i == progress:
+            room = max(remaining, FIRST_ITEM_MIN_BYTES)
+            if cost > room:
+                await cut(i, room)  # kept even when the cut still exceeds the room
+            remaining -= min(remaining, max(0, read_item_bytes(results[i]) - held_bytes[i]))
+        elif cost <= remaining:
+            remaining -= cost
+        elif remaining > 0 and cost > total and remaining * 2 >= total:
+            before, before_kept = results[i], kept[i]
+            await cut(i, remaining)
+            fresh = max(0, read_item_bytes(results[i]) - held_bytes[i])
+            if results[i] is before or fresh > remaining:
+                results[i], kept[i] = held[i], before_kept  # a cut that still does not fit is held back
+            else:
+                remaining -= fresh
         else:
-            request = requests[i]
-            source = request.source
-            if source is None:
-                source = request.path or request.glob or request.pattern or request.label
-            meta: dict[str, object] = {"continuation": source}
-            if request.allow_outside:
-                meta["outside"] = True
-            results[i] = ReadResult(
-                id="read", kind=request.kind, label=request.label or str(source), path=request.path,
-                status="deferred",
-                message="not shown: the report budget ran out; listed whole in next:",
-                meta=meta,
-            )
+            results[i] = held[i]
     for req, result, keep in zip(requests, results, kept):
         if req.kind not in ("grep", "glob") or not artifacts.is_label(req.label):
             continue

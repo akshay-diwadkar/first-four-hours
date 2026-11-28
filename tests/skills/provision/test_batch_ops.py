@@ -365,7 +365,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert all(all(f"needle_census {n}" in r.body for n in range(1, 11)) for r in bounded[34:])
 
     # m. an expansion the report has no room for is deferred, listed whole in next: as a literal spec.
-    for suffix in (":2-9", "@outline"):
+    for suffix in (":2-9", "@context:census:2"):
         crowded = read_many(
             [{"glob": "hits/*.txt", "label": "hb"}, {"each": "hb", "read": suffix}], Budget(tokens=600))
         deferred = [r for r in crowded if r.status == "deferred"]
@@ -677,6 +677,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert [i["status"] for i in _items(res)] == ["ok", "deferred", "deferred", "ok", "deferred"]
                 text = _text(res)
                 assert "300:     body 15-5 filler" in text
+                assert "\nheld back: 3 of 5 item(s), to fit the report limit; none of them failed. Read them with batch_read" in text
                 next_line = [ln for ln in text.split("\n") if ln.startswith("next: call batch_read with specs=")]
                 assert next_line and '"big.txt:301-630"' in next_line[0] and '"range": "301-630"' in next_line[0] and '"big.txt:1-630"' in next_line[0]
 
@@ -689,6 +690,54 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert "bullet" not in text
                 res = await call(session, "batch_read", {"specs": ["cut.md@block:# Top"], "cwd": str(repo)})
                 assert 'read "cut.md:399-409" to continue' in _text(res)
+
+                # Items are sized as they render, so ten small files that fit a 4.4KB budget all show.
+                res = await call(session, "batch_read", {
+                    "specs": [f"hits/f{i:02d}.txt" for i in range(1, 11)], "budget": {"tokens": 1100}, "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)] == ["ok"] * 10
+                assert len(_text(res).encode("utf-8")) <= 4400
+
+                # A failed read is never held back, so the agent sees its error now, not after passing next: back.
+                res = await call(session, "batch_read", {
+                    "specs": [f"hits/f{i:02d}.txt" for i in range(1, 4)] + [f"nofile_{i:02d}.txt" for i in range(10)],
+                    "budget": {"tokens": 600}, "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)][3:] == ["missing"] * 10
+
+                # Failures after content fitting the budget, and failures still showing when they alone overflow it.
+                (repo / "bins").mkdir()
+                for n in range(16):
+                    (repo / "bins" / f"b{n:02d}.dat").write_bytes(b"a\x00b\n")
+                bin_specs = ["hits/f01.txt", "big.txt:1-630", *[f"bins/b{n:02d}.dat" for n in range(16)]]
+                res = await call(session, "batch_read", {"specs": bin_specs, "budget": {"tokens": 1024}, "cwd": str(repo)})
+                text = _text(res)
+                bin_items = _items(res)
+                assert bin_items[0]["status"] == "ok"
+                assert [i["status"] for i in bin_items[2:18]] == ["binary"] * 16
+                assert len(text.encode("utf-8")) <= 4096 and "report truncated" not in text
+                res = await call(session, "batch_read", {"specs": bin_specs, "budget": {"tokens": 256}, "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)[2:18]] == ["binary"] * 16
+                shutil.rmtree(repo / "bins")
+
+                # No floor on the room: held-back notices and report lines fit the budget, uncut by the final cap.
+                small = [f"hits/f{i:02d}.txt" for i in range(1, 31)]
+                res = await call(session, "batch_read", {
+                    "specs": small[:12], "budget": {"tokens": 600}, "cwd": str(repo)})
+                text = _text(res)
+                statuses = [i["status"] for i in _items(res)]
+                assert len(text.encode("utf-8")) <= 2400 and "report truncated" not in text
+                assert statuses[0] == "ok" and "deferred" in statuses
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt:1-630", *small[:11]], "budget": {"tokens": 600}, "cwd": str(repo)})
+                text = _text(res)
+                statuses = [i["status"] for i in _items(res)]
+                assert len(text.encode("utf-8")) <= 2400 and "report truncated" not in text
+                assert statuses[0] == "truncated" and "deferred" in statuses[1:]
+                # The final cap cuts this report, which the first item's 512-byte minimum accepts, so its size is not asserted.
+                res = await call(session, "batch_read", {
+                    "specs": ["big.txt:1-630", *small[:20]], "budget": {"tokens": 600}, "cwd": str(repo)})
+                crowded_items = _items(res)
+                assert crowded_items[0]["status"] == "truncated" and crowded_items[0]["bytes_shown"] <= 512
+                assert {i["status"] for i in crowded_items[1:]} == {"deferred"}
 
                 res = await call(session, "batch_read", {
                     "specs": ["many.md"], "budget": {"tokens": 500}, "cwd": str(repo)})
@@ -928,7 +977,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "lf.txt", "search": "three", "replace": "four"}],
                     "verify": "git --version ||| count", "cwd": str(repo)})
-                assert not res.isError
+                assert not res.isError and "hint: no verify ran" not in _text(res)
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "lf.txt", "search": "four", "replace": "five"}],
                     "verify": {"cmd": "git --version ||| count"}, "cwd": str(repo)})
@@ -1030,6 +1079,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 edit_lines = _text(res).replace("\r", "").split("\n")
                 assert "+new line" not in edit_lines and "@@" not in _text(res)
                 assert "1 replacement(s)" in _text(res) and "hash " in _text(res)
+                assert "hint: no verify ran" not in _text(res)  # a doc edit alone gets no verify hint
 
                 res = await call(session, "batch_edit", {
                     "edits": [{"path": "notes.txt", "search": "new line", "replace": "old line"}],
@@ -1067,6 +1117,8 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                 assert not res.isError and sql.read_bytes() == b"select 1;\nselect 2;\n"
                 sql_lines = _text(res).replace("\r", "").split("\n")
                 assert "--- old note" in sql_lines and "--- a/q.sql" not in sql_lines
+                # A code edit without verify says to pass its tests as verify next time.
+                assert "hint: no verify ran; pass the tests covering these files as verify" in _text(res)
 
                 res = await call(session, "batch_read", {"mode": "survey", "cwd": str(repo)})
                 assert not res.isError

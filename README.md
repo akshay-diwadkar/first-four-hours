@@ -95,7 +95,7 @@ Below it, the plan cites the files its facts come from, gives ordered instructio
 
 ## The skills
 
-Sixteen skills in three domains. Each name links to its page; each contract is the `SKILL.md` the agent follows.
+Seventeen skills in three domains. Each name links to its page; each contract is the `SKILL.md` the agent follows.
 
 <details>
 <summary><b>Workbench</b>: working on a project and its changes</summary>
@@ -105,6 +105,7 @@ Sixteen skills in three domains. Each name links to its page; each contract is t
 - [`/architect`](docs/skills/architect.md): decide a structural question, such as a boundary, dependency direction, or module structure, before planning. [Contract](skills/workbench/architect/SKILL.md)
 - [`/assess`](docs/skills/assess.md): review one exact change against its requirements and base behavior before you trust it. [Contract](skills/workbench/assess/SKILL.md)
 - [`/blueprint`](docs/skills/blueprint.md): plan a repository change so completely that a weaker agent can carry it out. [Contract](skills/workbench/blueprint/SKILL.md)
+- [`/canon`](docs/skills/canon.md): keep one approved design direction per product in a committed canon file, and check that it holds every part. [Contract](skills/workbench/canon/SKILL.md)
 - [`/charter`](docs/skills/charter.md): give a rough idea for a whole project its agreed purpose, scope, and success before anyone splits it into tickets. [Contract](skills/workbench/charter/SKILL.md)
 - [`/construct`](docs/skills/construct.md): carry out a sealed `/blueprint` plan and verify the result. [Contract](skills/workbench/construct/SKILL.md)
 - [`/diagnose`](docs/skills/diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix. [Contract](skills/workbench/diagnose/SKILL.md)

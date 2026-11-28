@@ -9,6 +9,7 @@ Each page also says why the skill is built the way it is: the failure it exists 
 - [`/architect`](architect.md): decide a structural question, such as a boundary, dependency direction, or module structure, before planning.
 - [`/assess`](assess.md): review one exact change against its requirements and base behavior before you trust it.
 - [`/blueprint`](blueprint.md): plan a repository change so completely that a weaker agent can carry it out.
+- [`/canon`](canon.md): keep one approved design direction per product in a committed canon file, and check that it holds every part.
 - [`/charter`](charter.md): give a rough idea for a whole project its agreed purpose, scope, and success before anyone splits it into tickets.
 - [`/construct`](construct.md): carry out a sealed `/blueprint` plan and verify the result.
 - [`/diagnose`](diagnose.md): find the evidence-backed cause of a defect, risk, or improvement opportunity before anyone decides a fix.

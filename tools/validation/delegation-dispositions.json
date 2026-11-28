@@ -169,6 +169,16 @@
       "specialists": "No separate specialist branch is currently earned.",
       "writes": "Temper writes only the ignored .first-four-hours/test-audits/<slug>/test-audit.md and its local Git exclude rule; every mutant runs in a throwaway copy outside the repository.",
       "rationale": "Mutant meaning and candidate choice depend on one reading of the suite, and scripts already verify every claim."
+    },
+    {
+      "skill": "canon",
+      "mode": "direct",
+      "owner": "Canon owns the canon file format and its shape check.",
+      "lifecycle": "Canon checks one canon.md and returns control; every canon change is one the user approved.",
+      "workers": "No worker seam is earned: the shape check is a script.",
+      "specialists": "No separate specialist branch is currently earned.",
+      "writes": "Canon's check writes nothing; canons live in committed .canon/<slug>/ folders.",
+      "rationale": "Checking a canon's shape is mechanical, so no delegated judgment pays for its coordination."
     }
   ]
 }

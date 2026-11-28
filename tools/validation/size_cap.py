@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enforce three cases per skill, 12 shared, and 48 total before any test body.
+"""Enforce three cases per skill, 12 shared, and 51 total before any test body.
 
 Loaded into every pytest process ``test_ownership.py run`` starts; a run split
 into several shards first collects the whole selection once, so the count covers
@@ -23,8 +23,8 @@ from pathlib import PurePosixPath
 CAP_ENV = "SKILLS_MAX_GATED_ITEMS"
 MAX_SKILL_ITEMS = 3
 MAX_SHARED_ITEMS = 12
-MAX_TOTAL_ITEMS = 48
-SKILL_NAMES = frozenset({"architect", "assess", "blueprint", "charter", "construct", "diagnose", "examiner", "ideate", "pr", "provision", "reason", "router", "scribe", "temper", "ticket", "tutor"})
+MAX_TOTAL_ITEMS = 51
+SKILL_NAMES = frozenset({"architect", "assess", "blueprint", "canon", "charter", "construct", "diagnose", "examiner", "ideate", "pr", "provision", "reason", "router", "scribe", "temper", "ticket", "tutor"})
 _REPORT_PATH = os.environ.get("SKILLS_CASE_REPORT")
 
 

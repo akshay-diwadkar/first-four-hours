@@ -4,6 +4,7 @@
     "architect": {"top_level": 616, "references": 6107},
     "assess": {"top_level": 1020, "references": 6700},
     "blueprint": {"top_level": 1493, "references": 8604},
+    "canon": {"top_level": 399, "references": 490},
     "charter": {"top_level": 875, "references": 2182},
     "construct": {"top_level": 810, "references": 5857},
     "diagnose": {"top_level": 754, "references": 5381},

@@ -48,7 +48,7 @@ Add `--global` to install for your user account instead of the current project.
 
 ## Install as a Claude Code plugin
 
-On Claude Code 2.1.275 or later, you can install all 16 skills as one `first-four-hours` plugin instead of the Skills CLI.
+On Claude Code 2.1.275 or later, you can install all 17 skills as one `first-four-hours` plugin instead of the Skills CLI.
 
 Run this command in a Claude Code session:
 
@@ -66,7 +66,7 @@ The plugin has no pinned version and follows repository commits. Run `/plugin ma
 
 ## Install as a Cursor plugin
 
-In Cursor, you can install all 16 skills as one `first-four-hours` plugin instead of the Skills CLI. The Cursor route needs Git and Python 3.11 or later.
+In Cursor, you can install all 17 skills as one `first-four-hours` plugin instead of the Skills CLI. The Cursor route needs Git and Python 3.11 or later.
 
 To install the plugin for yourself, clone the repository into the local plugin folder of Cursor:
 
@@ -116,7 +116,7 @@ For `codex` or `github-copilot`, run `ls .agents/skills` instead.
 
 For a `--global` install, see the note in [Choose the agent and where skills go](#choose-the-agent-and-where-skills-go).
 
-For the Claude Code plugin, run `claude plugin list` in a terminal. The list must show `first-four-hours@first-four-hours` as enabled. To list the 16 skills of the plugin, run `claude plugin details first-four-hours@first-four-hours`.
+For the Claude Code plugin, run `claude plugin list` in a terminal. The list must show `first-four-hours@first-four-hours` as enabled. To list the 17 skills of the plugin, run `claude plugin details first-four-hours@first-four-hours`.
 
 Start a skill to verify any install. See [Your first run](first-run.md).
 

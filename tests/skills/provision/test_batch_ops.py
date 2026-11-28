@@ -1246,6 +1246,10 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
         return json.loads(re.search(r'`(\{"matcher"[^`]*)`', line).group(1))["hooks"][0]
 
     claude_hook, codex_hook = hook("claude-code.md"), hook("codex.md")
+    claude_guard_line = next(line for line in (references / "claude-code.md").read_text(encoding="utf-8").splitlines()
+                             if line.startswith("- **Guard:**"))
+    claude_matcher = json.loads(re.search(r'`(\{"matcher"[^`]*)`', claude_guard_line).group(1))["matcher"].split("|")
+    assert {"Monitor", "Bash", "PowerShell"} <= set(claude_matcher)  # Monitor reaches the guard as itself, shells stay guarded
     transcript = tmp_path / "session.jsonl"
 
     def delta(change):
@@ -1280,6 +1284,7 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     assert guard({"file_path": str(tmp_path / "outside.txt")}) is None
     assert guard({"file_path": str(project / "shot.PNG")}) is None  # media keeps the native reader
     assert guard({"command": "git status", "run_in_background": True}, tool="Bash") is None
+    assert guard({"command": "git status", "description": "watch", "timeout_ms": 30000}, tool="Monitor") is None
     moved = tmp_path / "moved" / "batch_ops_guard.py"  # a removed guard must not refuse every tool
     assert guard(inside, guard_path=moved) is None
     assert guard({"command": "git status"}, tool="Bash", codex=True, guard_path=moved) is None

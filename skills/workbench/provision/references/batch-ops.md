@@ -1,6 +1,6 @@
 # batch-ops
 
-batch-ops, in this skill's `assets/batch-ops/`, is an optional MCP server whose tools `batch_read`, `batch_run`, and `batch_edit` batch reads, commands, and edits with rollback into one call. No skill needs it, so offer it on every run and never set it up by default:
+batch-ops, in this skill's `assets/batch-ops/`, is an optional MCP server. No skill needs it, so offer it on every run and never set it up by default:
 
 > **batch-ops (optional).** An MCP server that batches reads, commands, and edits into one call, which can save an agent turns. It needs the `mcp` and `pydantic` Python packages; no First Four Hours skill needs it. Set it up?
 
@@ -31,6 +31,6 @@ When Provision's entry exists (step 3), ask instead, a version being the `Versio
    import os, runpy, sys; os.path.isfile(sys.argv[1]) and runpy.run_path(sys.argv[1], run_name='__main__')
    ```
 
-   A hook naming a `/provision/assets/batch-ops/` guard (either slash), or the reference's guard file, is Provision's, to replace or remove; a copied one is present only if identical to this skill's, else offered again, kept and reported stale if declined. It is done once a native read or shell command in the project is refused. Without a guard, report the line as instruction-only.
+   A hook naming a `/provision/assets/batch-ops/` guard (either slash), or the reference's guard file, is Provision's, to replace or remove; a copied one is present only if identical to this skill's, a Claude Code hook only if it equals the reference's entry filled in as above, else offered again, a yes replacing it in place, kept and reported stale if declined. It is done once a native read or shell command in the project is refused. Without a guard, report the line as instruction-only.
 
 batch-ops is done only when the harness shows the entry connected with this command, argument, and cap; otherwise report it written but unverified, with the step that would confirm it. Its absolute paths, and a hook's, break when the suite or that Python moves: rerun Provision to rewrite them. Probe batch-ops with the Python its entry names, never another environment or a bare `python`.

@@ -103,11 +103,19 @@ def _render_read_item(result: ReadResult) -> list[str]:
 
 DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")  # edits to these alone get no verify hint
 READ_STATUSES = ("ok", "truncated", "lossy", "unchanged", "deferred")  # any other is a problem
+UNKNOWN_STATUSES = ("error", "missing", "stale", "binary", "skipped")  # also listed under unknowns
 
 
 def is_problem(result: ReadResult) -> bool:
     """Whether `result` failed, so the report lists it under problems."""
     return result.status not in READ_STATUSES
+
+
+def read_unknown(result: ReadResult) -> str | None:
+    """`result`'s entry under a batch_read report's unknowns, naming its path, or None when it has none."""
+    if result.status not in UNKNOWN_STATUSES:
+        return None
+    return f"{result.id}: {result.status}" + (f" ({result.path})" if result.path else "")
 
 
 def read_item_bytes(result: ReadResult) -> int:
@@ -117,8 +125,11 @@ def read_item_bytes(result: ReadResult) -> int:
     continuation = (result.meta or {}).get("continuation")
     if continuation:
         size += len(json.dumps(continuation if isinstance(continuation, dict) else str(continuation))) + 2
-    if is_problem(result):  # its problems entry, and its unknowns entry, which names the path once
-        size += 2 * (len(result.id) + len(result.status)) + len(result.path or "") + 16
+    if is_problem(result):
+        size += len(f"{result.id} {result.status}, ".encode("utf-8", errors="replace"))
+    unknown = read_unknown(result)
+    if unknown:
+        size += len(f"  - {unknown}\n".encode("utf-8", errors="replace"))
     return size
 
 

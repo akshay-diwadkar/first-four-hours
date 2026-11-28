@@ -23,7 +23,7 @@ from .budget import Budget, BudgetTracker
 from .editor import apply_edits, fit_diffs
 from .models import build_edit_envelope, build_read_envelope, build_run_envelope, edit_dict, report_dict
 from .reader import collect_coverage, read_batch, survey
-from .render import render_edit_report, render_read_report, render_run_report
+from .render import read_unknown, render_edit_report, render_read_report, render_run_report
 from .runner import run_commands
 from .specs import (
     parse_edit_spec,
@@ -99,8 +99,9 @@ async def _cmd_read(args: argparse.Namespace, root: Path) -> tuple[str, dict[str
     for result in results:
         if result.artifact:
             report.artifacts.append(result.artifact)
-        if result.status in ("error", "missing", "stale", "binary", "skipped"):
-            report.unknowns.append(f"{result.id}: {result.status}")
+        unknown = read_unknown(result)
+        if unknown:
+            report.unknowns.append(unknown)
     ok = not any(r.status in ("error", "missing", "stale", "skipped") for r in results)
     return render_read_report(report, max_bytes=budget.bytes), build_read_envelope(report, time_s=args.time), ok
 

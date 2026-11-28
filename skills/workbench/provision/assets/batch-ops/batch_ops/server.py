@@ -30,7 +30,7 @@ from .models import (
     build_run_envelope,
 )
 from .reader import collect_coverage, read_batch, survey
-from .render import render_edit_report, render_read_report, render_run_report
+from .render import read_unknown, render_edit_report, render_read_report, render_run_report
 from .runner import run_commands
 from .specs import (
     parse_edit_spec,
@@ -296,8 +296,9 @@ async def _read_specs(
     for result in results:
         if result.artifact:
             report.artifacts.append(result.artifact)
-        if result.status in ("missing", "error", "stale", "binary", "skipped"):
-            report.unknowns.append(f"{result.id}: {result.status}" + (f" ({result.path})" if result.path else ""))
+        unknown = read_unknown(result)
+        if unknown:
+            report.unknowns.append(unknown)
 
     text = render_read_report(report, max_bytes=max_bytes)
     envelope = build_read_envelope(report, time_s=time_s)

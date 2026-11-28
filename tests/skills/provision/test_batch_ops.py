@@ -1286,7 +1286,32 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
     with transcript.open("a", encoding="utf-8") as stream:
         stream.write(delta("removedNames"))
     assert guard(inside) is None  # a disconnect lifts the guard
+
+    def mutant(name, old):  # the guard with one rule removed, to prove each assertion below discriminates
+        text = GUARD.read_text(encoding="utf-8")
+        assert text.count(old) == 1
+        path = tmp_path / "mutants" / name / "batch_ops_guard.py"
+        path.parent.mkdir(parents=True)
+        path.write_text(text.replace(old, ""), encoding="utf-8")
+        return path
+
+    with transcript.open("a", encoding="utf-8") as stream:
+        stream.write(delta("readdedNames"))  # a reconnect after the disconnect restores the guard
+    assert guard(inside)["permissionDecision"] == "deny"
+    readded = mutant("readded", '+ (delta.get("readdedNames") or [])')
+    assert guard(inside, guard_path=readded) is None
+    deferred_only = {"type": "deferred_tools_delta", "addedNames": [
+        "mcp__batch-ops__batch_edit", "mcp__batch-ops__batch_read", "mcp__batch-ops__batch_run"]}
+    transcript.write_text(json.dumps({"type": "attachment", "attachment": deferred_only}) + "\n", encoding="utf-8")
+    assert guard(inside)["permissionDecision"] == "deny"  # a deferred-only announcement connects it
+    deferred = mutant("deferred", ', "deferred_tools_delta": "mcp__batch-ops__batch_read"')
+    assert guard(inside, guard_path=deferred) is None
     # Codex hooks see no connections, so its guard refuses the shell regardless, but not patches elsewhere.
     assert guard({"command": "git status"}, tool="Bash", codex=True)["permissionDecision"] == "deny"
     elsewhere = f"*** Begin Patch\n*** Add File: {tmp_path / 'x.txt'}\n+x\n*** End Patch"
     assert guard({"command": elsewhere}, tool="apply_patch", codex=True) is None
+    moving = (f"*** Begin Patch\n*** Update File: {tmp_path / 'x.txt'}\n*** Move to: {project / 'moved.txt'}\n"
+              "@@\n-x\n+y\n*** End Patch")
+    assert guard({"command": moving}, tool="apply_patch", codex=True)["permissionDecision"] == "deny"
+    move = mutant("move", ', "*** Move to: "')
+    assert guard({"command": moving}, tool="apply_patch", codex=True, guard_path=move) is None

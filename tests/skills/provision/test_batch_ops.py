@@ -703,6 +703,21 @@ def test_batch_ops_stdio_session(tmp_path, monkeypatch):
                     "budget": {"tokens": 600}, "cwd": str(repo)})
                 assert [i["status"] for i in _items(res)][3:] == ["missing"] * 10
 
+                # Failures after content fitting the budget, and failures still showing when they alone overflow it.
+                (repo / "bins").mkdir()
+                for n in range(16):
+                    (repo / "bins" / f"b{n:02d}.dat").write_bytes(b"a\x00b\n")
+                bin_specs = ["hits/f01.txt", "big.txt:1-630", *[f"bins/b{n:02d}.dat" for n in range(16)]]
+                res = await call(session, "batch_read", {"specs": bin_specs, "budget": {"tokens": 1024}, "cwd": str(repo)})
+                text = _text(res)
+                bin_items = _items(res)
+                assert bin_items[0]["status"] == "ok"
+                assert [i["status"] for i in bin_items[2:18]] == ["binary"] * 16
+                assert len(text.encode("utf-8")) <= 4096 and "report truncated" not in text
+                res = await call(session, "batch_read", {"specs": bin_specs, "budget": {"tokens": 256}, "cwd": str(repo)})
+                assert [i["status"] for i in _items(res)[2:18]] == ["binary"] * 16
+                shutil.rmtree(repo / "bins")
+
                 # No floor on the room: held-back notices and report lines fit the budget, uncut by the final cap.
                 small = [f"hits/f{i:02d}.txt" for i in range(1, 31)]
                 res = await call(session, "batch_read", {

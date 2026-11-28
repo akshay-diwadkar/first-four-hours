@@ -92,8 +92,10 @@ async def read_batch(
     shows when deferred, and one that fits the room left after every held-back notice and the report
     lines is kept whole.  A failed item is never held back, so its error shows at once.  One larger than that whole room is cut while at least half of it remains, and a cut that
     still does not fit is held back, as is any other, its original spec carried in ``next:``.  The first
-    item in order, unless it is an ``each`` item, is never held back and gets at least 512 bytes, so
-    only it can make a report exceed its budget.
+    item in order, unless it is an ``each`` item, is never held back and gets at least 512 bytes.  A
+    failed or ``each`` item is never held back and has its whole size set aside first, so a report
+    exceeds its budget only through the first item's 512-byte minimum or when its never-held items,
+    held-back notices and report lines alone exceed the budget.
 
     An ``each`` request reads the files an earlier labelled glob, grep, git changed or cochange request
     found: its expansions are ordinary items read after pass 1, listed right after it, and never counted
@@ -170,7 +172,13 @@ async def read_batch(
     # deferred one is never charged a full header: batching more items no longer shrinks the room.
     held = [_held_back(request) for request in requests]
     held_bytes = [read_item_bytes(result) for result in held]
-    total = max(0, tracker.budget.bytes - REPORT_LINES_BYTES - sum(held_bytes))
+    # A failed or `each` item is never held back, so its whole size is set aside before any other item
+    # can spend the room: admission order is (tier, request order), and a charge taken in the loop could
+    # come after the room is gone.
+    never_held = [req.kind == "each" or is_problem(result) for req, result in zip(requests, results)]
+    reserved = sum(read_item_bytes(result) if keep_whole else size
+                   for result, keep_whole, size in zip(results, never_held, held_bytes))
+    total = max(0, tracker.budget.bytes - REPORT_LINES_BYTES - reserved)
     remaining = total
     order = sorted(range(len(requests)), key=lambda k: (tier(requests[k].priority), k))
     progress = order[0] if order and requests[order[0]].kind != "each" else None  # never held back
@@ -184,8 +192,8 @@ async def read_batch(
 
     for i in order:
         cost = max(0, read_item_bytes(results[i]) - held_bytes[i])
-        if requests[i].kind == "each" or is_problem(results[i]):
-            remaining -= min(remaining, cost)  # never deferred, though its bytes count: a failure shows now
+        if never_held[i]:
+            continue  # shown as it is: its whole size was set aside in `total`
         elif i == progress:
             room = max(remaining, FIRST_ITEM_MIN_BYTES)
             if cost > room:
